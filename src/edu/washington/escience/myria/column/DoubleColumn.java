@@ -7,8 +7,8 @@ import edu.washington.escience.myria.storage.TupleBatch;
 
 /**
  * A column of Double values.
- * 
- * 
+ *
+ *
  */
 public final class DoubleColumn extends Column<Double> {
   /** Required for Java serialization. */
@@ -20,7 +20,7 @@ public final class DoubleColumn extends Column<Double> {
 
   /**
    * Constructs a new column.
-   * 
+   *
    * @param data the data
    * @param numData number of tuples.
    * */
@@ -38,7 +38,7 @@ public final class DoubleColumn extends Column<Double> {
 
   /**
    * Returns the element at the specified row in this column.
-   * 
+   *
    * @param row row of element to return.
    * @return the element at the specified row in this column.
    */

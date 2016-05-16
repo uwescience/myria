@@ -9,8 +9,8 @@ import edu.washington.escience.myria.proto.DataProto.IntColumnMessage;
 
 /**
  * An IntColumn that simply wraps a read-only Protobuf message.
- * 
- * 
+ *
+ *
  */
 public final class IntProtoColumn extends IntColumn {
 
@@ -23,7 +23,7 @@ public final class IntProtoColumn extends IntColumn {
 
   /**
    * Construct a new IntProtoColumn wrapping the IntColumnMessage.
-   * 
+   *
    * @param message a Protobuf message containing a column of integers.
    */
   public IntProtoColumn(final IntColumnMessage message) {
@@ -32,7 +32,7 @@ public final class IntProtoColumn extends IntColumn {
 
   /**
    * Construct a new IntProtoColumn using the ByteString data.
-   * 
+   *
    * @param data a byte string of data.
    */
   public IntProtoColumn(final ByteString data) {
@@ -60,5 +60,4 @@ public final class IntProtoColumn extends IntColumn {
   public int size() {
     return intBuffer.limit();
   }
-
 }

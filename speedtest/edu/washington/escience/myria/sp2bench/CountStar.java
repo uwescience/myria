@@ -25,7 +25,8 @@ import edu.washington.escience.myria.storage.TupleBatch;
 public class CountStar implements QueryPlanGenerator {
 
   final static ImmutableList<Type> outputTypes = ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE);
-  final static ImmutableList<String> outputColumnNames = ImmutableList.of("count(*) Dictionary", "count(*) Triples");
+  final static ImmutableList<String> outputColumnNames =
+      ImmutableList.of("count(*) Dictionary", "count(*) Triples");
   final static Schema outputSchema = new Schema(outputTypes, outputColumnNames);
 
   final static ImmutableList<Type> countTypes = ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE);
@@ -38,42 +39,49 @@ public class CountStar implements QueryPlanGenerator {
   public Map<Integer, RootOperator[]> getWorkerPlan(int[] allWorkers) throws Exception {
     final ExchangePairID collectCountID = ExchangePairID.newID();
 
-    final DbQueryScan countDictionary = new DbQueryScan("select count(*),0 from Dictionary", countSchema);
+    final DbQueryScan countDictionary =
+        new DbQueryScan("select count(*),0 from Dictionary", countSchema);
     final DbQueryScan countTriples = new DbQueryScan("select count(*),0 from Triples", countSchema);
 
     final SymmetricHashJoin countMergeJoin =
-        new SymmetricHashJoin(countDictionary, countTriples, new int[] { 1 }, new int[] { 1 });
+        new SymmetricHashJoin(countDictionary, countTriples, new int[] {1}, new int[] {1});
 
-    final CollectProducer collectCountP = new CollectProducer(countMergeJoin, collectCountID, allWorkers[0]);
-    final CollectConsumer collectCountC = new CollectConsumer(collectCountP.getSchema(), collectCountID, allWorkers);
+    final CollectProducer collectCountP =
+        new CollectProducer(countMergeJoin, collectCountID, allWorkers[0]);
+    final CollectConsumer collectCountC =
+        new CollectConsumer(collectCountP.getSchema(), collectCountID, allWorkers);
 
     final Aggregate agg =
-        new Aggregate(collectCountC, new AggregatorFactory[] {
-            new SingleColumnAggregatorFactory(0, AggregationOp.SUM),
-            new SingleColumnAggregatorFactory(2, AggregationOp.SUM) });
+        new Aggregate(
+            collectCountC,
+            new AggregatorFactory[] {
+              new SingleColumnAggregatorFactory(0, AggregationOp.SUM),
+              new SingleColumnAggregatorFactory(2, AggregationOp.SUM)
+            });
 
     final CollectProducer sendToMaster = new CollectProducer(agg, sendToMasterID, 0);
 
     final Map<Integer, RootOperator[]> result = new HashMap<Integer, RootOperator[]>();
-    result.put(allWorkers[0], new RootOperator[] { sendToMaster, collectCountP });
+    result.put(allWorkers[0], new RootOperator[] {sendToMaster, collectCountP});
 
     for (int i = 1; i < allWorkers.length; i++) {
-      result.put(allWorkers[i], new RootOperator[] { collectCountP });
+      result.put(allWorkers[i], new RootOperator[] {collectCountP});
     }
 
     return result;
   }
 
   @Override
-  public RootOperator getMasterPlan(int[] allWorkers, final LinkedBlockingQueue<TupleBatch> receivedTupleBatches) {
+  public RootOperator getMasterPlan(
+      int[] allWorkers, final LinkedBlockingQueue<TupleBatch> receivedTupleBatches) {
     final CollectConsumer serverCollect =
-        new CollectConsumer(outputSchema, sendToMasterID, new int[] { allWorkers[0] });
+        new CollectConsumer(outputSchema, sendToMasterID, new int[] {allWorkers[0]});
     TBQueueExporter queueStore = new TBQueueExporter(receivedTupleBatches, serverCollect);
     SinkRoot serverPlan = new SinkRoot(queueStore);
     return serverPlan;
   }
 
   public static void main(String[] args) throws Exception {
-    System.out.println(new CountStar().getWorkerPlan(new int[] { 1, 2, 3, 4, 5 }));
+    System.out.println(new CountStar().getWorkerPlan(new int[] {1, 2, 3, 4, 5}));
   }
 }

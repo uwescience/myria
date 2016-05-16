@@ -20,7 +20,8 @@ import org.jboss.netty.channel.group.DefaultChannelGroup;
  * */
 public class ConditionChannelGroupFuture implements ChannelGroupFuture {
   /** The logger for this class. */
-  private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(ConditionChannelGroupFuture.class);
+  private static final org.slf4j.Logger LOGGER =
+      org.slf4j.LoggerFactory.getLogger(ConditionChannelGroupFuture.class);
 
   /**
    * the actual channel group future that monitors the channel group event.
@@ -47,8 +48,8 @@ public class ConditionChannelGroupFuture implements ChannelGroupFuture {
   /**
    * listeners which will be called back if the action is done.
    * */
-  private final ConcurrentHashMap<ChannelGroupFutureListener, ChannelGroupFutureListener> listeners =
-      new ConcurrentHashMap<ChannelGroupFutureListener, ChannelGroupFutureListener>();
+  private final ConcurrentHashMap<ChannelGroupFutureListener, ChannelGroupFutureListener>
+      listeners = new ConcurrentHashMap<ChannelGroupFutureListener, ChannelGroupFutureListener>();
 
   /**
    * @param wrappedCGF the wrapped ChannelGroupFuture
@@ -93,7 +94,6 @@ public class ConditionChannelGroupFuture implements ChannelGroupFuture {
     } else {
       return EMPTY_GROUP;
     }
-
   }
 
   @Override
@@ -257,7 +257,7 @@ public class ConditionChannelGroupFuture implements ChannelGroupFuture {
 
   /**
    * Set the condition value.
-   * 
+   *
    * @param conditionSatisfied if the condition is satisfied.
    * */
   public final void setCondition(final boolean conditionSatisfied) {
@@ -288,7 +288,8 @@ public class ConditionChannelGroupFuture implements ChannelGroupFuture {
    * @param nanos remaining nanos.
    * @throws InterruptedException if interrupted.
    * */
-  private long waitForConditionSet(final long timeoutMS, final int nanos) throws InterruptedException {
+  private long waitForConditionSet(final long timeoutMS, final int nanos)
+      throws InterruptedException {
     final long start = System.nanoTime();
     synchronized (conditionSetLock) {
       if (!conditionSetFlag) {
@@ -328,5 +329,4 @@ public class ConditionChannelGroupFuture implements ChannelGroupFuture {
     }
     return System.nanoTime() - start;
   }
-
 }

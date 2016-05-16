@@ -15,8 +15,7 @@ public class TypeOfExpression extends ZeroaryExpression {
   private static final long serialVersionUID = 1L;
 
   /** The index in the input that is referenced. */
-  @JsonProperty
-  private final int columnIdx;
+  @JsonProperty private final int columnIdx;
 
   /**
    * This is not really unused, it's used automagically by Jackson deserialization.
@@ -28,7 +27,7 @@ public class TypeOfExpression extends ZeroaryExpression {
 
   /**
    * A {@link TypeOfExpression} that references the type of column <code>columnIdx</code> from the input.
-   * 
+   *
    * @param columnIdx the index in the input.
    */
   public TypeOfExpression(final int columnIdx) {
@@ -42,7 +41,8 @@ public class TypeOfExpression extends ZeroaryExpression {
 
   @Override
   public String getJavaString(final ExpressionOperatorParameter parameters) {
-    throw new UnsupportedOperationException("This expression operator does not have a java string representation.");
+    throw new UnsupportedOperationException(
+        "This expression operator does not have a java string representation.");
   }
 
   /**

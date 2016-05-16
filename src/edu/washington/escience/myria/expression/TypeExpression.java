@@ -17,8 +17,7 @@ public class TypeExpression extends ZeroaryExpression {
   /**
    * The type of this expression operator.
    */
-  @JsonProperty
-  private final Type outputType;
+  @JsonProperty private final Type outputType;
 
   /**
    * This is not really unused, it's used automagically by Jackson deserialization.
@@ -31,7 +30,7 @@ public class TypeExpression extends ZeroaryExpression {
 
   /**
    * Default constructor.
-   * 
+   *
    * @param type the type of this expression operator
    */
   public TypeExpression(final Type type) {
@@ -45,7 +44,8 @@ public class TypeExpression extends ZeroaryExpression {
 
   @Override
   public String getJavaString(final ExpressionOperatorParameter parameters) {
-    throw new UnsupportedOperationException("This expression operator does not have a java string representation.");
+    throw new UnsupportedOperationException(
+        "This expression operator does not have a java string representation.");
   }
 
   @Override

@@ -1,10 +1,10 @@
 /**
- * 
+ *
  */
 package edu.washington.escience.myria.coordinator;
 
 /**
- * 
+ *
  */
 public class CatalogException extends Exception {
 
@@ -34,5 +34,4 @@ public class CatalogException extends Exception {
   public CatalogException(final Throwable cause) {
     super(cause);
   }
-
 }

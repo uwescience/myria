@@ -25,22 +25,23 @@ public final class DateTimeAggregator extends PrimitiveAggregator {
   /**
    * Aggregate operations applicable for string columns.
    */
-  public static final Set<AggregationOp> AVAILABLE_AGG = ImmutableSet.of(AggregationOp.COUNT, AggregationOp.MAX,
-      AggregationOp.MIN);
+  public static final Set<AggregationOp> AVAILABLE_AGG =
+      ImmutableSet.of(AggregationOp.COUNT, AggregationOp.MAX, AggregationOp.MIN);
 
   /**
    * @param aFieldName aggregate field name for use in output schema.
    * @param aggOps the aggregate operation to simultaneously compute.
    * @param column the column being aggregated over.
    */
-  public DateTimeAggregator(final String aFieldName, final AggregationOp[] aggOps, final int column) {
+  public DateTimeAggregator(
+      final String aFieldName, final AggregationOp[] aggOps, final int column) {
     super(aFieldName, aggOps);
     fromColumn = column;
   }
 
   /**
    * Add the specified value to this aggregator.
-   * 
+   *
    * @param value the value to be added
    * @param state the state of the aggregate, which will be mutated.
    */
@@ -80,7 +81,7 @@ public final class DateTimeAggregator extends PrimitiveAggregator {
 
   /**
    * Helper function to add value to this aggregator. Note this does NOT update count.
-   * 
+   *
    * @param value the value to be added
    * @param state the state of the aggregate, which will be mutated.
    */

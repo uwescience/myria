@@ -40,7 +40,6 @@ public final class IPCPipelineFactories {
       p.addLast("ipcMessageHandler", ipcMessageHandler); // upstream 5
       return p;
     }
-
   }
 
   /**
@@ -74,7 +73,8 @@ public final class IPCPipelineFactories {
      * @param pool the owner IPCConnectionPool
      * @param pipelineExecutor possible pipeline executor, null is allowed.
      * */
-    MasterClientPipelineFactory(final IPCConnectionPool pool, final ExecutorService pipelineExecutor) {
+    MasterClientPipelineFactory(
+        final IPCConnectionPool pool, final ExecutorService pipelineExecutor) {
       ipcMessageHandler = new IPCMessageHandler(pool);
       if (pipelineExecutor != null) {
         pipelineExecutionHandler = new ExecutionHandler(pipelineExecutor);
@@ -95,7 +95,6 @@ public final class IPCPipelineFactories {
       p.addLast("ipcMessageHandler", ipcMessageHandler); // upstream 5
       return p;
     }
-
   }
   /**
    * Server side pipeline factory for the master.
@@ -106,10 +105,10 @@ public final class IPCPipelineFactories {
      * @param pool the owner IPCConnectionPool
      * @param pipelineExecutor possible pipeline executor, null is allowed.
      * */
-    MasterServerPipelineFactory(final IPCConnectionPool pool, final ExecutorService pipelineExecutor) {
+    MasterServerPipelineFactory(
+        final IPCConnectionPool pool, final ExecutorService pipelineExecutor) {
       super(pool, pipelineExecutor);
     }
-
   }
 
   /**
@@ -121,10 +120,10 @@ public final class IPCPipelineFactories {
      * @param pool the owner IPCConnectionPool
      * @param pipelineExecutor possible pipeline executor, null is allowed.
      * */
-    WorkerClientPipelineFactory(final IPCConnectionPool pool, final ExecutorService pipelineExecutor) {
+    WorkerClientPipelineFactory(
+        final IPCConnectionPool pool, final ExecutorService pipelineExecutor) {
       super(pool, pipelineExecutor);
     }
-
   }
 
   /**
@@ -136,20 +135,20 @@ public final class IPCPipelineFactories {
      * @param pool the owner IPCConnectionPool
      * @param pipelineExecutor possible pipeline executor, null is allowed.
      * */
-    WorkerServerPipelineFactory(final IPCConnectionPool pool, final ExecutorService pipelineExecutor) {
+    WorkerServerPipelineFactory(
+        final IPCConnectionPool pool, final ExecutorService pipelineExecutor) {
       super(pool, pipelineExecutor);
     }
-
   }
 
   /**
    * separate data streams to data frames.
    * */
-  static final ProtobufVarint32LengthFieldPrepender FRAME_ENCODER = new ProtobufVarint32LengthFieldPrepender();
+  static final ProtobufVarint32LengthFieldPrepender FRAME_ENCODER =
+      new ProtobufVarint32LengthFieldPrepender();
 
   /**
    * Utility class.
    * */
-  private IPCPipelineFactories() {
-  }
+  private IPCPipelineFactories() {}
 }

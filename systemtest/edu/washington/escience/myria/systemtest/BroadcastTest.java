@@ -27,16 +27,16 @@ import edu.washington.escience.myria.util.TestUtils;
 import edu.washington.escience.myria.util.Tuple;
 
 /**
- * 
+ *
  * Test Broadcast Operator
- * 
+ *
  * This test performs a broadcast join. There are two relations, testtable1 and testtable2, distributed among workers.
  * This test program broadcast testtable1 and then join it locally with testtable2. After that, collect operator is used
  * to collect result.
- * 
- * 
+ *
+ *
  * @author Shumo Chu (chushumo@cs.washington.edu)
- * 
+ *
  */
 public class BroadcastTest extends SystemTestBase {
 
@@ -60,30 +60,36 @@ public class BroadcastTest extends SystemTestBase {
     /* Set producer */
     final DbQueryScan scan1 = new DbQueryScan(testtable1Key, schema);
     final GenericShuffleProducer bp =
-
-        new GenericShuffleProducer(scan1, broadcastID, new int[][] { { 0, 1 } },
-            new int[] { workerIDs[0], workerIDs[1] }, new FixValuePartitionFunction(0));
+        new GenericShuffleProducer(
+            scan1,
+            broadcastID,
+            new int[][] {{0, 1}},
+            new int[] {workerIDs[0], workerIDs[1]},
+            new FixValuePartitionFunction(0));
 
     /* Set consumer */
     final GenericShuffleConsumer bs =
-        new GenericShuffleConsumer(schema, broadcastID, new int[] { workerIDs[0], workerIDs[1] });
+        new GenericShuffleConsumer(schema, broadcastID, new int[] {workerIDs[0], workerIDs[1]});
 
     /* Set collect producer which will send data inner-joined */
     final DbQueryScan scan2 = new DbQueryScan(testtable2Key, schema);
 
-    final ImmutableList<String> outputColumnNames = ImmutableList.of("id1", "name1", "id2", "name2");
+    final ImmutableList<String> outputColumnNames =
+        ImmutableList.of("id1", "name1", "id2", "name2");
     final SymmetricHashJoin localjoin =
-        new SymmetricHashJoin(outputColumnNames, bs, scan2, new int[] { 0 }, new int[] { 0 });
+        new SymmetricHashJoin(outputColumnNames, bs, scan2, new int[] {0}, new int[] {0});
 
     final CollectProducer cp = new CollectProducer(localjoin, serverReceiveID, MASTER_ID);
 
     final HashMap<Integer, RootOperator[]> workerPlans = new HashMap<Integer, RootOperator[]>();
 
-    workerPlans.put(workerIDs[0], new RootOperator[] { cp, bp });
-    workerPlans.put(workerIDs[1], new RootOperator[] { cp, bp });
+    workerPlans.put(workerIDs[0], new RootOperator[] {cp, bp});
+    workerPlans.put(workerIDs[1], new RootOperator[] {cp, bp});
 
-    final CollectConsumer serverCollect = new CollectConsumer(cp.getSchema(), serverReceiveID, workerIDs);
-    final LinkedBlockingQueue<TupleBatch> receivedTupleBatches = new LinkedBlockingQueue<TupleBatch>();
+    final CollectConsumer serverCollect =
+        new CollectConsumer(cp.getSchema(), serverReceiveID, workerIDs);
+    final LinkedBlockingQueue<TupleBatch> receivedTupleBatches =
+        new LinkedBlockingQueue<TupleBatch>();
     final TBQueueExporter queueStore = new TBQueueExporter(receivedTupleBatches, serverCollect);
     SinkRoot serverPlan = new SinkRoot(queueStore);
 

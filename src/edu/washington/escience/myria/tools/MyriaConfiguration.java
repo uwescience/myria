@@ -27,12 +27,13 @@ public final class MyriaConfiguration extends ConfigParser {
 
   /**
    * load the config file.
-   * 
+   *
    * @param filename filename.
    * @return parsed mapping from sections to keys to values.
    * @throws ConfigFileException if error occurred when parsing the config file
    * */
-  public static MyriaConfiguration loadWithDefaultValues(final String filename) throws ConfigFileException {
+  public static MyriaConfiguration loadWithDefaultValues(final String filename)
+      throws ConfigFileException {
     MyriaConfiguration config = new MyriaConfiguration();
     try {
       config.read(new File(filename));
@@ -44,7 +45,7 @@ public final class MyriaConfiguration extends ConfigParser {
   }
 
   /**
-   * 
+   *
    * @return a new Myria configuration.
    */
   public static MyriaConfiguration newConfiguration() {
@@ -52,7 +53,7 @@ public final class MyriaConfiguration extends ConfigParser {
   }
 
   /**
-   * 
+   *
    * @param nodeId the node ID
    * @return working directory
    * @throws ConfigFileException if error occurred when getting the value
@@ -69,17 +70,18 @@ public final class MyriaConfiguration extends ConfigParser {
   }
 
   /**
-   * 
+   *
    * @param nodeId the node ID
    * @return working directory
    * @throws ConfigFileException if error occurred when getting the value
    */
   public String getWorkingDirectory(final int nodeId) throws ConfigFileException {
-    return FilenameUtils.concat(getPath(nodeId), getRequired("deployment", MyriaSystemConfigKeys.DESCRIPTION));
+    return FilenameUtils.concat(
+        getPath(nodeId), getRequired("deployment", MyriaSystemConfigKeys.DESCRIPTION));
   }
 
   /**
-   * 
+   *
    * @param workerId the worker ID
    * @return the database name
    * @throws ConfigFileException if error occurred when getting the value
@@ -95,7 +97,7 @@ public final class MyriaConfiguration extends ConfigParser {
   }
 
   /**
-   * 
+   *
    * @param nodeId the worker/master ID
    * @return the hostname
    * @throws ConfigFileException if error occurred when getting the value
@@ -109,7 +111,7 @@ public final class MyriaConfiguration extends ConfigParser {
   }
 
   /**
-   * 
+   *
    * @param nodeId the worker/master ID
    * @return "username@hostname", if username is specified.
    * @throws ConfigFileException if error occurred when getting the value
@@ -124,7 +126,7 @@ public final class MyriaConfiguration extends ConfigParser {
   }
 
   /**
-   * 
+   *
    * @param nodeId the worker/master ID
    * @return a string in the format of hostname:port
    * @throws ConfigFileException if error occurred when getting the value
@@ -134,7 +136,7 @@ public final class MyriaConfiguration extends ConfigParser {
   }
 
   /**
-   * 
+   *
    * @param nodeId the worker/master ID
    * @return the port number
    * @throws ConfigFileException if error occurred when getting the value
@@ -148,7 +150,7 @@ public final class MyriaConfiguration extends ConfigParser {
   }
 
   /**
-   * 
+   *
    * @return a list of worker IDs
    * @throws ConfigFileException if error occurred when getting the value
    */
@@ -165,7 +167,7 @@ public final class MyriaConfiguration extends ConfigParser {
   }
 
   /**
-   * 
+   *
    * @param section the section
    * @param key the key
    * @return the value, must exist
@@ -181,7 +183,7 @@ public final class MyriaConfiguration extends ConfigParser {
   }
 
   /**
-   * 
+   *
    * @param section the section
    * @param key the key
    * @return the value, null if not exist
@@ -196,7 +198,7 @@ public final class MyriaConfiguration extends ConfigParser {
   }
 
   /**
-   * 
+   *
    * @param section the section
    * @param key the key
    * @param value the value, if null don't set
@@ -228,20 +230,24 @@ public final class MyriaConfiguration extends ConfigParser {
   }
 
   /**
-   * 
+   *
    * @return a JSON string representation of the connection info
    * @throws ConfigFileException if error occurred parsing the config file
    */
   public String getSelfJsonConnInfo() throws ConfigFileException {
     int id = Integer.parseInt(getRequired("runtime", MyriaSystemConfigKeys.WORKER_IDENTIFIER));
-    return ConnectionInfo.toJson(getRequired("deployment", MyriaSystemConfigKeys.WORKER_STORAGE_DATABASE_SYSTEM),
-        getHostname(id), getWorkingDirectory(id), id, getWorkerDatabaseName(id), getOptional("deployment",
-            MyriaSystemConfigKeys.WORKER_STORAGE_DATABASE_PASSWORD), getOptional("deployment",
-            MyriaSystemConfigKeys.WORKER_STORAGE_DATABASE_PORT));
+    return ConnectionInfo.toJson(
+        getRequired("deployment", MyriaSystemConfigKeys.WORKER_STORAGE_DATABASE_SYSTEM),
+        getHostname(id),
+        getWorkingDirectory(id),
+        id,
+        getWorkerDatabaseName(id),
+        getOptional("deployment", MyriaSystemConfigKeys.WORKER_STORAGE_DATABASE_PASSWORD),
+        getOptional("deployment", MyriaSystemConfigKeys.WORKER_STORAGE_DATABASE_PORT));
   }
 
   /**
-   * 
+   *
    * @param config a Myria configuration.
    * @throws ConfigFileException if error occurred
    */
@@ -258,7 +264,7 @@ public final class MyriaConfiguration extends ConfigParser {
   }
 
   /**
-   * 
+   *
    * @return JVM options
    */
   public List<String> getJvmOptions() {

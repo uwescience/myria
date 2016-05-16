@@ -52,7 +52,8 @@ public class Q3 implements QueryPlanGenerator {
             "select t.subject from Triples t,Dictionary dtype where t.predicate=dtype.ID and dtype.val='swrc:pages';",
             subjectSchema);
 
-    final SingleFieldHashPartitionFunction pf = new SingleFieldHashPartitionFunction(allWorkers.length, 0);
+    final SingleFieldHashPartitionFunction pf =
+        new SingleFieldHashPartitionFunction(allWorkers.length, 0);
 
     final GenericShuffleProducer shuffleArticlesP =
         new GenericShuffleProducer(allArticles, allArticlesShuffleID, allWorkers, pf);
@@ -62,36 +63,44 @@ public class Q3 implements QueryPlanGenerator {
     final GenericShuffleProducer shuffleSwrcPagesP =
         new GenericShuffleProducer(allWithSwrcPages, allSwrcPagesShuffleID, allWorkers, pf);
     final GenericShuffleConsumer shuffleSwrcPagesC =
-        new GenericShuffleConsumer(shuffleSwrcPagesP.getSchema(), allSwrcPagesShuffleID, allWorkers);
+        new GenericShuffleConsumer(
+            shuffleSwrcPagesP.getSchema(), allSwrcPagesShuffleID, allWorkers);
 
     final SymmetricHashJoin joinArticleSwrcPages =
-        new SymmetricHashJoin(shuffleArticlesC, shuffleSwrcPagesC, new int[] { 0 }, new int[] { 0 });
+        new SymmetricHashJoin(shuffleArticlesC, shuffleSwrcPagesC, new int[] {0}, new int[] {0});
 
     final Aggregate agg =
-        new Aggregate(joinArticleSwrcPages, new SingleColumnAggregatorFactory(0, AggregationOp.COUNT));
+        new Aggregate(
+            joinArticleSwrcPages, new SingleColumnAggregatorFactory(0, AggregationOp.COUNT));
 
     final CollectProducer collectCountP = new CollectProducer(agg, collectCountID, allWorkers[0]);
 
-    final CollectConsumer collectCountC = new CollectConsumer(collectCountP.getSchema(), collectCountID, allWorkers);
+    final CollectConsumer collectCountC =
+        new CollectConsumer(collectCountP.getSchema(), collectCountID, allWorkers);
 
-    final Aggregate aggSumCount = new Aggregate(collectCountC, new SingleColumnAggregatorFactory(0, AggregationOp.SUM));
+    final Aggregate aggSumCount =
+        new Aggregate(collectCountC, new SingleColumnAggregatorFactory(0, AggregationOp.SUM));
 
     final CollectProducer sendToMaster = new CollectProducer(aggSumCount, sendToMasterID, 0);
 
     final Map<Integer, RootOperator[]> result = new HashMap<Integer, RootOperator[]>();
-    result.put(allWorkers[0], new RootOperator[] { sendToMaster, shuffleArticlesP, shuffleSwrcPagesP, collectCountP });
+    result.put(
+        allWorkers[0],
+        new RootOperator[] {sendToMaster, shuffleArticlesP, shuffleSwrcPagesP, collectCountP});
 
     for (int i = 1; i < allWorkers.length; i++) {
-      result.put(allWorkers[i], new RootOperator[] { shuffleArticlesP, shuffleSwrcPagesP, collectCountP });
+      result.put(
+          allWorkers[i], new RootOperator[] {shuffleArticlesP, shuffleSwrcPagesP, collectCountP});
     }
 
     return result;
   }
 
   @Override
-  public RootOperator getMasterPlan(int[] allWorkers, final LinkedBlockingQueue<TupleBatch> receivedTupleBatches) {
+  public RootOperator getMasterPlan(
+      int[] allWorkers, final LinkedBlockingQueue<TupleBatch> receivedTupleBatches) {
     final CollectConsumer serverCollect =
-        new CollectConsumer(outputSchema, sendToMasterID, new int[] { allWorkers[0] });
+        new CollectConsumer(outputSchema, sendToMasterID, new int[] {allWorkers[0]});
     TBQueueExporter queueStore = new TBQueueExporter(receivedTupleBatches, serverCollect);
     SinkRoot serverPlan = new SinkRoot(queueStore);
     return serverPlan;

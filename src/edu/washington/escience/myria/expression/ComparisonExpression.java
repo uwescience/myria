@@ -21,7 +21,7 @@ public abstract class ComparisonExpression extends BinaryExpression {
 
   /**
    * Returns the operation.
-   * 
+   *
    * @return the operation for this comparison expression
    */
   private SimplePredicate.Op getOperation() {
@@ -31,12 +31,14 @@ public abstract class ComparisonExpression extends BinaryExpression {
 
   /**
    * True if left {@link #getOperation()} right.
-   * 
+   *
    * @param left the left operand.
    * @param right the right operand.
    * @param operation the operation that this comparison expression uses.
    */
-  public ComparisonExpression(final ExpressionOperator left, final ExpressionOperator right,
+  public ComparisonExpression(
+      final ExpressionOperator left,
+      final ExpressionOperator right,
       final SimplePredicate.Op operation) {
     super(left, right);
     this.operation = operation;
@@ -55,9 +57,14 @@ public abstract class ComparisonExpression extends BinaryExpression {
     Type rightType = getRight().getOutputType(parameters);
 
     if (leftType == Type.STRING_TYPE || leftType == Type.DATETIME_TYPE) {
-      Preconditions.checkArgument(rightType == leftType,
-          "If the type of the left child is %s, %s requires right child [%s] of Type %s to be %s as well.", leftType,
-          getClass().getSimpleName(), getRight(), rightType, leftType);
+      Preconditions.checkArgument(
+          rightType == leftType,
+          "If the type of the left child is %s, %s requires right child [%s] of Type %s to be %s as well.",
+          leftType,
+          getClass().getSimpleName(),
+          getRight(),
+          rightType,
+          leftType);
     } else {
       checkAndReturnDefaultNumericType(parameters);
     }

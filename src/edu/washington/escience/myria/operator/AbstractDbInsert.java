@@ -1,5 +1,5 @@
 /**
- * 
+ *
  */
 package edu.washington.escience.myria.operator;
 
@@ -14,7 +14,7 @@ public abstract class AbstractDbInsert extends RootOperator implements DbWriter 
 
   /**
    * Construct this abstract database insert operator to insert tuples from its child into the database.
-   * 
+   *
    * @param child the source of tuples.
    */
   public AbstractDbInsert(final Operator child) {

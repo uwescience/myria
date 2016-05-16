@@ -4,7 +4,7 @@ import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.expression.evaluate.ExpressionOperatorParameter;
 
 /**
- * 
+ *
  */
 public class LesserExpression extends BinaryExpression {
   /***/
@@ -20,7 +20,7 @@ public class LesserExpression extends BinaryExpression {
 
   /**
    * Gets the minimum value of two numbers.
-   * 
+   *
    * @param left the left operand.
    * @param right the right operand.
    */
@@ -37,5 +37,4 @@ public class LesserExpression extends BinaryExpression {
   public String getJavaString(final ExpressionOperatorParameter parameters) {
     return getFunctionCallBinaryString("Math.min", parameters);
   }
-
 }

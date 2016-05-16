@@ -66,13 +66,16 @@ public class StreamingAggregate extends UnaryOperator {
    * @param gfields The columns over which we are grouping the result.
    * @param factories The factories that will produce the {@link Aggregator}s for each group.
    */
-  public StreamingAggregate(@Nullable final Operator child, @Nonnull final int[] gfields,
+  public StreamingAggregate(
+      @Nullable final Operator child,
+      @Nonnull final int[] gfields,
       @Nonnull final AggregatorFactory... factories) {
     super(child);
     gFields = Objects.requireNonNull(gfields, "gfields");
     this.factories = Objects.requireNonNull(factories, "factories");
     Preconditions.checkArgument(gfields.length > 0, " must have at least one group by field");
-    Preconditions.checkArgument(factories.length > 0, "to use StreamingAggregate, must specify some aggregates");
+    Preconditions.checkArgument(
+        factories.length > 0, "to use StreamingAggregate, must specify some aggregates");
     gRange = new int[gfields.length];
     for (int i = 0; i < gRange.length; ++i) {
       gRange[i] = i;

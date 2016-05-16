@@ -16,9 +16,10 @@ public class SymmetricHashJoinTest {
   public void testSymmetricHashJoin() throws DbException {
     TupleSource left = new TupleSource(JoinTestUtils.leftInput);
     TupleSource right = new TupleSource(JoinTestUtils.rightInput);
-    Operator join = new SymmetricHashJoin(left, right, new int[] { 1, 0, 2 }, new int[] { 2, 1, 0 });
+    Operator join = new SymmetricHashJoin(left, right, new int[] {1, 0, 2}, new int[] {2, 1, 0});
     join.open(TestEnvVars.get());
-    assertEquals(Schema.merge(JoinTestUtils.leftSchema, JoinTestUtils.rightSchema), join.getSchema());
+    assertEquals(
+        Schema.merge(JoinTestUtils.leftSchema, JoinTestUtils.rightSchema), join.getSchema());
     long count = 0;
     while (!join.eos()) {
       TupleBatch tb = join.nextReady();
@@ -35,7 +36,7 @@ public class SymmetricHashJoinTest {
   public void testIncompatibleJoinKeys() throws DbException {
     TupleSource left = new TupleSource(JoinTestUtils.leftInput);
     TupleSource right = new TupleSource(JoinTestUtils.rightInput);
-    Operator join = new SymmetricHashJoin(left, right, new int[] { 0 }, new int[] { 0 });
+    Operator join = new SymmetricHashJoin(left, right, new int[] {0}, new int[] {0});
     join.open(TestEnvVars.get());
   }
 }

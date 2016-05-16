@@ -18,7 +18,7 @@ public class NotEqualsExpression extends ComparisonExpression {
 
   /**
    * True if left != right.
-   * 
+   *
    * @param left the left operand.
    * @param right the right operand.
    */

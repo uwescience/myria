@@ -8,15 +8,14 @@ package edu.washington.escience.myria.parallel;
 public class QueryKilledException extends InterruptedException {
 
   /**
-   * 
+   *
    */
   private static final long serialVersionUID = 1L;
 
   /**
    * Default constructor.
    * */
-  public QueryKilledException() {
-  }
+  public QueryKilledException() {}
 
   /**
    * @param s the message describing the detail of this Exception.
@@ -24,5 +23,4 @@ public class QueryKilledException extends InterruptedException {
   public QueryKilledException(final String s) {
     super(s);
   }
-
 }

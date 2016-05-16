@@ -44,7 +44,8 @@ public class ReentrantSpinLock implements Lock {
   public final void unlock() {
     Thread currentThread = Thread.currentThread();
     if (spinLock.get() != currentThread) {
-      throw new IllegalStateException("The current thread " + currentThread + " does not hold the lock.");
+      throw new IllegalStateException(
+          "The current thread " + currentThread + " does not hold the lock.");
     }
     numHoldCount--;
     if (numHoldCount <= 0) {
@@ -104,5 +105,4 @@ public class ReentrantSpinLock implements Lock {
   public boolean isHoldingLock() {
     return spinLock.get() == Thread.currentThread();
   }
-
 }

@@ -18,13 +18,12 @@ public class ByteArraySource implements DataSource, Serializable {
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
   /** The source input stream. */
-  @JsonProperty
-  private final byte[] bytes;
+  @JsonProperty private final byte[] bytes;
 
   /**
    * Returns a {@link DataSource} that wraps the specified bytes in an {@link InputStream}. Note that this does NOT copy
    * the specified array, so the caller MUST NOT mutate it.
-   * 
+   *
    * @param bytes the data to be produced.
    */
   @JsonCreator

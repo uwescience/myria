@@ -8,7 +8,7 @@ import edu.washington.escience.myria.RelationKey;
 public interface DbReader {
   /**
    * Returns the set of relations that this operator reads.
-   * 
+   *
    * @return the set of relations that this operator reads.
    */
   Set<RelationKey> readSet();

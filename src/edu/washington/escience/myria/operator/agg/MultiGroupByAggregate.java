@@ -28,7 +28,7 @@ import edu.washington.escience.myria.util.HashUtils;
 /**
  * The Aggregation operator that computes an aggregate (e.g., sum, avg, max, min). This variant supports aggregates over
  * multiple columns, group by multiple columns.
- * 
+ *
  * @see Aggregate
  * @see SingleGroupByAggregate
  */
@@ -61,18 +61,20 @@ public final class MultiGroupByAggregate extends UnaryOperator {
 
   /**
    * Groups the input tuples according to the specified grouping fields, then produces the specified aggregates.
-   * 
+   *
    * @param child The Operator that is feeding us tuples.
    * @param gfields The columns over which we are grouping the result.
    * @param factories The factories that will produce the {@link Aggregator}s for each group..
    */
-  public MultiGroupByAggregate(@Nullable final Operator child, final int[] gfields,
-      final AggregatorFactory... factories) {
+  public MultiGroupByAggregate(
+      @Nullable final Operator child, final int[] gfields, final AggregatorFactory... factories) {
     super(child);
     this.gfields = Objects.requireNonNull(gfields, "gfields");
     this.factories = Objects.requireNonNull(factories, "factories");
-    Preconditions.checkArgument(gfields.length > 1, "to use MultiGroupByAggregate, must group over multiple fields");
-    Preconditions.checkArgument(factories.length != 0, "to use MultiGroupByAggregate, must specify some aggregates");
+    Preconditions.checkArgument(
+        gfields.length > 1, "to use MultiGroupByAggregate, must group over multiple fields");
+    Preconditions.checkArgument(
+        factories.length != 0, "to use MultiGroupByAggregate, must specify some aggregates");
     grpRange = new int[gfields.length];
     for (int i = 0; i < gfields.length; ++i) {
       grpRange[i] = i;
@@ -92,7 +94,7 @@ public final class MultiGroupByAggregate extends UnaryOperator {
    * Returns the next tuple. If there is a group by field, then the first field is the field by which we are grouping,
    * and the second field is the result of computing the aggregate, If there is no group by field, then the result tuple
    * should contain one field representing the result of the aggregate. Should return null if there are no more tuples.
-   * 
+   *
    * @throws DbException if any error occurs.
    * @return result TB.
    */
@@ -146,13 +148,14 @@ public final class MultiGroupByAggregate extends UnaryOperator {
   /**
    * Since row <code>row</code> in {@link TupleBatch} <code>tb</code> does not appear in {@link #groupKeys}, create a
    * new group for it.
-   * 
+   *
    * @param tb the source {@link TupleBatch}
    * @param row the row in <code>tb</code> that contains the new group
    * @param hashMatches the list of all rows in the output {@link TupleBuffer}s that match this hash.
    * @throws DbException if there is an error.
    */
-  private void newGroup(final TupleBatch tb, final int row, final IntArrayList hashMatches) throws DbException {
+  private void newGroup(final TupleBatch tb, final int row, final IntArrayList hashMatches)
+      throws DbException {
     int newIndex = groupKeys.numTuples();
     for (int column = 0; column < gfields.length; ++column) {
       TupleUtils.copyValue(tb, gfields[column], row, groupKeys, column);
@@ -161,14 +164,17 @@ public final class MultiGroupByAggregate extends UnaryOperator {
     Object[] curAggStates = AggUtils.allocateAggStates(aggregators);
     aggStates.add(curAggStates);
     updateGroup(tb, row, curAggStates);
-    Preconditions.checkState(groupKeys.numTuples() == aggStates.size(), "groupKeys %s != groupAggs %s", groupKeys
-        .numTuples(), aggStates.size());
+    Preconditions.checkState(
+        groupKeys.numTuples() == aggStates.size(),
+        "groupKeys %s != groupAggs %s",
+        groupKeys.numTuples(),
+        aggStates.size());
   }
 
   /**
    * Called when there is no list yet of which output aggregators match the specified hash. Creates a new int list to
    * store these matches, and insert it into the {@link #groupKeyMap}.
-   * 
+   *
    * @param groupHash the hash of the grouping columns in a tuple
    * @return the new (empty still) int list storing which output aggregators match the specified hash
    */
@@ -180,13 +186,14 @@ public final class MultiGroupByAggregate extends UnaryOperator {
 
   /**
    * Update the aggregation states with the tuples in the specified row.
-   * 
+   *
    * @param tb the source {@link TupleBatch}
    * @param row the row in <code>tb</code> that contains the new values
    * @param curAggStates the aggregation states to be updated.
    * @throws DbException if there is an error.
    */
-  private void updateGroup(final TupleBatch tb, final int row, final Object[] curAggStates) throws DbException {
+  private void updateGroup(final TupleBatch tb, final int row, final Object[] curAggStates)
+      throws DbException {
     for (int agg = 0; agg < aggregators.length; ++agg) {
       aggregators[agg].addRow(tb, row, curAggStates[agg]);
     }
@@ -197,7 +204,8 @@ public final class MultiGroupByAggregate extends UnaryOperator {
    * @throws DbException if there is an error.
    */
   private TupleBatch getResultBatch() throws DbException {
-    Preconditions.checkState(getChild().eos(), "cannot extract results from an aggregate until child has reached EOS");
+    Preconditions.checkState(
+        getChild().eos(), "cannot extract results from an aggregate until child has reached EOS");
     if (groupKeyList == null) {
       groupKeyList = Lists.newLinkedList(groupKeys.finalResult());
       groupKeys = null;
@@ -218,18 +226,25 @@ public final class MultiGroupByAggregate extends UnaryOperator {
       }
     }
     TupleBatch aggResults = curGroupAggs.popAny();
-    Preconditions.checkState(curGroupKeys.numTuples() == aggResults.numTuples(),
-        "curGroupKeys size %s != aggResults size %s", curGroupKeys.numTuples(), aggResults.numTuples());
+    Preconditions.checkState(
+        curGroupKeys.numTuples() == aggResults.numTuples(),
+        "curGroupKeys size %s != aggResults size %s",
+        curGroupKeys.numTuples(),
+        aggResults.numTuples());
 
     /* Note: as of Java7 sublists of sublists do what we want -- the sublists are at most one deep. */
     aggStates = aggStates.subList(curGroupKeys.numTuples(), aggStates.size());
-    return new TupleBatch(getSchema(), ImmutableList.<Column<?>> builder().addAll(curGroupKeys.getDataColumns())
-        .addAll(aggResults.getDataColumns()).build());
+    return new TupleBatch(
+        getSchema(),
+        ImmutableList.<Column<?>>builder()
+            .addAll(curGroupKeys.getDataColumns())
+            .addAll(aggResults.getDataColumns())
+            .build());
   }
 
   /**
    * The schema of the aggregate output. Grouping fields first and then aggregate fields. The aggregate
-   * 
+   *
    * @return the resulting schema
    */
   @Override
@@ -246,8 +261,8 @@ public final class MultiGroupByAggregate extends UnaryOperator {
     groupSchema = inputSchema.getSubSchema(gfields);
 
     /* Build the output schema from the group schema and the aggregates. */
-    final ImmutableList.Builder<Type> aggTypes = ImmutableList.<Type> builder();
-    final ImmutableList.Builder<String> aggNames = ImmutableList.<String> builder();
+    final ImmutableList.Builder<Type> aggTypes = ImmutableList.<Type>builder();
+    final ImmutableList.Builder<String> aggNames = ImmutableList.<String>builder();
 
     try {
       for (Aggregator agg : AggUtils.allocateAggs(factories, inputSchema)) {

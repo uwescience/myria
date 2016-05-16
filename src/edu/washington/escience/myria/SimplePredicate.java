@@ -28,7 +28,7 @@ public class SimplePredicate implements Serializable {
 
     /**
      * Interface to access operations by integer value for command-line convenience.
-     * 
+     *
      * @param i a valid integer Op index
      * @return the operator at the specified index.
      */
@@ -80,7 +80,6 @@ public class SimplePredicate implements Serializable {
       }
       throw new UnsupportedOperationException("Don't know how to convert op to string " + name());
     }
-
   }
 
   /** Required for serialization. */
@@ -94,7 +93,7 @@ public class SimplePredicate implements Serializable {
 
   /**
    * Constructor.
-   * 
+   *
    * @param field field number of passed in s to compare against.
    * @param op operation to use for comparison
    * @param operand field value to compare passed in s to

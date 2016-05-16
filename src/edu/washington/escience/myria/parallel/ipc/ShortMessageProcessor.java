@@ -6,14 +6,14 @@ import edu.washington.escience.myria.util.Attachmentable;
 
 /**
  * Short message processor.
- * 
+ *
  * @param <PAYLOAD> the type of application defined data the short message processor is going to process.
  */
 public interface ShortMessageProcessor<PAYLOAD> extends Attachmentable {
 
   /**
    * process a short message sent from the channel.
-   * 
+   *
    * @param ch the channel through which the message is sent.
    * @param message the message.
    * @return true if the message is successfully processed.If the return value is false, the caller should pause to push
@@ -21,5 +21,4 @@ public interface ShortMessageProcessor<PAYLOAD> extends Attachmentable {
    *         pushed into the processor, the semantic is undefined.
    * */
   boolean processMessage(final Channel ch, final IPCMessage.Data<PAYLOAD> message);
-
 }

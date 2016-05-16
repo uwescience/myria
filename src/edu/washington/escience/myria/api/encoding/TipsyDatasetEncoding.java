@@ -13,14 +13,10 @@ import edu.washington.escience.myria.operator.network.partition.RoundRobinPartit
 import edu.washington.escience.myria.util.FSUtils;
 
 public class TipsyDatasetEncoding extends MyriaApiEncoding {
-  @Required
-  public RelationKey relationKey;
-  @Required
-  public String tipsyFilename;
-  @Required
-  public String grpFilename;
-  @Required
-  public String iorderFilename;
+  @Required public RelationKey relationKey;
+  @Required public String tipsyFilename;
+  @Required public String grpFilename;
+  @Required public String iorderFilename;
   public Set<Integer> workers;
   public List<List<IndexRef>> indexes;
   public PartitionFunction partitionFunction = new RoundRobinPartitionFunction(null);

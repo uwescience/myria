@@ -25,8 +25,8 @@ public class SingleRandomFailureInjector extends UnaryOperator {
   /**
    * Logger.
    * */
-  private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(SingleRandomFailureInjector.class
-      .getName());
+  private static final org.slf4j.Logger LOGGER =
+      org.slf4j.LoggerFactory.getLogger(SingleRandomFailureInjector.class.getName());
 
   /**
    * failure probability per second.
@@ -59,8 +59,11 @@ public class SingleRandomFailureInjector extends UnaryOperator {
    * @param failureProbabilityPerSecond per second failure probability.
    * @param child the child operator.
    * */
-  public SingleRandomFailureInjector(final long delay, final TimeUnit delayUnit,
-      final double failureProbabilityPerSecond, final Operator child) {
+  public SingleRandomFailureInjector(
+      final long delay,
+      final TimeUnit delayUnit,
+      final double failureProbabilityPerSecond,
+      final Operator child) {
     super(child);
     this.failureProbabilityPerSecond = failureProbabilityPerSecond;
     hasFailed = false;
@@ -69,7 +72,7 @@ public class SingleRandomFailureInjector extends UnaryOperator {
   }
 
   /**
-   * 
+   *
    */
   private static final long serialVersionUID = 1L;
 
@@ -77,42 +80,41 @@ public class SingleRandomFailureInjector extends UnaryOperator {
   protected final void init(final ImmutableMap<String, Object> initProperties) throws DbException {
     toFail = false;
     if (!hasFailed) {
-      failureInjectThread = new Thread() {
-        @Override
-        public void run() {
-          Random r = new Random();
-          try {
-            Thread.sleep(delayInMS);
-          } catch (InterruptedException e) {
-            if (LOGGER.isDebugEnabled()) {
-              LOGGER.debug(SingleRandomFailureInjector.this + " exit during delay.");
-            }
-            return;
-          }
-          while (true) {
-            if (r.nextDouble() < failureProbabilityPerSecond) {
-              toFail = true;
-              hasFailed = true;
-              return;
-            }
-
-            try {
-              Thread.sleep(TimeUnit.SECONDS.toMillis(1));
-            } catch (InterruptedException e) {
-              if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug(SingleRandomFailureInjector.this + " exit during 1 second sleep.");
+      failureInjectThread =
+          new Thread() {
+            @Override
+            public void run() {
+              Random r = new Random();
+              try {
+                Thread.sleep(delayInMS);
+              } catch (InterruptedException e) {
+                if (LOGGER.isDebugEnabled()) {
+                  LOGGER.debug(SingleRandomFailureInjector.this + " exit during delay.");
+                }
+                return;
               }
-              return;
-            }
+              while (true) {
+                if (r.nextDouble() < failureProbabilityPerSecond) {
+                  toFail = true;
+                  hasFailed = true;
+                  return;
+                }
 
-          }
-        }
-      };
+                try {
+                  Thread.sleep(TimeUnit.SECONDS.toMillis(1));
+                } catch (InterruptedException e) {
+                  if (LOGGER.isDebugEnabled()) {
+                    LOGGER.debug(SingleRandomFailureInjector.this + " exit during 1 second sleep.");
+                  }
+                  return;
+                }
+              }
+            }
+          };
       failureInjectThread.start();
     } else {
       failureInjectThread = null;
     }
-
   }
 
   @Override
@@ -141,5 +143,4 @@ public class SingleRandomFailureInjector extends UnaryOperator {
     }
     return child.getSchema();
   }
-
 }

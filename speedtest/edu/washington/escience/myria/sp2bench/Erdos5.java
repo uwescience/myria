@@ -30,9 +30,9 @@ public class Erdos5 implements QueryPlanGenerator {
   }
 
   @Override
-  public RootOperator getMasterPlan(int[] allWorkers, final LinkedBlockingQueue<TupleBatch> receivedTupleBatches)
+  public RootOperator getMasterPlan(
+      int[] allWorkers, final LinkedBlockingQueue<TupleBatch> receivedTupleBatches)
       throws Exception {
     return Erdos.getMasterPlan(allWorkers, null);
   }
-
 }

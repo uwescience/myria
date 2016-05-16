@@ -30,7 +30,7 @@ public class SQLiteReadWriteSpeedTest {
 
   /**
    * Setup what we need for the tests in this file.
-   * 
+   *
    * @throws Exception if setUp fails.
    */
   @BeforeClass
@@ -65,7 +65,7 @@ public class SQLiteReadWriteSpeedTest {
 
   /**
    * Teardown anything we did in setup.
-   * 
+   *
    * @throws Exception if tearDown fails.
    */
   @AfterClass
@@ -79,13 +79,15 @@ public class SQLiteReadWriteSpeedTest {
     /* Nothing for tempFile; it is set to delete on exit. */
   }
 
-  private void doOneRun(final SQLiteConnection sqliteConnection, final int batchSize, final int numTuples)
+  private void doOneRun(
+      final SQLiteConnection sqliteConnection, final int batchSize, final int numTuples)
       throws SQLiteException {
     /* Drop any existing tuples */
     sqliteConnection.exec("DELETE FROM insertTestTable;");
 
     /* Prepare the query */
-    SQLiteStatement statement = sqliteConnection.prepare("INSERT INTO insertTestTable (id,name) VALUES (?,?);");
+    SQLiteStatement statement =
+        sqliteConnection.prepare("INSERT INTO insertTestTable (id,name) VALUES (?,?);");
 
     /* Take the start time */
     Date begin = new Date();
@@ -117,8 +119,12 @@ public class SQLiteReadWriteSpeedTest {
 
     /* Take the stop time */
     double totalSeconds = (new Date().getTime() - begin.getTime()) * 1.0 / 1000;
-    System.out.printf("insert\t[%d, %d] %.2f seconds in total, %f tuples per second\n", numTuples, batchSize,
-        totalSeconds, numTuples / totalSeconds);
+    System.out.printf(
+        "insert\t[%d, %d] %.2f seconds in total, %f tuples per second\n",
+        numTuples,
+        batchSize,
+        totalSeconds,
+        numTuples / totalSeconds);
 
     begin = new Date();
     /* Make sure all the tuples actually got inserted. */
@@ -128,22 +134,30 @@ public class SQLiteReadWriteSpeedTest {
     statement.dispose();
     statement = null;
     totalSeconds = (new Date().getTime() - begin.getTime()) * 1.0 / 1000;
-    System.out.printf("count\t[%d, %d] %.2f seconds in total, %f tuples per second\n", numTuples, batchSize,
-        totalSeconds, numTuples / totalSeconds);
+    System.out.printf(
+        "count\t[%d, %d] %.2f seconds in total, %f tuples per second\n",
+        numTuples,
+        batchSize,
+        totalSeconds,
+        numTuples / totalSeconds);
 
     statement = sqliteConnection.prepare("select * from insertTestTable");
     begin = new Date();
-    while (statement.step()) {
-    }
+    while (statement.step()) {}
     statement.dispose();
     statement = null;
     totalSeconds = (new Date().getTime() - begin.getTime()) * 1.0 / 1000;
-    System.out.printf("select\t[%d, %d] %.2f seconds in total, %f tuples per second\n", numTuples, batchSize,
-        totalSeconds, numTuples / totalSeconds);
+    System.out.printf(
+        "select\t[%d, %d] %.2f seconds in total, %f tuples per second\n",
+        numTuples,
+        batchSize,
+        totalSeconds,
+        numTuples / totalSeconds);
   }
 
-  private void doSpeedTest(final String description, final SQLiteConnection sqliteConnection) throws SQLiteException {
-    final int[] BATCH_SIZES = new int[] { 100, 1000, 10000, 20000, 50000, 1000000 };
+  private void doSpeedTest(final String description, final SQLiteConnection sqliteConnection)
+      throws SQLiteException {
+    final int[] BATCH_SIZES = new int[] {100, 1000, 10000, 20000, 50000, 1000000};
     System.out.printf("About to run test: %s\n", description);
     for (final int batchSize : BATCH_SIZES) {
       doOneRun(sqliteConnection, batchSize, NUM_TUPLES);

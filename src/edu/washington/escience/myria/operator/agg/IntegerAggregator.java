@@ -23,15 +23,22 @@ public final class IntegerAggregator extends PrimitiveAggregator {
   /**
    * Aggregate operations applicable for int columns.
    */
-  public static final Set<AggregationOp> AVAILABLE_AGG = ImmutableSet.of(AggregationOp.COUNT, AggregationOp.SUM,
-      AggregationOp.MAX, AggregationOp.MIN, AggregationOp.AVG, AggregationOp.STDEV);
+  public static final Set<AggregationOp> AVAILABLE_AGG =
+      ImmutableSet.of(
+          AggregationOp.COUNT,
+          AggregationOp.SUM,
+          AggregationOp.MAX,
+          AggregationOp.MIN,
+          AggregationOp.AVG,
+          AggregationOp.STDEV);
 
   /**
    * @param aFieldName aggregate field name for use in output schema.
    * @param aggOps the aggregate operation to simultaneously compute.
    * @param column the column being aggregated over.
    */
-  public IntegerAggregator(final String aFieldName, final AggregationOp[] aggOps, final int column) {
+  public IntegerAggregator(
+      final String aFieldName, final AggregationOp[] aggOps, final int column) {
     super(aFieldName, aggOps);
     fromColumn = column;
   }
@@ -71,7 +78,7 @@ public final class IntegerAggregator extends PrimitiveAggregator {
 
   /**
    * Helper function to add value to this aggregator. Note this does NOT update count.
-   * 
+   *
    * @param value the value to be added
    * @param state the state of the aggregate, which will be mutated.
    */

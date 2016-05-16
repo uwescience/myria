@@ -16,10 +16,16 @@ public class StringColumnTest {
   @Test
   public void testProto() {
     final StringColumnBuilder original = new StringColumnBuilder();
-    original.appendString("First").appendString("Second").appendString("Third").appendString("NextIsEmptyString").appendString("").appendString(
-        "VeryVeryVeryVeryVeryVeryVeryVeryLongLast");
+    original
+        .appendString("First")
+        .appendString("Second")
+        .appendString("Third")
+        .appendString("NextIsEmptyString")
+        .appendString("")
+        .appendString("VeryVeryVeryVeryVeryVeryVeryVeryLongLast");
     final ColumnMessage serialized = original.build().serializeToProto();
-    final StringColumn deserialized = StringColumnBuilder.buildFromProtobuf(serialized, original.size());
+    final StringColumn deserialized =
+        StringColumnBuilder.buildFromProtobuf(serialized, original.size());
     assertTrue(original.build().toString().equals(deserialized.toString()));
   }
 
@@ -41,5 +47,4 @@ public class StringColumnTest {
     builder.appendString("true");
     builder.build();
   }
-
 }

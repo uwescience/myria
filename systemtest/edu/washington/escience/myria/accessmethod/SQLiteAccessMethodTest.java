@@ -41,7 +41,8 @@ public class SQLiteAccessMethodTest {
     final long[] ids = TestUtils.randomLong(1000, 1005, names.length);
 
     final Schema schema =
-        new Schema(ImmutableList.of(Type.LONG_TYPE, Type.STRING_TYPE), ImmutableList.of("id", "name"));
+        new Schema(
+            ImmutableList.of(Type.LONG_TYPE, Type.STRING_TYPE), ImmutableList.of("id", "name"));
 
     final TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
     for (int i = 0; i < names.length; i++) {
@@ -49,32 +50,39 @@ public class SQLiteAccessMethodTest {
       tbb.putString(1, names[i]);
     }
 
-    Path tempDir = Files.createTempDirectory(MyriaConstants.SYSTEM_NAME + "_sqlite_access_method_test");
+    Path tempDir =
+        Files.createTempDirectory(MyriaConstants.SYSTEM_NAME + "_sqlite_access_method_test");
     final File dbFile = new File(tempDir.toString(), "sqlite.db");
-    SQLiteUtils.createTable(dbFile.getAbsolutePath(), testtableKey, "id long, name varchar(20)", true, true);
+    SQLiteUtils.createTable(
+        dbFile.getAbsolutePath(), testtableKey, "id long, name varchar(20)", true, true);
 
     TupleBatch tb = null;
     while ((tb = tbb.popAny()) != null) {
-      SQLiteAccessMethod.tupleBatchInsert(SQLiteInfo.of(dbFile.getAbsolutePath()), testtableKey, tb);
+      SQLiteAccessMethod.tupleBatchInsert(
+          SQLiteInfo.of(dbFile.getAbsolutePath()), testtableKey, tb);
     }
 
     final Thread[] threads = new Thread[numThreads];
     for (int i = 0; i < numThreads; i++) {
-      threads[i] = new Thread() {
-        @Override
-        public void run() {
-          try {
-            final Iterator<TupleBatch> it =
-                SQLiteAccessMethod.tupleBatchIteratorFromQuery(SQLiteInfo.of(dbFile.getAbsolutePath()),
-                    "select * from " + testtableKey.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE), schema);
-            while (it.hasNext()) {
-              it.next();
+      threads[i] =
+          new Thread() {
+            @Override
+            public void run() {
+              try {
+                final Iterator<TupleBatch> it =
+                    SQLiteAccessMethod.tupleBatchIteratorFromQuery(
+                        SQLiteInfo.of(dbFile.getAbsolutePath()),
+                        "select * from "
+                            + testtableKey.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE),
+                        schema);
+                while (it.hasNext()) {
+                  it.next();
+                }
+              } catch (DbException e) {
+                // TODO Do some error condition here. Talk to dhalperi
+              }
             }
-          } catch (DbException e) {
-            // TODO Do some error condition here. Talk to dhalperi
-          }
-        }
-      };
+          };
       threads[i].setName("SQLiteAccessMethodTest-" + i);
     }
 
@@ -107,7 +115,8 @@ public class SQLiteAccessMethodTest {
     final long[] ids = TestUtils.randomLong(1000, 1005, names.length);
 
     final Schema schema =
-        new Schema(ImmutableList.of(Type.LONG_TYPE, Type.STRING_TYPE), ImmutableList.of("id", "name"));
+        new Schema(
+            ImmutableList.of(Type.LONG_TYPE, Type.STRING_TYPE), ImmutableList.of("id", "name"));
 
     final TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
     for (int i = 0; i < names.length; i++) {
@@ -115,36 +124,47 @@ public class SQLiteAccessMethodTest {
       tbb.putString(1, names[i]);
     }
 
-    Path tempDir = Files.createTempDirectory(MyriaConstants.SYSTEM_NAME + "_sqlite_access_method_test");
+    Path tempDir =
+        Files.createTempDirectory(MyriaConstants.SYSTEM_NAME + "_sqlite_access_method_test");
     final File dbFile = new File(tempDir.toString(), "sqlite.db");
-    SQLiteUtils.createTable(dbFile.getAbsolutePath(), testtable0Key, "id long, name varchar(20)", true, true);
-    SQLiteUtils.createTable(dbFile.getAbsolutePath(), testtable1Key, "id long, name varchar(20)", true, true);
+    SQLiteUtils.createTable(
+        dbFile.getAbsolutePath(), testtable0Key, "id long, name varchar(20)", true, true);
+    SQLiteUtils.createTable(
+        dbFile.getAbsolutePath(), testtable1Key, "id long, name varchar(20)", true, true);
 
     TupleBatch tb = null;
     while ((tb = tbb.popAny()) != null) {
-      SQLiteAccessMethod.tupleBatchInsert(SQLiteInfo.of(dbFile.getAbsolutePath()), testtable0Key, tb);
-      SQLiteAccessMethod.tupleBatchInsert(SQLiteInfo.of(dbFile.getAbsolutePath()), testtable1Key, tb);
+      SQLiteAccessMethod.tupleBatchInsert(
+          SQLiteInfo.of(dbFile.getAbsolutePath()), testtable0Key, tb);
+      SQLiteAccessMethod.tupleBatchInsert(
+          SQLiteInfo.of(dbFile.getAbsolutePath()), testtable1Key, tb);
     }
 
     final Thread[] threads = new Thread[numThreads];
     for (int i = 0; i < numThreads; i++) {
       final int j = i;
-      threads[i] = new Thread() {
-        @Override
-        public void run() {
-          try {
-            final Iterator<TupleBatch> it =
-                SQLiteAccessMethod.tupleBatchIteratorFromQuery(SQLiteInfo.of(dbFile.getAbsolutePath()),
-                    "select * from " + testtableKeys.get(j % 2).toString(MyriaConstants.STORAGE_SYSTEM_SQLITE), schema);
+      threads[i] =
+          new Thread() {
+            @Override
+            public void run() {
+              try {
+                final Iterator<TupleBatch> it =
+                    SQLiteAccessMethod.tupleBatchIteratorFromQuery(
+                        SQLiteInfo.of(dbFile.getAbsolutePath()),
+                        "select * from "
+                            + testtableKeys
+                                .get(j % 2)
+                                .toString(MyriaConstants.STORAGE_SYSTEM_SQLITE),
+                        schema);
 
-            while (it.hasNext()) {
-              it.next();
+                while (it.hasNext()) {
+                  it.next();
+                }
+              } catch (DbException e) {
+                // TODO Do some error condition here. Talk to dhalperi
+              }
             }
-          } catch (DbException e) {
-            // TODO Do some error condition here. Talk to dhalperi
-          }
-        }
-      };
+          };
       threads[i].setName("SQLiteAccessMethodTest-" + i);
     }
 
@@ -174,11 +194,13 @@ public class SQLiteAccessMethodTest {
       tbl1.putLong(1, tbl1ID2[i]);
     }
 
-    Path tempDir = Files.createTempDirectory(MyriaConstants.SYSTEM_NAME + "_sqlite_access_method_test");
+    Path tempDir =
+        Files.createTempDirectory(MyriaConstants.SYSTEM_NAME + "_sqlite_access_method_test");
     final File dbFile = new File(tempDir.toString(), "sqlite.db");
 
     final RelationKey inputKey = RelationKey.of("test", "testWrite", "input");
-    SQLiteUtils.createTable(dbFile.getAbsolutePath(), inputKey, "follower long, followee long", true, true);
+    SQLiteUtils.createTable(
+        dbFile.getAbsolutePath(), inputKey, "follower long, followee long", true, true);
 
     TupleBatch tb = null;
     while ((tb = tbl1.popAny()) != null) {

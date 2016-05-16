@@ -83,9 +83,11 @@ public class Sample extends BinaryOperator {
 
       // Cannot sampleWoR more tuples than there are.
       if (sampleType == SamplingType.WithoutReplacement) {
-        Preconditions.checkState(sampleSize <= streamSize,
+        Preconditions.checkState(
+            sampleSize <= streamSize,
             "Cannot SampleWoR %s tuples from a population of size %s",
-            sampleSize, streamSize);
+            sampleSize,
+            streamSize);
       }
 
       // Generate target indices to accept as samples.
@@ -146,9 +148,11 @@ public class Sample extends BinaryOperator {
     } else {
       throw new DbException("WorkerID column must be of type INT or LONG");
     }
-    Preconditions.checkState(workerID == getNodeID(),
+    Preconditions.checkState(
+        workerID == getNodeID(),
         "Invalid WorkerID for this worker. Expected %s, but received %s",
-        getNodeID(), workerID);
+        getNodeID(),
+        workerID);
 
     Type col1Type = tb.getSchema().getColumnType(1);
     if (col1Type == Type.INT_TYPE) {
@@ -245,5 +249,4 @@ public class Sample extends BinaryOperator {
   public void cleanup() {
     ans = null;
   }
-
 }

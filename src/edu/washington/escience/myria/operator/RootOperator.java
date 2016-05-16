@@ -15,8 +15,8 @@ import edu.washington.escience.myria.storage.TupleBatch;
 
 /**
  * An abstract class used to make those specialized operators that only consume tuples simpler to implement.
- * 
- * 
+ *
+ *
  */
 public abstract class RootOperator extends Operator {
 
@@ -29,7 +29,7 @@ public abstract class RootOperator extends Operator {
 
   /**
    * Sets important parameters for successful operation.
-   * 
+   *
    * @param child the source of tuples that this Root operator consumes.
    */
   public RootOperator(final Operator child) {
@@ -39,7 +39,7 @@ public abstract class RootOperator extends Operator {
 
   /**
    * Sets important parameters for successful operation.
-   * 
+   *
    * @param child the source of tuples that this Root operator consumes.
    * @param coalesce if set to a positive integer, will gather ready tuple batches until this many tuples are available.
    */
@@ -51,7 +51,7 @@ public abstract class RootOperator extends Operator {
   /**
    * Perform the function of this operator on the provided tuples. For instance, may print the tuples to the screen or
    * write them to disk.
-   * 
+   *
    * @param tuples the tuples to be consumed.
    * @throws DbException if there's an error in the database.
    */
@@ -59,21 +59,21 @@ public abstract class RootOperator extends Operator {
 
   /**
    * If the child EOS is meet, the method is called back to let the root operators deal with this event.
-   * 
+   *
    * @throws DbException if any error occurs.
    * */
   protected abstract void childEOS() throws DbException;
 
   /**
    * call if the child meets EOI.
-   * 
+   *
    * @throws DbException if any error occurs.
    * */
   protected abstract void childEOI() throws DbException;
 
   /**
    * Implement coalescing tuples together if necessary.
-   * 
+   *
    * @param first the first, non-null tuple batch to be handled.
    * @return a coalesced tuple batch consisting of either all ready tuples or at least {@link #threshold} tuples.
    * @throws DbException if there is an error.
@@ -138,7 +138,7 @@ public abstract class RootOperator extends Operator {
 
   @Override
   public final Operator[] getChildren() {
-    return new Operator[] { child };
+    return new Operator[] {child};
   }
 
   @Override

@@ -50,5 +50,4 @@ public class TestCounter {
     assertEquals(numTuples, set.size());
     assertEquals(numTuples * (numTuples - 1) / 2, sum);
   }
-
 }

@@ -19,11 +19,18 @@ import edu.washington.escience.myria.util.TestEnvVars;
 public class SampleWoRTest {
 
   final long RANDOM_SEED = 42;
-  final int[] INPUT_VALS = { 0, 1, 2, 3, 4, 5 };
+  final int[] INPUT_VALS = {0, 1, 2, 3, 4, 5};
 
-  final Schema LEFT_SCHEMA = Schema.ofFields("WorkerID", Type.INT_TYPE,
-      "PartitionSize", Type.INT_TYPE, "SampleSize", Type.INT_TYPE,
-      "SampleType", Type.STRING_TYPE);
+  final Schema LEFT_SCHEMA =
+      Schema.ofFields(
+          "WorkerID",
+          Type.INT_TYPE,
+          "PartitionSize",
+          Type.INT_TYPE,
+          "SampleSize",
+          Type.INT_TYPE,
+          "SampleType",
+          Type.STRING_TYPE);
   final Schema RIGHT_SCHEMA = Schema.ofFields(Type.INT_TYPE, "SomeValue");
   final Schema OUTPUT_SCHEMA = RIGHT_SCHEMA;
 
@@ -127,8 +134,7 @@ public class SampleWoRTest {
   }
 
   /** Run through all results without doing anything. */
-  private void drainOperator(int partitionSize, int sampleSize)
-      throws DbException {
+  private void drainOperator(int partitionSize, int sampleSize) throws DbException {
     leftInput.putInt(1, partitionSize);
     leftInput.putInt(2, sampleSize);
     leftInput.putString(3, "WithoutReplacement");

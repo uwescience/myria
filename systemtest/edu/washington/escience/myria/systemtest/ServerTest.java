@@ -32,7 +32,10 @@ public class ServerTest extends SystemTestBase {
     try {
       server.getQueryManager().submitQuery(query, plan);
     } catch (DbException e) {
-      assertTrue(e.getMessage().contains("Profiling mode is only supported when using Postgres as the storage system."));
+      assertTrue(
+          e.getMessage()
+              .contains(
+                  "Profiling mode is only supported when using Postgres as the storage system."));
       throw e;
     }
   }

@@ -23,11 +23,18 @@ public class SamplingDistributionTest {
 
   final long RANDOM_SEED = 42;
 
-  final Schema inputSchema = Schema.ofFields("WorkerID", Type.INT_TYPE,
-      "PartitionSize", Type.INT_TYPE);
-  final Schema expectedResultSchema = Schema.ofFields("WorkerID",
-      Type.INT_TYPE, "StreamSize", Type.INT_TYPE, "SampleSize", Type.INT_TYPE,
-      "SampleType", Type.STRING_TYPE);
+  final Schema inputSchema =
+      Schema.ofFields("WorkerID", Type.INT_TYPE, "PartitionSize", Type.INT_TYPE);
+  final Schema expectedResultSchema =
+      Schema.ofFields(
+          "WorkerID",
+          Type.INT_TYPE,
+          "StreamSize",
+          Type.INT_TYPE,
+          "SampleSize",
+          Type.INT_TYPE,
+          "SampleType",
+          Type.STRING_TYPE);
 
   TupleBatchBuffer input;
   SamplingDistribution sampOp;
@@ -51,8 +58,7 @@ public class SamplingDistributionTest {
   public void testSampleWRSizeZero() throws DbException {
     int sampleSize = 0;
     SamplingType sampleType = SamplingType.WithReplacement;
-    final int[][] expectedResults = { { 1, 300, 0 }, { 2, 200, 0 },
-        { 3, 400, 0 }, { 4, 100, 0 } };
+    final int[][] expectedResults = {{1, 300, 0}, {2, 200, 0}, {3, 400, 0}, {4, 100, 0}};
     verifyExpectedResults(sampleSize, sampleType, expectedResults);
   }
 
@@ -60,8 +66,7 @@ public class SamplingDistributionTest {
   public void testSampleWoRSizeZero() throws DbException {
     int sampleSize = 0;
     SamplingType sampleType = SamplingType.WithoutReplacement;
-    final int[][] expectedResults = { { 1, 300, 0 }, { 2, 200, 0 },
-        { 3, 400, 0 }, { 4, 100, 0 } };
+    final int[][] expectedResults = {{1, 300, 0}, {2, 200, 0}, {3, 400, 0}, {4, 100, 0}};
     verifyExpectedResults(sampleSize, sampleType, expectedResults);
   }
 
@@ -70,8 +75,7 @@ public class SamplingDistributionTest {
   public void testSampleWRPctZero() throws DbException {
     float samplePct = 0;
     SamplingType sampleType = SamplingType.WithReplacement;
-    final int[][] expectedResults = { { 1, 300, 0 }, { 2, 200, 0 },
-        { 3, 400, 0 }, { 4, 100, 0 } };
+    final int[][] expectedResults = {{1, 300, 0}, {2, 200, 0}, {3, 400, 0}, {4, 100, 0}};
     verifyExpectedResults(samplePct, sampleType, expectedResults);
   }
 
@@ -79,8 +83,7 @@ public class SamplingDistributionTest {
   public void testSampleWoRPctZero() throws DbException {
     float samplePct = 0;
     SamplingType sampleType = SamplingType.WithoutReplacement;
-    final int[][] expectedResults = { { 1, 300, 0 }, { 2, 200, 0 },
-            { 3, 400, 0 }, { 4, 100, 0 } };
+    final int[][] expectedResults = {{1, 300, 0}, {2, 200, 0}, {3, 400, 0}, {4, 100, 0}};
     verifyExpectedResults(samplePct, sampleType, expectedResults);
   }
 
@@ -149,8 +152,7 @@ public class SamplingDistributionTest {
   public void testSampleWoRSizeMax() throws DbException {
     int sampleSize = 1000;
     SamplingType sampleType = SamplingType.WithoutReplacement;
-    final int[][] expectedResults = { { 1, 300, 300 }, { 2, 200, 200 },
-        { 3, 400, 400 }, { 4, 100, 100 } };
+    final int[][] expectedResults = {{1, 300, 300}, {2, 200, 200}, {3, 400, 400}, {4, 100, 100}};
     verifyExpectedResults(sampleSize, sampleType, expectedResults);
   }
 
@@ -158,8 +160,7 @@ public class SamplingDistributionTest {
   public void testSampleWoRPctMax() throws DbException {
     float samplePct = 100;
     SamplingType sampleType = SamplingType.WithoutReplacement;
-    final int[][] expectedResults = { { 1, 300, 300 }, { 2, 200, 200 },
-            { 3, 400, 400 }, { 4, 100, 100 } };
+    final int[][] expectedResults = {{1, 300, 300}, {2, 200, 200}, {3, 400, 400}, {4, 100, 100}};
     verifyExpectedResults(samplePct, sampleType, expectedResults);
   }
 
@@ -263,8 +264,8 @@ public class SamplingDistributionTest {
   }
 
   /** Compare output results compared to some known expectedResults. */
-  private void verifyExpectedResults(SamplingDistribution sampOp,
-      int[][] expectedResults) throws DbException {
+  private void verifyExpectedResults(SamplingDistribution sampOp, int[][] expectedResults)
+      throws DbException {
     int rowIdx = 0;
     while (!sampOp.eos()) {
       TupleBatch result = sampOp.nextReady();
@@ -279,17 +280,17 @@ public class SamplingDistributionTest {
     }
     assertEquals(expectedResults.length, rowIdx);
   }
-  private void verifyExpectedResults(int sampleSize, SamplingType sampleType,
-      int[][] expectedResults) throws DbException {
-    sampOp = new SamplingDistribution(new TupleSource(input), sampleSize,
-        sampleType, RANDOM_SEED);
+
+  private void verifyExpectedResults(
+      int sampleSize, SamplingType sampleType, int[][] expectedResults) throws DbException {
+    sampOp = new SamplingDistribution(new TupleSource(input), sampleSize, sampleType, RANDOM_SEED);
     sampOp.open(TestEnvVars.get());
     verifyExpectedResults(sampOp, expectedResults);
   }
-  private void verifyExpectedResults(float samplePct, SamplingType sampleType,
-                                     int[][] expectedResults) throws DbException {
-    sampOp = new SamplingDistribution(new TupleSource(input), samplePct,
-            sampleType, RANDOM_SEED);
+
+  private void verifyExpectedResults(
+      float samplePct, SamplingType sampleType, int[][] expectedResults) throws DbException {
+    sampOp = new SamplingDistribution(new TupleSource(input), samplePct, sampleType, RANDOM_SEED);
     sampOp.open(TestEnvVars.get());
     verifyExpectedResults(sampOp, expectedResults);
   }
@@ -298,8 +299,7 @@ public class SamplingDistributionTest {
    * Tests the actual distribution against what could be possible. Note: doesn't
    * test if it is statistically random.
    */
-  private void verifyPossibleDistribution(SamplingDistribution sampOp)
-      throws DbException {
+  private void verifyPossibleDistribution(SamplingDistribution sampOp) throws DbException {
     int rowIdx = 0;
     int computedSampleSize = 0;
     while (!sampOp.eos()) {
@@ -319,37 +319,32 @@ public class SamplingDistributionTest {
     assertEquals(input.numTuples(), rowIdx);
     assertEquals(sampOp.getSampleSize(), computedSampleSize);
   }
-  private void verifyPossibleDistribution(int sampleSize,
-                                          SamplingType sampleType) throws DbException {
-    sampOp = new SamplingDistribution(new TupleSource(input), sampleSize,
-            sampleType, RANDOM_SEED);
+
+  private void verifyPossibleDistribution(int sampleSize, SamplingType sampleType)
+      throws DbException {
+    sampOp = new SamplingDistribution(new TupleSource(input), sampleSize, sampleType, RANDOM_SEED);
     sampOp.open(TestEnvVars.get());
     verifyPossibleDistribution(sampOp);
   }
 
-  private void verifyPossibleDistribution(float samplePct,
-                                          SamplingType sampleType) throws DbException {
-    sampOp = new SamplingDistribution(new TupleSource(input), samplePct,
-            sampleType, RANDOM_SEED);
+  private void verifyPossibleDistribution(float samplePct, SamplingType sampleType)
+      throws DbException {
+    sampOp = new SamplingDistribution(new TupleSource(input), samplePct, sampleType, RANDOM_SEED);
     sampOp.open(TestEnvVars.get());
     verifyPossibleDistribution(sampOp);
   }
 
   /** Run through all results without doing anything. */
-  private void drainOperator(int sampleSize, SamplingType sampleType)
-      throws DbException {
-    sampOp = new SamplingDistribution(new TupleSource(input), sampleSize,
-        sampleType, RANDOM_SEED);
+  private void drainOperator(int sampleSize, SamplingType sampleType) throws DbException {
+    sampOp = new SamplingDistribution(new TupleSource(input), sampleSize, sampleType, RANDOM_SEED);
     sampOp.open(TestEnvVars.get());
     while (!sampOp.eos()) {
       sampOp.nextReady();
     }
   }
 
-  private void drainOperator(float samplePct, SamplingType sampleType)
-      throws DbException {
-    sampOp = new SamplingDistribution(new TupleSource(input), samplePct,
-        sampleType, RANDOM_SEED);
+  private void drainOperator(float samplePct, SamplingType sampleType) throws DbException {
+    sampOp = new SamplingDistribution(new TupleSource(input), samplePct, sampleType, RANDOM_SEED);
     sampOp.open(TestEnvVars.get());
     while (!sampOp.eos()) {
       sampOp.nextReady();

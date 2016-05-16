@@ -6,10 +6,8 @@ import edu.washington.escience.myria.io.DataSource;
 import edu.washington.escience.myria.operator.BinaryFileScan;
 
 public class BinaryFileScanEncoding extends LeafOperatorEncoding<BinaryFileScan> {
-  @Required
-  public Schema schema;
-  @Required
-  public DataSource source;
+  @Required public Schema schema;
+  @Required public DataSource source;
   public Boolean isLittleEndian;
 
   @Override
@@ -20,5 +18,4 @@ public class BinaryFileScanEncoding extends LeafOperatorEncoding<BinaryFileScan>
       return new BinaryFileScan(schema, source, isLittleEndian);
     }
   }
-
 }

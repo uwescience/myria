@@ -30,12 +30,10 @@ public class GlobalAvg extends UnaryOperator {
   private static final long serialVersionUID = 191438462118946730L;
 
   @Override
-  protected void init(ImmutableMap<String, Object> execEnvVars) throws DbException {
-  }
+  protected void init(ImmutableMap<String, Object> execEnvVars) throws DbException {}
 
   @Override
-  protected void cleanup() throws DbException {
-  }
+  protected void cleanup() throws DbException {}
 
   @Override
   protected TupleBatch fetchNextReady() throws DbException {
@@ -46,7 +44,9 @@ public class GlobalAvg extends UnaryOperator {
       DoubleColumnBuilder rc = new DoubleColumnBuilder();
       rc.expandAll();
       for (int idx = 0; idx < tb.numTuples(); ++idx) {
-        rc.replaceDouble(inputColumns.get(sumIdx).getLong(idx) * 1.0 / inputColumns.get(countIdx).getLong(idx), idx);
+        rc.replaceDouble(
+            inputColumns.get(sumIdx).getLong(idx) * 1.0 / inputColumns.get(countIdx).getLong(idx),
+            idx);
       }
 
       ImmutableList.Builder<Column<?>> newColumnsB = ImmutableList.builder();

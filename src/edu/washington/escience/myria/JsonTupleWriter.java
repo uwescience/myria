@@ -19,18 +19,18 @@ import edu.washington.escience.myria.util.DateTimeUtils;
 /**
  * JsonTupleWriter is a {@link TupleWriter} that serializes tuples to JavaScript Object Notation (JSON). The output is a
  * list of objects, each of which has one field 'attribute' : 'value' per column.
- * 
+ *
  * For a dataset that has two integer columns names 'x' and 'y', and three rows, the output will look like
- * 
+ *
  * <pre>
  * [{"x":1,"y":2},{"x":3,"y":4},{"x":5,"y":6}]
  * </pre>
- * 
+ *
  * Attribute names (column names) are {@link String} objects that are escaped for JSON. For values, primitive types are
  * output unquoted and as-is; {@link DateTime} objects are quoted and serialized in ISO8601 format, and {@link String}
  * objects are quoted and escaped for JSON.
- * 
- * 
+ *
+ *
  */
 public class JsonTupleWriter implements TupleWriter {
 
@@ -206,7 +206,8 @@ public class JsonTupleWriter implements TupleWriter {
       } else {
         output.write("{");
       }
-      output.write("\"error\":\"There was an error. Investigate the query status to see the message\"}]");
+      output.write(
+          "\"error\":\"There was an error. Investigate the query status to see the message\"}]");
       output.flush();
     } finally {
       output.close();

@@ -12,10 +12,9 @@ public interface Attachmentable {
 
   /**
    * Set attachment to the new value and return old value.
-   * 
+   *
    * @return the old value.
    * @param attachment the new attachment
    * */
   Object setAttachment(final Object attachment);
-
 }

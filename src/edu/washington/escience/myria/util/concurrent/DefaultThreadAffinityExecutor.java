@@ -25,7 +25,8 @@ class DefaultThreadAffinityExecutor implements ThreadAffinityExecutor {
    * */
   DefaultThreadAffinityExecutor(final ThreadFactory threadFactory) {
     backendThread =
-        new ThreadPoolExecutor(1, 1, 0, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>(), threadFactory);
+        new ThreadPoolExecutor(
+            1, 1, 0, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>(), threadFactory);
   }
 
   @Override
@@ -52,7 +53,7 @@ class DefaultThreadAffinityExecutor implements ThreadAffinityExecutor {
 
   /**
    * Abrupt shutdown, interrupt the execution thread.
-   * 
+   *
    * @return list of {@link Runnable}s that never commenced execution.
    * */
   List<Runnable> shutdownNow() {
@@ -66,10 +67,9 @@ class DefaultThreadAffinityExecutor implements ThreadAffinityExecutor {
   /**
    * Returns <tt>true</tt> if all tasks have completed following shut down. Note that <tt>isTerminated</tt> is never
    * <tt>true</tt> unless either <tt>shutdown</tt> or <tt>shutdownNow</tt> was called first.
-   * 
+   *
    * @return <tt>true</tt> if all tasks have completed following shut down
    */
-
   boolean isTerminated() {
     return backendThread.isTerminated();
   }
@@ -77,7 +77,7 @@ class DefaultThreadAffinityExecutor implements ThreadAffinityExecutor {
   /**
    * Blocks until all tasks have completed execution after a shutdown request, or the timeout occurs, or the current
    * thread is interrupted, whichever happens first.
-   * 
+   *
    * @param timeout the maximum time to wait
    * @param unit the time unit of the timeout argument
    * @return <tt>true</tt> if this executor terminated and <tt>false</tt> if the timeout elapsed before termination
@@ -86,5 +86,4 @@ class DefaultThreadAffinityExecutor implements ThreadAffinityExecutor {
   boolean awaitTermination(final long timeout, final TimeUnit unit) throws InterruptedException {
     return backendThread.awaitTermination(timeout, unit);
   }
-
 }

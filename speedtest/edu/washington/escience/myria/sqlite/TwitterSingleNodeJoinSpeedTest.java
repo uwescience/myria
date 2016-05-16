@@ -48,32 +48,45 @@ public class TwitterSingleNodeJoinSpeedTest {
   /**
    * The environment execution variables.
    */
-  private final static ImmutableMap<String, Object> execEnvVars = ImmutableMap.<String, Object> of(
-      MyriaConstants.EXEC_ENV_VAR_FRAGMENT_RESOURCE_MANAGER, new LocalFragmentResourceManager(null, null),
-      MyriaConstants.EXEC_ENV_VAR_EXECUTION_MODE, QueryExecutionMode.BLOCKING);
+  private final static ImmutableMap<String, Object> execEnvVars =
+      ImmutableMap.<String, Object>of(
+          MyriaConstants.EXEC_ENV_VAR_FRAGMENT_RESOURCE_MANAGER,
+          new LocalFragmentResourceManager(null, null),
+          MyriaConstants.EXEC_ENV_VAR_EXECUTION_MODE,
+          QueryExecutionMode.BLOCKING);
 
   /** Whether we were able to copy the data. */
   private static boolean successfulSetup = false;
 
   /** The name of the indexed twitter subset. */
-  private final static RelationKey indexedSubset = RelationKey.of("Speedtest", "Twitter", "twitter_subset_with_index");
+  private final static RelationKey indexedSubset =
+      RelationKey.of("Speedtest", "Twitter", "twitter_subset_with_index");
 
   @BeforeClass
   public static void loadSpecificTestData() throws DbException {
     final File file = new File(DATASET_PATH);
     if (!file.exists()) {
-      throw new RuntimeException("Unable to read " + DATASET_PATH
-          + ". Copy it from /projects/db7/dataset/twitter/speedtest .");
+      throw new RuntimeException(
+          "Unable to read "
+              + DATASET_PATH
+              + ". Copy it from /projects/db7/dataset/twitter/speedtest .");
     }
 
     /* Create a version of the twitter subset that has an index. */
     final ImmutableList<Type> table1Types = ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE);
     final ImmutableList<String> table1ColumnNames = ImmutableList.of("follower", "followee");
     final Schema tableSchema = new Schema(table1Types, table1ColumnNames);
-    final DbQueryScan scan = new DbQueryScan(connectionInfo, "select * from twitter_subset", tableSchema);
+    final DbQueryScan scan =
+        new DbQueryScan(connectionInfo, "select * from twitter_subset", tableSchema);
     final DbInsert insert =
-        new DbInsert(scan, indexedSubset, connectionInfo, true, ImmutableList.of((List<IndexRef>) ImmutableList.of(
-            IndexRef.of(0), IndexRef.of(1)), ImmutableList.of(IndexRef.of(1), IndexRef.of(0))));
+        new DbInsert(
+            scan,
+            indexedSubset,
+            connectionInfo,
+            true,
+            ImmutableList.of(
+                (List<IndexRef>) ImmutableList.of(IndexRef.of(0), IndexRef.of(1)),
+                ImmutableList.of(IndexRef.of(1), IndexRef.of(0))));
     insert.open(execEnvVars);
     while (!insert.eos()) {
       insert.nextReady();
@@ -85,7 +98,8 @@ public class TwitterSingleNodeJoinSpeedTest {
   }
 
   @Test
-  public void twitterSubsetJoinTest() throws DbException, CatalogException, IOException, InterruptedException {
+  public void twitterSubsetJoinTest()
+      throws DbException, CatalogException, IOException, InterruptedException {
     assertTrue(successfulSetup);
 
     /* The Schema for the table we read from file. */
@@ -94,12 +108,15 @@ public class TwitterSingleNodeJoinSpeedTest {
     final Schema tableSchema = new Schema(table1Types, table1ColumnNames);
 
     /* Read the data from the file. */
-    final DbQueryScan scan1 = new DbQueryScan(connectionInfo, "select * from twitter_subset", tableSchema);
-    final DbQueryScan scan2 = new DbQueryScan(connectionInfo, "select * from twitter_subset", tableSchema);
+    final DbQueryScan scan1 =
+        new DbQueryScan(connectionInfo, "select * from twitter_subset", tableSchema);
+    final DbQueryScan scan2 =
+        new DbQueryScan(connectionInfo, "select * from twitter_subset", tableSchema);
 
     /* Join on SC1.followee=SC2.follower */
     final List<String> joinSchema = ImmutableList.of("follower", "joinL", "joinR", "followee");
-    final SymmetricHashJoin join = new SymmetricHashJoin(joinSchema, scan1, scan2, new int[] { 1 }, new int[] { 0 });
+    final SymmetricHashJoin join =
+        new SymmetricHashJoin(joinSchema, scan1, scan2, new int[] {1}, new int[] {0});
 
     /* Select only the two columns of interest: SC1.follower now transitively follows SC2.followee. */
     final Apply colSelect = Applys.columnSelect(join, 0, 3);
@@ -122,7 +139,8 @@ public class TwitterSingleNodeJoinSpeedTest {
   }
 
   @Test
-  public void twitterSubsetColSelectJoinTest() throws DbException, CatalogException, IOException, InterruptedException {
+  public void twitterSubsetColSelectJoinTest()
+      throws DbException, CatalogException, IOException, InterruptedException {
     assertTrue(successfulSetup);
 
     final ImmutableList<Type> table1Types = ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE);
@@ -130,14 +148,18 @@ public class TwitterSingleNodeJoinSpeedTest {
     final Schema tableSchema = new Schema(table1Types, table1ColumnNames);
 
     /* Read the data from the file. */
-    final DbQueryScan scan1 = new DbQueryScan(connectionInfo, "select * from twitter_subset", tableSchema);
-    final DbQueryScan scan2 = new DbQueryScan(connectionInfo, "select * from twitter_subset", tableSchema);
+    final DbQueryScan scan1 =
+        new DbQueryScan(connectionInfo, "select * from twitter_subset", tableSchema);
+    final DbQueryScan scan2 =
+        new DbQueryScan(connectionInfo, "select * from twitter_subset", tableSchema);
 
     /* Join on SC1.followee=SC2.follower */
     final SymmetricHashJoin localColSelectJoin =
-        new SymmetricHashJoin(scan1, scan2, new int[] { 1 }, new int[] { 0 }, new int[] { 0 }, new int[] { 1 });
+        new SymmetricHashJoin(
+            scan1, scan2, new int[] {1}, new int[] {0}, new int[] {0}, new int[] {1});
     /* Now Dupelim */
-    final StreamingStateWrapper dupelim = new StreamingStateWrapper(localColSelectJoin, new DupElim());
+    final StreamingStateWrapper dupelim =
+        new StreamingStateWrapper(localColSelectJoin, new DupElim());
 
     dupelim.open(execEnvVars);
     long result = 0;
@@ -162,15 +184,20 @@ public class TwitterSingleNodeJoinSpeedTest {
     final Schema tableSchema = new Schema(table1Types, table1ColumnNames);
 
     /* Read the data from the file. */
-    final DbQueryScan scan1 = new DbQueryScan(connectionInfo, "select * from twitter_subset", tableSchema);
-    final DbQueryScan scan2 = new DbQueryScan(connectionInfo, "select * from twitter_subset", tableSchema);
+    final DbQueryScan scan1 =
+        new DbQueryScan(connectionInfo, "select * from twitter_subset", tableSchema);
+    final DbQueryScan scan2 =
+        new DbQueryScan(connectionInfo, "select * from twitter_subset", tableSchema);
 
     /* Join on SC1.followee=SC2.follower */
     final SymmetricHashJoin localColSelectJoin =
-        new SymmetricHashJoin(scan1, scan2, new int[] { 1 }, new int[] { 0 }, new int[] { 0 }, new int[] { 1 });
+        new SymmetricHashJoin(
+            scan1, scan2, new int[] {1}, new int[] {0}, new int[] {0}, new int[] {1});
     /* Now Dupelim */
-    final StreamingStateWrapper dupelim = new StreamingStateWrapper(localColSelectJoin, new DupElim());
-    final RelationKey distinctJoinStored = RelationKey.of("Speedtest", "TwitterSingleNodeJoinSpeedTest", "TwitterJoin");
+    final StreamingStateWrapper dupelim =
+        new StreamingStateWrapper(localColSelectJoin, new DupElim());
+    final RelationKey distinctJoinStored =
+        RelationKey.of("Speedtest", "TwitterSingleNodeJoinSpeedTest", "TwitterJoin");
     /* .. and insert */
     final DbInsert insert = new DbInsert(dupelim, distinctJoinStored, connectionInfo, true);
 
@@ -205,7 +232,8 @@ public class TwitterSingleNodeJoinSpeedTest {
   public void twitterJoinInDatabaseTest() throws Exception {
     assertTrue(successfulSetup);
 
-    final Schema resultSchema = new Schema(ImmutableList.of(Type.LONG_TYPE), ImmutableList.of("COUNT"));
+    final Schema resultSchema =
+        new Schema(ImmutableList.of(Type.LONG_TYPE), ImmutableList.of("COUNT"));
     final String query =
         "SELECT COUNT(*) FROM (SELECT DISTINCT twitterL.follower,twitterR.followee FROM twitter_subset twitterL JOIN twitter_subset twitterR ON twitterL.followee=twitterR.follower)";
     final DbQueryScan scanResult = new DbQueryScan(connectionInfo, query, resultSchema);
@@ -228,10 +256,12 @@ public class TwitterSingleNodeJoinSpeedTest {
   public void twitterJoinInDatabaseWithIndexTest() throws Exception {
     assertTrue(successfulSetup);
 
-    final Schema resultSchema = new Schema(ImmutableList.of(Type.LONG_TYPE), ImmutableList.of("COUNT"));
+    final Schema resultSchema =
+        new Schema(ImmutableList.of(Type.LONG_TYPE), ImmutableList.of("COUNT"));
     final String query =
         "SELECT COUNT(*) FROM (SELECT DISTINCT twitterL.follower,twitterR.followee FROM "
-            + indexedSubset.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE) + " twitterL JOIN "
+            + indexedSubset.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE)
+            + " twitterL JOIN "
             + indexedSubset.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE)
             + " twitterR ON twitterL.followee=twitterR.follower)";
     final DbQueryScan scanResult = new DbQueryScan(connectionInfo, query, resultSchema);

@@ -22,10 +22,10 @@ import edu.washington.escience.myria.util.ImmutableIntArray;
 
 /**
  * A column of a batch of tuples.
- * 
+ *
  * @param <T> type of the objects in this column.
- * 
- * 
+ *
+ *
  */
 public abstract class Column<T extends Comparable<?>> implements ReadableColumn, Serializable {
 
@@ -75,7 +75,7 @@ public abstract class Column<T extends Comparable<?>> implements ReadableColumn,
 
   /**
    * Serializes this column as a protobuf message into the specified output stream.
-   * 
+   *
    * @return a ColumnMessage containing a serialized copy of this column.
    */
   public ColumnMessage serializeToProto() {
@@ -84,7 +84,7 @@ public abstract class Column<T extends Comparable<?>> implements ReadableColumn,
 
   /**
    * Serializes this column as a protobuf message into the specified output stream.
-   * 
+   *
    * @param validIndices the rows of the column to serialize.
    * @return a ColumnMessage containing a serialized copy of this column.
    */
@@ -97,7 +97,7 @@ public abstract class Column<T extends Comparable<?>> implements ReadableColumn,
 
   /**
    * Creates a new Column containing the contents of this column including only the specified rows.
-   * 
+   *
    * @param filter a BitSet indicating which rows should be kept.
    * @return a new Column containing the contents of this column including only the specified rows.
    */
@@ -131,7 +131,7 @@ public abstract class Column<T extends Comparable<?>> implements ReadableColumn,
 
   /**
    * A default implementation to serialize any Boolean column to a proto. Full copy.
-   * 
+   *
    * @param column the column to be serialized.
    * @return a ColumnMessage with a BooleanColumn member.
    */
@@ -151,13 +151,17 @@ public abstract class Column<T extends Comparable<?>> implements ReadableColumn,
       }
     }
     /* Note that we do *not* build the inner class. We pass its builder instead. */
-    final BooleanColumnMessage.Builder inner = BooleanColumnMessage.newBuilder().setData(bytes.toByteString());
-    return ColumnMessage.newBuilder().setType(ColumnMessage.Type.BOOLEAN).setBooleanColumn(inner).build();
+    final BooleanColumnMessage.Builder inner =
+        BooleanColumnMessage.newBuilder().setData(bytes.toByteString());
+    return ColumnMessage.newBuilder()
+        .setType(ColumnMessage.Type.BOOLEAN)
+        .setBooleanColumn(inner)
+        .build();
   }
 
   /**
    * A default implementation to serialize any DateTime column to a proto. Full copy.
-   * 
+   *
    * @param column the column to be serialized.
    * @return a ColumnMessage with a DateColumn member.
    */
@@ -169,12 +173,15 @@ public abstract class Column<T extends Comparable<?>> implements ReadableColumn,
     dataBytes.flip();
     final DateTimeColumnMessage.Builder inner =
         DateTimeColumnMessage.newBuilder().setData(ByteString.copyFrom(dataBytes));
-    return ColumnMessage.newBuilder().setType(ColumnMessage.Type.DATETIME).setDateColumn(inner).build();
+    return ColumnMessage.newBuilder()
+        .setType(ColumnMessage.Type.DATETIME)
+        .setDateColumn(inner)
+        .build();
   }
 
   /**
    * A default implementation to serialize any Double column to a proto. Full copy.
-   * 
+   *
    * @param column the column to be serialized.
    * @return a ColumnMessage with a DoubleColumn member.
    */
@@ -184,13 +191,17 @@ public abstract class Column<T extends Comparable<?>> implements ReadableColumn,
       dataBytes.putDouble(column.getDouble(i));
     }
     dataBytes.flip();
-    final DoubleColumnMessage.Builder inner = DoubleColumnMessage.newBuilder().setData(ByteString.copyFrom(dataBytes));
-    return ColumnMessage.newBuilder().setType(ColumnMessage.Type.DOUBLE).setDoubleColumn(inner).build();
+    final DoubleColumnMessage.Builder inner =
+        DoubleColumnMessage.newBuilder().setData(ByteString.copyFrom(dataBytes));
+    return ColumnMessage.newBuilder()
+        .setType(ColumnMessage.Type.DOUBLE)
+        .setDoubleColumn(inner)
+        .build();
   }
 
   /**
    * A default implementation to serialize any Float column to a proto. Full copy.
-   * 
+   *
    * @param column the column to be serialized.
    * @return a ColumnMessage with a FloatColumn member.
    */
@@ -200,13 +211,17 @@ public abstract class Column<T extends Comparable<?>> implements ReadableColumn,
       dataBytes.putFloat(column.getFloat(i));
     }
     dataBytes.flip();
-    final FloatColumnMessage.Builder inner = FloatColumnMessage.newBuilder().setData(ByteString.copyFrom(dataBytes));
-    return ColumnMessage.newBuilder().setType(ColumnMessage.Type.FLOAT).setFloatColumn(inner).build();
+    final FloatColumnMessage.Builder inner =
+        FloatColumnMessage.newBuilder().setData(ByteString.copyFrom(dataBytes));
+    return ColumnMessage.newBuilder()
+        .setType(ColumnMessage.Type.FLOAT)
+        .setFloatColumn(inner)
+        .build();
   }
 
   /**
    * A default implementation to serialize any Integer column to a proto. Full copy.
-   * 
+   *
    * @param column the column to be serialized.
    * @return a ColumnMessage with an IntColumn member.
    */
@@ -216,13 +231,14 @@ public abstract class Column<T extends Comparable<?>> implements ReadableColumn,
       dataBytes.putInt(column.getInt(i));
     }
     dataBytes.flip();
-    final IntColumnMessage.Builder inner = IntColumnMessage.newBuilder().setData(ByteString.copyFrom(dataBytes));
+    final IntColumnMessage.Builder inner =
+        IntColumnMessage.newBuilder().setData(ByteString.copyFrom(dataBytes));
     return ColumnMessage.newBuilder().setType(ColumnMessage.Type.INT).setIntColumn(inner).build();
   }
 
   /**
    * A default implementation to serialize any Long column to a proto. Full copy.
-   * 
+   *
    * @param column the column to be serialized.
    * @return a ColumnMessage with a LongColumn member.
    */
@@ -232,13 +248,14 @@ public abstract class Column<T extends Comparable<?>> implements ReadableColumn,
       dataBytes.putLong(column.getLong(i));
     }
     dataBytes.flip();
-    final LongColumnMessage.Builder inner = LongColumnMessage.newBuilder().setData(ByteString.copyFrom(dataBytes));
+    final LongColumnMessage.Builder inner =
+        LongColumnMessage.newBuilder().setData(ByteString.copyFrom(dataBytes));
     return ColumnMessage.newBuilder().setType(ColumnMessage.Type.LONG).setLongColumn(inner).build();
   }
 
   /**
    * A default implementation to serialize any column to a proto. Full copy.
-   * 
+   *
    * @param column the column to be serialized.
    * @return a ColumnMessage with an appropriate member.
    */
@@ -264,12 +281,13 @@ public abstract class Column<T extends Comparable<?>> implements ReadableColumn,
 
   /**
    * A default implementation to serialize any filtered column to a proto. Full copy.
-   * 
+   *
    * @param column the column to be serialized.
    * @param validIndices the valid indices in the column.
    * @return a ColumnMessage with an appropriate member.
    */
-  protected static ColumnMessage defaultProto(final Column<?> column, final ImmutableIntArray validIndices) {
+  protected static ColumnMessage defaultProto(
+      final Column<?> column, final ImmutableIntArray validIndices) {
     BitSet filter = new BitSet(column.size());
     for (int i = 0; i < column.size(); ++i) {
       filter.set(validIndices.get(i));
@@ -279,7 +297,7 @@ public abstract class Column<T extends Comparable<?>> implements ReadableColumn,
 
   /**
    * A default implementation to serialize any String column to a proto. Full copy.
-   * 
+   *
    * @param column the column to be serialized.
    * @return a ColumnMessage with a StringColumn member.
    */
@@ -295,6 +313,9 @@ public abstract class Column<T extends Comparable<?>> implements ReadableColumn,
       startP = endP;
     }
     inner.setData(ByteString.copyFromUtf8(sb.toString()));
-    return ColumnMessage.newBuilder().setType(ColumnMessage.Type.STRING).setStringColumn(inner).build();
+    return ColumnMessage.newBuilder()
+        .setType(ColumnMessage.Type.STRING)
+        .setStringColumn(inner)
+        .build();
   }
 }

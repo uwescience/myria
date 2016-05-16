@@ -7,7 +7,7 @@ import edu.washington.escience.myria.column.LongColumn;
 
 /**
  * A mutable column of Long values.
- * 
+ *
  */
 public final class LongMutableColumn extends MutableColumn<Long> {
   /** Required for Java serialization. */
@@ -19,7 +19,7 @@ public final class LongMutableColumn extends MutableColumn<Long> {
 
   /**
    * Constructs a new column.
-   * 
+   *
    * @param data the data
    * @param numData number of tuples.
    * */

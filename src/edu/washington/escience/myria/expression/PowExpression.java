@@ -14,12 +14,11 @@ public class PowExpression extends BinaryExpression {
    * This is not really unused, it's used automagically by Jackson deserialization.
    */
   @SuppressWarnings("unused")
-  private PowExpression() {
-  }
+  private PowExpression() {}
 
   /**
    * Exponentiate left^right. Always evaluates to a double.
-   * 
+   *
    * @param left the left operand.
    * @param right the right operand.
    */

@@ -6,11 +6,11 @@ import java.util.concurrent.atomic.AtomicLong;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
- * 
+ *
  * The identifier of exchange operators. In a query plan, there may be a set of exchange operators, this ID class is
  * used for the server and the workers to find out which exchange operator is the owner of an arriving
  * {@link ExchangeData}.
- * 
+ *
  */
 public final class ExchangePairID implements Serializable {
 
@@ -20,8 +20,7 @@ public final class ExchangePairID implements Serializable {
   /**
    * The id.
    */
-  @JsonProperty
-  private final long oId;
+  @JsonProperty private final long oId;
 
   /**
    * Atomic global id generator.
@@ -30,7 +29,7 @@ public final class ExchangePairID implements Serializable {
 
   /**
    * Local id generator.
-   * 
+   *
    */
   private static final AtomicLong LOCAL_ID_GENERATOR = new AtomicLong(-1);
 
@@ -52,7 +51,7 @@ public final class ExchangePairID implements Serializable {
   /**
    * A local ID can be used locally in a Worker. It will be used when any worker decides to split some computing load
    * into multiple concurrent running pieces to use multicore.
-   * 
+   *
    * @return new local id.
    * */
   public static ExchangePairID newLocalID() {
@@ -61,7 +60,7 @@ public final class ExchangePairID implements Serializable {
 
   /**
    * for use only in {@link ExchangePairID#fromExisting(long)}.
-   * 
+   *
    * @param oId the long value.
    * */
   private ExchangePairID(final long oId) {

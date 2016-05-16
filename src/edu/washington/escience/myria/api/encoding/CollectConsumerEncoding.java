@@ -8,8 +8,9 @@ public class CollectConsumerEncoding extends AbstractConsumerEncoding<CollectCon
 
   @Override
   public CollectConsumer construct(ConstructArgs args) {
-    return new CollectConsumer(null, MyriaUtils.getSingleElement(getRealOperatorIds()), MyriaUtils
-        .integerSetToIntArray(getRealWorkerIds()));
+    return new CollectConsumer(
+        null,
+        MyriaUtils.getSingleElement(getRealOperatorIds()),
+        MyriaUtils.integerSetToIntArray(getRealWorkerIds()));
   }
-
 }

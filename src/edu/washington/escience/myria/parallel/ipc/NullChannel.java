@@ -27,26 +27,23 @@ public final class NullChannel extends InJVMChannel {
   private static final ChannelPipeline PIPELINE;
 
   static {
-    PIPELINE = new DefaultChannelPipeline() {
+    PIPELINE =
+        new DefaultChannelPipeline() {
 
-      @Override
-      public void sendUpstream(final ChannelEvent e) {
-      }
+          @Override
+          public void sendUpstream(final ChannelEvent e) {}
 
-      @Override
-      public void sendDownstream(final ChannelEvent e) {
-      }
+          @Override
+          public void sendDownstream(final ChannelEvent e) {}
 
-      @Override
-      public void attach(final Channel channel, final ChannelSink sink) {
-      }
+          @Override
+          public void attach(final Channel channel, final ChannelSink sink) {}
 
-      @Override
-      public boolean isAttached() {
-        return true;
-      }
-
-    };
+          @Override
+          public boolean isAttached() {
+            return true;
+          }
+        };
     NULL = new NullChannel();
   }
 
@@ -58,5 +55,4 @@ public final class NullChannel extends InJVMChannel {
     Channels.fireChannelClosed(this);
     setClosed();
   }
-
 }

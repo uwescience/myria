@@ -66,7 +66,8 @@ public class ApplyTest {
   public void testApply() throws DbException {
     final Schema schema =
         new Schema(
-            ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE, Type.INT_TYPE, Type.STRING_TYPE, Type.BOOLEAN_TYPE),
+            ImmutableList.of(
+                Type.LONG_TYPE, Type.LONG_TYPE, Type.INT_TYPE, Type.STRING_TYPE, Type.BOOLEAN_TYPE),
             ImmutableList.of("a", "b", "c", "d", "e"));
     final TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
     for (long i = 0; i < NUM_TUPLES; i++) {
@@ -157,11 +158,15 @@ public class ApplyTest {
       // 4;
 
       ExpressionOperator angle =
-          new DivideExpression(new TimesExpression(vara, new ConstantExpression(Type.DOUBLE_TYPE, "Math.PI")),
+          new DivideExpression(
+              new TimesExpression(vara, new ConstantExpression(Type.DOUBLE_TYPE, "Math.PI")),
               new ConstantExpression(180));
-      ExpressionOperator cos = new TimesExpression(new CosExpression(angle), new ConstantExpression(2));
-      ExpressionOperator sin = new TimesExpression(new SinExpression(angle), new ConstantExpression(3));
-      ExpressionOperator tan = new TimesExpression(new TanExpression(angle), new ConstantExpression(4));
+      ExpressionOperator cos =
+          new TimesExpression(new CosExpression(angle), new ConstantExpression(2));
+      ExpressionOperator sin =
+          new TimesExpression(new SinExpression(angle), new ConstantExpression(3));
+      ExpressionOperator tan =
+          new TimesExpression(new TanExpression(angle), new ConstantExpression(4));
       ExpressionOperator add = new PlusExpression(new PlusExpression(cos, sin), tan);
 
       Expression expr = new Expression("trig", add);
@@ -180,7 +185,8 @@ public class ApplyTest {
       Expressions.add(expr);
     }
 
-    final ExpressionOperatorParameter parameters = new ExpressionOperatorParameter(tbb.getSchema(), -1);
+    final ExpressionOperatorParameter parameters =
+        new ExpressionOperatorParameter(tbb.getSchema(), -1);
     {
       // Expression (just copy/ rename): a;
       Expression expr = new Expression("copy", vara);
@@ -229,7 +235,8 @@ public class ApplyTest {
     {
       // Expression: c % b;
       Expression expr =
-          new Expression("modulo", new ModuloExpression(new VariableExpression(2), new VariableExpression(1)));
+          new Expression(
+              "modulo", new ModuloExpression(new VariableExpression(2), new VariableExpression(1)));
 
       GenericEvaluator eval = new GenericEvaluator(expr, parameters);
       assertTrue(eval.needsCompiling());
@@ -239,8 +246,10 @@ public class ApplyTest {
     {
       // Expression: e ? a : c;
       Expression expr =
-          new Expression("conditional", new ConditionalExpression(new VariableExpression(4), new VariableExpression(0),
-              new VariableExpression(2)));
+          new Expression(
+              "conditional",
+              new ConditionalExpression(
+                  new VariableExpression(4), new VariableExpression(0), new VariableExpression(2)));
 
       GenericEvaluator eval = new GenericEvaluator(expr, parameters);
       assertTrue(eval.needsCompiling());
@@ -251,10 +260,16 @@ public class ApplyTest {
       // Nested case
       // Expression: (b % 2 == 0) ? (e: a : b) : c;
       Expression expr =
-          new Expression("nestedconditional",
-              new ConditionalExpression(new EqualsExpression(new ModuloExpression(new VariableExpression(1),
-                  new ConstantExpression(2)), new ConstantExpression(0)), new ConditionalExpression(
-                  new VariableExpression(4), new VariableExpression(0), new VariableExpression(1)),
+          new Expression(
+              "nestedconditional",
+              new ConditionalExpression(
+                  new EqualsExpression(
+                      new ModuloExpression(new VariableExpression(1), new ConstantExpression(2)),
+                      new ConstantExpression(0)),
+                  new ConditionalExpression(
+                      new VariableExpression(4),
+                      new VariableExpression(0),
+                      new VariableExpression(1)),
                   new VariableExpression(2)));
 
       GenericEvaluator eval = new GenericEvaluator(expr, parameters);
@@ -266,7 +281,8 @@ public class ApplyTest {
       // Expression that returns the worker id (set below as nodeId)
       Expression expr = new Expression("workerID", new WorkerIdExpression());
 
-      GenericEvaluator eval = new ConstantEvaluator(expr, new ExpressionOperatorParameter(tbb.getSchema(), 42));
+      GenericEvaluator eval =
+          new ConstantEvaluator(expr, new ExpressionOperatorParameter(tbb.getSchema(), 42));
       assertTrue(!eval.needsCompiling());
       assertEquals(eval.getJavaExpressionWithAppend(), "result.appendInt(42)");
       Expressions.add(expr);
@@ -295,7 +311,8 @@ public class ApplyTest {
 
     {
       // Expression: d.substring(0,4);
-      SubstrExpression substr = new SubstrExpression(vard, new ConstantExpression(0), new ConstantExpression(4));
+      SubstrExpression substr =
+          new SubstrExpression(vard, new ConstantExpression(0), new ConstantExpression(4));
       Expression expr = new Expression("substr", substr);
       Expressions.add(expr);
     }
@@ -391,12 +408,20 @@ public class ApplyTest {
           boolean e = i % 2 == 0;
           assertEquals(i, result.getDouble(0, curI), tolerance);
           assertEquals((b + c) * (b - c), result.getLong(1, curI));
-          assertEquals(Math.sqrt(Math.pow(a, 2) + Math.pow(b, 2)), result.getDouble(2, curI), tolerance);
+          assertEquals(
+              Math.sqrt(Math.pow(a, 2) + Math.pow(b, 2)), result.getDouble(2, curI), tolerance);
           assertEquals(d.toUpperCase(), result.getString(3, curI));
           assertEquals(Math.abs(b - a), result.getLong(4, curI));
-          assertEquals(Math.floor(Math.sqrt(a)) + Math.ceil(Math.sqrt(a)), result.getDouble(5, curI), tolerance);
-          assertEquals(Math.cos(a * Math.PI / 180) * 2 + Math.sin(a * Math.PI / 180) * 3 + Math.tan(a * Math.PI / 180)
-              * 4, result.getDouble(6, curI), tolerance);
+          assertEquals(
+              Math.floor(Math.sqrt(a)) + Math.ceil(Math.sqrt(a)),
+              result.getDouble(5, curI),
+              tolerance);
+          assertEquals(
+              Math.cos(a * Math.PI / 180) * 2
+                  + Math.sin(a * Math.PI / 180) * 3
+                  + Math.tan(a * Math.PI / 180) * 4,
+              result.getDouble(6, curI),
+              tolerance);
           assertEquals(!(false || e && true), result.getBoolean(7, curI));
           assertEquals(a, result.getLong(8, curI));
           assertEquals(5, result.getInt(9, curI));
@@ -413,7 +438,9 @@ public class ApplyTest {
           assertEquals(d.substring(0, 4), result.getString(20, curI));
           assertEquals(Hashing.md5().hashLong(a).asLong(), result.getLong(21, curI));
           assertEquals(Hashing.md5().hashInt(c).asLong(), result.getLong(22, curI));
-          assertEquals(Hashing.md5().hashString(d, Charset.defaultCharset()).asLong(), result.getLong(23, curI));
+          assertEquals(
+              Hashing.md5().hashString(d, Charset.defaultCharset()).asLong(),
+              result.getLong(23, curI));
         }
         resultSize += result.numTuples();
       }
@@ -424,7 +451,8 @@ public class ApplyTest {
 
   @Test
   public void testComparisonApply() throws DbException {
-    final Schema schema = new Schema(ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE), ImmutableList.of("a", "b"));
+    final Schema schema =
+        new Schema(ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE), ImmutableList.of("a", "b"));
     final TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
     for (long i = 0; i < SMALL_NUM_TUPLES; i++) {
       tbb.putLong(0, i + 1);
@@ -525,7 +553,9 @@ public class ApplyTest {
 
   @Test
   public void testStringComparisonApply() throws DbException {
-    final Schema schema = new Schema(ImmutableList.of(Type.STRING_TYPE, Type.STRING_TYPE), ImmutableList.of("c", "d"));
+    final Schema schema =
+        new Schema(
+            ImmutableList.of(Type.STRING_TYPE, Type.STRING_TYPE), ImmutableList.of("c", "d"));
     final TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
     for (long i = 0; i < SMALL_NUM_TUPLES; i++) {
       tbb.putString(0, "Foo" + i);
@@ -635,16 +665,19 @@ public class ApplyTest {
   @Test(expected = IllegalArgumentException.class)
   public void conditionalMismatchedTypes() throws IllegalArgumentException {
     ConditionalExpression conditional =
-        new ConditionalExpression(new ConstantExpression(Type.BOOLEAN_TYPE, "true"), new ConstantExpression(
-            Type.INT_TYPE, "1"), new ConstantExpression(Type.STRING_TYPE, "foo"));
+        new ConditionalExpression(
+            new ConstantExpression(Type.BOOLEAN_TYPE, "true"),
+            new ConstantExpression(Type.INT_TYPE, "1"),
+            new ConstantExpression(Type.STRING_TYPE, "foo"));
     conditional.getOutputType(new ExpressionOperatorParameter());
   }
 
   @Test(expected = IllegalArgumentException.class)
   public void moduloNeedsIntegers() throws IllegalArgumentException {
     ModuloExpression conditional =
-        new ModuloExpression(new ConstantExpression(Type.FLOAT_TYPE, "1"), new ConstantExpression(Type.INT_TYPE, "2"));
+        new ModuloExpression(
+            new ConstantExpression(Type.FLOAT_TYPE, "1"),
+            new ConstantExpression(Type.INT_TYPE, "2"));
     conditional.getOutputType(new ExpressionOperatorParameter());
   }
-
 }

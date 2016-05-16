@@ -14,7 +14,7 @@ import edu.washington.escience.myria.storage.TupleBatch;
 /**
  * A poor implementation of a Limit operator, which emits the first N tuples then closes the child operator from further
  * feeding tuples.
- * 
+ *
  */
 public final class Limit extends UnaryOperator {
 
@@ -29,7 +29,7 @@ public final class Limit extends UnaryOperator {
 
   /**
    * A limit operator keeps the first <code>limit</code> tuples produced by its child.
-   * 
+   *
    * @param limit the number of tuples to keep.
    * @param child the source of tuples.
    */

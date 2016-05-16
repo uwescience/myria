@@ -16,15 +16,13 @@ import edu.washington.escience.myria.parallel.QueryPlan;
 
 /**
  * A JSON-able wrapper for the expected wire message for a query.
- * 
+ *
  */
 public class QueryEncoding extends MyriaApiEncoding {
   /** The raw Datalog. */
-  @Required
-  public String rawQuery;
+  @Required public String rawQuery;
   /** The logical relation algebra plan. */
-  @Required
-  public String logicalRa;
+  @Required public String logicalRa;
   /** The language. optional. */
   public String language;
   /** A list of profiling options that this query is enabled. Default: empty */
@@ -39,8 +37,8 @@ public class QueryEncoding extends MyriaApiEncoding {
 
   @Override
   protected void validateExtra() throws MyriaApiException {
-    Preconditions.checkArgument((fragments == null) ^ (plan == null),
-        "exactly one of fragments or plan must be specified");
+    Preconditions.checkArgument(
+        (fragments == null) ^ (plan == null), "exactly one of fragments or plan must be specified");
     /* If they gave us an old plan type, convert it to a new plan type. */
     if (fragments != null) {
       plan = new SubQueryEncoding(fragments);

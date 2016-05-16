@@ -25,8 +25,16 @@ public class PostgresBinaryTupleWriterTest {
     writer.open(out);
 
     TupleBuffer tuples =
-        new TupleBuffer(new Schema(ImmutableList.of(Type.BOOLEAN_TYPE, Type.INT_TYPE, Type.LONG_TYPE, Type.FLOAT_TYPE,
-            Type.DOUBLE_TYPE, Type.STRING_TYPE, Type.DATETIME_TYPE)));
+        new TupleBuffer(
+            new Schema(
+                ImmutableList.of(
+                    Type.BOOLEAN_TYPE,
+                    Type.INT_TYPE,
+                    Type.LONG_TYPE,
+                    Type.FLOAT_TYPE,
+                    Type.DOUBLE_TYPE,
+                    Type.STRING_TYPE,
+                    Type.DATETIME_TYPE)));
 
     tuples.putBoolean(0, true);
     tuples.putInt(1, 1);
@@ -59,12 +67,12 @@ public class PostgresBinaryTupleWriterTest {
 
     /*
      * // generate file:
-     * 
+     *
      * create table foo(a bool, b int, c bigint, d real, e double precision, f text, g timestamp);
-     * 
+     *
      * insert into foo values (true, 1, 100, 3.14, 3.14, 'one', '1990-07-18 02:03:10'), (false, 2, 200, 3.14, -3.14,
      * 'two', '2013-09-30 03:01:10'), (true, 3, 300, 3.14, 123.456, 'three', '2000-01-01 00:00:00');
-     * 
+     *
      * copy foo to '/private/tmp/pg.bin' with binary;
      */
 

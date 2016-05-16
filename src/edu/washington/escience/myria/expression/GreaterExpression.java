@@ -4,7 +4,7 @@ import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.expression.evaluate.ExpressionOperatorParameter;
 
 /**
- * 
+ *
  */
 public class GreaterExpression extends BinaryExpression {
   /***/
@@ -20,7 +20,7 @@ public class GreaterExpression extends BinaryExpression {
 
   /**
    * Gets the maximum value of two numbers.
-   * 
+   *
    * @param left the left operand.
    * @param right the right operand.
    */
@@ -37,5 +37,4 @@ public class GreaterExpression extends BinaryExpression {
   public String getJavaString(final ExpressionOperatorParameter parameters) {
     return getFunctionCallBinaryString("Math.max", parameters);
   }
-
 }

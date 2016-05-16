@@ -31,14 +31,17 @@ public class FilterTest {
     ExpressionOperator varTarget = new VariableExpression(target);
     ExpressionOperator lower = new LessThanExpression(new MinusExpression(varX, varY), varTarget);
     ExpressionOperator upper = new LessThanExpression(varTarget, new PlusExpression(varX, varY));
-    return new Expression("withinSumRange(" + x + "," + y + "," + target + ")", new AndExpression(lower, upper));
+    return new Expression(
+        "withinSumRange(" + x + "," + y + "," + target + ")", new AndExpression(lower, upper));
   }
 
   @Test
   public void testWithinSumRangePredicateIntColumn() throws DbException {
     // One data point should be within the range, and the other is outside the range
     final Schema schema =
-        new Schema(ImmutableList.of(Type.INT_TYPE, Type.INT_TYPE, Type.INT_TYPE), ImmutableList.of("a", "b", "c"));
+        new Schema(
+            ImmutableList.of(Type.INT_TYPE, Type.INT_TYPE, Type.INT_TYPE),
+            ImmutableList.of("a", "b", "c"));
     final TupleBatchBuffer testBase = new TupleBatchBuffer(schema);
     // The middle case
     testBase.putInt(0, 4);
@@ -61,7 +64,9 @@ public class FilterTest {
   public void testWithinSumRangePredicateLongColumn() throws DbException {
     // One data point should be within the range, and the other is outside the range
     final Schema schema =
-        new Schema(ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE, Type.LONG_TYPE), ImmutableList.of("a", "b", "c"));
+        new Schema(
+            ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE, Type.LONG_TYPE),
+            ImmutableList.of("a", "b", "c"));
     final TupleBatchBuffer testBase = new TupleBatchBuffer(schema);
     // The middle case
     testBase.putLong(0, 4L);
@@ -83,8 +88,9 @@ public class FilterTest {
   public void testWithinSumRangePredicateDoubleColumn() throws DbException {
     // Two data points should be within the range, and the other is outside the range
     final Schema schema =
-        new Schema(ImmutableList.of(Type.DOUBLE_TYPE, Type.DOUBLE_TYPE, Type.DOUBLE_TYPE), ImmutableList.of("a", "b",
-            "c"));
+        new Schema(
+            ImmutableList.of(Type.DOUBLE_TYPE, Type.DOUBLE_TYPE, Type.DOUBLE_TYPE),
+            ImmutableList.of("a", "b", "c"));
     final TupleBatchBuffer testBase = new TupleBatchBuffer(schema);
     // The middle case
     testBase.putDouble(0, 4.0);
@@ -114,7 +120,9 @@ public class FilterTest {
   public void testWithinSumRangePredicateFloatColumn() throws DbException {
     // Two data points should be within the range, and the other is outside the range
     final Schema schema =
-        new Schema(ImmutableList.of(Type.FLOAT_TYPE, Type.FLOAT_TYPE, Type.FLOAT_TYPE), ImmutableList.of("a", "b", "c"));
+        new Schema(
+            ImmutableList.of(Type.FLOAT_TYPE, Type.FLOAT_TYPE, Type.FLOAT_TYPE),
+            ImmutableList.of("a", "b", "c"));
     final TupleBatchBuffer testBase = new TupleBatchBuffer(schema);
     // The middle case
     testBase.putFloat(0, 4.0f);

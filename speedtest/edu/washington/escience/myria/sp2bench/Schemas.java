@@ -7,8 +7,10 @@ import edu.washington.escience.myria.Type;
 
 public class Schemas {
 
-  final static ImmutableList<Type> triplesTypes = ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE, Type.LONG_TYPE);
-  final static ImmutableList<String> triplesColumnNames = ImmutableList.of("subject", "predicate", "object");
+  final static ImmutableList<Type> triplesTypes =
+      ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE, Type.LONG_TYPE);
+  final static ImmutableList<String> triplesColumnNames =
+      ImmutableList.of("subject", "predicate", "object");
 
   final static Schema triplesSchema = new Schema(triplesTypes, triplesColumnNames);
 
@@ -24,12 +26,14 @@ public class Schemas {
   final static ImmutableList<String> objectColumnNames = ImmutableList.of("subject");
   final static Schema objectSchema = new Schema(objectTypes, objectColumnNames);
 
-  final static ImmutableList<Type> subjectObjectTypes = ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE);
-  final static ImmutableList<String> subjectObjectColumnNames = ImmutableList.of("subject", "object");
-  final static Schema subjectObjectSchema = new Schema(subjectObjectTypes, subjectObjectColumnNames);
+  final static ImmutableList<Type> subjectObjectTypes =
+      ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE);
+  final static ImmutableList<String> subjectObjectColumnNames =
+      ImmutableList.of("subject", "object");
+  final static Schema subjectObjectSchema =
+      new Schema(subjectObjectTypes, subjectObjectColumnNames);
 
   final static ImmutableList<Type> valTypes = ImmutableList.of(Type.STRING_TYPE);
   final static ImmutableList<String> valColumnNames = ImmutableList.of("val");
   final static Schema valSchema = new Schema(valTypes, valColumnNames);
-
 }

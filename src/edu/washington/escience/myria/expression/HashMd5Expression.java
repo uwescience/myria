@@ -33,10 +33,15 @@ public class HashMd5Expression extends UnaryExpression {
   @Override
   public Type getOutputType(final ExpressionOperatorParameter parameters) {
     Type operandType = getOperand().getOutputType(parameters);
-    ImmutableList<Type> validTypes = ImmutableList.of(Type.STRING_TYPE, Type.LONG_TYPE, Type.INT_TYPE);
+    ImmutableList<Type> validTypes =
+        ImmutableList.of(Type.STRING_TYPE, Type.LONG_TYPE, Type.INT_TYPE);
     int operandIdx = validTypes.indexOf(operandType);
-    Preconditions.checkArgument(operandIdx != -1, "%s cannot handle operand [%s] of Type %s", getClass()
-        .getSimpleName(), getOperand(), operandType);
+    Preconditions.checkArgument(
+        operandIdx != -1,
+        "%s cannot handle operand [%s] of Type %s",
+        getClass().getSimpleName(),
+        getOperand(),
+        operandType);
     return Type.LONG_TYPE;
   }
 
@@ -48,8 +53,10 @@ public class HashMd5Expression extends UnaryExpression {
     } else if (operandType == Type.INT_TYPE) {
       return getFunctionCallUnaryString("Hashing.md5().hashInt", parameters).concat(".asLong()");
     } else {
-      return new StringBuilder("Hashing.md5().hashString(").append(getOperand().getJavaString(parameters)).append(
-          ", Charset.defaultCharset()).asLong()").toString();
+      return new StringBuilder("Hashing.md5().hashString(")
+          .append(getOperand().getJavaString(parameters))
+          .append(", Charset.defaultCharset()).asLong()")
+          .toString();
     }
   }
 }

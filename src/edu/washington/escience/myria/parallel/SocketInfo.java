@@ -19,7 +19,7 @@ public final class SocketInfo implements Serializable {
 
   /**
    * Create a SocketInfo object from a string in the format host:port.
-   * 
+   *
    * @param hostPort a string in the format (host:port) that describes a socket.
    * @return a SocketInfo corresponding to the given string.
    */
@@ -49,7 +49,7 @@ public final class SocketInfo implements Serializable {
   private transient String hostPortString;
 
   /**
-   * 
+   *
    * @param host the name or IPv4 of the network address.
    * @param port as usual, 16-bit port.
    */
@@ -62,7 +62,7 @@ public final class SocketInfo implements Serializable {
 
   /**
    * Local address.
-   * 
+   *
    * @param port as usual, 16-bit port.
    * */
   public SocketInfo(final int port) {

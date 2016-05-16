@@ -8,8 +8,9 @@ public class CollectProducerEncoding extends AbstractProducerEncoding<CollectPro
 
   @Override
   public CollectProducer construct(ConstructArgs args) {
-    return new CollectProducer(null, MyriaUtils.getSingleElement(getRealOperatorIds()), MyriaUtils
-        .getSingleElement(getRealWorkerIds()));
+    return new CollectProducer(
+        null,
+        MyriaUtils.getSingleElement(getRealOperatorIds()),
+        MyriaUtils.getSingleElement(getRealWorkerIds()));
   }
-
 }

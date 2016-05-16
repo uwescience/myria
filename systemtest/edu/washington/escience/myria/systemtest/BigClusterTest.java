@@ -45,6 +45,7 @@ public class BigClusterTest extends SystemTestBase {
   }
 
   public static final int NUM_WORKERS;
+
   static {
     if (TestUtils.inTravis()) {
       NUM_WORKERS = 2;
@@ -59,7 +60,9 @@ public class BigClusterTest extends SystemTestBase {
     Random r = new Random();
     int step = r.nextInt(5) + 1;
     for (int i = 0; i < NUM_WORKERS; i++) {
-      m.put(MyriaConstants.MASTER_ID + step * (i + 1), new SocketInfo(DEFAULT_WORKER_STARTING_PORT + i));
+      m.put(
+          MyriaConstants.MASTER_ID + step * (i + 1),
+          new SocketInfo(DEFAULT_WORKER_STARTING_PORT + i));
     }
     return m;
   }
@@ -87,7 +90,8 @@ public class BigClusterTest extends SystemTestBase {
     final int NUM_DUPLICATES = 100;
     final int TB_SIZE = 10;
 
-    TupleBatch tb = TestUtils.generateRandomTuples(TB_SIZE, TB_SIZE, false).popAny();;
+    TupleBatch tb = TestUtils.generateRandomTuples(TB_SIZE, TB_SIZE, false).popAny();
+    ;
 
     final ExchangePairID serverReceiveID = ExchangePairID.newID();
 
@@ -96,11 +100,13 @@ public class BigClusterTest extends SystemTestBase {
     final HashMap<Integer, RootOperator[]> workerPlans = new HashMap<Integer, RootOperator[]>();
     final CollectProducer cp1 = new CollectProducer(scanTable, serverReceiveID, MASTER_ID);
     for (int workerID : workerIDs) {
-      workerPlans.put(workerID, new RootOperator[] { cp1 });
+      workerPlans.put(workerID, new RootOperator[] {cp1});
     }
 
-    final CollectConsumer serverCollect = new CollectConsumer(tb.getSchema(), serverReceiveID, workerIDs);
-    final LinkedBlockingQueue<TupleBatch> receivedTupleBatches = new LinkedBlockingQueue<TupleBatch>(10);
+    final CollectConsumer serverCollect =
+        new CollectConsumer(tb.getSchema(), serverReceiveID, workerIDs);
+    final LinkedBlockingQueue<TupleBatch> receivedTupleBatches =
+        new LinkedBlockingQueue<TupleBatch>(10);
     final TBQueueExporter queueStore = new TBQueueExporter(receivedTupleBatches, serverCollect);
     SinkRoot serverPlan = new SinkRoot(queueStore);
 
@@ -116,7 +122,6 @@ public class BigClusterTest extends SystemTestBase {
     }
 
     assertEquals(NUM_DUPLICATES * TB_SIZE * workerIDs.length, numResultTuples);
-
   }
 
   @Test
@@ -146,7 +151,11 @@ public class BigClusterTest extends SystemTestBase {
     final GenericShuffleProducer[] bps = new GenericShuffleProducer[NUM_BROADCAST];
     for (int i = 0; i < bps.length; i++) {
       bps[i] =
-          new GenericShuffleProducer(scans[i], broadcastIDs[i], broadcastPartition, workerIDs,
+          new GenericShuffleProducer(
+              scans[i],
+              broadcastIDs[i],
+              broadcastPartition,
+              workerIDs,
               new FixValuePartitionFunction(0));
     }
 
@@ -164,7 +173,8 @@ public class BigClusterTest extends SystemTestBase {
 
     final HashMap<Integer, RootOperator[]> workerPlans = new HashMap<Integer, RootOperator[]>();
     for (int wID : workerIDs) {
-      workerPlans.put(wID, ArrayUtils.addAll(ArrayUtils.addAll(new RootOperator[] {}, workerSinks), bps));
+      workerPlans.put(
+          wID, ArrayUtils.addAll(ArrayUtils.addAll(new RootOperator[] {}, workerSinks), bps));
     }
 
     SinkRoot serverPlan = new SinkRoot(new EOSSource());
@@ -181,8 +191,13 @@ public class BigClusterTest extends SystemTestBase {
     final int NUM_DUPLICATES = 1;
 
     URL url =
-        new URL(String.format("http://%s:%d/dataset/download_test?num_tb=%d&format=%s", "localhost", masterDaemonPort,
-            NUM_DUPLICATES, "json"));
+        new URL(
+            String.format(
+                "http://%s:%d/dataset/download_test?num_tb=%d&format=%s",
+                "localhost",
+                masterDaemonPort,
+                NUM_DUPLICATES,
+                "json"));
     HttpURLConnection conn = (HttpURLConnection) url.openConnection();
     conn.setDoOutput(true);
     conn.setRequestMethod("GET");
@@ -204,7 +219,9 @@ public class BigClusterTest extends SystemTestBase {
     long nanoElapse = System.nanoTime() - start;
 
     System.out.println("Download size: " + (numBytesRead * 1.0 / 1024 / 1024 / 1024) + " GB\n");
-    System.out.println("Speed is: " + (numBytesRead * 1.0 / 1024 / 1024 / TimeUnit.NANOSECONDS.toSeconds(nanoElapse))
-        + " MB/s");
+    System.out.println(
+        "Speed is: "
+            + (numBytesRead * 1.0 / 1024 / 1024 / TimeUnit.NANOSECONDS.toSeconds(nanoElapse))
+            + " MB/s");
   }
 }

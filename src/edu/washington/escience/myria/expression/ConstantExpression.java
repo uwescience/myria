@@ -19,19 +19,18 @@ public class ConstantExpression extends ZeroaryExpression {
   private static final long serialVersionUID = 1L;
 
   /** The type of this object. */
-  @JsonProperty
-  private final Type valueType;
+  @JsonProperty private final Type valueType;
 
   /** The value of this object. */
-  @JsonProperty
-  private final String value;
+  @JsonProperty private final String value;
 
   /**
    * @param type the type of this object.
    * @param value the value of this constant.
    */
   @JsonCreator
-  public ConstantExpression(@JsonProperty("valueType") final Type type, @JsonProperty("value") final String value) {
+  public ConstantExpression(
+      @JsonProperty("valueType") final Type type, @JsonProperty("value") final String value) {
     valueType = type;
     if (type == Type.LONG_TYPE && value.toUpperCase().indexOf('L') == -1) {
       this.value = value + 'L';
@@ -44,7 +43,7 @@ public class ConstantExpression extends ZeroaryExpression {
 
   /**
    * Construct integer constant.
-   * 
+   *
    * @param value the value of this constant.
    */
   public ConstantExpression(final int value) {
@@ -53,7 +52,7 @@ public class ConstantExpression extends ZeroaryExpression {
 
   /**
    * Construct long constant.
-   * 
+   *
    * @param value the value of this constant.
    */
   public ConstantExpression(final long value) {
@@ -62,7 +61,7 @@ public class ConstantExpression extends ZeroaryExpression {
 
   /**
    * Construct float constant.
-   * 
+   *
    * @param value the value of this constant.
    */
   public ConstantExpression(final float value) {
@@ -71,7 +70,7 @@ public class ConstantExpression extends ZeroaryExpression {
 
   /**
    * Construct double constant.
-   * 
+   *
    * @param value the value of this constant.
    */
   public ConstantExpression(final double value) {
@@ -80,7 +79,7 @@ public class ConstantExpression extends ZeroaryExpression {
 
   /**
    * Construct boolean constant.
-   * 
+   *
    * @param value the value of this constant.
    */
   public ConstantExpression(final boolean value) {
@@ -89,7 +88,7 @@ public class ConstantExpression extends ZeroaryExpression {
 
   /**
    * Construct string constant.
-   * 
+   *
    * @param value the value of this constant.
    */
   public ConstantExpression(final String value) {

@@ -27,7 +27,8 @@ public class TipsyFileScanSpeedTest {
     assertTrue(orderFile.canRead());
 
     TipsyFileScan scan =
-        new TipsyFileScan(tipsyFile.getAbsolutePath(), orderFile.getAbsolutePath(), grpFile.getAbsolutePath());
+        new TipsyFileScan(
+            tipsyFile.getAbsolutePath(), orderFile.getAbsolutePath(), grpFile.getAbsolutePath());
     SinkRoot sink = new SinkRoot(scan, 1000 * 1000);
     sink.open(null);
     while (!sink.eos()) {

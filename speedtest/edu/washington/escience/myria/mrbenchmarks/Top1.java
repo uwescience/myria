@@ -24,8 +24,8 @@ public class Top1 extends UnaryOperator {
   }
 
   /**
-     * 
-     */
+   *
+   */
   private static final long serialVersionUID = 191438462118946730L;
 
   @Override
@@ -34,8 +34,7 @@ public class Top1 extends UnaryOperator {
   }
 
   @Override
-  protected void cleanup() throws DbException {
-  }
+  protected void cleanup() throws DbException {}
 
   @Override
   protected TupleBatch fetchNextReady() throws DbException {

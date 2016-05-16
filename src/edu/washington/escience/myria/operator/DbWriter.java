@@ -9,7 +9,7 @@ import edu.washington.escience.myria.parallel.RelationWriteMetadata;
 public interface DbWriter {
   /**
    * Returns the relations that this operator writes, and their schemas.
-   * 
+   *
    * @return the relations that this operator writes, and their schemas.
    */
   Map<RelationKey, RelationWriteMetadata> writeSet();

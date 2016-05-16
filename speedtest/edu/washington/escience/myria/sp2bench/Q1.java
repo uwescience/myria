@@ -60,7 +60,8 @@ public class Q1 implements QueryPlanGenerator {
             "select t.subject,dyear.val from Triples t, Dictionary dtype, Dictionary dyear where t.predicate=dtype.ID and dtype.val='dcterms:issued' and t.object=dyear.ID;",
             subjectYearSchema);
 
-    final SingleFieldHashPartitionFunction pf = new SingleFieldHashPartitionFunction(allWorkers.length, 0);
+    final SingleFieldHashPartitionFunction pf =
+        new SingleFieldHashPartitionFunction(allWorkers.length, 0);
 
     final GenericShuffleProducer shuffleJournalsP =
         new GenericShuffleProducer(allJournals, allJournalsShuffleID, allWorkers, pf);
@@ -70,18 +71,20 @@ public class Q1 implements QueryPlanGenerator {
     final GenericShuffleProducer shuffleWithTitleP =
         new GenericShuffleProducer(allWithTheTitle, allWithTitleShuffleID, allWorkers, pf);
     final GenericShuffleConsumer shuffleWithTitleC =
-        new GenericShuffleConsumer(shuffleWithTitleP.getSchema(), allWithTitleShuffleID, allWorkers);
+        new GenericShuffleConsumer(
+            shuffleWithTitleP.getSchema(), allWithTitleShuffleID, allWorkers);
 
     final GenericShuffleProducer shuffleIssuedYearP =
         new GenericShuffleProducer(allIssuedYear, allIssuedYearShuffleID, allWorkers, pf);
     final GenericShuffleConsumer shuffleIssuedYearC =
-        new GenericShuffleConsumer(shuffleIssuedYearP.getSchema(), allIssuedYearShuffleID, allWorkers);
+        new GenericShuffleConsumer(
+            shuffleIssuedYearP.getSchema(), allIssuedYearShuffleID, allWorkers);
 
     final SymmetricHashJoin joinJournalTitle =
-        new SymmetricHashJoin(shuffleJournalsC, shuffleWithTitleC, new int[] { 0 }, new int[] { 0 });
+        new SymmetricHashJoin(shuffleJournalsC, shuffleWithTitleC, new int[] {0}, new int[] {0});
 
     final SymmetricHashJoin joinJournalTitleYear =
-        new SymmetricHashJoin(joinJournalTitle, shuffleIssuedYearC, new int[] { 0 }, new int[] { 0 });
+        new SymmetricHashJoin(joinJournalTitle, shuffleIssuedYearC, new int[] {0}, new int[] {0});
 
     final Apply finalColSelect = Applys.columnSelect(joinJournalTitleYear, 3);
 
@@ -89,15 +92,21 @@ public class Q1 implements QueryPlanGenerator {
 
     final Map<Integer, RootOperator[]> result = new HashMap<Integer, RootOperator[]>();
     for (int worker : allWorkers) {
-      result.put(worker, new RootOperator[] { sendToMaster, shuffleIssuedYearP, shuffleWithTitleP, shuffleJournalsP });
+      result.put(
+          worker,
+          new RootOperator[] {
+            sendToMaster, shuffleIssuedYearP, shuffleWithTitleP, shuffleJournalsP
+          });
     }
 
     return result;
   }
 
   @Override
-  public RootOperator getMasterPlan(int[] allWorkers, final LinkedBlockingQueue<TupleBatch> receivedTupleBatches) {
-    final CollectConsumer serverCollect = new CollectConsumer(outputSchema, sendToMasterID, allWorkers);
+  public RootOperator getMasterPlan(
+      int[] allWorkers, final LinkedBlockingQueue<TupleBatch> receivedTupleBatches) {
+    final CollectConsumer serverCollect =
+        new CollectConsumer(outputSchema, sendToMasterID, allWorkers);
     TBQueueExporter queueStore = new TBQueueExporter(receivedTupleBatches, serverCollect);
     SinkRoot serverPlan = new SinkRoot(queueStore);
     return serverPlan;

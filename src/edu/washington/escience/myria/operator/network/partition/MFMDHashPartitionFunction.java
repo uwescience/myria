@@ -8,7 +8,7 @@ import edu.washington.escience.myria.storage.TupleBatch;
 
 /**
  * Multiple field multiple dimension hash partition function for HyperCubeJoin.
- * 
+ *
  */
 public final class MFMDHashPartitionFunction extends PartitionFunction {
 
@@ -21,24 +21,28 @@ public final class MFMDHashPartitionFunction extends PartitionFunction {
   private final SingleFieldHashPartitionFunction[] partitionFunctions;
 
   /**
-   * 
+   *
    * @param numPartitions number of buckets
    * @param hypercubeDimensions the sizes of each dimension of the hypercube.
    * @param hashedColumns which fields are hashed.
    * @param mappedHCDimensions mapped hypercube dimensions of hashed columns.
-   * 
+   *
    */
-  public MFMDHashPartitionFunction(final int numPartitions, final int[] hypercubeDimensions, final int[] hashedColumns,
+  public MFMDHashPartitionFunction(
+      final int numPartitions,
+      final int[] hypercubeDimensions,
+      final int[] hashedColumns,
       final int[] mappedHCDimensions) {
     super(numPartitions);
     partitionFunctions = new SingleFieldHashPartitionFunction[hashedColumns.length];
     for (int i = 0; i < hashedColumns.length; ++i) {
       Preconditions.checkPositionIndex(hashedColumns[i], hypercubeDimensions.length);
-      Preconditions.checkArgument(hashedColumns.length == mappedHCDimensions.length,
+      Preconditions.checkArgument(
+          hashedColumns.length == mappedHCDimensions.length,
           "hashedColumns must have the same arity as mappedHCDimensions");
       partitionFunctions[i] =
-          new SingleFieldHashPartitionFunction(hypercubeDimensions[mappedHCDimensions[i]], hashedColumns[i],
-              mappedHCDimensions[i]);
+          new SingleFieldHashPartitionFunction(
+              hypercubeDimensions[mappedHCDimensions[i]], hashedColumns[i], mappedHCDimensions[i]);
     }
   }
 
@@ -58,5 +62,4 @@ public final class MFMDHashPartitionFunction extends PartitionFunction {
 
     return result;
   }
-
 }

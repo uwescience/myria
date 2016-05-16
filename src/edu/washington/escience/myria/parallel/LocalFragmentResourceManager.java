@@ -21,7 +21,8 @@ import edu.washington.escience.myria.storage.TupleBatch;
 public final class LocalFragmentResourceManager {
 
   /** The logger for this class. */
-  static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(LocalFragmentResourceManager.class);
+  static final org.slf4j.Logger LOGGER =
+      org.slf4j.LoggerFactory.getLogger(LocalFragmentResourceManager.class);
 
   /**
    * The ipc pool.
@@ -45,10 +46,12 @@ public final class LocalFragmentResourceManager {
    * @param connectionPool connection pool.
    * @param fragment the corresponding fragment
    */
-  public LocalFragmentResourceManager(final IPCConnectionPool connectionPool, final LocalFragment fragment) {
+  public LocalFragmentResourceManager(
+      final IPCConnectionPool connectionPool, final LocalFragment fragment) {
     inputBuffers = new ConcurrentHashMap<Consumer, StreamInputBuffer<TupleBatch>>();
     ipcPool = connectionPool;
-    outputChannels = Sets.newSetFromMap(new ConcurrentHashMap<StreamOutputChannel<TupleBatch>, Boolean>());
+    outputChannels =
+        Sets.newSetFromMap(new ConcurrentHashMap<StreamOutputChannel<TupleBatch>, Boolean>());
 
     this.fragment = fragment;
   }
@@ -60,7 +63,8 @@ public final class LocalFragmentResourceManager {
    * @param operatorID remote receive operator
    * @return a output channel.
    */
-  public StreamOutputChannel<TupleBatch> startAStream(final int remoteWorkerID, final ExchangePairID operatorID) {
+  public StreamOutputChannel<TupleBatch> startAStream(
+      final int remoteWorkerID, final ExchangePairID operatorID) {
     return this.startAStream(remoteWorkerID, operatorID.getLong());
   }
 
@@ -71,8 +75,10 @@ public final class LocalFragmentResourceManager {
    * @param streamID remote receive operator
    * @return a output channel.
    */
-  public StreamOutputChannel<TupleBatch> startAStream(final int remoteWorkerID, final long streamID) {
-    StreamOutputChannel<TupleBatch> output = ipcPool.reserveLongTermConnection(remoteWorkerID, streamID);
+  public StreamOutputChannel<TupleBatch> startAStream(
+      final int remoteWorkerID, final long streamID) {
+    StreamOutputChannel<TupleBatch> output =
+        ipcPool.reserveLongTermConnection(remoteWorkerID, streamID);
     outputChannels.add(output);
     return output;
   }
@@ -114,15 +120,20 @@ public final class LocalFragmentResourceManager {
     }
 
     inputBuffer =
-        new FlowControlBagInputBuffer<TupleBatch>(ipcPool, consumer.getInputChannelIDs(ipcPool.getMyIPCID()), ipcPool
-            .getInputBufferCapacity(), ipcPool.getInputBufferRecoverTrigger());
-    inputBuffer.addListener(FlowControlBagInputBuffer.NEW_INPUT_DATA, new IPCEventListener() {
+        new FlowControlBagInputBuffer<TupleBatch>(
+            ipcPool,
+            consumer.getInputChannelIDs(ipcPool.getMyIPCID()),
+            ipcPool.getInputBufferCapacity(),
+            ipcPool.getInputBufferRecoverTrigger());
+    inputBuffer.addListener(
+        FlowControlBagInputBuffer.NEW_INPUT_DATA,
+        new IPCEventListener() {
 
-      @Override
-      public void triggered(final IPCEvent event) {
-        fragment.notifyNewInput();
-      }
-    });
+          @Override
+          public void triggered(final IPCEvent event) {
+            fragment.notifyNewInput();
+          }
+        });
 
     inputBuffers.put(consumer, inputBuffer);
     inputBuffer.setAttachment(consumer.getSchema());
@@ -168,5 +179,4 @@ public final class LocalFragmentResourceManager {
   public LocalFragment getFragment() {
     return fragment;
   }
-
 }

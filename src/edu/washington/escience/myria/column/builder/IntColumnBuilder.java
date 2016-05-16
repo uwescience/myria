@@ -20,7 +20,7 @@ import edu.washington.escience.myria.util.MyriaUtils;
 
 /**
  * A column of Integer values.
- * 
+ *
  */
 public final class IntColumnBuilder extends ColumnBuilder<Integer> {
   /** View of the column data as ints. */
@@ -38,7 +38,7 @@ public final class IntColumnBuilder extends ColumnBuilder<Integer> {
 
   /**
    * copy.
-   * 
+   *
    * @param data the underlying data
    * */
   private IntColumnBuilder(final IntBuffer data) {
@@ -47,14 +47,15 @@ public final class IntColumnBuilder extends ColumnBuilder<Integer> {
 
   /**
    * Constructs an IntColumn by deserializing the given ColumnMessage.
-   * 
+   *
    * @param message a ColumnMessage containing the contents of this column.
    * @param numTuples num tuples in the column message
    * @return the built column
    */
   public static IntColumn buildFromProtobuf(final ColumnMessage message, final int numTuples) {
     if (message.getType().ordinal() != ColumnMessage.Type.INT_VALUE) {
-      throw new IllegalArgumentException("Trying to construct IntColumn from non-INT ColumnMessage");
+      throw new IllegalArgumentException(
+          "Trying to construct IntColumn from non-INT ColumnMessage");
     }
     if (!message.hasIntColumn()) {
       throw new IllegalArgumentException("ColumnMessage has type INT but no IntColumn");
@@ -69,7 +70,8 @@ public final class IntColumnBuilder extends ColumnBuilder<Integer> {
 
   @Override
   public IntColumnBuilder appendInt(final int value) throws BufferOverflowException {
-    Preconditions.checkArgument(!built, "No further changes are allowed after the builder has built the column.");
+    Preconditions.checkArgument(
+        !built, "No further changes are allowed after the builder has built the column.");
     data.put(value);
     return this;
   }
@@ -77,21 +79,24 @@ public final class IntColumnBuilder extends ColumnBuilder<Integer> {
   @Deprecated
   @Override
   public IntColumnBuilder appendObject(final Object value) throws BufferOverflowException {
-    Preconditions.checkArgument(!built, "No further changes are allowed after the builder has built the column.");
+    Preconditions.checkArgument(
+        !built, "No further changes are allowed after the builder has built the column.");
     return appendInt((Integer) MyriaUtils.ensureObjectIsValidType(value));
   }
 
   @Override
-  public IntColumnBuilder appendFromJdbc(final ResultSet resultSet, final int jdbcIndex) throws SQLException,
-      BufferOverflowException {
-    Preconditions.checkArgument(!built, "No further changes are allowed after the builder has built the column.");
+  public IntColumnBuilder appendFromJdbc(final ResultSet resultSet, final int jdbcIndex)
+      throws SQLException, BufferOverflowException {
+    Preconditions.checkArgument(
+        !built, "No further changes are allowed after the builder has built the column.");
     return appendInt(resultSet.getInt(jdbcIndex));
   }
 
   @Override
-  public IntColumnBuilder appendFromSQLite(final SQLiteStatement statement, final int index) throws SQLiteException,
-      BufferOverflowException {
-    Preconditions.checkArgument(!built, "No further changes are allowed after the builder has built the column.");
+  public IntColumnBuilder appendFromSQLite(final SQLiteStatement statement, final int index)
+      throws SQLiteException, BufferOverflowException {
+    Preconditions.checkArgument(
+        !built, "No further changes are allowed after the builder has built the column.");
     return appendInt(statement.columnInt(index));
   }
 
@@ -114,14 +119,16 @@ public final class IntColumnBuilder extends ColumnBuilder<Integer> {
 
   @Override
   public void replaceInt(final int value, final int row) throws IndexOutOfBoundsException {
-    Preconditions.checkArgument(!built, "No further changes are allowed after the builder has built the column.");
+    Preconditions.checkArgument(
+        !built, "No further changes are allowed after the builder has built the column.");
     Preconditions.checkElementIndex(row, data.position());
     data.put(row, value);
   }
 
   @Override
   public IntColumnBuilder expand(final int size) {
-    Preconditions.checkArgument(!built, "No further changes are allowed after the builder has built the column.");
+    Preconditions.checkArgument(
+        !built, "No further changes are allowed after the builder has built the column.");
     Preconditions.checkArgument(size >= 0);
     data.position(data.position() + size);
     return this;
@@ -129,7 +136,8 @@ public final class IntColumnBuilder extends ColumnBuilder<Integer> {
 
   @Override
   public IntColumnBuilder expandAll() {
-    Preconditions.checkArgument(!built, "No further changes are allowed after the builder has built the column.");
+    Preconditions.checkArgument(
+        !built, "No further changes are allowed after the builder has built the column.");
     data.position(data.capacity());
     return this;
   }
@@ -149,7 +157,7 @@ public final class IntColumnBuilder extends ColumnBuilder<Integer> {
   public IntColumnBuilder forkNewBuilder() {
     int[] arr = new int[data.array().length];
     System.arraycopy(data.array(), 0, arr, 0, data.position());
-    return new IntColumnBuilder((IntBuffer) IntBuffer.wrap(arr).position(data.position()).limit(data.limit()));
+    return new IntColumnBuilder(
+        (IntBuffer) IntBuffer.wrap(arr).position(data.position()).limit(data.limit()));
   }
-
 }

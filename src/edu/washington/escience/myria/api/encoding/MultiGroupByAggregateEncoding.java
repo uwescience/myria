@@ -6,10 +6,8 @@ import edu.washington.escience.myria.operator.agg.MultiGroupByAggregate;
 
 public class MultiGroupByAggregateEncoding extends UnaryOperatorEncoding<MultiGroupByAggregate> {
 
-  @Required
-  public int[] argGroupFields;
-  @Required
-  public AggregatorFactory[] aggregators;
+  @Required public int[] argGroupFields;
+  @Required public AggregatorFactory[] aggregators;
 
   @Override
   public MultiGroupByAggregate construct(ConstructArgs args) {

@@ -24,13 +24,25 @@ import edu.washington.escience.myria.parallel.ipc.QueueBasedShortMessageProcesso
  */
 public class IPCTestUtil {
 
-  public final static <PAYLOAD> IPCConnectionPool startIPCConnectionPool(final int myID,
+  public final static <PAYLOAD> IPCConnectionPool startIPCConnectionPool(
+      final int myID,
       final HashMap<Integer, SocketInfo> computingUnits,
-      final LinkedBlockingQueue<IPCMessage.Data<PAYLOAD>> shortMessageQueue, final PayloadSerializer ps,
-      final int inputBufferCapacity, final int recoverTrigger, final int numNettyWorker) throws Exception {
+      final LinkedBlockingQueue<IPCMessage.Data<PAYLOAD>> shortMessageQueue,
+      final PayloadSerializer ps,
+      final int inputBufferCapacity,
+      final int recoverTrigger,
+      final int numNettyWorker)
+      throws Exception {
     final IPCConnectionPool connectionPool =
-        new IPCConnectionPool(myID, computingUnits, new ServerBootstrap(), new ClientBootstrap(), ps,
-            new QueueBasedShortMessageProcessor<PAYLOAD>(shortMessageQueue), inputBufferCapacity, recoverTrigger);
+        new IPCConnectionPool(
+            myID,
+            computingUnits,
+            new ServerBootstrap(),
+            new ClientBootstrap(),
+            ps,
+            new QueueBasedShortMessageProcessor<PAYLOAD>(shortMessageQueue),
+            inputBufferCapacity,
+            recoverTrigger);
 
     ExecutorService bossExecutor = Executors.newCachedThreadPool();
     ExecutorService workerExecutor = Executors.newCachedThreadPool();
@@ -43,13 +55,19 @@ public class IPCTestUtil {
 
     ChannelPipelineFactory serverPipelineFactory =
         new TestIPCPipelineFactories.ServerPipelineFactory(connectionPool, null);
-    ChannelPipelineFactory clientPipelineFactory = new TestIPCPipelineFactories.ClientPipelineFactory(connectionPool);
+    ChannelPipelineFactory clientPipelineFactory =
+        new TestIPCPipelineFactories.ClientPipelineFactory(connectionPool);
 
-    ChannelPipelineFactory inJVMPipelineFactory = new TestIPCPipelineFactories.InJVMPipelineFactory(connectionPool);
+    ChannelPipelineFactory inJVMPipelineFactory =
+        new TestIPCPipelineFactories.InJVMPipelineFactory(connectionPool);
 
-    connectionPool.start(serverChannelFactory, serverPipelineFactory, clientChannelFactory, clientPipelineFactory,
-        inJVMPipelineFactory, new InJVMLoopbackChannelSink());
+    connectionPool.start(
+        serverChannelFactory,
+        serverPipelineFactory,
+        clientChannelFactory,
+        clientPipelineFactory,
+        inJVMPipelineFactory,
+        new InJVMLoopbackChannelSink());
     return connectionPool;
   }
-
 }

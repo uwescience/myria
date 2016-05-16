@@ -14,12 +14,11 @@ public class NegateExpression extends UnaryExpression {
    * This is not really unused, it's used automagically by Jackson deserialization.
    */
   @SuppressWarnings("unused")
-  private NegateExpression() {
-  }
+  private NegateExpression() {}
 
   /**
    * Negate (unary minus) the operand.
-   * 
+   *
    * @param operand the operand.
    */
   public NegateExpression(final ExpressionOperator operand) {

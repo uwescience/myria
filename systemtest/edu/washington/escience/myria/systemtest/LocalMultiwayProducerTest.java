@@ -81,28 +81,33 @@ public class LocalMultiwayProducerTest extends SystemTestBase {
     final ExchangePairID consumerID1 = ExchangePairID.newID();
     final ExchangePairID consumerID2 = ExchangePairID.newID();
     final LocalMultiwayProducer multiProducer1 =
-        new LocalMultiwayProducer(scan1, new ExchangePairID[] { consumerID1, consumerID2 });
-    final LocalMultiwayConsumer multiConsumer1_1 = new LocalMultiwayConsumer(multiProducer1.getSchema(), consumerID1);
-    final LocalMultiwayConsumer multiConsumer1_2 = new LocalMultiwayConsumer(multiProducer1.getSchema(), consumerID2);
+        new LocalMultiwayProducer(scan1, new ExchangePairID[] {consumerID1, consumerID2});
+    final LocalMultiwayConsumer multiConsumer1_1 =
+        new LocalMultiwayConsumer(multiProducer1.getSchema(), consumerID1);
+    final LocalMultiwayConsumer multiConsumer1_2 =
+        new LocalMultiwayConsumer(multiProducer1.getSchema(), consumerID2);
     final LocalMultiwayProducer multiProducer2 =
-        new LocalMultiwayProducer(scan1, new ExchangePairID[] { consumerID1, consumerID2 });
-    final LocalMultiwayConsumer multiConsumer2_1 = new LocalMultiwayConsumer(multiProducer2.getSchema(), consumerID1);
-    final LocalMultiwayConsumer multiConsumer2_2 = new LocalMultiwayConsumer(multiProducer2.getSchema(), consumerID2);
+        new LocalMultiwayProducer(scan1, new ExchangePairID[] {consumerID1, consumerID2});
+    final LocalMultiwayConsumer multiConsumer2_1 =
+        new LocalMultiwayConsumer(multiProducer2.getSchema(), consumerID1);
+    final LocalMultiwayConsumer multiConsumer2_2 =
+        new LocalMultiwayConsumer(multiProducer2.getSchema(), consumerID2);
 
-    final UnionAll union1 = new UnionAll(new Operator[] { multiConsumer1_1, multiConsumer1_2 });
-    final UnionAll union2 = new UnionAll(new Operator[] { multiConsumer2_1, multiConsumer2_2 });
+    final UnionAll union1 = new UnionAll(new Operator[] {multiConsumer1_1, multiConsumer1_2});
+    final UnionAll union2 = new UnionAll(new Operator[] {multiConsumer2_1, multiConsumer2_2});
 
     final ExchangePairID serverReceiveID = ExchangePairID.newID();
     final CollectProducer cp1 = new CollectProducer(union1, serverReceiveID, MASTER_ID);
     final CollectProducer cp2 = new CollectProducer(union2, serverReceiveID, MASTER_ID);
 
     final HashMap<Integer, RootOperator[]> workerPlans = new HashMap<Integer, RootOperator[]>();
-    workerPlans.put(workerIDs[0], new RootOperator[] { multiProducer1, cp1 });
-    workerPlans.put(workerIDs[1], new RootOperator[] { multiProducer2, cp2 });
+    workerPlans.put(workerIDs[0], new RootOperator[] {multiProducer1, cp1});
+    workerPlans.put(workerIDs[1], new RootOperator[] {multiProducer2, cp2});
 
     final CollectConsumer serverCollect =
-        new CollectConsumer(tableSchema, serverReceiveID, new int[] { workerIDs[0], workerIDs[1] });
-    final LinkedBlockingQueue<TupleBatch> receivedTupleBatches = new LinkedBlockingQueue<TupleBatch>();
+        new CollectConsumer(tableSchema, serverReceiveID, new int[] {workerIDs[0], workerIDs[1]});
+    final LinkedBlockingQueue<TupleBatch> receivedTupleBatches =
+        new LinkedBlockingQueue<TupleBatch>();
     final TBQueueExporter queueStore = new TBQueueExporter(receivedTupleBatches, serverCollect);
     SinkRoot serverPlan = new SinkRoot(queueStore);
 
@@ -116,6 +121,5 @@ public class LocalMultiwayProducerTest extends SystemTestBase {
     }
     final HashMap<Tuple, Integer> resultBag = TestUtils.tupleBatchToTupleBag(actualResult);
     TestUtils.assertTupleBagEqual(TestUtils.tupleBatchToTupleBag(expected), resultBag);
-
   }
 }

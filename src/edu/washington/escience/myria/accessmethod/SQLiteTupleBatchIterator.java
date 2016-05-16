@@ -23,7 +23,7 @@ import edu.washington.escience.myria.storage.TupleBatch;
 
 /**
  * Wraps a SQLiteStatement result set in a Iterator<TupleBatch>.
- * 
+ *
  */
 public class SQLiteTupleBatchIterator implements Iterator<TupleBatch> {
   /** The logger for this class. Uses SQLiteAccessMethod settings. */
@@ -37,14 +37,14 @@ public class SQLiteTupleBatchIterator implements Iterator<TupleBatch> {
 
   /**
    * Wraps a SQLiteStatement result set in an Iterator<TupleBatch>.
-   * 
+   *
    * @param statement the SQLiteStatement containing the results. If it has not yet stepped, this constructor will step
    *          it. Then the Schema of the generated TupleBatchs will be extracted from the statement.
    * @param connection the connection to the SQLite database.
    * @param schema the Schema describing the format of the TupleBatch containing these results.
    */
-  public SQLiteTupleBatchIterator(final SQLiteStatement statement, final SQLiteConnection connection,
-      final Schema schema) {
+  public SQLiteTupleBatchIterator(
+      final SQLiteStatement statement, final SQLiteConnection connection, final Schema schema) {
     this.connection = connection;
     this.statement = statement;
     try {

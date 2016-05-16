@@ -12,5 +12,7 @@ public interface QueryPlanGenerator extends Serializable {
 
   Map<Integer, RootOperator[]> getWorkerPlan(int[] allWorkers) throws Exception;
 
-  SinkRoot getMasterPlan(int[] allWorkers, final LinkedBlockingQueue<TupleBatch> receivedTupleBatches) throws Exception;
+  SinkRoot getMasterPlan(
+      int[] allWorkers, final LinkedBlockingQueue<TupleBatch> receivedTupleBatches)
+      throws Exception;
 }

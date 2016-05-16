@@ -23,7 +23,7 @@ import edu.washington.escience.myria.storage.TupleBatchBuffer;
 
 /**
  * Read a SeaFlow EVT/OPP file. See the formats in https://github.com/fribalet/flowPhyto/blob/master/R/Globals.R
- * 
+ *
  * This operator implements file format version 3.
  */
 public class SeaFlowFileScan extends LeafOperator {
@@ -45,18 +45,31 @@ public class SeaFlowFileScan extends LeafOperator {
   private static final int EOL = 10;
 
   /** Schema for all SeaFlow event files. */
-  private static final Schema OPP_SCHEMA = new Schema(ImmutableList.of(Type.INT_TYPE, // time
-      Type.INT_TYPE, // pulse_width
-      Type.INT_TYPE, // D1
-      Type.INT_TYPE, // D2
-      Type.INT_TYPE, // fsc_small
-      Type.INT_TYPE, // fsc_perp
-      Type.INT_TYPE, // fsc_big
-      Type.INT_TYPE, // pe
-      Type.INT_TYPE, // chl_small
-      Type.INT_TYPE // chl_big
-      ), ImmutableList.of("time", "pulse_width", "D1", "D2", "fsc_small", "fsc_perp", "fsc_big", "pe", "chl_small",
-      "chl_big"));
+  private static final Schema OPP_SCHEMA =
+      new Schema(
+          ImmutableList.of(
+              Type.INT_TYPE, // time
+              Type.INT_TYPE, // pulse_width
+              Type.INT_TYPE, // D1
+              Type.INT_TYPE, // D2
+              Type.INT_TYPE, // fsc_small
+              Type.INT_TYPE, // fsc_perp
+              Type.INT_TYPE, // fsc_big
+              Type.INT_TYPE, // pe
+              Type.INT_TYPE, // chl_small
+              Type.INT_TYPE // chl_big
+              ),
+          ImmutableList.of(
+              "time",
+              "pulse_width",
+              "D1",
+              "D2",
+              "fsc_small",
+              "fsc_perp",
+              "fsc_big",
+              "pe",
+              "chl_small",
+              "chl_big"));
   /** The number of columns in the schema of a SeaFlow EVT/OPP file. */
   private static final int NUM_COLUMNS = OPP_SCHEMA.numColumns();
   /** The number of bytes in one row of a SeaFlow EVT/OPP file. */
@@ -64,7 +77,7 @@ public class SeaFlowFileScan extends LeafOperator {
 
   /**
    * Construct a SeaFlowFileScan reading the specified local file.
-   * 
+   *
    * @param filename the file to be read.
    */
   public SeaFlowFileScan(final String filename) {
@@ -73,7 +86,7 @@ public class SeaFlowFileScan extends LeafOperator {
 
   /**
    * Construct a SeaFlowFileScan reading the data in the specified data source.
-   * 
+   *
    * @param source contains the data to be read.
    */
   public SeaFlowFileScan(final DataSource source) {
@@ -108,7 +121,8 @@ public class SeaFlowFileScan extends LeafOperator {
       } catch (IOException e) {
         throw new DbException("Error when verifying EOF after line " + lineNumber, e);
       }
-      Preconditions.checkState(flag, "Was able to read another byte after %s rows, expected EOFException", lineNumber);
+      Preconditions.checkState(
+          flag, "Was able to read another byte after %s rows, expected EOFException", lineNumber);
     }
     return buffer.popAny();
   }
@@ -124,8 +138,12 @@ public class SeaFlowFileScan extends LeafOperator {
       if (source instanceof FileSource) {
         long length = Files.size(Paths.get(((FileSource) source).getFilename()));
         long expectedSize = 4 + numRows * COLUMN_SIZE;
-        Preconditions.checkArgument(length == expectedSize, "Given %s rows, expected a file of length %s, not %s",
-            numRows, expectedSize, length);
+        Preconditions.checkArgument(
+            length == expectedSize,
+            "Given %s rows, expected a file of length %s, not %s",
+            numRows,
+            expectedSize,
+            length);
       }
     } catch (IOException e) {
       throw new DbException(e);

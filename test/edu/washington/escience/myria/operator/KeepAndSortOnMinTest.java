@@ -20,7 +20,9 @@ public class KeepAndSortOnMinTest {
   public void testKeepAndSortedOnMinValue() throws DbException {
     final int N = 52345;
     final int MaxID = 10000;
-    final Schema schema = new Schema(ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE), ImmutableList.of("id", "value"));
+    final Schema schema =
+        new Schema(
+            ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE), ImmutableList.of("id", "value"));
 
     TupleBatchBuffer input = new TupleBatchBuffer(schema);
     final int[] ids = new int[N];
@@ -43,7 +45,7 @@ public class KeepAndSortOnMinTest {
 
     TupleSource scan = new TupleSource(input);
     StreamingStateWrapper keepmin =
-        new StreamingStateWrapper(scan, new KeepAndSortOnMinValue(new int[] { 0 }, new int[] { 1 }));
+        new StreamingStateWrapper(scan, new KeepAndSortOnMinValue(new int[] {0}, new int[] {1}));
     keepmin.open(null);
     while (!keepmin.eos()) {
       keepmin.nextReady();

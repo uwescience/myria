@@ -9,12 +9,9 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  */
 public class QuerySearchResults {
   /* The maximum query id that matches the search. */
-  @JsonProperty
-  public long max;
+  @JsonProperty public long max;
   /* The minimum query id that matches the search. */
-  @JsonProperty
-  public long min;
+  @JsonProperty public long min;
   /* The actual search results. */
-  @JsonProperty
-  public List<QueryStatusEncoding> results;
+  @JsonProperty public List<QueryStatusEncoding> results;
 }

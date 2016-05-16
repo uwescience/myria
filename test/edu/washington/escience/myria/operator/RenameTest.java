@@ -23,8 +23,9 @@ public class RenameTest {
   /**
    * The original schema of the TupleBatch to be renamed.
    */
-  private static final Schema originalSchema = Schema.of(ImmutableList.of(Type.STRING_TYPE, Type.INT_TYPE),
-      ImmutableList.of("string", "int"));
+  private static final Schema originalSchema =
+      Schema.of(
+          ImmutableList.of(Type.STRING_TYPE, Type.INT_TYPE), ImmutableList.of("string", "int"));
 
   /**
    * The original TupleBatch.

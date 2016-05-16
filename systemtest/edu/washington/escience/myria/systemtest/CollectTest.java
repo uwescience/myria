@@ -34,7 +34,8 @@ public class CollectTest extends SystemTestBase {
     final long[] ids = TestUtils.randomLong(1000, 1005, names.length);
 
     final Schema schema =
-        new Schema(ImmutableList.of(Type.LONG_TYPE, Type.STRING_TYPE), ImmutableList.of("id", "name"));
+        new Schema(
+            ImmutableList.of(Type.LONG_TYPE, Type.STRING_TYPE), ImmutableList.of("id", "name"));
 
     final TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
     for (int i = 0; i < names.length; i++) {
@@ -59,11 +60,12 @@ public class CollectTest extends SystemTestBase {
 
     final HashMap<Integer, RootOperator[]> workerPlans = new HashMap<Integer, RootOperator[]>();
     final CollectProducer cp1 = new CollectProducer(scanTable, serverReceiveID, MASTER_ID);
-    workerPlans.put(workerIDs[0], new RootOperator[] { cp1 });
-    workerPlans.put(workerIDs[1], new RootOperator[] { cp1 });
+    workerPlans.put(workerIDs[0], new RootOperator[] {cp1});
+    workerPlans.put(workerIDs[1], new RootOperator[] {cp1});
 
     final CollectConsumer serverCollect = new CollectConsumer(schema, serverReceiveID, workerIDs);
-    final LinkedBlockingQueue<TupleBatch> receivedTupleBatches = new LinkedBlockingQueue<TupleBatch>();
+    final LinkedBlockingQueue<TupleBatch> receivedTupleBatches =
+        new LinkedBlockingQueue<TupleBatch>();
     final TBQueueExporter queueStore = new TBQueueExporter(receivedTupleBatches, serverCollect);
     SinkRoot serverPlan = new SinkRoot(queueStore);
 
@@ -78,6 +80,5 @@ public class CollectTest extends SystemTestBase {
     }
     final HashMap<Tuple, Integer> resultBag = TestUtils.tupleBatchToTupleBag(actualResult);
     TestUtils.assertTupleBagEqual(expectedResults, resultBag);
-
   }
 }

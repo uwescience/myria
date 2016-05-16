@@ -152,14 +152,28 @@ public class SchemaTest {
     assertTrue(Schema.ofFields("a", Type.INT_TYPE).compatible(Schema.ofFields("a", Type.INT_TYPE)));
     assertTrue(Schema.ofFields("a", Type.INT_TYPE).compatible(Schema.ofFields("b", Type.INT_TYPE)));
     assertTrue(Schema.ofFields("a", Type.INT_TYPE).compatible(Schema.ofFields(Type.INT_TYPE)));
-    assertTrue(Schema.ofFields(Type.INT_TYPE, Type.DOUBLE_TYPE, Type.LONG_TYPE, Type.DATETIME_TYPE).compatible(
-        Schema.ofFields("a", Type.INT_TYPE, "b", Type.DOUBLE_TYPE, "c", Type.LONG_TYPE, "d", Type.DATETIME_TYPE)));
+    assertTrue(
+        Schema.ofFields(Type.INT_TYPE, Type.DOUBLE_TYPE, Type.LONG_TYPE, Type.DATETIME_TYPE)
+            .compatible(
+                Schema.ofFields(
+                    "a",
+                    Type.INT_TYPE,
+                    "b",
+                    Type.DOUBLE_TYPE,
+                    "c",
+                    Type.LONG_TYPE,
+                    "d",
+                    Type.DATETIME_TYPE)));
 
-    assertFalse(Schema.ofFields("a", Type.INT_TYPE).compatible(Schema.ofFields("a", Type.LONG_TYPE)));
-    assertFalse(Schema.ofFields("a", Type.INT_TYPE)
-        .compatible(Schema.ofFields("a", Type.INT_TYPE, "b", Type.LONG_TYPE)));
-    assertFalse(Schema.ofFields(Type.INT_TYPE, Type.DOUBLE_TYPE, Type.LONG_TYPE, Type.DATETIME_TYPE).compatible(
-        Schema.ofFields(Type.INT_TYPE, Type.DOUBLE_TYPE, Type.LONG_TYPE, Type.BOOLEAN_TYPE)));
+    assertFalse(
+        Schema.ofFields("a", Type.INT_TYPE).compatible(Schema.ofFields("a", Type.LONG_TYPE)));
+    assertFalse(
+        Schema.ofFields("a", Type.INT_TYPE)
+            .compatible(Schema.ofFields("a", Type.INT_TYPE, "b", Type.LONG_TYPE)));
+    assertFalse(
+        Schema.ofFields(Type.INT_TYPE, Type.DOUBLE_TYPE, Type.LONG_TYPE, Type.DATETIME_TYPE)
+            .compatible(
+                Schema.ofFields(
+                    Type.INT_TYPE, Type.DOUBLE_TYPE, Type.LONG_TYPE, Type.BOOLEAN_TYPE)));
   }
-
 }

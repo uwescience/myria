@@ -5,12 +5,10 @@ import edu.washington.escience.myria.operator.Counter;
 
 public class CounterEncoding extends UnaryOperatorEncoding<Counter> {
 
-  @Required
-  public String columnName;
+  @Required public String columnName;
 
   @Override
   public Counter construct(ConstructArgs args) {
     return new Counter(columnName);
   }
-
 }

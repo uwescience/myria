@@ -20,7 +20,7 @@ import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.util.TestEnvVars;
 
 /**
- * 
+ *
  */
 public class DataSinkTest {
 

@@ -8,7 +8,7 @@ import edu.washington.escience.myria.DbException;
 public class InjectedFailureException extends DbException {
 
   /**
-   * 
+   *
    */
   private static final long serialVersionUID = 1L;
 
@@ -25,5 +25,4 @@ public class InjectedFailureException extends DbException {
   public InjectedFailureException(final Throwable e) {
     super(e);
   }
-
 }

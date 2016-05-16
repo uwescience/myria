@@ -12,7 +12,7 @@ import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.api.PipedStreamingOutput;
 
 /**
- * 
+ *
  */
 public class PipeSink implements DataSink {
   /** Required for Java serialization. */

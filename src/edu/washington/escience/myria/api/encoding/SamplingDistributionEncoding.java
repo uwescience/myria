@@ -15,8 +15,7 @@ public class SamplingDistributionEncoding extends UnaryOperatorEncoding<Sampling
   /** Percentage of total tuples to sample. */
   public Float samplePercentage;
 
-  @Required
-  public SamplingType sampleType;
+  @Required public SamplingType sampleType;
 
   /** Used to make results deterministic. Null if no specified value. */
   public Long randomSeed;
@@ -26,10 +25,10 @@ public class SamplingDistributionEncoding extends UnaryOperatorEncoding<Sampling
     if (sampleSize != null && samplePercentage == null) {
       return new SamplingDistribution(null, sampleSize, sampleType, randomSeed);
     } else if (sampleSize == null && samplePercentage != null) {
-      return new SamplingDistribution(null, samplePercentage, sampleType,
-          randomSeed);
+      return new SamplingDistribution(null, samplePercentage, sampleType, randomSeed);
     } else {
-      throw new MyriaApiException(Response.Status.BAD_REQUEST,
+      throw new MyriaApiException(
+          Response.Status.BAD_REQUEST,
           "Must specify exactly one of sampleSize or samplePercentage");
     }
   }

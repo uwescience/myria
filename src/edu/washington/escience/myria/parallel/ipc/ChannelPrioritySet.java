@@ -61,7 +61,7 @@ public final class ChannelPrioritySet {
 
   /**
    * Expose update lock for deadlock removing.
-   * 
+   *
    * @return update lock
    * */
   Lock getUpdateLock() {
@@ -97,7 +97,10 @@ public final class ChannelPrioritySet {
    * @param lowerBound channel pool lower bound
    * @throws IllegalArgumentException if {@code initialCapacity} is less than 1
    */
-  public ChannelPrioritySet(final int initialCapacity, final int lowerBound, final int upperBound,
+  public ChannelPrioritySet(
+      final int initialCapacity,
+      final int lowerBound,
+      final int upperBound,
       final Comparator<? super Channel> comparator) {
     orderedChannels = new PriorityQueue<Channel>(initialCapacity, comparator);
     set = new HashSet<Channel>(initialCapacity);
@@ -177,7 +180,9 @@ public final class ChannelPrioritySet {
    * @param recyclableConnections collection of recyclable connections
    * @param trash the trash bin.
    * */
-  public void release(final Channel ch, final ChannelGroup trash,
+  public void release(
+      final Channel ch,
+      final ChannelGroup trash,
       final ConcurrentHashMap<Channel, Channel> recyclableConnections) {
     final ChannelContext cc = ChannelContext.getChannelContext(ch);
     final ChannelContext.RegisteredChannelContext ecc = cc.getRegisteredChannelContext();

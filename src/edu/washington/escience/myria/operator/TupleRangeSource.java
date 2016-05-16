@@ -12,7 +12,7 @@ import edu.washington.escience.myria.storage.TupleBatchBuffer;
 
 /**
  * This class generates a range of single-column tuples.
- * 
+ *
  */
 public final class TupleRangeSource extends LeafOperator {
 
@@ -31,7 +31,7 @@ public final class TupleRangeSource extends LeafOperator {
 
   /**
    * Construct the TupleRangeSource.
-   * 
+   *
    * @param count the total number of tuples to output.
    * @param type the type of those tuples.
    */

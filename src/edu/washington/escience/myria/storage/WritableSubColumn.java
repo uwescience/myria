@@ -21,7 +21,7 @@ public final class WritableSubColumn implements WritableColumn {
 
   /**
    * Constructs a wrapper to present the specified column of the given table as a {@link WritableColumn}.
-   * 
+   *
    * @param table the table to be wrapped
    * @param column which column this object represents
    */
@@ -46,7 +46,6 @@ public final class WritableSubColumn implements WritableColumn {
   public WritableColumn appendDouble(final double value) throws BufferOverflowException {
     inner.putDouble(column, value);
     return this;
-
   }
 
   @Override
@@ -79,5 +78,4 @@ public final class WritableSubColumn implements WritableColumn {
     inner.putString(column, value);
     return this;
   }
-
 }

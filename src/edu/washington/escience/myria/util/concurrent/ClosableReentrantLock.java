@@ -14,7 +14,7 @@ public class ClosableReentrantLock extends ReentrantLock implements AutoCloseabl
 
   /**
    * Call this method in try block to gain the lock.
-   * 
+   *
    * @return this lock.
    */
   public ClosableReentrantLock open() {
@@ -26,5 +26,4 @@ public class ClosableReentrantLock extends ReentrantLock implements AutoCloseabl
   public void close() {
     unlock();
   }
-
 }

@@ -1,5 +1,5 @@
 /**
- * 
+ *
  */
 package edu.washington.escience.myria.operator;
 
@@ -28,7 +28,7 @@ import edu.washington.escience.myria.storage.TupleBatch;
 
 /**
  * @author valmeida
- * 
+ *
  */
 public class DbInsert extends AbstractDbInsert {
 
@@ -53,12 +53,13 @@ public class DbInsert extends AbstractDbInsert {
    * Constructs an insertion operator to store the tuples from the specified child into the specified database. If the
    * table does not exist, it will be created; if it does exist then old data will persist and new data will be
    * inserted.
-   * 
+   *
    * @param child the source of tuples to be inserted.
    * @param relationKey the key of the table the tuples should be inserted into.
    * @param connectionInfo the parameters of the database connection.
    */
-  public DbInsert(final Operator child, final RelationKey relationKey, final ConnectionInfo connectionInfo) {
+  public DbInsert(
+      final Operator child, final RelationKey relationKey, final ConnectionInfo connectionInfo) {
     this(child, relationKey, connectionInfo, false);
   }
 
@@ -66,12 +67,13 @@ public class DbInsert extends AbstractDbInsert {
    * Constructs an insertion operator to store the tuples from the specified child into the worker's default database.
    * If the table does not exist, it will be created. If <code>overwriteTable</code> is <code>true</code>, any existing
    * data will be dropped.
-   * 
+   *
    * @param child the source of tuples to be inserted.
    * @param relationKey the key of the table the tuples should be inserted into.
    * @param overwriteTable whether to overwrite a table that already exists.
    */
-  public DbInsert(final Operator child, final RelationKey relationKey, final boolean overwriteTable) {
+  public DbInsert(
+      final Operator child, final RelationKey relationKey, final boolean overwriteTable) {
     this(child, relationKey, null, overwriteTable);
   }
 
@@ -79,13 +81,16 @@ public class DbInsert extends AbstractDbInsert {
    * Constructs an insertion operator to store the tuples from the specified child into the specified database. If the
    * table does not exist, it will be created. If <code>overwriteTable</code> is <code>true</code>, any existing data
    * will be dropped.
-   * 
+   *
    * @param child the source of tuples to be inserted.
    * @param relationKey the key of the table the tuples should be inserted into.
    * @param overwriteTable whether to overwrite a table that already exists.
    * @param indexes indexes created.
    */
-  public DbInsert(final Operator child, final RelationKey relationKey, final boolean overwriteTable,
+  public DbInsert(
+      final Operator child,
+      final RelationKey relationKey,
+      final boolean overwriteTable,
       final List<List<IndexRef>> indexes) {
     this(child, relationKey, null, overwriteTable, indexes);
   }
@@ -94,13 +99,16 @@ public class DbInsert extends AbstractDbInsert {
    * Constructs an insertion operator to store the tuples from the specified child into the specified database. If the
    * table does not exist, it will be created. If <code>overwriteTable</code> is <code>true</code>, any existing data
    * will be dropped.
-   * 
+   *
    * @param child the source of tuples to be inserted.
    * @param relationKey the key of the table the tuples should be inserted into.
    * @param connectionInfo the parameters of the database connection.
    * @param overwriteTable whether to overwrite a table that already exists.
    */
-  public DbInsert(final Operator child, final RelationKey relationKey, final ConnectionInfo connectionInfo,
+  public DbInsert(
+      final Operator child,
+      final RelationKey relationKey,
+      final ConnectionInfo connectionInfo,
       final boolean overwriteTable) {
     this(child, relationKey, connectionInfo, overwriteTable, null);
   }
@@ -109,15 +117,19 @@ public class DbInsert extends AbstractDbInsert {
    * Constructs an insertion operator to store the tuples from the specified child into the specified database. If the
    * table does not exist, it will be created. If <code>overwriteTable</code> is <code>true</code>, any existing data
    * will be dropped.
-   * 
+   *
    * @param child the source of tuples to be inserted.
    * @param relationKey the key of the table the tuples should be inserted into.
    * @param connectionInfo the parameters of the database connection.
    * @param overwriteTable whether to overwrite a table that already exists.
    * @param indexes the indexes to be created on the table. Each entry is a list of columns.
    */
-  public DbInsert(final Operator child, final RelationKey relationKey, final ConnectionInfo connectionInfo,
-      final boolean overwriteTable, final List<List<IndexRef>> indexes) {
+  public DbInsert(
+      final Operator child,
+      final RelationKey relationKey,
+      final ConnectionInfo connectionInfo,
+      final boolean overwriteTable,
+      final List<List<IndexRef>> indexes) {
     this(child, relationKey, connectionInfo, overwriteTable, indexes, null);
   }
 
@@ -125,7 +137,7 @@ public class DbInsert extends AbstractDbInsert {
    * Constructs an insertion operator to store the tuples from the specified child into the specified database. If the
    * table does not exist, it will be created. If <code>overwriteTable</code> is <code>true</code>, any existing data
    * will be dropped.
-   * 
+   *
    * @param child the source of tuples to be inserted.
    * @param relationKey the key of the table the tuples should be inserted into.
    * @param connectionInfo the parameters of the database connection.
@@ -133,8 +145,13 @@ public class DbInsert extends AbstractDbInsert {
    * @param indexes the indexes to be created on the table. Each entry is a list of columns.
    * @param partitionFunction the PartitionFunction used to partition the table across workers.
    */
-  public DbInsert(final Operator child, final RelationKey relationKey, final ConnectionInfo connectionInfo,
-      final boolean overwriteTable, final List<List<IndexRef>> indexes, final PartitionFunction partitionFunction) {
+  public DbInsert(
+      final Operator child,
+      final RelationKey relationKey,
+      final ConnectionInfo connectionInfo,
+      final boolean overwriteTable,
+      final List<List<IndexRef>> indexes,
+      final PartitionFunction partitionFunction) {
     super(child);
     Objects.requireNonNull(relationKey, "relationKey");
     this.connectionInfo = connectionInfo;
@@ -142,23 +159,26 @@ public class DbInsert extends AbstractDbInsert {
     this.overwriteTable = overwriteTable;
     this.partitionFunction = partitionFunction;
     /* Sanity check arguments -- cannot create an index in append mode. */
-    Preconditions.checkArgument(overwriteTable || indexes == null || indexes.size() == 0,
+    Preconditions.checkArgument(
+        overwriteTable || indexes == null || indexes.size() == 0,
         "Cannot create indexes when appending to a relation.");
     /*
      * 1) construct immutable copies of the given indexes.
-     * 
+     *
      * 2) ensure that the index requests are valid:
-     * 
+     *
      * - lists of column references must be non-null.
-     * 
+     *
      * - column references are unique per index.
      */
     if (indexes != null) {
       ImmutableList.Builder<List<IndexRef>> index = ImmutableList.builder();
       for (List<IndexRef> i : indexes) {
         Objects.requireNonNull(i);
-        Preconditions.checkArgument(i.size() == ImmutableSet.copyOf(i).size(),
-            "Column references cannot be repeated in index definition: %s", i);
+        Preconditions.checkArgument(
+            i.size() == ImmutableSet.copyOf(i).size(),
+            "Column references cannot be repeated in index definition: %s",
+            i);
         index.add(ImmutableList.copyOf(i));
       }
       this.indexes = index.build();
@@ -182,8 +202,11 @@ public class DbInsert extends AbstractDbInsert {
   protected void consumeTuples(final TupleBatch tupleBatch) throws DbException {
     Objects.requireNonNull(accessMethod, "accessMethod");
     Objects.requireNonNull(tempRelationKey, "tempRelationKey");
-    Preconditions.checkArgument(tupleBatch.getSchema().equals(getSchema()),
-        "tuple schema %s does not match operator schema %s", tupleBatch.getSchema(), getSchema());
+    Preconditions.checkArgument(
+        tupleBatch.getSchema().equals(getSchema()),
+        "tuple schema %s does not match operator schema %s",
+        tupleBatch.getSchema(),
+        getSchema());
     accessMethod.tupleBatchInsert(tempRelationKey, tupleBatch);
   }
 
@@ -192,7 +215,8 @@ public class DbInsert extends AbstractDbInsert {
 
     /* retrieve connection information from the environment variables, if not already set */
     if (connectionInfo == null && execEnvVars != null) {
-      connectionInfo = (ConnectionInfo) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_DATABASE_CONN_INFO);
+      connectionInfo =
+          (ConnectionInfo) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_DATABASE_CONN_INFO);
     }
 
     if (connectionInfo == null) {
@@ -217,7 +241,8 @@ public class DbInsert extends AbstractDbInsert {
 
     if (overwriteTable) {
       /* If overwriting, we insert into a temp table and then on success we drop the old and rename. */
-      tempRelationKey = RelationKey.of(relationKey.getUserName(), "MyriaSysTemp", relationKey.getRelationName());
+      tempRelationKey =
+          RelationKey.of(relationKey.getUserName(), "MyriaSysTemp", relationKey.getRelationName());
       /* Drop the temp table, if it exists. */
       accessMethod.dropTableIfExists(tempRelationKey);
     } else {
@@ -240,8 +265,7 @@ public class DbInsert extends AbstractDbInsert {
   }
 
   @Override
-  protected void childEOI() throws DbException {
-  }
+  protected void childEOI() throws DbException {}
 
   /**
    * @return the name of the relation that this operator will write to.
@@ -252,8 +276,9 @@ public class DbInsert extends AbstractDbInsert {
 
   @Override
   public Map<RelationKey, RelationWriteMetadata> writeSet() {
-    return ImmutableMap.of(relationKey, new RelationWriteMetadata(relationKey, getSchema(), overwriteTable, false,
-        partitionFunction));
+    return ImmutableMap.of(
+        relationKey,
+        new RelationWriteMetadata(
+            relationKey, getSchema(), overwriteTable, false, partitionFunction));
   }
-
 }

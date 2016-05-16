@@ -14,18 +14,22 @@ import edu.washington.escience.myria.operator.agg.PrimitiveAggregator.Aggregatio
  */
 public final class AggUtils {
   /** Utility classes do not have a public constructor. */
-  private AggUtils() {
-  }
+  private AggUtils() {}
 
   /** Which aggregation ops require COUNT to be computed. */
-  private static final Set<AggregationOp> COUNT_OPS = ImmutableSet.of(AggregationOp.COUNT, AggregationOp.AVG,
-      AggregationOp.STDEV);
+  private static final Set<AggregationOp> COUNT_OPS =
+      ImmutableSet.of(AggregationOp.COUNT, AggregationOp.AVG, AggregationOp.STDEV);
   /** Which aggregation ops require SUM to be computed. */
-  private static final Set<AggregationOp> SUM_OPS = ImmutableSet.of(AggregationOp.SUM, AggregationOp.AVG,
-      AggregationOp.STDEV);
+  private static final Set<AggregationOp> SUM_OPS =
+      ImmutableSet.of(AggregationOp.SUM, AggregationOp.AVG, AggregationOp.STDEV);
   /** Which aggregation ops require any tuple-level stats to be computed. */
-  private static final Set<AggregationOp> STATS_OPS = ImmutableSet.of(AggregationOp.MIN, AggregationOp.MAX,
-      AggregationOp.SUM, AggregationOp.AVG, AggregationOp.STDEV);
+  private static final Set<AggregationOp> STATS_OPS =
+      ImmutableSet.of(
+          AggregationOp.MIN,
+          AggregationOp.MAX,
+          AggregationOp.SUM,
+          AggregationOp.AVG,
+          AggregationOp.STDEV);
 
   /**
    * @param aggOps the aggregate operations
@@ -77,14 +81,14 @@ public final class AggUtils {
 
   /**
    * Utility class to allocate a set of aggregators from the factories.
-   * 
+   *
    * @param factories The factories that will produce the aggregators.
    * @param inputSchema The schema of the input tuples.
    * @return the aggregators for this operator.
    * @throws DbException if there is an error.
    */
-  public static Aggregator[] allocateAggs(final AggregatorFactory[] factories, final Schema inputSchema)
-      throws DbException {
+  public static Aggregator[] allocateAggs(
+      final AggregatorFactory[] factories, final Schema inputSchema) throws DbException {
     Aggregator[] aggregators = new Aggregator[factories.length];
     for (int j = 0; j < factories.length; ++j) {
       aggregators[j] = factories[j].get(inputSchema);
@@ -94,7 +98,7 @@ public final class AggUtils {
 
   /**
    * Utility class to allocate the initial aggregation states from a set of {@link Aggregator}s.
-   * 
+   *
    * @param aggregators the {@link Aggregator}s that will update the states.
    * @return the initial aggregation states for the specified {@link Aggregator}s.
    */

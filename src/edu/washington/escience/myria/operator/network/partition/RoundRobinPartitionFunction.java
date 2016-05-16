@@ -10,8 +10,8 @@ import edu.washington.escience.myria.storage.TupleBatch;
 
 /**
  * A partition function that simply sends one tuple to each output in turn.
- * 
- * 
+ *
+ *
  */
 public final class RoundRobinPartitionFunction extends PartitionFunction {
 
@@ -24,7 +24,8 @@ public final class RoundRobinPartitionFunction extends PartitionFunction {
    * @param numPartitions the number of partitions.
    */
   @JsonCreator
-  public RoundRobinPartitionFunction(@Nullable @JsonProperty("numPartitions") final Integer numPartitions) {
+  public RoundRobinPartitionFunction(
+      @Nullable @JsonProperty("numPartitions") final Integer numPartitions) {
     super(numPartitions);
   }
 

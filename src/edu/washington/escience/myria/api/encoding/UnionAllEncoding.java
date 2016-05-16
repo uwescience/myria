@@ -9,5 +9,4 @@ public class UnionAllEncoding extends NaryOperatorEncoding<UnionAll> {
   public UnionAll construct(ConstructArgs args) {
     return new UnionAll(null);
   }
-
 }

@@ -52,7 +52,7 @@ public class Apply extends UnaryOperator {
   }
 
   /**
-   * 
+   *
    * @param child child operator that data is fetched from
    * @param emitExpressions expression that created the output
    */
@@ -97,7 +97,8 @@ public class Apply extends UnaryOperator {
     Schema inputSchema = Objects.requireNonNull(getChild().getSchema());
 
     emitEvaluators = new ArrayList<>(emitExpressions.size());
-    final ExpressionOperatorParameter parameters = new ExpressionOperatorParameter(inputSchema, getNodeID());
+    final ExpressionOperatorParameter parameters =
+        new ExpressionOperatorParameter(inputSchema, getNodeID());
     for (Expression expr : emitExpressions) {
       GenericEvaluator evaluator;
       if (expr.isConstant()) {

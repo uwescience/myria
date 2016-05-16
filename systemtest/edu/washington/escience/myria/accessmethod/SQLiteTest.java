@@ -39,10 +39,13 @@ public class SQLiteTest {
     final RelationKey testtableKey = RelationKey.of("test", "test", "testtable");
 
     final Schema outputSchema =
-        new Schema(ImmutableList.of(Type.LONG_TYPE, Type.STRING_TYPE), ImmutableList.of("id", "name"));
+        new Schema(
+            ImmutableList.of(Type.LONG_TYPE, Type.STRING_TYPE), ImmutableList.of("id", "name"));
 
     final String tempDirPath =
-        Files.createTempDirectory(MyriaConstants.SYSTEM_NAME + "_SQLiteTest").toFile().getAbsolutePath();
+        Files.createTempDirectory(MyriaConstants.SYSTEM_NAME + "_SQLiteTest")
+            .toFile()
+            .getAbsolutePath();
     final String dbAbsolutePath = FilenameUtils.concat(tempDirPath, "sqlite_testtable.db");
     SQLiteUtils.createTable(dbAbsolutePath, testtableKey, "id long,name varchar(20)", true, true);
 
@@ -63,8 +66,12 @@ public class SQLiteTest {
 
     /* Scan the testtable in database */
     final DbQueryScan scan =
-        new DbQueryScan(SQLiteInfo.of(dbAbsolutePath), testtableKey, outputSchema, new int[] { 0, 1 }, new boolean[] {
-            true, false });
+        new DbQueryScan(
+            SQLiteInfo.of(dbAbsolutePath),
+            testtableKey,
+            outputSchema,
+            new int[] {0, 1},
+            new boolean[] {true, false});
 
     final Operator root = scan;
     root.open(null);
@@ -112,12 +119,10 @@ public class SQLiteTest {
         previousId = currentId;
         previousName = currentName;
       }
-
     }
 
     TestUtils.assertTupleBagEqual(expectedResult, resultBag);
 
     FSUtils.blockingDeleteDirectory(tempDirPath);
-
   }
 }

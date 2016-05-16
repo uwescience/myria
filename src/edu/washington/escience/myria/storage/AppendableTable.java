@@ -12,7 +12,7 @@ import edu.washington.escience.myria.column.builder.WritableColumn;
 public interface AppendableTable extends TupleTable {
   /**
    * Append the specified value to the specified column.
-   * 
+   *
    * @param column index of the column.
    * @param value value to be appended.
    */
@@ -20,7 +20,7 @@ public interface AppendableTable extends TupleTable {
 
   /**
    * Append the specified value to the specified column.
-   * 
+   *
    * @param column index of the column.
    * @param value value to be appended.
    */
@@ -28,7 +28,7 @@ public interface AppendableTable extends TupleTable {
 
   /**
    * Append the specified value to the specified column.
-   * 
+   *
    * @param column index of the column.
    * @param value value to be appended.
    */
@@ -36,7 +36,7 @@ public interface AppendableTable extends TupleTable {
 
   /**
    * Append the specified value to the specified column.
-   * 
+   *
    * @param column index of the column.
    * @param value value to be appended.
    */
@@ -44,7 +44,7 @@ public interface AppendableTable extends TupleTable {
 
   /**
    * Append the specified value to the specified column.
-   * 
+   *
    * @param column index of the column.
    * @param value value to be appended.
    */
@@ -52,7 +52,7 @@ public interface AppendableTable extends TupleTable {
 
   /**
    * Append the specified value to the specified column.
-   * 
+   *
    * @param column index of the column.
    * @param value value to be appended.
    */
@@ -60,7 +60,7 @@ public interface AppendableTable extends TupleTable {
 
   /**
    * Append the specified value to the specified column.
-   * 
+   *
    * @param column index of the column.
    * @param value value to be appended.
    */
@@ -68,7 +68,7 @@ public interface AppendableTable extends TupleTable {
 
   /**
    * Append the specified value to the specified column.
-   * 
+   *
    * @param column index of the column.
    * @param value value to be appended.
    */

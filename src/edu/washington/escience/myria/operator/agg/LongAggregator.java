@@ -23,8 +23,14 @@ public final class LongAggregator extends PrimitiveAggregator {
   /**
    * Aggregate operations applicable for long columns.
    */
-  public static final Set<AggregationOp> AVAILABLE_AGG = ImmutableSet.of(AggregationOp.COUNT, AggregationOp.SUM,
-      AggregationOp.MAX, AggregationOp.MIN, AggregationOp.AVG, AggregationOp.STDEV);
+  public static final Set<AggregationOp> AVAILABLE_AGG =
+      ImmutableSet.of(
+          AggregationOp.COUNT,
+          AggregationOp.SUM,
+          AggregationOp.MAX,
+          AggregationOp.MIN,
+          AggregationOp.AVG,
+          AggregationOp.STDEV);
 
   /**
    * @param aFieldName aggregate field name for use in output schema.
@@ -70,7 +76,7 @@ public final class LongAggregator extends PrimitiveAggregator {
 
   /**
    * Helper function to add value to this aggregator. Note this does NOT update count.
-   * 
+   *
    * @param value the value to be added
    * @param state the state of the aggregate, which will be mutated.
    */
@@ -79,7 +85,8 @@ public final class LongAggregator extends PrimitiveAggregator {
       state.sum = LongMath.checkedAdd(state.sum, value);
     }
     if (needsSumSq) {
-      state.sumSquared = LongMath.checkedAdd(state.sumSquared, LongMath.checkedMultiply(value, value));
+      state.sumSquared =
+          LongMath.checkedAdd(state.sumSquared, LongMath.checkedMultiply(value, value));
     }
     if (needsMin) {
       state.min = Math.min(state.min, value);

@@ -7,13 +7,13 @@ import java.util.BitSet;
  * */
 public final class ImmutableBitSet extends BitSet {
   /**
-   * 
+   *
    */
   private static final long serialVersionUID = 1L;
 
   /**
    * Wrap a BitSet so the the BitSet is readonly.
-   * 
+   *
    * @param contents the BitSet to be wrapped
    * */
   public ImmutableBitSet(final BitSet contents) {
@@ -56,7 +56,7 @@ public final class ImmutableBitSet extends BitSet {
 
   /**
    * Clone as an ordinary BitSet.
-   * 
+   *
    * @return the cloned BitSet.
    * */
   public BitSet cloneAsBitSet() {

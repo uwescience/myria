@@ -10,7 +10,7 @@ import org.joda.time.DateTime;
 public interface ReplaceableColumn extends ReadableColumn {
   /**
    * Replaces the value at the specified row in this column.
-   * 
+   *
    * @param value the new value.
    * @param row row of element to replace.
    * @throws UnsupportedOperationException if this column does not support this type.
@@ -19,7 +19,7 @@ public interface ReplaceableColumn extends ReadableColumn {
 
   /**
    * Replaces the value at the specified row in this column.
-   * 
+   *
    * @param value the new value.
    * @param row row of element to replace.
    * @throws UnsupportedOperationException if this column does not support this type.
@@ -28,7 +28,7 @@ public interface ReplaceableColumn extends ReadableColumn {
 
   /**
    * Replaces the value at the specified row in this column.
-   * 
+   *
    * @param value the new value.
    * @param row row of element to replace.
    * @throws UnsupportedOperationException if this column does not support this type.
@@ -37,7 +37,7 @@ public interface ReplaceableColumn extends ReadableColumn {
 
   /**
    * Replaces the value at the specified row in this column.
-   * 
+   *
    * @param value the new value.
    * @param row row of element to replace.
    * @throws UnsupportedOperationException if this column does not support this type.
@@ -46,7 +46,7 @@ public interface ReplaceableColumn extends ReadableColumn {
 
   /**
    * Replaces the value at the specified row in this column.
-   * 
+   *
    * @param value the new value.
    * @param row row of element to replace.
    * @throws UnsupportedOperationException if this column does not support this type.
@@ -55,7 +55,7 @@ public interface ReplaceableColumn extends ReadableColumn {
 
   /**
    * Replaces the value at the specified row in this column.
-   * 
+   *
    * @param value the new value.
    * @param row row of element to replace.
    * @throws UnsupportedOperationException if this column does not support this type.
@@ -64,11 +64,10 @@ public interface ReplaceableColumn extends ReadableColumn {
 
   /**
    * Replaces the value at the specified row in this column.
-   * 
+   *
    * @param value the new value.
    * @param row row of element to replace.
    * @throws UnsupportedOperationException if this column does not support this type.
    */
   void replaceString(@Nonnull final String value, final int row);
-
 }

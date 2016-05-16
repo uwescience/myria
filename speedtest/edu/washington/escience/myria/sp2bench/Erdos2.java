@@ -45,7 +45,7 @@ public class Erdos2 implements QueryPlanGenerator {
    * and erdospubs.subject=coauthors.subject <br>
    * and coauthors.object=coauthorpubs.object <br>
    * and cocoauthors.subject=coauthorpubs.subject<br>
-   * 
+   *
    * */
   @Override
   public Map<Integer, RootOperator[]> getWorkerPlan(int[] allWorkers) throws Exception {
@@ -55,14 +55,14 @@ public class Erdos2 implements QueryPlanGenerator {
   }
 
   @Override
-  public RootOperator getMasterPlan(int[] allWorkers, final LinkedBlockingQueue<TupleBatch> receivedTupleBatches)
+  public RootOperator getMasterPlan(
+      int[] allWorkers, final LinkedBlockingQueue<TupleBatch> receivedTupleBatches)
       throws Exception {
     return Erdos.getMasterPlan(allWorkers, null);
   }
 
   @Test
   public void test() throws Exception {
-    System.out.println(new Erdos2().getWorkerPlan(new int[] { 0, 1, 2, 3, 4 }).get(0)[0]);
+    System.out.println(new Erdos2().getWorkerPlan(new int[] {0, 1, 2, 3, 4}).get(0)[0]);
   }
-
 }

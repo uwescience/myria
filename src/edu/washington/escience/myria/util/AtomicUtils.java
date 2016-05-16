@@ -10,8 +10,7 @@ public final class AtomicUtils {
   /**
    * Make the util class uninstantiable.
    * */
-  private AtomicUtils() {
-  }
+  private AtomicUtils() {}
 
   /**
    * Atomically do bitwise OR between the value in the AtomicInteger and the toOrValue, and set the new value to the
@@ -140,5 +139,4 @@ public final class AtomicUtils {
   public static void unsetBitByValue(final AtomicInteger ai, final int value) {
     unsetBitByIndex(ai, Integer.numberOfTrailingZeros(value));
   }
-
 }

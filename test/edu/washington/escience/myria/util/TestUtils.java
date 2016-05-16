@@ -53,14 +53,13 @@ public final class TestUtils {
       }
       return o1.getValue().compareTo(o2.getValue());
     }
-
   }
 
   private static Random random = null;
 
   /**
    * See http://docs.travis-ci.com/user/ci-environment/#Environment-variables
-   * 
+   *
    * @return <code>true</code> if the system is currently in a Travis CI build.
    */
   public static boolean inTravis() {
@@ -97,8 +96,11 @@ public final class TestUtils {
     random = null;
   }
 
-  public static void assertEqualsToStringBuilder(final StringBuilder errorMessageHolder, final String currentEM,
-      final Object expected, final Object actual) {
+  public static void assertEqualsToStringBuilder(
+      final StringBuilder errorMessageHolder,
+      final String currentEM,
+      final Object expected,
+      final Object actual) {
     if (expected == null) {
       if (actual != null) {
         errorMessageHolder.append(currentEM);
@@ -122,11 +124,11 @@ public final class TestUtils {
     }
   }
 
-  public static void assertTupleBagEqual(final HashMap<Tuple, Integer> expectedResult,
-      final HashMap<Tuple, Integer> actualResult) {
+  public static void assertTupleBagEqual(
+      final HashMap<Tuple, Integer> expectedResult, final HashMap<Tuple, Integer> actualResult) {
     final StringBuilder errorMessageHolder = new StringBuilder();
-    assertEqualsToStringBuilder(errorMessageHolder, "Number of unique tuples", expectedResult.size(), actualResult
-        .size());
+    assertEqualsToStringBuilder(
+        errorMessageHolder, "Number of unique tuples", expectedResult.size(), actualResult.size());
     final HashSet<Tuple> keySet = new HashSet<Tuple>();
     keySet.addAll(expectedResult.keySet());
     keySet.addAll(actualResult.keySet());
@@ -173,13 +175,17 @@ public final class TestUtils {
   }
 
   @SuppressWarnings("rawtypes")
-  public static HashMap<Tuple, Integer> naturalJoin(final TupleBatchBuffer child1, final TupleBatchBuffer child2,
-      final int child1JoinColumn, final int child2JoinColumn) {
+  public static HashMap<Tuple, Integer> naturalJoin(
+      final TupleBatchBuffer child1,
+      final TupleBatchBuffer child2,
+      final int child1JoinColumn,
+      final int child2JoinColumn) {
 
     /**
      * join key -> {tuple->num occur}
      * */
-    final HashMap<Comparable, HashMap<Tuple, Integer>> child1Hash = new HashMap<Comparable, HashMap<Tuple, Integer>>();
+    final HashMap<Comparable, HashMap<Tuple, Integer>> child1Hash =
+        new HashMap<Comparable, HashMap<Tuple, Integer>>();
 
     int numChild1Column = 0;
     final HashMap<Tuple, Integer> result = new HashMap<Tuple, Integer>();
@@ -243,11 +249,10 @@ public final class TestUtils {
       }
     }
     return result;
-
   }
 
-  public static HashMap<Tuple, Integer> groupByAvgLongColumn(final TupleBatchBuffer source, final int groupByColumn,
-      final int aggColumn) {
+  public static HashMap<Tuple, Integer> groupByAvgLongColumn(
+      final TupleBatchBuffer source, final int groupByColumn, final int aggColumn) {
     final List<List<? extends Column<?>>> tbs = source.getAllAsRawColumn();
     final HashMap<Object, Long> sum = new HashMap<Object, Long>();
     final HashMap<Object, Integer> count = new HashMap<Object, Integer>();
@@ -279,8 +284,8 @@ public final class TestUtils {
     return result;
   }
 
-  public static <T extends Comparable<T>> HashMap<Tuple, Integer> groupByMax(final TupleBatchBuffer source,
-      final int groupByColumn, final int aggColumn) {
+  public static <T extends Comparable<T>> HashMap<Tuple, Integer> groupByMax(
+      final TupleBatchBuffer source, final int groupByColumn, final int aggColumn) {
     final List<List<? extends Column<?>>> tbs = source.getAllAsRawColumn();
     final HashMap<Object, T> max = new HashMap<Object, T>();
     for (final List<? extends Column<?>> rawData : tbs) {
@@ -310,8 +315,8 @@ public final class TestUtils {
     return result;
   }
 
-  public static <T extends Comparable<T>> HashMap<Tuple, Integer> groupByMin(final TupleBatchBuffer source,
-      final int groupByColumn, final int aggColumn) {
+  public static <T extends Comparable<T>> HashMap<Tuple, Integer> groupByMin(
+      final TupleBatchBuffer source, final int groupByColumn, final int aggColumn) {
     final List<List<? extends Column<?>>> tbs = source.getAllAsRawColumn();
     final HashMap<Object, T> min = new HashMap<Object, T>();
     for (final List<? extends Column<?>> rawData : tbs) {
@@ -341,8 +346,8 @@ public final class TestUtils {
     return result;
   }
 
-  public static HashMap<Tuple, Integer> groupBySumLongColumn(final TupleBatchBuffer source, final int groupByColumn,
-      final int aggColumn) {
+  public static HashMap<Tuple, Integer> groupBySumLongColumn(
+      final TupleBatchBuffer source, final int groupByColumn, final int aggColumn) {
     final List<List<? extends Column<?>>> tbs = source.getAllAsRawColumn();
     final HashMap<Object, Long> sum = new HashMap<Object, Long>();
     for (final List<? extends Column<?>> rawData : tbs) {
@@ -371,7 +376,8 @@ public final class TestUtils {
   }
 
   /***/
-  public static String[] randomFixedLengthNumericString(final int min, final int max, final int size, final int length) {
+  public static String[] randomFixedLengthNumericString(
+      final int min, final int max, final int size, final int length) {
 
     final String[] result = new String[size];
     final long[] intV = randomLong(min, max, size);
@@ -421,7 +427,8 @@ public final class TestUtils {
    * @param sorted Generate sorted tuples, sorted by id
    * @return
    */
-  public static TupleBatchBuffer generateRandomTuples(final int numTuples, final int sampleSize, boolean sorted) {
+  public static TupleBatchBuffer generateRandomTuples(
+      final int numTuples, final int sampleSize, boolean sorted) {
     final ArrayList<Entry<Long, String>> entries = new ArrayList<Entry<Long, String>>();
 
     final long[] ids = randomLong(0, sampleSize, numTuples);
@@ -437,7 +444,8 @@ public final class TestUtils {
     }
 
     final Schema schema =
-        new Schema(ImmutableList.of(Type.LONG_TYPE, Type.STRING_TYPE), ImmutableList.of("id", "name"));
+        new Schema(
+            ImmutableList.of(Type.LONG_TYPE, Type.STRING_TYPE), ImmutableList.of("id", "name"));
 
     final TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
 
@@ -451,7 +459,7 @@ public final class TestUtils {
   /**
    * Construct a SubQuery that will insert the given tuples (starting on the master) on the specified workers using the
    * specified relation key and partition function.
-   * 
+   *
    * @param masterSource the source of tuples, from the master.
    * @param dest the name of the relation into which tuples will be inserted (using overwrite!).
    * @param pf how tuples will be partitioned on the cluster.
@@ -459,15 +467,22 @@ public final class TestUtils {
    * @return a SubQuery that will insert the given tuples (starting on the master) on the specified workers using the
    *         specified relation key and partition function.
    */
-  public static final SubQuery insertRelation(@Nonnull final Operator masterSource, @Nonnull final RelationKey dest,
-      @Nonnull PartitionFunction pf, @Nonnull Set<Integer> workers) {
-    return insertRelation(masterSource, dest, pf, ArrayUtils.toPrimitive(workers.toArray(new Integer[workers.size()])));
+  public static final SubQuery insertRelation(
+      @Nonnull final Operator masterSource,
+      @Nonnull final RelationKey dest,
+      @Nonnull PartitionFunction pf,
+      @Nonnull Set<Integer> workers) {
+    return insertRelation(
+        masterSource,
+        dest,
+        pf,
+        ArrayUtils.toPrimitive(workers.toArray(new Integer[workers.size()])));
   }
 
   /**
    * Construct a SubQuery that will insert the given tuples (starting on the master) on the specified workers using the
    * specified relation key and partition function.
-   * 
+   *
    * @param masterSource the source of tuples, from the master.
    * @param dest the name of the relation into which tuples will be inserted (using overwrite!).
    * @param pf how tuples will be partitioned on the cluster.
@@ -475,8 +490,11 @@ public final class TestUtils {
    * @return a SubQuery that will insert the given tuples (starting on the master) on the specified workers using the
    *         specified relation key and partition function.
    */
-  public static final SubQuery insertRelation(@Nonnull final Operator masterSource, @Nonnull final RelationKey dest,
-      @Nonnull PartitionFunction pf, @Nonnull int[] workers) {
+  public static final SubQuery insertRelation(
+      @Nonnull final Operator masterSource,
+      @Nonnull final RelationKey dest,
+      @Nonnull PartitionFunction pf,
+      @Nonnull int[] workers) {
     final ExchangePairID id = ExchangePairID.newID();
     /* Master plan */
     GenericShuffleProducer sp = new GenericShuffleProducer(masterSource, id, workers, pf);
@@ -484,7 +502,8 @@ public final class TestUtils {
 
     /* Worker plan */
     GenericShuffleConsumer sc =
-        new GenericShuffleConsumer(masterSource.getSchema(), id, new int[] { MyriaConstants.MASTER_ID });
+        new GenericShuffleConsumer(
+            masterSource.getSchema(), id, new int[] {MyriaConstants.MASTER_ID});
     DbInsert insert = new DbInsert(sc, dest, true);
     Map<Integer, SubQueryPlan> workerPlans = Maps.newHashMap();
     for (int i : workers) {
@@ -520,14 +539,15 @@ public final class TestUtils {
     /* Worker plans */
     Map<Integer, SubQueryPlan> workerPlans = Maps.newHashMap();
     /* First worker */
-    workerPlans.put(workers[0], new SubQueryPlan(new SinkRoot(new InitFailureInjector(new EOSSource()))));
+    workerPlans.put(
+        workers[0], new SubQueryPlan(new SinkRoot(new InitFailureInjector(new EOSSource()))));
     return new SubQuery(masterPlan, workerPlans);
   }
 
   /**
    * Returns a {@link TupleBatchBuffer} containing the values 0 to {@code n-1}. The column is of type {@Link
    * Type#INT_TYPE} and the column name is {@code "val"}.
-   * 
+   *
    * @param n the number of values in the buffer.
    * @return a {@link TupleBatchBuffer} containing the values 0 to {@code n-1}
    */

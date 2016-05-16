@@ -21,15 +21,15 @@ import edu.washington.escience.myria.util.JsonAPIUtils;
 
 /**
  * Test DbDelete Operator
- * 
+ *
  * This test performs a DbDelete under two different scenarios:
- * 
+ *
  * testDeleteRelationInCatalog(): This tests whether the Catalog deletes the relation after calling deleteDataset() from
  * the server
- * 
+ *
  * testDeleteNonExistentRelation(): This tests whether deleteDataset() is able to delete the tables from the underlying
  * database even if it does not exist in all workers expressed by the Catalog.
- * 
+ *
  */
 public class DbDeleteTest extends SystemTestBase {
   /**
@@ -49,14 +49,18 @@ public class DbDeleteTest extends SystemTestBase {
 
   /**
    * Tests if the relation has been deleted from the Catalog successfully.
-   * 
+   *
    * @throws Exception
    */
   @Test
   public void testDeleteRelationInCatalog() throws Exception {
     ingestTestDataset();
 
-    JsonAPIUtils.deleteDataset("localhost", masterDaemonPort, relationKey.getUserName(), relationKey.getProgramName(),
+    JsonAPIUtils.deleteDataset(
+        "localhost",
+        masterDaemonPort,
+        relationKey.getUserName(),
+        relationKey.getProgramName(),
         relationKey.getRelationName());
 
     assertTrue(server.getDatasetStatus(relationKey) == null);
@@ -74,7 +78,11 @@ public class DbDeleteTest extends SystemTestBase {
     assertTrue(existsTable(workerIDs[0], relationKey));
     assertTrue(existsTable(workerIDs[1], relationKey));
 
-    JsonAPIUtils.deleteDataset("localhost", masterDaemonPort, relationKey.getUserName(), relationKey.getProgramName(),
+    JsonAPIUtils.deleteDataset(
+        "localhost",
+        masterDaemonPort,
+        relationKey.getUserName(),
+        relationKey.getProgramName(),
         relationKey.getRelationName());
 
     assertFalse(existsTable(workerIDs[0], relationKey));
@@ -84,7 +92,7 @@ public class DbDeleteTest extends SystemTestBase {
   /**
    * Tests if the relation has been deleted successfully from the underlying databases on all the workers even if a
    * worker does not contain the dataset to begin with.
-   * 
+   *
    * @throws Exception
    */
   @Test
@@ -97,7 +105,11 @@ public class DbDeleteTest extends SystemTestBase {
     assertFalse(existsTable(workerIDs[0], relationKey));
     assertTrue(existsTable(workerIDs[1], relationKey));
 
-    JsonAPIUtils.deleteDataset("localhost", masterDaemonPort, relationKey.getUserName(), relationKey.getProgramName(),
+    JsonAPIUtils.deleteDataset(
+        "localhost",
+        masterDaemonPort,
+        relationKey.getUserName(),
+        relationKey.getProgramName(),
         relationKey.getRelationName());
 
     assertFalse(existsTable(workerIDs[0], relationKey));
@@ -108,10 +120,18 @@ public class DbDeleteTest extends SystemTestBase {
    * Ingest a test dataset.
    */
   public void ingestTestDataset() throws Exception {
-    DataSource relationSource = new FileSource(Paths.get("testdata", "filescan", "simple_two_col_int.txt").toString());
+    DataSource relationSource =
+        new FileSource(Paths.get("testdata", "filescan", "simple_two_col_int.txt").toString());
     relationKey = RelationKey.of("public", "adhoc", "testIngest");
     relationSchema = Schema.ofFields("x", Type.INT_TYPE, "y", Type.INT_TYPE);
-    JsonAPIUtils.ingestData("localhost", masterDaemonPort, ingest(relationKey, relationSchema, relationSource, ' ',
-        new RoundRobinPartitionFunction(workerIDs.length)));
+    JsonAPIUtils.ingestData(
+        "localhost",
+        masterDaemonPort,
+        ingest(
+            relationKey,
+            relationSchema,
+            relationSource,
+            ' ',
+            new RoundRobinPartitionFunction(workerIDs.length)));
   }
 }

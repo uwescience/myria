@@ -1,9 +1,9 @@
 package edu.washington.escience.myria.operator;
 
 /**
- * 
+ *
  * @author dominik
- * 
+ *
  */
 public abstract class NAryOperator extends Operator {
 
@@ -33,7 +33,7 @@ public abstract class NAryOperator extends Operator {
 
   /**
    * Return a child.
-   * 
+   *
    * @param childIdx the index of the child to return
    * @return the child
    */
@@ -52,5 +52,4 @@ public abstract class NAryOperator extends Operator {
   protected int getNumChildren() {
     return children.length;
   }
-
 }

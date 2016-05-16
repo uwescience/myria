@@ -26,7 +26,7 @@ import edu.washington.escience.myria.util.DeploymentUtils;
 
 /**
  * This is the class that handles API calls that return workers.
- * 
+ *
  * @author jwang
  */
 @Path("/server")
@@ -40,7 +40,7 @@ public final class MasterResource {
 
   /**
    * Shutdown the server.
-   * 
+   *
    * @param daemon the Myria {@link MasterDaemon} to be shutdown.
    * @return a success message.
    */
@@ -54,17 +54,18 @@ public final class MasterResource {
 
   private static void doShutdown(final MasterDaemon daemon) {
     /* A thread to stop the daemon after this request finishes. */
-    Thread shutdownThread = new Thread("MasterResource-Shutdown") {
-      @Override
-      public void run() {
-        try {
-          Thread.sleep(SLEEP_BEFORE_SHUTDOWN_MS);
-          daemon.stop();
-        } catch (Exception e) {
-          e.printStackTrace();
-        }
-      }
-    };
+    Thread shutdownThread =
+        new Thread("MasterResource-Shutdown") {
+          @Override
+          public void run() {
+            try {
+              Thread.sleep(SLEEP_BEFORE_SHUTDOWN_MS);
+              daemon.stop();
+            } catch (Exception e) {
+              e.printStackTrace();
+            }
+          }
+        };
 
     /* Start the thread, then return an empty success response. */
     shutdownThread.start();
@@ -95,7 +96,7 @@ public final class MasterResource {
 
   /**
    * Restart the server.
-   * 
+   *
    * @param server the Myria {@link Server} to be restarted.
    * @return a success message.
    * @throws ConfigFileException
@@ -104,12 +105,16 @@ public final class MasterResource {
   @Path("/restart")
   @ADMIN
   public Response restart(@Context final MasterDaemon daemon) throws ConfigFileException {
-    String workingDir = daemon.getClusterMaster().getConfig().getWorkingDirectory(MyriaConstants.MASTER_ID);
+    String workingDir =
+        daemon.getClusterMaster().getConfig().getWorkingDirectory(MyriaConstants.MASTER_ID);
     String deploymentFile = FilenameUtils.concat(workingDir, MyriaConstants.DEPLOYMENT_CONF_FILE);
     int pid = getProcessPid();
     String classpath = String.format("'%s/conf:%s/libs/*'", workingDir, workingDir);
     String command =
-        String.format("java -cp %s edu.washington.escience.myria.util.MyriaLauncher %s %s", classpath, deploymentFile,
+        String.format(
+            "java -cp %s edu.washington.escience.myria.util.MyriaLauncher %s %s",
+            classpath,
+            deploymentFile,
             Integer.toString(pid));
     List<String> args = new ArrayList<>();
     // HACK: If we launch the java process directly, then for some reason the child process exits as soon as the parent
@@ -126,7 +131,7 @@ public final class MasterResource {
 
   /**
    * Get the version information of Myria at build time.
-   * 
+   *
    * @return a {@link VersionEncoding}.
    */
   @GET
@@ -137,7 +142,7 @@ public final class MasterResource {
 
   /**
    * Get the path to the deployment.cfg file.
-   * 
+   *
    * @param server the Myria {@link Server}.
    * @return the file path.
    */

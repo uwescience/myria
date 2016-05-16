@@ -13,12 +13,12 @@ import edu.washington.escience.myria.storage.ReplaceableColumn;
 
 /**
  * A mutable column of a batch of tuples.
- * 
+ *
  * @param <T> type of the objects in this column.
- * 
+ *
  */
-public abstract class MutableColumn<T extends Comparable<?>> implements Cloneable, ReadableColumn, ReplaceableColumn,
-    Serializable {
+public abstract class MutableColumn<T extends Comparable<?>>
+    implements Cloneable, ReadableColumn, ReplaceableColumn, Serializable {
 
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
@@ -105,7 +105,7 @@ public abstract class MutableColumn<T extends Comparable<?>> implements Cloneabl
 
   /**
    * return the column representation of this mutable column. It copies data.
-   * 
+   *
    * @return the column representation of this mutable column.
    */
   public abstract Column<T> toColumn();

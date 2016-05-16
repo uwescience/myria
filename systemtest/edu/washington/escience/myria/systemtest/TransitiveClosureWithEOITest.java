@@ -79,7 +79,6 @@ public class TransitiveClosureWithEOITest extends SystemTestBase {
       }
     }
     return graph;
-
   }
 
   @Test
@@ -144,74 +143,99 @@ public class TransitiveClosureWithEOITest extends SystemTestBase {
     ExchangePairID joinArray1ID = ExchangePairID.newID();
 
     final GenericShuffleProducer sp1 =
-        new GenericShuffleProducer(scan1, joinArray1ID, new int[] { workerIDs[0], workerIDs[1] }, pf1);
+        new GenericShuffleProducer(
+            scan1, joinArray1ID, new int[] {workerIDs[0], workerIDs[1]}, pf1);
     final GenericShuffleConsumer sc1 =
-        new GenericShuffleConsumer(tableSchema, joinArray1ID, new int[] { workerIDs[0], workerIDs[1] });
+        new GenericShuffleConsumer(
+            tableSchema, joinArray1ID, new int[] {workerIDs[0], workerIDs[1]});
 
     ExchangePairID beforeIngress1 = ExchangePairID.newID();
     final GenericShuffleProducer sp2 =
-        new GenericShuffleProducer(scan2, beforeIngress1, new int[] { workerIDs[0], workerIDs[1] }, pf0);
+        new GenericShuffleProducer(
+            scan2, beforeIngress1, new int[] {workerIDs[0], workerIDs[1]}, pf0);
     final GenericShuffleConsumer sc2 =
-        new GenericShuffleConsumer(tableSchema, beforeIngress1, new int[] { workerIDs[0], workerIDs[1] });
+        new GenericShuffleConsumer(
+            tableSchema, beforeIngress1, new int[] {workerIDs[0], workerIDs[1]});
 
     ExchangePairID beforeIngress2 = ExchangePairID.newID();
     final GenericShuffleProducer sp3_worker1 =
-        new GenericShuffleProducer(null, beforeIngress2, new int[] { workerIDs[0], workerIDs[1] }, pf0);
+        new GenericShuffleProducer(
+            null, beforeIngress2, new int[] {workerIDs[0], workerIDs[1]}, pf0);
     final GenericShuffleProducer sp3_worker2 =
-        new GenericShuffleProducer(null, beforeIngress2, new int[] { workerIDs[0], workerIDs[1] }, pf0);
+        new GenericShuffleProducer(
+            null, beforeIngress2, new int[] {workerIDs[0], workerIDs[1]}, pf0);
     // set their children later
     final GenericShuffleConsumer sc3_worker1 =
-        new GenericShuffleConsumer(tableSchema, beforeIngress2, new int[] { workerIDs[0], workerIDs[1] });
+        new GenericShuffleConsumer(
+            tableSchema, beforeIngress2, new int[] {workerIDs[0], workerIDs[1]});
     final GenericShuffleConsumer sc3_worker2 =
-        new GenericShuffleConsumer(tableSchema, beforeIngress2, new int[] { workerIDs[0], workerIDs[1] });
+        new GenericShuffleConsumer(
+            tableSchema, beforeIngress2, new int[] {workerIDs[0], workerIDs[1]});
 
     final ExchangePairID eosReceiverOpID = ExchangePairID.newID();
     final ExchangePairID eoiReceiverOpID = ExchangePairID.newID();
-    final Consumer eosReceiver = new Consumer(Schema.EMPTY_SCHEMA, eosReceiverOpID, new int[] { workerIDs[0] });
+    final Consumer eosReceiver =
+        new Consumer(Schema.EMPTY_SCHEMA, eosReceiverOpID, new int[] {workerIDs[0]});
 
     final IDBController idbController_worker1 =
-        new IDBController(0, eoiReceiverOpID, workerIDs[0], sc2, sc3_worker1, eosReceiver, new DupElim());
+        new IDBController(
+            0, eoiReceiverOpID, workerIDs[0], sc2, sc3_worker1, eosReceiver, new DupElim());
     final IDBController idbController_worker2 =
-        new IDBController(0, eoiReceiverOpID, workerIDs[0], sc2, sc3_worker2, eosReceiver, new DupElim());
+        new IDBController(
+            0, eoiReceiverOpID, workerIDs[0], sc2, sc3_worker2, eosReceiver, new DupElim());
 
     final ExchangePairID consumerID1 = ExchangePairID.newID();
     final ExchangePairID consumerID2 = ExchangePairID.newID();
     final LocalMultiwayProducer multiProducer_worker1 =
-
-    new LocalMultiwayProducer(idbController_worker1, new ExchangePairID[] { consumerID1, consumerID2 });
+        new LocalMultiwayProducer(
+            idbController_worker1, new ExchangePairID[] {consumerID1, consumerID2});
     final LocalMultiwayProducer multiProducer_worker2 =
-        new LocalMultiwayProducer(idbController_worker2, new ExchangePairID[] { consumerID1, consumerID2 });
-    final LocalMultiwayConsumer send2join_worker1 = new LocalMultiwayConsumer(tableSchema, consumerID1);
-    final LocalMultiwayConsumer send2join_worker2 = new LocalMultiwayConsumer(tableSchema, consumerID1);
-    final LocalMultiwayConsumer send2server_worker1 = new LocalMultiwayConsumer(tableSchema, consumerID2);
-    final LocalMultiwayConsumer send2server_worker2 = new LocalMultiwayConsumer(tableSchema, consumerID2);
+        new LocalMultiwayProducer(
+            idbController_worker2, new ExchangePairID[] {consumerID1, consumerID2});
+    final LocalMultiwayConsumer send2join_worker1 =
+        new LocalMultiwayConsumer(tableSchema, consumerID1);
+    final LocalMultiwayConsumer send2join_worker2 =
+        new LocalMultiwayConsumer(tableSchema, consumerID1);
+    final LocalMultiwayConsumer send2server_worker1 =
+        new LocalMultiwayConsumer(tableSchema, consumerID2);
+    final LocalMultiwayConsumer send2server_worker2 =
+        new LocalMultiwayConsumer(tableSchema, consumerID2);
 
     final SymmetricHashJoin join_worker1 =
-        new SymmetricHashJoin(sc1, send2join_worker1, new int[] { 1 }, new int[] { 0 }, new int[] { 0 },
-            new int[] { 1 });
+        new SymmetricHashJoin(
+            sc1, send2join_worker1, new int[] {1}, new int[] {0}, new int[] {0}, new int[] {1});
     final SymmetricHashJoin join_worker2 =
-        new SymmetricHashJoin(sc1, send2join_worker2, new int[] { 1 }, new int[] { 0 }, new int[] { 0 },
-            new int[] { 1 });
-    sp3_worker1.setChildren(new Operator[] { join_worker1 });
-    sp3_worker2.setChildren(new Operator[] { join_worker2 });
+        new SymmetricHashJoin(
+            sc1, send2join_worker2, new int[] {1}, new int[] {0}, new int[] {0}, new int[] {1});
+    sp3_worker1.setChildren(new Operator[] {join_worker1});
+    sp3_worker2.setChildren(new Operator[] {join_worker2});
 
     final ExchangePairID serverReceiveID = ExchangePairID.newID();
-    final CollectProducer cp_worker1 = new CollectProducer(send2server_worker1, serverReceiveID, MASTER_ID);
-    final CollectProducer cp_worker2 = new CollectProducer(send2server_worker2, serverReceiveID, MASTER_ID);
+    final CollectProducer cp_worker1 =
+        new CollectProducer(send2server_worker1, serverReceiveID, MASTER_ID);
+    final CollectProducer cp_worker2 =
+        new CollectProducer(send2server_worker2, serverReceiveID, MASTER_ID);
 
-    final Consumer eoiReceiver = new Consumer(IDBController.EOI_REPORT_SCHEMA, eoiReceiverOpID, workerIDs);
-    final UnionAll unionAll = new UnionAll(new Operator[] { eoiReceiver });
+    final Consumer eoiReceiver =
+        new Consumer(IDBController.EOI_REPORT_SCHEMA, eoiReceiverOpID, workerIDs);
+    final UnionAll unionAll = new UnionAll(new Operator[] {eoiReceiver});
     final EOSController eosController =
-        new EOSController(unionAll, new ExchangePairID[] { eosReceiverOpID }, workerIDs);
+        new EOSController(unionAll, new ExchangePairID[] {eosReceiverOpID}, workerIDs);
 
     final HashMap<Integer, RootOperator[]> workerPlans = new HashMap<Integer, RootOperator[]>();
-    workerPlans.put(workerIDs[0], new RootOperator[] {
-        cp_worker1, multiProducer_worker1, sp1, sp2, sp3_worker1, eosController });
-    workerPlans.put(workerIDs[1], new RootOperator[] { cp_worker2, multiProducer_worker2, sp1, sp2, sp3_worker2 });
+    workerPlans.put(
+        workerIDs[0],
+        new RootOperator[] {
+          cp_worker1, multiProducer_worker1, sp1, sp2, sp3_worker1, eosController
+        });
+    workerPlans.put(
+        workerIDs[1],
+        new RootOperator[] {cp_worker2, multiProducer_worker2, sp1, sp2, sp3_worker2});
 
     final CollectConsumer serverCollect =
-        new CollectConsumer(tableSchema, serverReceiveID, new int[] { workerIDs[0], workerIDs[1] });
-    final LinkedBlockingQueue<TupleBatch> receivedTupleBatches = new LinkedBlockingQueue<TupleBatch>();
+        new CollectConsumer(tableSchema, serverReceiveID, new int[] {workerIDs[0], workerIDs[1]});
+    final LinkedBlockingQueue<TupleBatch> receivedTupleBatches =
+        new LinkedBlockingQueue<TupleBatch>();
     final TBQueueExporter queueStore = new TBQueueExporter(receivedTupleBatches, serverCollect);
     final SinkRoot serverPlan = new SinkRoot(queueStore);
 
@@ -235,8 +259,8 @@ public class TransitiveClosureWithEOITest extends SystemTestBase {
     final Schema tableSchema = new Schema(table1Types, table1ColumnNames);
 
     // generate the graph
-    long[] tbl1ID1Worker1 = new long[] { 0, 1, 2, 2 };
-    long[] tbl1ID2Worker1 = new long[] { 1, 2, 3, 4 };
+    long[] tbl1ID1Worker1 = new long[] {0, 1, 2, 2};
+    long[] tbl1ID2Worker1 = new long[] {1, 2, 3, 4};
     TupleBatchBuffer table1 = new TupleBatchBuffer(tableSchema);
     for (int i = 0; i < tbl1ID1Worker1.length; i++) {
       table1.putLong(0, tbl1ID1Worker1[i]);
@@ -277,16 +301,19 @@ public class TransitiveClosureWithEOITest extends SystemTestBase {
     final ExchangePairID eosReceiverOpID = ExchangePairID.newID();
     final LocalMultiwayConsumer sendBack = new LocalMultiwayConsumer(tableSchema, consumerID1);
     final LocalMultiwayConsumer send2server = new LocalMultiwayConsumer(tableSchema, consumerID2);
-    final Consumer eosReceiver = new Consumer(Schema.EMPTY_SCHEMA, eosReceiverOpID, new int[] { workerIDs[0] });
+    final Consumer eosReceiver =
+        new Consumer(Schema.EMPTY_SCHEMA, eosReceiverOpID, new int[] {workerIDs[0]});
 
     final IDBController idbController =
-        new IDBController(0, eoiReceiverOpID, workerIDs[0], scan2, sendBack, eosReceiver, new DupElim());
+        new IDBController(
+            0, eoiReceiverOpID, workerIDs[0], scan2, sendBack, eosReceiver, new DupElim());
 
     final Consumer eoiReceiver =
-        new Consumer(IDBController.EOI_REPORT_SCHEMA, eoiReceiverOpID, new int[] { workerIDs[0] });
-    final UnionAll unionAll = new UnionAll(new Operator[] { eoiReceiver });
+        new Consumer(IDBController.EOI_REPORT_SCHEMA, eoiReceiverOpID, new int[] {workerIDs[0]});
+    final UnionAll unionAll = new UnionAll(new Operator[] {eoiReceiver});
     final EOSController eosController =
-        new EOSController(unionAll, new ExchangePairID[] { eosReceiverOpID }, new int[] { workerIDs[0] });
+        new EOSController(
+            unionAll, new ExchangePairID[] {eosReceiverOpID}, new int[] {workerIDs[0]});
 
     final int numPartition = 1;
     final PartitionFunction pf0 = new SingleFieldHashPartitionFunction(numPartition, 0);
@@ -295,34 +322,41 @@ public class TransitiveClosureWithEOITest extends SystemTestBase {
     joinArray1ID = ExchangePairID.newID();
     joinArray2ID = ExchangePairID.newID();
 
-    final GenericShuffleProducer sp1 = new GenericShuffleProducer(scan1, joinArray1ID, new int[] { workerIDs[0] }, pf1);
+    final GenericShuffleProducer sp1 =
+        new GenericShuffleProducer(scan1, joinArray1ID, new int[] {workerIDs[0]}, pf1);
     final GenericShuffleProducer sp2 =
-        new GenericShuffleProducer(idbController, joinArray2ID, new int[] { workerIDs[0] }, pf0);
+        new GenericShuffleProducer(idbController, joinArray2ID, new int[] {workerIDs[0]}, pf0);
     final GenericShuffleConsumer sc1 =
-        new GenericShuffleConsumer(sp1.getSchema(), joinArray1ID, new int[] { workerIDs[0] });
+        new GenericShuffleConsumer(sp1.getSchema(), joinArray1ID, new int[] {workerIDs[0]});
     final GenericShuffleConsumer sc2 =
-        new GenericShuffleConsumer(sp2.getSchema(), joinArray2ID, new int[] { workerIDs[0] });
+        new GenericShuffleConsumer(sp2.getSchema(), joinArray2ID, new int[] {workerIDs[0]});
 
-    final List<String> joinOutputColumns = ImmutableList.of("follower1", "followee1", "follower2", "followee2");
-    final SymmetricHashJoin join = new SymmetricHashJoin(joinOutputColumns, sc1, sc2, new int[] { 0 }, new int[] { 1 });
+    final List<String> joinOutputColumns =
+        ImmutableList.of("follower1", "followee1", "follower2", "followee2");
+    final SymmetricHashJoin join =
+        new SymmetricHashJoin(joinOutputColumns, sc1, sc2, new int[] {0}, new int[] {1});
     final Apply proj = Applys.columnSelect(join, 2, 1);
     ExchangePairID beforeDE = ExchangePairID.newID();
 
-    final GenericShuffleProducer sp3 = new GenericShuffleProducer(proj, beforeDE, new int[] { workerIDs[0] }, pf0);
+    final GenericShuffleProducer sp3 =
+        new GenericShuffleProducer(proj, beforeDE, new int[] {workerIDs[0]}, pf0);
     final GenericShuffleConsumer sc3 =
-        new GenericShuffleConsumer(sp3.getSchema(), beforeDE, new int[] { workerIDs[0] });
+        new GenericShuffleConsumer(sp3.getSchema(), beforeDE, new int[] {workerIDs[0]});
     final StreamingStateWrapper dupelim = new StreamingStateWrapper(sc3, new DupElim());
     final LocalMultiwayProducer multiProducer =
-        new LocalMultiwayProducer(dupelim, new ExchangePairID[] { consumerID1, consumerID2 });
+        new LocalMultiwayProducer(dupelim, new ExchangePairID[] {consumerID1, consumerID2});
 
     final ExchangePairID serverReceiveID = ExchangePairID.newID();
     final CollectProducer cp = new CollectProducer(send2server, serverReceiveID, MASTER_ID);
 
     final HashMap<Integer, RootOperator[]> workerPlans = new HashMap<Integer, RootOperator[]>();
-    workerPlans.put(workerIDs[0], new RootOperator[] { cp, multiProducer, sp1, sp2, sp3, eosController });
+    workerPlans.put(
+        workerIDs[0], new RootOperator[] {cp, multiProducer, sp1, sp2, sp3, eosController});
 
-    final CollectConsumer serverCollect = new CollectConsumer(tableSchema, serverReceiveID, new int[] { workerIDs[0] });
-    final LinkedBlockingQueue<TupleBatch> receivedTupleBatches = new LinkedBlockingQueue<TupleBatch>();
+    final CollectConsumer serverCollect =
+        new CollectConsumer(tableSchema, serverReceiveID, new int[] {workerIDs[0]});
+    final LinkedBlockingQueue<TupleBatch> receivedTupleBatches =
+        new LinkedBlockingQueue<TupleBatch>();
     final TBQueueExporter queueStore = new TBQueueExporter(receivedTupleBatches, serverCollect);
     final SinkRoot serverPlan = new SinkRoot(queueStore);
 
@@ -337,6 +371,5 @@ public class TransitiveClosureWithEOITest extends SystemTestBase {
     }
     final HashMap<Tuple, Integer> resultBag = TestUtils.tupleBatchToTupleBag(actualResult);
     TestUtils.assertTupleBagEqual(expectedResult, resultBag);
-
   }
 }

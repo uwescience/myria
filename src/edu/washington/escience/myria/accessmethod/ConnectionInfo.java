@@ -1,5 +1,5 @@
 /**
- * 
+ *
  */
 package edu.washington.escience.myria.accessmethod;
 
@@ -18,13 +18,13 @@ import edu.washington.escience.myria.api.MyriaJsonMapperProvider;
 
 /**
  * @author valmeida
- * 
+ *
  */
 public abstract class ConnectionInfo {
 
   /**
    * Creates a connection info.
-   * 
+   *
    * @param dbms the DBMS
    * @param jsonConnInfo the connection info packed into a JSON string
    * @return the connection info
@@ -49,7 +49,7 @@ public abstract class ConnectionInfo {
 
   /**
    * Returns a JSON string representation of the connection info.
-   * 
+   *
    * @return the JSON representation
    */
   public String toJson() {
@@ -63,7 +63,7 @@ public abstract class ConnectionInfo {
 
   /**
    * Constructs a database connection information from the input and returns its JSON string representation.
-   * 
+   *
    * @param dbms the database system.
    * @param hostName the host name.
    * @param dirName the working directory.
@@ -73,8 +73,14 @@ public abstract class ConnectionInfo {
    * @param databasePort the port the database is using; pass null to use default port
    * @return the JSON string representation of the connection information.
    */
-  public static String toJson(@Nonnull final String dbms, final String hostName, final String dirName,
-      final int workerId, final String databaseName, final String databasePassword, final String databasePort) {
+  public static String toJson(
+      @Nonnull final String dbms,
+      final String hostName,
+      final String dirName,
+      final int workerId,
+      final String databaseName,
+      final String databasePassword,
+      final String databasePort) {
     String result = "";
     String host;
     String user;
@@ -88,7 +94,8 @@ public abstract class ConnectionInfo {
     switch (dbms) {
       case MyriaConstants.STORAGE_SYSTEM_SQLITE:
         Objects.requireNonNull(workerId);
-        SQLiteInfo sqliteInfo = SQLiteInfo.of(Paths.get(dirName, "workers", workerId + "", "data.db").toString());
+        SQLiteInfo sqliteInfo =
+            SQLiteInfo.of(Paths.get(dirName, "workers", workerId + "", "data.db").toString());
         result = sqliteInfo.toJson();
         break;
       case MyriaConstants.STORAGE_SYSTEM_MONETDB:
@@ -100,7 +107,8 @@ public abstract class ConnectionInfo {
 
         user = MyriaConstants.STORAGE_JDBC_USERNAME;
         jdbcDriverName = "nl.cwi.monetdb.jdbc.MonetDriver";
-        jdbcInfo = JdbcInfo.of(jdbcDriverName, dbms, host, port, databaseName, user, databasePassword);
+        jdbcInfo =
+            JdbcInfo.of(jdbcDriverName, dbms, host, port, databaseName, user, databasePassword);
         result = jdbcInfo.toJson();
         break;
 
@@ -113,7 +121,8 @@ public abstract class ConnectionInfo {
 
         user = MyriaConstants.STORAGE_JDBC_USERNAME;
         jdbcDriverName = "org.postgresql.Driver";
-        jdbcInfo = JdbcInfo.of(jdbcDriverName, dbms, host, port, databaseName, user, databasePassword);
+        jdbcInfo =
+            JdbcInfo.of(jdbcDriverName, dbms, host, port, databaseName, user, databasePassword);
         result = jdbcInfo.toJson();
         break;
 
@@ -126,7 +135,8 @@ public abstract class ConnectionInfo {
 
         user = MyriaConstants.STORAGE_JDBC_USERNAME;
         jdbcDriverName = "com.mysql.jdbc.Driver";
-        jdbcInfo = JdbcInfo.of(jdbcDriverName, dbms, host, port, databaseName, user, databasePassword);
+        jdbcInfo =
+            JdbcInfo.of(jdbcDriverName, dbms, host, port, databaseName, user, databasePassword);
         result = jdbcInfo.toJson();
         break;
     }
@@ -137,5 +147,4 @@ public abstract class ConnectionInfo {
    * @return the DBMS, e.g., MyriaConstants.STORAGE_SYSTEM_MYSQL or MyriaConstants.STORAGE_SYSTEM_MONETDB.
    */
   public abstract String getDbms();
-
 }

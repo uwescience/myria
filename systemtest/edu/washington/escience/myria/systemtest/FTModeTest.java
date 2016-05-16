@@ -62,8 +62,8 @@ public class FTModeTest extends SystemTestBase {
   private final int numTbl1Worker1 = 100;
   private final int numTbl1Worker2 = 200;
 
-  public TupleBatchBuffer getAJoinResult(final TupleBatchBuffer startWith, final TupleBatchBuffer multiWith,
-      final Schema schema) {
+  public TupleBatchBuffer getAJoinResult(
+      final TupleBatchBuffer startWith, final TupleBatchBuffer multiWith, final Schema schema) {
 
     final Iterator<List<? extends Column<?>>> iter1 = startWith.getAllAsRawColumn().iterator();
     boolean s[][] = new boolean[MaxID][MaxID];
@@ -117,8 +117,8 @@ public class FTModeTest extends SystemTestBase {
     return result;
   }
 
-  public TupleBatchBuffer generateAMatrix(final RelationKey tableKey, final Schema tableSchema) throws IOException,
-      CatalogException, DbException {
+  public TupleBatchBuffer generateAMatrix(final RelationKey tableKey, final Schema tableSchema)
+      throws IOException, CatalogException, DbException {
     // numTbl1Worker1 = 3;
     // numTbl1Worker2 = 3;
     // long[] tblAID1Worker1 = { 1, 3, 5 };
@@ -155,10 +155,19 @@ public class FTModeTest extends SystemTestBase {
     return table1;
   }
 
-  public void generateJoinPlan(final ArrayList<ArrayList<RootOperator>> workerPlan, final Schema tableSchema,
-      final String initName, final ExchangePairID eoiReceiverOpID, final boolean isHead,
-      final ExchangePairID sendingOpID, final ExchangePairID receivingOpID, final ExchangePairID eosReceiverOpID,
-      final ExchangePairID serverReceivingOpID, final int selfIDBID, final String ftMode) throws DbException {
+  public void generateJoinPlan(
+      final ArrayList<ArrayList<RootOperator>> workerPlan,
+      final Schema tableSchema,
+      final String initName,
+      final ExchangePairID eoiReceiverOpID,
+      final boolean isHead,
+      final ExchangePairID sendingOpID,
+      final ExchangePairID receivingOpID,
+      final ExchangePairID eosReceiverOpID,
+      final ExchangePairID serverReceivingOpID,
+      final int selfIDBID,
+      final String ftMode)
+      throws DbException {
 
     final int numPartition = 2;
     final PartitionFunction pf0 = new SingleFieldHashPartitionFunction(numPartition, 0);
@@ -168,7 +177,8 @@ public class FTModeTest extends SystemTestBase {
     if (isHead) {
       ExchangePairID joinArrayID = ExchangePairID.newID();
       final DbQueryScan scan1 = new DbQueryScan(RelationKey.of("test", "test", "r"), tableSchema);
-      final GenericShuffleProducer sp1 = new GenericShuffleProducer(scan1, joinArrayID, workerIDs, pf1);
+      final GenericShuffleProducer sp1 =
+          new GenericShuffleProducer(scan1, joinArrayID, workerIDs, pf1);
       sp1.setOpName("sp1_" + initName);
       sc1 = new GenericShuffleConsumer(tableSchema, joinArrayID, workerIDs);
       sc1.setOpName("sc1_" + initName);
@@ -178,32 +188,42 @@ public class FTModeTest extends SystemTestBase {
       sc1 = new GenericShuffleConsumer(tableSchema, receivingOpID, workerIDs);
       sc1.setOpName("sc1_" + initName);
     }
-    final DbQueryScan scan2 = new DbQueryScan(RelationKey.of("test", "test", initName), tableSchema);
+    final DbQueryScan scan2 =
+        new DbQueryScan(RelationKey.of("test", "test", initName), tableSchema);
     final ExchangePairID beforeIngress1 = ExchangePairID.newID();
-    final GenericShuffleProducer sp2 = new GenericShuffleProducer(scan2, beforeIngress1, workerIDs, pf0);
+    final GenericShuffleProducer sp2 =
+        new GenericShuffleProducer(scan2, beforeIngress1, workerIDs, pf0);
     sp2.setOpName("sp2_" + initName);
-    final GenericShuffleConsumer sc2 = new GenericShuffleConsumer(tableSchema, beforeIngress1, workerIDs);
+    final GenericShuffleConsumer sc2 =
+        new GenericShuffleConsumer(tableSchema, beforeIngress1, workerIDs);
     sc2.setOpName("sc2_" + initName);
     final ExchangePairID beforeIngress2 = ExchangePairID.newID();
-    final GenericShuffleProducer sp3_worker1 = new GenericShuffleProducer(null, beforeIngress2, workerIDs, pf0);
+    final GenericShuffleProducer sp3_worker1 =
+        new GenericShuffleProducer(null, beforeIngress2, workerIDs, pf0);
     sp3_worker1.setOpName("sp3_worker1_" + initName);
-    final GenericShuffleProducer sp3_worker2 = new GenericShuffleProducer(null, beforeIngress2, workerIDs, pf0);
+    final GenericShuffleProducer sp3_worker2 =
+        new GenericShuffleProducer(null, beforeIngress2, workerIDs, pf0);
     sp3_worker2.setOpName("sp3_worker2_" + initName);
-    final GenericShuffleConsumer sc3_worker1 = new GenericShuffleConsumer(tableSchema, beforeIngress2, workerIDs);
+    final GenericShuffleConsumer sc3_worker1 =
+        new GenericShuffleConsumer(tableSchema, beforeIngress2, workerIDs);
     sc3_worker1.setOpName("sc3_worker1_" + initName);
-    final GenericShuffleConsumer sc3_worker2 = new GenericShuffleConsumer(tableSchema, beforeIngress2, workerIDs);
+    final GenericShuffleConsumer sc3_worker2 =
+        new GenericShuffleConsumer(tableSchema, beforeIngress2, workerIDs);
     sc3_worker2.setOpName("sc3_worker2_" + initName);
-    final Consumer eosReceiver = new Consumer(Schema.EMPTY_SCHEMA, eosReceiverOpID, new int[] { workerIDs[0] });
+    final Consumer eosReceiver =
+        new Consumer(Schema.EMPTY_SCHEMA, eosReceiverOpID, new int[] {workerIDs[0]});
     eosReceiver.setOpName("eosReceiver_" + initName);
 
     final IDBController idbController_worker1 =
-        new IDBController(selfIDBID, eoiReceiverOpID, workerIDs[0], sc2, sc3_worker1, eosReceiver, new DupElim());
+        new IDBController(
+            selfIDBID, eoiReceiverOpID, workerIDs[0], sc2, sc3_worker1, eosReceiver, new DupElim());
     idbController_worker1.setOpName("idbController_worker1_" + initName);
     final IDBController idbController_worker2 =
-        new IDBController(selfIDBID, eoiReceiverOpID, workerIDs[0], sc2, sc3_worker2, eosReceiver, new DupElim());
+        new IDBController(
+            selfIDBID, eoiReceiverOpID, workerIDs[0], sc2, sc3_worker2, eosReceiver, new DupElim());
     idbController_worker2.setOpName("idbController_worker2_" + initName);
 
-    final ExchangePairID[] consumerIDs = new ExchangePairID[] { ExchangePairID.newID(), null, null };
+    final ExchangePairID[] consumerIDs = new ExchangePairID[] {ExchangePairID.newID(), null, null};
     if (sendingOpID != null) {
       consumerIDs[1] = ExchangePairID.newID();
     }
@@ -216,9 +236,11 @@ public class FTModeTest extends SystemTestBase {
     final LocalMultiwayProducer multiProducer_worker2 =
         new LocalMultiwayProducer(idbController_worker2, removeNull(consumerIDs));
     multiProducer_worker2.setOpName("mp_worker2_" + initName);
-    final LocalMultiwayConsumer send2join_worker1 = new LocalMultiwayConsumer(tableSchema, consumerIDs[0]);
+    final LocalMultiwayConsumer send2join_worker1 =
+        new LocalMultiwayConsumer(tableSchema, consumerIDs[0]);
     send2join_worker1.setOpName("send2join_worker1_" + initName);
-    final LocalMultiwayConsumer send2join_worker2 = new LocalMultiwayConsumer(tableSchema, consumerIDs[0]);
+    final LocalMultiwayConsumer send2join_worker2 =
+        new LocalMultiwayConsumer(tableSchema, consumerIDs[0]);
     send2join_worker2.setOpName("send2join_worker2_" + initName);
     LocalMultiwayConsumer send2others_worker1 = null;
     LocalMultiwayConsumer send2others_worker2 = null;
@@ -237,30 +259,38 @@ public class FTModeTest extends SystemTestBase {
       send2server_worker2.setOpName("send2server_worker2_" + initName);
     }
     final SymmetricHashJoin join_worker1 =
-        new SymmetricHashJoin(sc1, send2join_worker1, new int[] { 1 }, new int[] { 0 }, new int[] { 0 },
-            new int[] { 1 });
+        new SymmetricHashJoin(
+            sc1, send2join_worker1, new int[] {1}, new int[] {0}, new int[] {0}, new int[] {1});
     join_worker1.setOpName("join_worker1_" + initName);
     final SymmetricHashJoin join_worker2 =
-        new SymmetricHashJoin(sc1, send2join_worker2, new int[] { 1 }, new int[] { 0 }, new int[] { 0 },
-            new int[] { 1 });
+        new SymmetricHashJoin(
+            sc1, send2join_worker2, new int[] {1}, new int[] {0}, new int[] {0}, new int[] {1});
     join_worker2.setOpName("join_worker2_" + initName);
-    sp3_worker1.setChildren(new Operator[] { join_worker1 });
-    sp3_worker2.setChildren(new Operator[] { join_worker2 });
+    sp3_worker1.setChildren(new Operator[] {join_worker1});
+    sp3_worker2.setChildren(new Operator[] {join_worker2});
 
-    workerPlan.get(0).addAll(Arrays.asList(new RootOperator[] { multiProducer_worker1, sp2, sp3_worker1 }));
-    workerPlan.get(1).addAll(Arrays.asList(new RootOperator[] { multiProducer_worker2, sp2, sp3_worker2 }));
+    workerPlan
+        .get(0)
+        .addAll(Arrays.asList(new RootOperator[] {multiProducer_worker1, sp2, sp3_worker1}));
+    workerPlan
+        .get(1)
+        .addAll(Arrays.asList(new RootOperator[] {multiProducer_worker2, sp2, sp3_worker2}));
 
     if (serverReceivingOpID != null) {
       if (ftMode.equals("rejoin")) {
-        final DbInsert insert1 = new DbInsert(send2server_worker1, RelationKey.of("test", "test", "output"), true);
+        final DbInsert insert1 =
+            new DbInsert(send2server_worker1, RelationKey.of("test", "test", "output"), true);
         insert1.setOpName("insert1");
-        final DbInsert insert2 = new DbInsert(send2server_worker1, RelationKey.of("test", "test", "output"), true);
+        final DbInsert insert2 =
+            new DbInsert(send2server_worker1, RelationKey.of("test", "test", "output"), true);
         insert1.setOpName("insert2");
         workerPlan.get(0).add(insert1);
         workerPlan.get(1).add(insert2);
       } else if (ftMode.equals("abandon")) {
-        final CollectProducer cp_worker1 = new CollectProducer(send2server_worker1, serverReceivingOpID, MASTER_ID);
-        final CollectProducer cp_worker2 = new CollectProducer(send2server_worker2, serverReceivingOpID, MASTER_ID);
+        final CollectProducer cp_worker1 =
+            new CollectProducer(send2server_worker1, serverReceivingOpID, MASTER_ID);
+        final CollectProducer cp_worker2 =
+            new CollectProducer(send2server_worker2, serverReceivingOpID, MASTER_ID);
         cp_worker1.setOpName("cp_worker1_" + initName);
         cp_worker2.setOpName("cp_worker2_" + initName);
         workerPlan.get(0).add(cp_worker1);
@@ -296,8 +326,11 @@ public class FTModeTest extends SystemTestBase {
     return result;
   }
 
-  public TupleBatchBuffer getCircularJoinResult(final TupleBatchBuffer a, final TupleBatchBuffer b,
-      final TupleBatchBuffer c, final Schema schema) {
+  public TupleBatchBuffer getCircularJoinResult(
+      final TupleBatchBuffer a,
+      final TupleBatchBuffer b,
+      final TupleBatchBuffer c,
+      final Schema schema) {
 
     final Iterator<List<? extends Column<?>>> iter1 = a.getAllAsRawColumn().iterator();
     boolean s1[][] = new boolean[MaxID][MaxID];
@@ -411,20 +444,56 @@ public class FTModeTest extends SystemTestBase {
     final ExchangePairID receivingBonC = ExchangePairID.newID();
     final ExchangePairID receivingConA = ExchangePairID.newID();
     final ExchangePairID serverReceiveID = ExchangePairID.newID();
-    generateJoinPlan(workerPlan, tableSchema, "a0", eoiReceiverOpID1, false, receivingAonB, receivingConA,
-        eosReceiverOpID_idb1, null, 0, "abandon");
-    generateJoinPlan(workerPlan, tableSchema, "b0", eoiReceiverOpID2, false, receivingBonC, receivingAonB,
-        eosReceiverOpID_idb2, null, 1, "abandon");
-    generateJoinPlan(workerPlan, tableSchema, "c0", eoiReceiverOpID3, false, receivingConA, receivingBonC,
-        eosReceiverOpID_idb3, serverReceiveID, 2, "abandon");
+    generateJoinPlan(
+        workerPlan,
+        tableSchema,
+        "a0",
+        eoiReceiverOpID1,
+        false,
+        receivingAonB,
+        receivingConA,
+        eosReceiverOpID_idb1,
+        null,
+        0,
+        "abandon");
+    generateJoinPlan(
+        workerPlan,
+        tableSchema,
+        "b0",
+        eoiReceiverOpID2,
+        false,
+        receivingBonC,
+        receivingAonB,
+        eosReceiverOpID_idb2,
+        null,
+        1,
+        "abandon");
+    generateJoinPlan(
+        workerPlan,
+        tableSchema,
+        "c0",
+        eoiReceiverOpID3,
+        false,
+        receivingConA,
+        receivingBonC,
+        eosReceiverOpID_idb3,
+        serverReceiveID,
+        2,
+        "abandon");
 
-    final Consumer eoiReceiver1 = new Consumer(IDBController.EOI_REPORT_SCHEMA, eoiReceiverOpID1, workerIDs);
-    final Consumer eoiReceiver2 = new Consumer(IDBController.EOI_REPORT_SCHEMA, eoiReceiverOpID2, workerIDs);
-    final Consumer eoiReceiver3 = new Consumer(IDBController.EOI_REPORT_SCHEMA, eoiReceiverOpID3, workerIDs);
-    final UnionAll unionAll = new UnionAll(new Operator[] { eoiReceiver1, eoiReceiver2, eoiReceiver3 });
+    final Consumer eoiReceiver1 =
+        new Consumer(IDBController.EOI_REPORT_SCHEMA, eoiReceiverOpID1, workerIDs);
+    final Consumer eoiReceiver2 =
+        new Consumer(IDBController.EOI_REPORT_SCHEMA, eoiReceiverOpID2, workerIDs);
+    final Consumer eoiReceiver3 =
+        new Consumer(IDBController.EOI_REPORT_SCHEMA, eoiReceiverOpID3, workerIDs);
+    final UnionAll unionAll =
+        new UnionAll(new Operator[] {eoiReceiver1, eoiReceiver2, eoiReceiver3});
     final EOSController eosController =
-        new EOSController(unionAll, new ExchangePairID[] {
-            eosReceiverOpID_idb1, eosReceiverOpID_idb2, eosReceiverOpID_idb3 }, workerIDs);
+        new EOSController(
+            unionAll,
+            new ExchangePairID[] {eosReceiverOpID_idb1, eosReceiverOpID_idb2, eosReceiverOpID_idb3},
+            workerIDs);
     workerPlan.get(0).add(eosController);
 
     for (List<RootOperator> plan : workerPlan) {
@@ -448,13 +517,16 @@ public class FTModeTest extends SystemTestBase {
       workerPlans.get(workerIDs[1]).addRootOp(workerPlan.get(1).get(i));
     }
 
-    final CollectConsumer serverCollect = new CollectConsumer(tableSchema, serverReceiveID, workerIDs);
-    final LinkedBlockingQueue<TupleBatch> receivedTupleBatches = new LinkedBlockingQueue<TupleBatch>();
+    final CollectConsumer serverCollect =
+        new CollectConsumer(tableSchema, serverReceiveID, workerIDs);
+    final LinkedBlockingQueue<TupleBatch> receivedTupleBatches =
+        new LinkedBlockingQueue<TupleBatch>();
     final TBQueueExporter queueStore = new TBQueueExporter(receivedTupleBatches, serverCollect);
     SubQueryPlan serverPlan = new SubQueryPlan(new SinkRoot(queueStore));
     serverPlan.setFTMode(FTMode.ABANDON);
 
-    ListenableFuture<Query> qf = server.getQueryManager().submitQuery("", "", "", serverPlan, workerPlans);
+    ListenableFuture<Query> qf =
+        server.getQueryManager().submitQuery("", "", "", serverPlan, workerPlans);
     Thread.sleep(2000);
     /* kill the one without EOSController */
     LOGGER.info("killing worker " + workerIDs[1]);
@@ -512,24 +584,60 @@ public class FTModeTest extends SystemTestBase {
     final ExchangePairID receivingBonC = ExchangePairID.newID();
     final ExchangePairID receivingConA = ExchangePairID.newID();
     final ExchangePairID serverReceiveID = ExchangePairID.newID();
-    generateJoinPlan(workerPlan, tableSchema, "a0", eoiReceiverOpID1, false, receivingAonB, receivingConA,
-        eosReceiverOpID_idb1, null, 0, "rejoin");
-    generateJoinPlan(workerPlan, tableSchema, "b0", eoiReceiverOpID2, false, receivingBonC, receivingAonB,
-        eosReceiverOpID_idb2, null, 1, "rejoin");
-    generateJoinPlan(workerPlan, tableSchema, "c0", eoiReceiverOpID3, false, receivingConA, receivingBonC,
-        eosReceiverOpID_idb3, serverReceiveID, 2, "rejoin");
+    generateJoinPlan(
+        workerPlan,
+        tableSchema,
+        "a0",
+        eoiReceiverOpID1,
+        false,
+        receivingAonB,
+        receivingConA,
+        eosReceiverOpID_idb1,
+        null,
+        0,
+        "rejoin");
+    generateJoinPlan(
+        workerPlan,
+        tableSchema,
+        "b0",
+        eoiReceiverOpID2,
+        false,
+        receivingBonC,
+        receivingAonB,
+        eosReceiverOpID_idb2,
+        null,
+        1,
+        "rejoin");
+    generateJoinPlan(
+        workerPlan,
+        tableSchema,
+        "c0",
+        eoiReceiverOpID3,
+        false,
+        receivingConA,
+        receivingBonC,
+        eosReceiverOpID_idb3,
+        serverReceiveID,
+        2,
+        "rejoin");
 
-    final Consumer eoiReceiver1 = new Consumer(IDBController.EOI_REPORT_SCHEMA, eoiReceiverOpID1, workerIDs);
+    final Consumer eoiReceiver1 =
+        new Consumer(IDBController.EOI_REPORT_SCHEMA, eoiReceiverOpID1, workerIDs);
     eoiReceiver1.setOpName("eoiReceiver1");
-    final Consumer eoiReceiver2 = new Consumer(IDBController.EOI_REPORT_SCHEMA, eoiReceiverOpID2, workerIDs);
+    final Consumer eoiReceiver2 =
+        new Consumer(IDBController.EOI_REPORT_SCHEMA, eoiReceiverOpID2, workerIDs);
     eoiReceiver2.setOpName("eoiReceiver2");
-    final Consumer eoiReceiver3 = new Consumer(IDBController.EOI_REPORT_SCHEMA, eoiReceiverOpID3, workerIDs);
+    final Consumer eoiReceiver3 =
+        new Consumer(IDBController.EOI_REPORT_SCHEMA, eoiReceiverOpID3, workerIDs);
     eoiReceiver3.setOpName("eoiReceiver3");
-    final UnionAll unionAll = new UnionAll(new Operator[] { eoiReceiver1, eoiReceiver2, eoiReceiver3 });
+    final UnionAll unionAll =
+        new UnionAll(new Operator[] {eoiReceiver1, eoiReceiver2, eoiReceiver3});
     unionAll.setOpName("merge");
     final EOSController eosController =
-        new EOSController(unionAll, new ExchangePairID[] {
-            eosReceiverOpID_idb1, eosReceiverOpID_idb2, eosReceiverOpID_idb3 }, workerIDs);
+        new EOSController(
+            unionAll,
+            new ExchangePairID[] {eosReceiverOpID_idb1, eosReceiverOpID_idb2, eosReceiverOpID_idb3},
+            workerIDs);
     eosController.setOpName("eoscontroller");
     workerPlan.get(0).add(eosController);
 
@@ -556,7 +664,8 @@ public class FTModeTest extends SystemTestBase {
 
     SubQueryPlan serverPlan = new SubQueryPlan(new SinkRoot(new EOSSource()));
     serverPlan.setFTMode(FTMode.REJOIN);
-    ListenableFuture<Query> qf = server.getQueryManager().submitQuery("", "", "", serverPlan, workerPlans);
+    ListenableFuture<Query> qf =
+        server.getQueryManager().submitQuery("", "", "", serverPlan, workerPlans);
     Thread.sleep(3000);
     /* kill the one without EOSController */
     LOGGER.info("killing worker " + workerIDs[1]);
@@ -570,12 +679,15 @@ public class FTModeTest extends SystemTestBase {
     assertEquals(Status.SUCCESS, qs.getStatus());
 
     final ExchangePairID serverReceiveID1 = ExchangePairID.newID();
-    final CollectConsumer serverCollect = new CollectConsumer(tableSchema, serverReceiveID1, workerIDs);
+    final CollectConsumer serverCollect =
+        new CollectConsumer(tableSchema, serverReceiveID1, workerIDs);
     serverCollect.setOpName("serverCollect");
-    final LinkedBlockingQueue<TupleBatch> receivedTupleBatches = new LinkedBlockingQueue<TupleBatch>();
+    final LinkedBlockingQueue<TupleBatch> receivedTupleBatches =
+        new LinkedBlockingQueue<TupleBatch>();
     final TBQueueExporter queueStore = new TBQueueExporter(receivedTupleBatches, serverCollect);
     serverPlan = new SubQueryPlan(new SinkRoot(queueStore));
-    final DbQueryScan scan1 = new DbQueryScan(RelationKey.of("test", "test", "output"), tableSchema);
+    final DbQueryScan scan1 =
+        new DbQueryScan(RelationKey.of("test", "test", "output"), tableSchema);
     final CollectProducer send2server = new CollectProducer(scan1, serverReceiveID1, MASTER_ID);
     send2server.setOpName("send2server query 2");
     workerPlans.put(workerIDs[0], new SubQueryPlan(send2server));
@@ -590,7 +702,8 @@ public class FTModeTest extends SystemTestBase {
       }
     }
     LOGGER.info(actualResult.numTuples() + " " + expectedResult.numTuples());
-    TestUtils.assertTupleBagEqual(TestUtils.tupleBatchToTupleBag(expectedResult), TestUtils
-        .tupleBatchToTupleBag(actualResult));
+    TestUtils.assertTupleBagEqual(
+        TestUtils.tupleBatchToTupleBag(expectedResult),
+        TestUtils.tupleBatchToTupleBag(actualResult));
   }
 }

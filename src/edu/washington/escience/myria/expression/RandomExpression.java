@@ -15,8 +15,7 @@ public class RandomExpression extends ZeroaryExpression {
   /**
    * Default constructor.
    */
-  public RandomExpression() {
-  }
+  public RandomExpression() {}
 
   @Override
   public Type getOutputType(final ExpressionOperatorParameter parameters) {

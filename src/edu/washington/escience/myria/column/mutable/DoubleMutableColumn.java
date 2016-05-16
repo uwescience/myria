@@ -8,7 +8,7 @@ import edu.washington.escience.myria.storage.TupleBatch;
 
 /**
  * A mutable column of Double values.
- * 
+ *
  */
 public final class DoubleMutableColumn extends MutableColumn<Double> {
   /** Required for Java serialization. */
@@ -20,7 +20,7 @@ public final class DoubleMutableColumn extends MutableColumn<Double> {
 
   /**
    * Constructs a new column.
-   * 
+   *
    * @param data the data
    * @param numData number of tuples.
    * */

@@ -16,7 +16,8 @@ public class SymmetricHashCountingJoinTest {
   public void testSymmetricHashCountingJoin() throws DbException {
     TupleSource left = new TupleSource(JoinTestUtils.leftInput);
     TupleSource right = new TupleSource(JoinTestUtils.rightInput);
-    Operator join = new SymmetricHashCountingJoin(left, right, new int[] { 0, 1, 2 }, new int[] { 1, 2, 0 });
+    Operator join =
+        new SymmetricHashCountingJoin(left, right, new int[] {0, 1, 2}, new int[] {1, 2, 0});
     join.open(TestEnvVars.get());
     assertEquals(1, join.getSchema().numColumns());
     assertEquals(Type.LONG_TYPE, join.getSchema().getColumnType(0));
@@ -38,7 +39,7 @@ public class SymmetricHashCountingJoinTest {
   public void testIncompatibleJoinKeys() throws DbException {
     TupleSource left = new TupleSource(JoinTestUtils.leftInput);
     TupleSource right = new TupleSource(JoinTestUtils.rightInput);
-    Operator join = new SymmetricHashCountingJoin(left, right, new int[] { 0 }, new int[] { 0 });
+    Operator join = new SymmetricHashCountingJoin(left, right, new int[] {0}, new int[] {0});
     join.open(TestEnvVars.get());
   }
 }

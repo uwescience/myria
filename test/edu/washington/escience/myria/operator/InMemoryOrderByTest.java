@@ -23,7 +23,8 @@ public class InMemoryOrderByTest {
 
     TupleSource child = new TupleSource(randomTuples);
 
-    InMemoryOrderBy order = new InMemoryOrderBy(child, new int[] { 0, 1 }, new boolean[] { true, true });
+    InMemoryOrderBy order =
+        new InMemoryOrderBy(child, new int[] {0, 1}, new boolean[] {true, true});
     order.open(null);
     TupleBatch tb;
     final ArrayList<Entry<Long, String>> entries = new ArrayList<Entry<Long, String>>();
@@ -57,7 +58,7 @@ public class InMemoryOrderByTest {
 
     TupleSource child = new TupleSource(randomTuples);
 
-    InMemoryOrderBy order = new InMemoryOrderBy(child, new int[] { 1 }, new boolean[] { false });
+    InMemoryOrderBy order = new InMemoryOrderBy(child, new int[] {1}, new boolean[] {false});
     order.open(null);
     TupleBatch tb;
     final ArrayList<String> entries = new ArrayList<String>();
@@ -81,5 +82,4 @@ public class InMemoryOrderByTest {
       previous = entry;
     }
   }
-
 }

@@ -14,8 +14,8 @@ import edu.washington.escience.myria.parallel.Server;
 /**
  * This is the class for the main daemon for Myria. It manages all the various services, including the API server and
  * the Myria server.
- * 
- * 
+ *
+ *
  */
 public final class MasterDaemon {
 
@@ -41,7 +41,7 @@ public final class MasterDaemon {
 
   /**
    * Instantiates a MasterDaemon object. Includes the API server and the Myria server.
-   * 
+   *
    * @param configFilePath the dir where the config file resides.
    * @param apiPort api server port.
    * @throws Exception if there are issues loading the Catalog or instantiating the servers.
@@ -61,7 +61,8 @@ public final class MasterDaemon {
    * @throws CatalogException if the Catalog cannot be opened.
    * @throws FileNotFoundException if the catalogFile does not exist.
    */
-  private static void processArguments(final String[] args) throws FileNotFoundException, CatalogException {
+  private static void processArguments(final String[] args)
+      throws FileNotFoundException, CatalogException {
     /* Check length. */
     if (args.length != 2) {
       throw new IllegalArgumentException(USAGE_STRING);
@@ -85,7 +86,7 @@ public final class MasterDaemon {
 
   /**
    * Start the Daemon. Namely, start the API server and the Myria Server.
-   * 
+   *
    * @throws Exception if there is an issue starting either server.
    */
   public void start() throws Exception {
@@ -95,7 +96,7 @@ public final class MasterDaemon {
 
   /**
    * Stop the Daemon. Namely, stop the API server and the Myria Server.
-   * 
+   *
    * @throws Exception if there is an issue stopping either server.
    */
   public void stop() throws Exception {
@@ -109,5 +110,4 @@ public final class MasterDaemon {
   public Server getClusterMaster() {
     return server;
   }
-
 }

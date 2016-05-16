@@ -18,11 +18,12 @@ public class GreaterThanOrEqualsExpression extends ComparisonExpression {
 
   /**
    * True if left >= right.
-   * 
+   *
    * @param left the left operand.
    * @param right the right operand.
    */
-  public GreaterThanOrEqualsExpression(final ExpressionOperator left, final ExpressionOperator right) {
+  public GreaterThanOrEqualsExpression(
+      final ExpressionOperator left, final ExpressionOperator right) {
     super(left, right, SimplePredicate.Op.GREATER_THAN_OR_EQ);
   }
 }

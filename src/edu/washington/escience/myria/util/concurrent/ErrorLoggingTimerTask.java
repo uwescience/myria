@@ -14,12 +14,12 @@ import edu.washington.escience.myria.util.JVMUtils;
 public abstract class ErrorLoggingTimerTask extends TimerTask {
 
   /** The logger for this class. */
-  private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(ErrorLoggingTimerTask.class
-      .getName());
+  private static final org.slf4j.Logger LOGGER =
+      org.slf4j.LoggerFactory.getLogger(ErrorLoggingTimerTask.class.getName());
 
   /**
    * Process error.
-   * 
+   *
    * @param t the error.
    * */
   protected void exceptionCaught(final Throwable t) {
@@ -49,9 +49,8 @@ public abstract class ErrorLoggingTimerTask extends TimerTask {
 
   /**
    * actual run code.
-   * 
+   *
    * @throws Exception if any error occurs.
    * */
   protected abstract void runInner() throws Exception;
-
 }

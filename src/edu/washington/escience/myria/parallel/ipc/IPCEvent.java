@@ -3,7 +3,7 @@ package edu.washington.escience.myria.parallel.ipc;
 /**
  * An @{link IPCEvent} represents an event from the IPC layer. Each {@link IPCEvent} can have an attachment so that the
  * event source can provide detailed information to the event listeners.
- * 
+ *
  * */
 public interface IPCEvent {
 
@@ -27,7 +27,6 @@ public interface IPCEvent {
     public String toString() {
       return "EventType(" + desc + ")";
     }
-
   }
 
   /**
@@ -39,5 +38,4 @@ public interface IPCEvent {
    * @return attachment.
    * */
   Object getAttachment();
-
 }

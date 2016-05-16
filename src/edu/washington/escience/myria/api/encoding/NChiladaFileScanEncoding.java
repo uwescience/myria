@@ -6,10 +6,8 @@ import edu.washington.escience.myria.operator.NChiladaFileScan;
 
 public class NChiladaFileScanEncoding extends LeafOperatorEncoding<NChiladaFileScan> {
 
-  @Required
-  public String nchiladaDirectoryName;
-  @Required
-  public String groupFileName;
+  @Required public String nchiladaDirectoryName;
+  @Required public String groupFileName;
 
   @Override
   public NChiladaFileScan construct(ConstructArgs args) throws MyriaApiException {

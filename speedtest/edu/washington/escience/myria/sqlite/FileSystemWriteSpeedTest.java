@@ -34,6 +34,7 @@ public class FileSystemWriteSpeedTest {
 
     /* Print out stats. */
     final double elapsed = (new Date().getTime() - begin.getTime()) / 1000.0;
-    System.out.printf("\t%.2f seconds in total (%.0f tuples per second)\n", elapsed, NUM_TUPLES / elapsed);
+    System.out.printf(
+        "\t%.2f seconds in total (%.0f tuples per second)\n", elapsed, NUM_TUPLES / elapsed);
   }
 }

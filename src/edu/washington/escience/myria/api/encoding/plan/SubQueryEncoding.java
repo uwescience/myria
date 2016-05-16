@@ -14,8 +14,7 @@ import edu.washington.escience.myria.parallel.JsonSubQuery;
 import edu.washington.escience.myria.parallel.QueryPlan;
 
 public class SubQueryEncoding extends SubPlanEncoding {
-  @Required
-  public List<PlanFragmentEncoding> fragments;
+  @Required public List<PlanFragmentEncoding> fragments;
 
   @JsonCreator
   public SubQueryEncoding(@JsonProperty("fragments") final List<PlanFragmentEncoding> fragments) {

@@ -21,7 +21,8 @@ import edu.washington.escience.myria.util.TestEnvVars;
 public class DupElimTest {
   private static List<TupleBatch> makeTestData() {
     List<Type> types =
-        ImmutableList.of(Type.BOOLEAN_TYPE, Type.DATETIME_TYPE, Type.INT_TYPE, Type.LONG_TYPE, Type.STRING_TYPE);
+        ImmutableList.of(
+            Type.BOOLEAN_TYPE, Type.DATETIME_TYPE, Type.INT_TYPE, Type.LONG_TYPE, Type.STRING_TYPE);
     List<String> names = ImmutableList.of("boolean", "datetime", "int", "long", "string");
     Schema schema = Schema.of(types, names);
     TupleBatchBuffer tbb = new TupleBatchBuffer(schema);

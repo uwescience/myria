@@ -6,10 +6,9 @@ import java.util.Set;
 import edu.washington.escience.myria.operator.network.Consumer;
 import edu.washington.escience.myria.parallel.ExchangePairID;
 
-public abstract class AbstractConsumerEncoding<C extends Consumer> extends LeafOperatorEncoding<C> implements
-    ExchangeEncoding {
-  @Required
-  public Integer argOperatorId;
+public abstract class AbstractConsumerEncoding<C extends Consumer> extends LeafOperatorEncoding<C>
+    implements ExchangeEncoding {
+  @Required public Integer argOperatorId;
 
   Integer getArgOperatorId() {
     return argOperatorId;
@@ -37,5 +36,4 @@ public abstract class AbstractConsumerEncoding<C extends Consumer> extends LeafO
   public final void setRealOperatorIds(List<ExchangePairID> operatorIds) {
     realOperatorIds = operatorIds;
   }
-
 }

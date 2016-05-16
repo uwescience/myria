@@ -15,7 +15,7 @@ import edu.washington.escience.myria.storage.TupleBatch;
 
 /**
  * A utility class used to update the global variables of a query at the master.
- * 
+ *
  */
 public class SetGlobal extends RootOperator {
 
@@ -37,7 +37,7 @@ public class SetGlobal extends RootOperator {
   /**
    * This operator will update the server's catalog with the tuple counts supplied by the child. The child schema is
    * expected to be (userName:string, programName:string, relationName:string, count:long).
-   * 
+   *
    * @param child the source of tuples.
    * @param key the variable whose value will be set.
    * @param server the server whose catalog will be updated.
@@ -53,24 +53,31 @@ public class SetGlobal extends RootOperator {
   @Override
   protected void init(final ImmutableMap<String, Object> execEnvVars) throws Exception {
     int nodeId =
-        (Integer) Preconditions.checkNotNull(execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_NODE_ID),
-            "node ID in execEnvVars");
-    Preconditions
-        .checkArgument(nodeId == MyriaConstants.MASTER_ID, "%s can only be run on the master", SetGlobal.class);
+        (Integer)
+            Preconditions.checkNotNull(
+                execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_NODE_ID), "node ID in execEnvVars");
+    Preconditions.checkArgument(
+        nodeId == MyriaConstants.MASTER_ID, "%s can only be run on the master", SetGlobal.class);
     Schema schema = Preconditions.checkNotNull(getSchema(), "schema cannot be null");
-    Preconditions.checkArgument(schema.numColumns() == 1,
-        "the child of %s must be a singleton and have only 1 column, not %s", SetGlobal.class, schema.numColumns());
+    Preconditions.checkArgument(
+        schema.numColumns() == 1,
+        "the child of %s must be a singleton and have only 1 column, not %s",
+        SetGlobal.class,
+        schema.numColumns());
     queryId =
-        (Long) Preconditions.checkNotNull(execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_QUERY_ID),
-            "query ID in execEnvVars");
+        (Long)
+            Preconditions.checkNotNull(
+                execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_QUERY_ID), "query ID in execEnvVars");
   }
 
   @SuppressWarnings("deprecation")
   @Override
   protected void consumeTuples(final TupleBatch tuples) throws DbException {
     for (int i = 0; i < tuples.numTuples(); ++i) {
-      Preconditions.checkState(!hasWritten,
-          "In query %s: have already written to the global variable %s. Further writes violate the invariant", queryId,
+      Preconditions.checkState(
+          !hasWritten,
+          "In query %s: have already written to the global variable %s. Further writes violate the invariant",
+          queryId,
           key);
       server.setQueryGlobal(queryId, key, tuples.getObject(0, i));
       hasWritten = true;

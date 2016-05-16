@@ -6,7 +6,7 @@ import java.io.InputStream;
 
 /**
  * A data source with no tuples.
- * 
+ *
  * @author whitaker
  */
 public class EmptySource implements DataSource {
