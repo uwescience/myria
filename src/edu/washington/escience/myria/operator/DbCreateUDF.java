@@ -46,7 +46,7 @@ public class DbCreateUDF extends RootOperator {
     accessMethod = AccessMethod.of(connectionInfo.getDbms(), connectionInfo, false);
 
     /* Drop the table */
-    accessMethod.executeSQLCommand(udfDefinition);
+    accessMethod.runCommand(udfDefinition);
   }
 
   @Override
