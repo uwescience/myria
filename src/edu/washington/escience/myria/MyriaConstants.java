@@ -289,4 +289,8 @@ public final class MyriaConstants {
      */
     QUERY
   };
+
+  public static final long WORKER_PARALLEL_INGEST_MINIMUM_PARTITION_SIZE = 100 * MB;
+  public static final long BYTE_OVERLAP_PARALLEL_INGEST = 16 * KB;
+
 }

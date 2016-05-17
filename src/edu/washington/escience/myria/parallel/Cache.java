@@ -60,7 +60,6 @@ public final class Cache {
     cache = ArrayListMultimap.create();
     latest_sequence = 0;
     iterator = null;
-    LOGGER.info("Created Cache Controller For Worker " + ownerWorker.getID());
   }
 
   /**

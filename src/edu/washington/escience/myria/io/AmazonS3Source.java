@@ -16,6 +16,7 @@ import com.amazonaws.auth.AnonymousAWSCredentials;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.GetObjectRequest;
 import com.amazonaws.services.s3.model.S3Object;
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
@@ -35,6 +36,7 @@ public class AmazonS3Source implements DataSource, Serializable {
   private long startRange;
   private long endRange;
 
+  @JsonCreator
   public AmazonS3Source(@JsonProperty(value = "uri", required = true) final String uri) throws URIException {
     s3Uri = URI.create(Objects.requireNonNull(uri, "Parameter uri to UriSource may not be null"));
     /* Force using the Hadoop S3A FileSystem */
@@ -45,9 +47,7 @@ public class AmazonS3Source implements DataSource, Serializable {
     endRange = getFileSize();
   }
 
-  public AmazonS3Source(@JsonProperty(value = "uri", required = true) final String uri,
-      @JsonProperty(value = "startRange", required = true) final long startRange,
-      @JsonProperty(value = "endRange", required = true) final long endRange) throws URIException {
+  public AmazonS3Source(final String uri, final long startRange, final long endRange) throws URIException {
     s3Uri = URI.create(Objects.requireNonNull(uri, "Parameter uri to UriSource may not be null"));
     /* Force using the Hadoop S3A FileSystem */
     if (!s3Uri.getScheme().equals("s3")) {
@@ -76,6 +76,12 @@ public class AmazonS3Source implements DataSource, Serializable {
     s3Request.setRange(startRange, endRange);
     S3Object s3Object = s3Client.getObject(s3Request);
     return s3Object.getObjectContent();
+  }
+
+  public InputStream getInputStream(final long start, final long end) throws IOException {
+    setStartRange(start);
+    setEndRange(end);
+    return getInputStream();
   }
 
   public long getFileSize() {

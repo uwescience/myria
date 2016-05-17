@@ -5,7 +5,9 @@ package edu.washington.escience.myria.operator;
 
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.SequenceInputStream;
 import java.util.Iterator;
 
 import javax.annotation.Nullable;
@@ -20,6 +22,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.primitives.Floats;
 
 import edu.washington.escience.myria.DbException;
+import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.io.AmazonS3Source;
 import edu.washington.escience.myria.io.DataSource;
@@ -55,15 +58,17 @@ public class CSVFileScanFragment extends LeafOperator {
   private long lineNumber = 0;
 
   private boolean isLastWorker;
-  private long fileSize;
 
-  private long byteOverlap = 10;
-  private long startByteRange;
-  private long endByteRange;
-  private final long totalWorkers;
-  private long workerID;
+  private long byteOverlap = MyriaConstants.BYTE_OVERLAP_PARALLEL_INGEST;
+  private long partitionStartByteRange;
+  private long partitionEndByteRange;
 
-  boolean initializedPartition = false;
+  boolean initializedPartition;
+  long fileSize;
+  long workerID;
+  long totalWorkers;
+
+  private InputStream partitionInputStream;
 
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
@@ -121,7 +126,10 @@ public class CSVFileScanFragment extends LeafOperator {
     boolean fixingStartByte = false;
     boolean onLastRow = false;
 
+    boolean discardedRecord = false;
+
     while ((buffer.numTuples() < TupleBatch.BATCH_SIZE)) {
+      discardedRecord = false;
       lineNumber++;
       if (parser.isClosed()) {
         break;
@@ -135,25 +143,72 @@ public class CSVFileScanFragment extends LeafOperator {
         throw new DbException("Error parsing row " + lineNumber, e);
       }
       CSVRecord record = iterator.next();
+      // This covers the case where the first row of a worker matches the schema. We only want to read this row if the
+      // previous character is '\n'
+      if (record.size() == schema.numColumns() && lineNumber - 1 == 0 && partitionStartByteRange != 0) {
+        InputStreamReader startStreamReader =
+            new InputStreamReader(source.getInputStream(partitionStartByteRange - 1, partitionStartByteRange));
+        char currentChar = (char) startStreamReader.read();
+        if (currentChar != '\n') {
+          discardedRecord = true;
+        }
+      }
+      // This covers the case where the last row matches the schema. We need to ensure that we read the entire row
+      // completely
+      else if (record.size() == schema.numColumns() && !iterator.hasNext() && !isLastWorker) {
+        long movingEndByte = partitionEndByteRange;
+        long bytePositionAtBeginningOfRecord = record.getCharacterPosition();
+        boolean newLineFound = false;
+
+        while (!newLineFound) {
+          movingEndByte += MyriaConstants.BYTE_OVERLAP_PARALLEL_INGEST;
+          // Create a stream to look for the new line
+          InputStream trailingEndInputStream = source.getInputStream(partitionEndByteRange, movingEndByte);
+          InputStreamReader startStreamReader = new InputStreamReader(trailingEndInputStream);
+          int dataChar = startStreamReader.read();
+          while (dataChar != -1) {
+            char currentChar = (char) dataChar;
+            if (currentChar == '\n') {
+              newLineFound = true;
+              // Re-initialize the parser with the last row only
+              InputStream beginningOfRecord =
+                  source.getInputStream(bytePositionAtBeginningOfRecord, partitionEndByteRange);
+              InputStream concatenateEndOfRecord = source.getInputStream(partitionEndByteRange + 1, movingEndByte);
+              partitionInputStream = new SequenceInputStream(beginningOfRecord, concatenateEndOfRecord);
+              parser =
+                  new CSVParser(new BufferedReader(new InputStreamReader(partitionInputStream)), CSVFormat.newFormat(
+                      delimiter).withQuote(quote).withEscape(escape), bytePositionAtBeginningOfRecord, 0);
+              iterator = parser.iterator();
+              onLastRow = true;
+              record = iterator.next();
+              break;
+            }
+            dataChar = startStreamReader.read();
+          }
+          startStreamReader.close();
+        }
+      }
+      // This is a partial fragment, need to read more bytes
       if (record.size() < schema.numColumns()) {
         if (lineNumber - 1 != 0 && !isLastWorker) {
           onLastRow = true;
-          long byteAtBeginningOfRecord = record.getCharacterPosition();
+          long bytePositionAtBeginningOfRecord = record.getCharacterPosition();
           if (!fixingStartByte) {
             fixingStartByte = true;
-            startByteRange += byteAtBeginningOfRecord;
+            partitionStartByteRange += bytePositionAtBeginningOfRecord;
           }
-          byteOverlap = (long) Math.pow(byteOverlap, 2);
-          endByteRange = endByteRange + byteOverlap;
-
-          source.setStartRange(startByteRange);
-          source.setEndRange(endByteRange);
+          partitionEndByteRange += byteOverlap;
+          InputStream overlapStream = source.getInputStream(partitionStartByteRange, partitionEndByteRange);
+          partitionInputStream = new SequenceInputStream(partitionInputStream, overlapStream);
           parser =
-              new CSVParser(new BufferedReader(new InputStreamReader(source.getInputStream())), CSVFormat.newFormat(
+              new CSVParser(new BufferedReader(new InputStreamReader(partitionInputStream)), CSVFormat.newFormat(
                   delimiter).withQuote(quote).withEscape(escape));
           iterator = parser.iterator();
+          byteOverlap *= 2;
+        } else {
+          discardedRecord = true;
         }
-      } else {
+      } else if (!discardedRecord) {
         for (int column = 0; column < schema.numColumns(); ++column) {
           String cell = record.get(column);
           try {
@@ -190,6 +245,7 @@ public class CSVFileScanFragment extends LeafOperator {
           }
           if (onLastRow) {
             parser.close();
+
           }
         }
       }
@@ -209,13 +265,13 @@ public class CSVFileScanFragment extends LeafOperator {
     fileSize = source.getFileSize();
 
     long partitionSize = fileSize / totalWorkers;
-    startByteRange = partitionSize * (workerID - 1);
-    endByteRange = startByteRange + partitionSize;
+    partitionStartByteRange = partitionSize * (workerID - 1);
+    partitionEndByteRange = partitionStartByteRange + partitionSize;
 
     buffer = new TupleBatchBuffer(getSchema());
     try {
-      source.setStartRange(startByteRange);
-      source.setEndRange(endByteRange);
+      source.setStartRange(partitionStartByteRange);
+      source.setEndRange(partitionEndByteRange);
       parser =
           new CSVParser(new BufferedReader(new InputStreamReader(source.getInputStream())), CSVFormat.newFormat(
               delimiter).withQuote(quote).withEscape(escape));
