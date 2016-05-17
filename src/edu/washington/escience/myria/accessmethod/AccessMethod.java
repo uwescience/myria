@@ -192,18 +192,18 @@ public abstract class AccessMethod {
    * Creates a view
    * 
    * @param viewName
-   * @param viewQuery
+   * @param viewDefinition
    * @throws DbException
    */
-  public abstract void createViewIfNotExists(String viewName, String viewQuery) throws DbException;
+  public abstract void createViewIfNotExists(String viewName, String viewDefinition) throws DbException;
 
   /**
-   * Runs a sql command
+   * Executes a command on the underlying database
    * 
    * @param command
    * @throws DbException
    */
-  public abstract void executeSQLCommand(String command) throws DbException;
+  public abstract void runCommand(String command) throws DbException;
 
   /**
    * Holds a reference to a column and whether it is ascending or descending.

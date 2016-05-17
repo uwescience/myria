@@ -618,9 +618,9 @@ public final class JdbcAccessMethod extends AccessMethod {
   }
 
   @Override
-  public void createViewIfNotExists(final String viewName, final String viewQuery) throws DbException {
+  public void createViewIfNotExists(final String viewName, final String viewDefinition) throws DbException {
     if (jdbcInfo.getDbms().equals(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL)) {
-      createViewIfNotExistPostgres(viewName, viewQuery);
+      createViewIfNotExistPostgres(viewName, viewDefinition);
     } else {
       throw new UnsupportedOperationException("create index if not exists is not supported in " + jdbcInfo.getDbms()
           + ", implement me");
@@ -631,36 +631,24 @@ public final class JdbcAccessMethod extends AccessMethod {
    * Create a view in postgres if no view with the same name exists
    * 
    * @param viewName the name of the views
-   * @param viewQuery the view to be created
+   * @param viewDefinition the view to be created
    * @throws DbException if there is an error in the DBMS.
    */
-  public void createViewIfNotExistPostgres(final String viewName, final String viewQuery) throws DbException {
+  public void createViewIfNotExistPostgres(final String viewName, final String viewDefinition) throws DbException {
     String statement =
         Joiner.on(' ').join("DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_class WHERE relkind = 'v' AND relname='",
-            viewName, "') THEN CREATE OR REPLACE VIEW", viewName, "AS", viewQuery, "; END IF; END$$;");
+            viewName, "') THEN CREATE OR REPLACE VIEW", viewName, "AS", viewDefinition, "; END IF; END$$;");
     execute(statement);
   }
 
   @Override
-  public void executeSQLCommand(final String command) throws DbException {
+  public void runCommand(final String command) throws DbException {
     if (jdbcInfo.getDbms().equals(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL)) {
       execute(command);
     } else {
-      throw new UnsupportedOperationException("run sql command is not supported in " + jdbcInfo.getDbms()
+      throw new UnsupportedOperationException("run command is not supported in " + jdbcInfo.getDbms()
           + ", implement me");
     }
-  }
-
-  /**
-   * Run arbitrary DDLs on Postgres
-   * 
-   * @param relationKey the table on which the indexes will be created.
-   * @param schema the Schema of the data in the table.
-   * @param runDDL the DDL to run on Postgres
-   * @throws DbException if there is an error in the DBMS.
-   */
-  public void runDDLPostgres(final String runDDL) throws DbException {
-    execute(runDDL);
   }
 
   /**
