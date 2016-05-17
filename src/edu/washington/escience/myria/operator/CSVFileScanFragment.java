@@ -64,9 +64,7 @@ public class CSVFileScanFragment extends LeafOperator {
   private long partitionStartByteRange;
   private long partitionEndByteRange;
 
-  // private InputStream trailingStartInputStream;
   private InputStream partitionInputStream;
-  private InputStream trailingEndInputStream;
 
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
@@ -143,43 +141,41 @@ public class CSVFileScanFragment extends LeafOperator {
         throw new DbException("Error parsing row " + lineNumber, e);
       }
       CSVRecord record = iterator.next();
-      // If the number of columns matches the schema for the first line, mark as discarded
+      // This covers the case where the first row of a worker matches the schema. We only want to read this row if the
+      // previous character is '\n'
       if (record.size() == schema.numColumns() && lineNumber - 1 == 0 && partitionStartByteRange != 0) {
-        // Check if the previous 2 bytes contains a new line -- this should be a rare case
         InputStreamReader startStreamReader =
             new InputStreamReader(source.getInputStream(partitionStartByteRange - 1, partitionStartByteRange));
         char currentChar = (char) startStreamReader.read();
-        LOGGER.warn("CHAR BEFORE " + currentChar);
         if (currentChar != '\n') {
           discardedRecord = true;
-        } else {
-          LOGGER.warn("CHAR MATCH");
         }
       }
-      // If the number of columns matches the schema for the last line, make sure to read entire line
+      // This covers the case where the last row matches the schema. We need to ensure that we read the entire row
+      // completely
       else if (record.size() == schema.numColumns() && !iterator.hasNext() && !isLastWorker) {
-        long movingEndByte = partitionEndByteRange + MyriaConstants.BYTE_OVERLAP_PARALLEL_INGEST;
-        long byteAtBeginningOfRecord = record.getCharacterPosition();
+        long movingEndByte = partitionEndByteRange;
+        long bytePositionAtBeginningOfRecord = record.getCharacterPosition();
         boolean newLineFound = false;
 
         while (!newLineFound) {
-          // Keep going back
           movingEndByte += MyriaConstants.BYTE_OVERLAP_PARALLEL_INGEST;
-          trailingEndInputStream = source.getInputStream(partitionEndByteRange, movingEndByte);
-
+          // Create a stream to look for the new line
+          InputStream trailingEndInputStream = source.getInputStream(partitionEndByteRange, movingEndByte);
           InputStreamReader startStreamReader = new InputStreamReader(trailingEndInputStream);
           int dataChar = startStreamReader.read();
           while (dataChar != -1) {
             char currentChar = (char) dataChar;
             if (currentChar == '\n') {
               newLineFound = true;
-              // Re-initialize the parser
-              InputStream beginningOfRecord = source.getInputStream(byteAtBeginningOfRecord, partitionEndByteRange);
+              // Re-initialize the parser with the last row only
+              InputStream beginningOfRecord =
+                  source.getInputStream(bytePositionAtBeginningOfRecord, partitionEndByteRange);
               InputStream concatenateEndOfRecord = source.getInputStream(partitionEndByteRange + 1, movingEndByte);
               partitionInputStream = new SequenceInputStream(beginningOfRecord, concatenateEndOfRecord);
               parser =
                   new CSVParser(new BufferedReader(new InputStreamReader(partitionInputStream)), CSVFormat.newFormat(
-                      delimiter).withQuote(quote).withEscape(escape), byteAtBeginningOfRecord, 0);
+                      delimiter).withQuote(quote).withEscape(escape), bytePositionAtBeginningOfRecord, 0);
               iterator = parser.iterator();
               onLastRow = true;
               record = iterator.next();
@@ -190,17 +186,14 @@ public class CSVFileScanFragment extends LeafOperator {
           startStreamReader.close();
         }
       }
-      // This is a partial fragment
+      // This is a partial fragment, need to read more bytes
       if (record.size() < schema.numColumns()) {
-        LOGGER.warn("Partial");
-        LOGGER.warn("RECORD " + record.toString());
-        // Only read more if 1) we are not the last worker and 2) if we are not on the first line
         if (lineNumber - 1 != 0 && !isLastWorker) {
           onLastRow = true;
-          long byteAtBeginningOfRecord = record.getCharacterPosition();
+          long bytePositionAtBeginningOfRecord = record.getCharacterPosition();
           if (!fixingStartByte) {
             fixingStartByte = true;
-            partitionStartByteRange += byteAtBeginningOfRecord;
+            partitionStartByteRange += bytePositionAtBeginningOfRecord;
           }
           partitionEndByteRange += byteOverlap;
           InputStream overlapStream = source.getInputStream(partitionStartByteRange, partitionEndByteRange);
@@ -211,13 +204,9 @@ public class CSVFileScanFragment extends LeafOperator {
           iterator = parser.iterator();
           byteOverlap *= 2;
         } else {
-          discardedRecord = true; // If we run into a partial fragment at the beginning
-          LOGGER.warn("Discard");
-          LOGGER.warn("RECORD " + record.toString());
+          discardedRecord = true;
         }
       } else if (!discardedRecord) {
-        LOGGER.warn("FULL ");
-        LOGGER.warn("RECORD " + record.toString());
         for (int column = 0; column < schema.numColumns(); ++column) {
           String cell = record.get(column);
           try {
@@ -284,16 +273,7 @@ public class CSVFileScanFragment extends LeafOperator {
   protected void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
     buffer = new TupleBatchBuffer(getSchema());
     try {
-      // Initialize InputStreams based on overlapping ranges
       partitionInputStream = source.getInputStream(partitionStartByteRange, partitionEndByteRange);
-
-      // Only initialize if needed
-      if (!isLastWorker) {
-        trailingEndInputStream =
-            source.getInputStream(partitionEndByteRange, partitionEndByteRange
-                + MyriaConstants.BYTE_OVERLAP_PARALLEL_INGEST);
-      }
-
       parser =
           new CSVParser(new BufferedReader(new InputStreamReader(partitionInputStream)), CSVFormat.newFormat(delimiter)
               .withQuote(quote).withEscape(escape));
