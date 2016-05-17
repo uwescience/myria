@@ -53,7 +53,8 @@ public class InputBufferTest {
   final int NUM_MSGS_PER_INPUT = 100;
 
   IPCConnectionPool[] pools = null;
-  final TupleBatch tb = TestUtils.generateRandomTuples(TupleBatch.BATCH_SIZE, TupleBatch.BATCH_SIZE, false).popAny();;
+  final TupleBatch tb =
+      TestUtils.generateRandomTuples(TupleBatch.BATCH_SIZE, TupleBatch.BATCH_SIZE, false).popAny();;
 
   @Before
   public void init() throws Throwable {
@@ -65,7 +66,9 @@ public class InputBufferTest {
 
     pools = new IPCConnectionPool[NUM_PSEUDO_WORKER];
     for (int i = 0; i < pools.length; i++) {
-      pools[i] = IPCTestUtil.startIPCConnectionPool(i, computingUnits, null, new TransportMessageSerializer(), 2, 1, 5);
+      pools[i] =
+          IPCTestUtil.startIPCConnectionPool(
+              i, computingUnits, null, new TransportMessageSerializer(), 2, 1, 5);
     }
   }
 
@@ -88,7 +91,7 @@ public class InputBufferTest {
       int numStream = Math.max(r.nextInt(NUM_STREAM), 1);
       int numMsgs = Math.max(r.nextInt(NUM_MSGS_PER_INPUT), 10);
 
-      Builder<StreamIOChannelID> builder = ImmutableSet.<StreamIOChannelID> builder();
+      Builder<StreamIOChannelID> builder = ImmutableSet.<StreamIOChannelID>builder();
       ImmutableSet<StreamIOChannelID> channelIDs = null;
       for (int i = 0; i < numWorker; i++) {
         for (int j = 0; j < numStream; j++) {
@@ -96,9 +99,14 @@ public class InputBufferTest {
         }
       }
       channelIDs = builder.build();
-      System.out.println("Starting r:" + receiverID + "#W:" + numWorker + "#S:" + numStream + "#Msg:" + numMsgs);
-      doCollectTest(receiverID, numWorker, numStream, numMsgs, new FlowControlBagInputBuffer<TupleBatch>(
-          pools[receiverID], channelIDs, 2, 1));
+      System.out.println(
+          "Starting r:" + receiverID + "#W:" + numWorker + "#S:" + numStream + "#Msg:" + numMsgs);
+      doCollectTest(
+          receiverID,
+          numWorker,
+          numStream,
+          numMsgs,
+          new FlowControlBagInputBuffer<TupleBatch>(pools[receiverID], channelIDs, 2, 1));
       // }
     } catch (Throwable e) {
       LOGGER.error("Test error", e);
@@ -106,8 +114,13 @@ public class InputBufferTest {
     }
   }
 
-  public void doCollectTest(final int collectorID, final int numWorker, final int numStreamPerWorker,
-      final int numMsgsPerInput, final StreamInputBuffer<TupleBatch> ib) throws Throwable {
+  public void doCollectTest(
+      final int collectorID,
+      final int numWorker,
+      final int numStreamPerWorker,
+      final int numMsgsPerInput,
+      final StreamInputBuffer<TupleBatch> ib)
+      throws Throwable {
 
     ib.setAttachment(tb.getSchema());
 
@@ -123,21 +136,26 @@ public class InputBufferTest {
       final int j = i;
       for (int k = 0; k < numStreamPerWorker; k++) {
         final long sID = k;
-        final StreamOutputChannel<TupleBatch> out = pools[j].<TupleBatch> reserveLongTermConnection(collectorID, sID);
-        inputThreads.add(new Thread(new Runnable() {
-          @Override
-          public void run() {
-            for (int i = 0; i < numMsgsPerInput; i++) {
-              while (true) {
-                if (out.isWritable()) {
-                  out.write(IPCUtils.tmToTupleBatch(tb.toTransportMessage().getDataMessage(), tb.getSchema()));
-                  break;
-                }
-              }
-            }
-            out.release();
-          }
-        }));
+        final StreamOutputChannel<TupleBatch> out =
+            pools[j].<TupleBatch>reserveLongTermConnection(collectorID, sID);
+        inputThreads.add(
+            new Thread(
+                new Runnable() {
+                  @Override
+                  public void run() {
+                    for (int i = 0; i < numMsgsPerInput; i++) {
+                      while (true) {
+                        if (out.isWritable()) {
+                          out.write(
+                              IPCUtils.tmToTupleBatch(
+                                  tb.toTransportMessage().getDataMessage(), tb.getSchema()));
+                          break;
+                        }
+                      }
+                    }
+                    out.release();
+                  }
+                }));
       }
     }
 
@@ -185,17 +203,22 @@ public class InputBufferTest {
       if (ch instanceof NioSocketChannel || ch instanceof InJVMChannel) {
         allFutures.add(cf);
         cg.add(ch);
-        ch.getPipeline().execute(new Runnable() {
-          @Override
-          public void run() {
-            if (!ch.isReadable()) {
-              cf.setFailure(new IllegalStateException("Channel " + ChannelContext.channelToString(ch)
-                  + " is not readable"));
-            } else {
-              cf.setSuccess();
-            }
-          }
-        });
+        ch.getPipeline()
+            .execute(
+                new Runnable() {
+                  @Override
+                  public void run() {
+                    if (!ch.isReadable()) {
+                      cf.setFailure(
+                          new IllegalStateException(
+                              "Channel "
+                                  + ChannelContext.channelToString(ch)
+                                  + " is not readable"));
+                    } else {
+                      cf.setSuccess();
+                    }
+                  }
+                });
       }
     }
     ChannelGroupFuture cgf = new DefaultChannelGroupFuture(cg, allFutures);

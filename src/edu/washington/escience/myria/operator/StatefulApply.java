@@ -60,13 +60,20 @@ public class StatefulApply extends Apply {
    * @param initializerExpressions expressions that initializes the state
    * @param updaterExpressions expressions that update the state
    */
-  public StatefulApply(final Operator child, final List<Expression> emitExpression,
-      final List<Expression> initializerExpressions, final List<Expression> updaterExpressions) {
+  public StatefulApply(
+      final Operator child,
+      final List<Expression> emitExpression,
+      final List<Expression> initializerExpressions,
+      final List<Expression> updaterExpressions) {
     super(child, emitExpression);
     Preconditions.checkArgument(initializerExpressions.size() == updaterExpressions.size());
     for (int i = 0; i < initializerExpressions.size(); i++) {
-      Preconditions.checkArgument(updaterExpressions.get(i).getOutputName() == null
-          || initializerExpressions.get(i).getOutputName().equals(updaterExpressions.get(i).getOutputName()));
+      Preconditions.checkArgument(
+          updaterExpressions.get(i).getOutputName() == null
+              || initializerExpressions
+                  .get(i)
+                  .getOutputName()
+                  .equals(updaterExpressions.get(i).getOutputName()));
     }
     setInitExpressions(initializerExpressions);
     setUpdateExpressions(updaterExpressions);
@@ -117,8 +124,9 @@ public class StatefulApply extends Apply {
     // second, build and add the columns that require state
     List<ColumnBuilder<?>> columnBuilders = Lists.newArrayListWithCapacity(needState.size());
     for (int builderIdx = 0; builderIdx < needState.size(); builderIdx++) {
-      columnBuilders.add(ColumnFactory.allocateColumn(getEmitEvaluators().get(needState.get(builderIdx))
-          .getOutputType()));
+      columnBuilders.add(
+          ColumnFactory.allocateColumn(
+              getEmitEvaluators().get(needState.get(builderIdx)).getOutputType()));
     }
 
     for (int rowIdx = 0; rowIdx < tb.numTuples(); rowIdx++) {
@@ -154,7 +162,8 @@ public class StatefulApply extends Apply {
     evaluators.ensureCapacity(getEmitExpressions().size());
     for (Expression expr : getEmitExpressions()) {
       GenericEvaluator evaluator =
-          new GenericEvaluator(expr, new ExpressionOperatorParameter(inputSchema, getStateSchema(), getNodeID()));
+          new GenericEvaluator(
+              expr, new ExpressionOperatorParameter(inputSchema, getStateSchema(), getNodeID()));
       if (evaluator.needsCompiling()) {
         evaluator.compile();
       }
@@ -177,7 +186,8 @@ public class StatefulApply extends Apply {
 
     for (Expression expr : updateExpressions) {
       GenericEvaluator evaluator =
-          new GenericEvaluator(expr, new ExpressionOperatorParameter(inputSchema, getStateSchema(), getNodeID()));
+          new GenericEvaluator(
+              expr, new ExpressionOperatorParameter(inputSchema, getStateSchema(), getNodeID()));
       evaluator.compile();
       updateEvaluators.add(evaluator);
     }
@@ -195,7 +205,7 @@ public class StatefulApply extends Apply {
 
   /**
    * Generates the state schema and returns it.
-   * 
+   *
    * @return the state schema
    */
   private Schema generateStateSchema() {
@@ -231,7 +241,8 @@ public class StatefulApply extends Apply {
     ImmutableList.Builder<String> namesBuilder = ImmutableList.builder();
 
     for (Expression expr : getEmitExpressions()) {
-      typesBuilder.add(expr.getOutputType(new ExpressionOperatorParameter(inputSchema, getStateSchema())));
+      typesBuilder.add(
+          expr.getOutputType(new ExpressionOperatorParameter(inputSchema, getStateSchema())));
       namesBuilder.add(expr.getOutputName());
     }
     return new Schema(typesBuilder.build(), namesBuilder.build());

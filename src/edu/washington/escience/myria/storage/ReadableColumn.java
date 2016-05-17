@@ -10,7 +10,7 @@ import org.joda.time.DateTime;
 public interface ReadableColumn extends ColumnInterface {
   /**
    * Returns the boolean value at the specified row in this column.
-   * 
+   *
    * @param row row of element to return.
    * @return the element at the specified row in this column.
    * @throws UnsupportedOperationException if this column does not support this type.
@@ -19,7 +19,7 @@ public interface ReadableColumn extends ColumnInterface {
 
   /**
    * Returns the {@link DateTime} value at the specified row in this column.
-   * 
+   *
    * @param row row of element to return.
    * @return the element at the specified row in this column.
    * @throws UnsupportedOperationException if this column does not support this type.
@@ -29,7 +29,7 @@ public interface ReadableColumn extends ColumnInterface {
 
   /**
    * Returns the double value at the specified row in this column.
-   * 
+   *
    * @param row row of element to return.
    * @return the element at the specified row in this column.
    * @throws UnsupportedOperationException if this column does not support this type.
@@ -38,7 +38,7 @@ public interface ReadableColumn extends ColumnInterface {
 
   /**
    * Returns the float value at the specified row in this column.
-   * 
+   *
    * @param row row of element to return.
    * @return the element at the specified row in this column.
    * @throws UnsupportedOperationException if this column does not support this type.
@@ -47,7 +47,7 @@ public interface ReadableColumn extends ColumnInterface {
 
   /**
    * Returns the int value at the specified row in this column.
-   * 
+   *
    * @param row row of element to return.
    * @return the element at the specified row in this column.
    * @throws UnsupportedOperationException if this column does not support this type.
@@ -56,7 +56,7 @@ public interface ReadableColumn extends ColumnInterface {
 
   /**
    * Returns the long value at the specified row in this column.
-   * 
+   *
    * @param row row of element to return.
    * @return the element at the specified row in this column.
    * @throws UnsupportedOperationException if this column does not support this type.
@@ -65,7 +65,7 @@ public interface ReadableColumn extends ColumnInterface {
 
   /**
    * Returns the element at the specified row in this column.
-   * 
+   *
    * @param row row of element to return.
    * @return the element at the specified row in this column.
    */
@@ -74,7 +74,7 @@ public interface ReadableColumn extends ColumnInterface {
 
   /**
    * Returns the {@link String} value at the specified row in this column.
-   * 
+   *
    * @param row row of element to return.
    * @return the element at the specified row in this column.
    * @throws UnsupportedOperationException if this column does not support this type.

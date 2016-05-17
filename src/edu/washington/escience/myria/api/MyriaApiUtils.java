@@ -8,12 +8,11 @@ import javax.ws.rs.core.Response.ResponseBuilder;
  */
 public final class MyriaApiUtils {
   /** Utility class cannot be constructed. */
-  private MyriaApiUtils() {
-  }
+  private MyriaApiUtils() {}
 
   /**
    * Get a "do not cache" {@link CacheControl}.
-   * 
+   *
    * @return a {@link CacheControl} set to disable caching.
    */
   public static CacheControl doNotCache() {
@@ -24,7 +23,7 @@ public final class MyriaApiUtils {
 
   /**
    * Set the <code>Cache-Control</code> header in the specified cache to have the <code>no-cache</code> option set.
-   * 
+   *
    * @param response the response builder.
    * @return the response builder.
    */

@@ -25,18 +25,19 @@ public class CatalogTest {
   private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(CatalogTest.class);
 
   @Rule
-  public TestRule watcher = new TestWatcher() {
-    @Override
-    protected void starting(final Description description) {
-      LOGGER.warn("*********************************************");
-      LOGGER.warn(String.format("Starting test: %s()...", description.getMethodName()));
-      LOGGER.warn("*********************************************");
-    };
-  };
+  public TestRule watcher =
+      new TestWatcher() {
+        @Override
+        protected void starting(final Description description) {
+          LOGGER.warn("*********************************************");
+          LOGGER.warn(String.format("Starting test: %s()...", description.getMethodName()));
+          LOGGER.warn("*********************************************");
+        };
+      };
 
   /**
    * Test the query search functionality in the catalog.
-   * 
+   *
    * @throws CatalogException if there is an error creating the Catalog.
    */
   @Test
@@ -177,7 +178,7 @@ public class CatalogTest {
 
   /**
    * Test the query search functionality in the catalog.
-   * 
+   *
    * @throws CatalogException if there is an error creating the Catalog.
    */
   @Test
@@ -198,13 +199,13 @@ public class CatalogTest {
     qs = catalog.getQuery(1L);
     assertEquals(qs.rawQuery, query.rawQuery);
     assertEquals(qs.logicalRa, query.logicalRa);
-    assertEquals(qs.profilingMode, ImmutableList.<ProfilingMode> of());
+    assertEquals(qs.profilingMode, ImmutableList.<ProfilingMode>of());
     assertEquals(qs.language, query.language);
     /* Also test the getQueries() method of getting query info. */
     qs = catalog.getQueries(1L, 1L, null, null).get(0);
     assertEquals(qs.rawQuery, query.rawQuery);
     assertEquals(null, qs.logicalRa);
-    assertEquals(qs.profilingMode, ImmutableList.<ProfilingMode> of());
+    assertEquals(qs.profilingMode, ImmutableList.<ProfilingMode>of());
     assertEquals(qs.language, query.language);
 
     /* Q2 */

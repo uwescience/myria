@@ -20,11 +20,12 @@ import edu.washington.escience.myria.storage.TupleBatch;
  */
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type")
 @JsonSubTypes({
-    @Type(value = RoundRobinPartitionFunction.class, name = "RoundRobin"),
-    @Type(value = SingleFieldHashPartitionFunction.class, name = "SingleFieldHash"),
-    @Type(value = IdentityHashPartitionFunction.class, name = "IdentityHash"),
-    @Type(value = MultiFieldHashPartitionFunction.class, name = "MultiFieldHash"),
-    @Type(value = WholeTupleHashPartitionFunction.class, name = "WholeTupleHash") })
+  @Type(value = RoundRobinPartitionFunction.class, name = "RoundRobin"),
+  @Type(value = SingleFieldHashPartitionFunction.class, name = "SingleFieldHash"),
+  @Type(value = IdentityHashPartitionFunction.class, name = "IdentityHash"),
+  @Type(value = MultiFieldHashPartitionFunction.class, name = "MultiFieldHash"),
+  @Type(value = WholeTupleHashPartitionFunction.class, name = "WholeTupleHash")
+})
 public abstract class PartitionFunction implements Serializable {
 
   /** Required for Java serialization. */
@@ -33,8 +34,7 @@ public abstract class PartitionFunction implements Serializable {
   /**
    * The number of partitions into which input tuples can be divided.
    */
-  @JsonProperty
-  private Integer numPartitions = null;
+  @JsonProperty private Integer numPartitions = null;
 
   /**
    * @param numPartitions the number of partitions into which input tuples can be divided. Note that this is a
@@ -42,7 +42,8 @@ public abstract class PartitionFunction implements Serializable {
    *          deserialization.
    */
   public PartitionFunction(@Nullable final Integer numPartitions) {
-    Preconditions.checkArgument((numPartitions == null) || (numPartitions > 0),
+    Preconditions.checkArgument(
+        (numPartitions == null) || (numPartitions > 0),
         "numPartitions argument must be null or > 0");
     this.numPartitions = numPartitions;
   }
@@ -58,18 +59,18 @@ public abstract class PartitionFunction implements Serializable {
   /**
    * Given that the TupleBatches expose only the valid tuples, partition functions using TB.get** methods should be of
    * little overhead comparing with direct Column access.
-   * 
+   *
    * @param data the data to be partitioned.
-   * 
+   *
    * @return an int[] of length specified by <code>data.{@link TupleBatch#numTuples}</code>, specifying which partition
    *         every tuple should be sent to.
-   * 
+   *
    */
   public abstract int[] partition(@Nonnull final TupleBatch data);
 
   /**
    * Set the number of output partitions.
-   * 
+   *
    * @param numPartitions the number of output partitions. Must be greater than 0.
    */
   public final void setNumPartitions(final int numPartitions) {

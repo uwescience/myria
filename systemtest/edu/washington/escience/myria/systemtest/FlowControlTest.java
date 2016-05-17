@@ -52,7 +52,8 @@ public class FlowControlTest extends SystemTestBase {
     final int numTuples = TupleBatch.BATCH_SIZE * 100;
 
     final Schema schema =
-        new Schema(ImmutableList.of(Type.LONG_TYPE, Type.STRING_TYPE), ImmutableList.of("id", "name"));
+        new Schema(
+            ImmutableList.of(Type.LONG_TYPE, Type.STRING_TYPE), ImmutableList.of("id", "name"));
 
     final TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
     for (int i = 0; i < numTuples; i++) {
@@ -67,20 +68,21 @@ public class FlowControlTest extends SystemTestBase {
 
     final HashMap<Integer, RootOperator[]> workerPlans = new HashMap<Integer, RootOperator[]>();
     final CollectProducer cp1 = new CollectProducer(ts, worker1ReceiveID, workerIDs[1]);
-    workerPlans.put(workerIDs[0], new RootOperator[] { cp1 });
+    workerPlans.put(workerIDs[0], new RootOperator[] {cp1});
 
-    final CollectConsumer cc1 = new CollectConsumer(schema, worker1ReceiveID, new int[] { workerIDs[0] });
+    final CollectConsumer cc1 =
+        new CollectConsumer(schema, worker1ReceiveID, new int[] {workerIDs[0]});
     final DelayInjector di = new DelayInjector(50, TimeUnit.MILLISECONDS, cc1);
     final CollectProducer cp2 = new CollectProducer(di, serverReceiveID, MASTER_ID);
 
-    workerPlans.put(workerIDs[0], new RootOperator[] { cp1 });
-    workerPlans.put(workerIDs[1], new RootOperator[] { cp2 });
+    workerPlans.put(workerIDs[0], new RootOperator[] {cp1});
+    workerPlans.put(workerIDs[1], new RootOperator[] {cp2});
 
-    final CollectConsumer serverCollect = new CollectConsumer(schema, serverReceiveID, new int[] { workerIDs[1] });
+    final CollectConsumer serverCollect =
+        new CollectConsumer(schema, serverReceiveID, new int[] {workerIDs[1]});
     final SinkRoot serverPlan = new SinkRoot(serverCollect);
 
     server.submitQueryPlan(serverPlan, workerPlans).get();
     assertEquals(numTuples, serverPlan.getCount());
-
   }
 }

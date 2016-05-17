@@ -4,8 +4,8 @@ import com.google.common.base.Preconditions;
 
 /**
  * An abstraction for a binary operator.
- * 
- * 
+ *
+ *
  */
 public abstract class BinaryOperator extends Operator {
 
@@ -21,7 +21,8 @@ public abstract class BinaryOperator extends Operator {
    * @param right the left child of this operator.
    */
   public BinaryOperator(final Operator left, final Operator right) {
-    Preconditions.checkArgument((left == null && right == null) || (left != null && right != null),
+    Preconditions.checkArgument(
+        (left == null && right == null) || (left != null && right != null),
         "Must be constructed with either two null children or two instantiated children.");
     this.left = left;
     this.right = right;
@@ -29,7 +30,7 @@ public abstract class BinaryOperator extends Operator {
 
   @Override
   public final Operator[] getChildren() {
-    return new Operator[] { left, right };
+    return new Operator[] {left, right};
   }
 
   /**
@@ -49,15 +50,20 @@ public abstract class BinaryOperator extends Operator {
   @Override
   public final void setChildren(final Operator[] children) {
     Integer opId = getOpId();
-    Preconditions.checkArgument(left == null && right == null,
-        "Operator opId=%s called setChildren(), but children have already been set", opId);
+    Preconditions.checkArgument(
+        left == null && right == null,
+        "Operator opId=%s called setChildren(), but children have already been set",
+        opId);
     Preconditions.checkNotNull(children, "Operator opId=%s has null children", opId);
-    Preconditions.checkArgument(children.length == 2,
-        "Operator opId=%s setChildren() must be called with an array of length 2", opId);
-    Preconditions.checkNotNull(children[0], "Operator opId=%s has its first child to be null", opId);
-    Preconditions.checkNotNull(children[1], "Operator opId=%s has its second child to be null", opId);
+    Preconditions.checkArgument(
+        children.length == 2,
+        "Operator opId=%s setChildren() must be called with an array of length 2",
+        opId);
+    Preconditions.checkNotNull(
+        children[0], "Operator opId=%s has its first child to be null", opId);
+    Preconditions.checkNotNull(
+        children[1], "Operator opId=%s has its second child to be null", opId);
     left = children[0];
     right = children[1];
   }
-
 }

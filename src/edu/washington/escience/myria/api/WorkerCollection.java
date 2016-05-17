@@ -17,14 +17,13 @@ import edu.washington.escience.myria.parallel.SocketInfo;
 
 /**
  * This is the class that handles API calls that return workers.
- * 
+ *
  */
 @Path("/workers")
 @Produces(MyriaApiConstants.JSON_UTF_8)
 public final class WorkerCollection {
   /** The Myria server running on the master. */
-  @Context
-  private Server server;
+  @Context private Server server;
 
   /**
    * @return the list of identifiers of workers that are currently alive.
@@ -41,7 +40,9 @@ public final class WorkerCollection {
   @GET
   @Path("/heartbeat")
   public Response getAliveWorkersWithLastHeartbeat() {
-    return Response.ok(server.getAliveWorkersWithLastHeartbeat()).cacheControl(MyriaApiUtils.doNotCache()).build();
+    return Response.ok(server.getAliveWorkersWithLastHeartbeat())
+        .cacheControl(MyriaApiUtils.doNotCache())
+        .build();
   }
 
   /**

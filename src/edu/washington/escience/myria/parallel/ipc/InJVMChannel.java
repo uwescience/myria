@@ -28,11 +28,12 @@ public class InJVMChannel extends AbstractChannel implements LocalChannel {
   /**
    * Messages will be processed by the pipeline first and if the pipeline decides not to filter out a message, then it
    * will finally reach the sink.
-   * 
+   *
    * @param localInJVMPipeline the pipeline to execute when events happen on this channel.
    * @param localInJVMChannelSink the message sink
    * */
-  public InJVMChannel(final ChannelPipeline localInJVMPipeline, final ChannelSink localInJVMChannelSink) {
+  public InJVMChannel(
+      final ChannelPipeline localInJVMPipeline, final ChannelSink localInJVMChannelSink) {
     super(null, null, localInJVMPipeline, localInJVMChannelSink);
     localAddr = new LocalAddress(LocalAddress.EPHEMERAL);
     Channels.fireChannelOpen(this);
@@ -55,7 +56,7 @@ public class InJVMChannel extends AbstractChannel implements LocalChannel {
 
   /**
    * close the channel. Should be called by the sink.
-   * 
+   *
    * @param cf the close channel future.
    * */
   final void closeNow(final ChannelFuture cf) {
@@ -132,5 +133,4 @@ public class InJVMChannel extends AbstractChannel implements LocalChannel {
   public final LocalAddress getRemoteAddress() {
     return PSEUDO_SERVER_ADDRESS;
   }
-
 }

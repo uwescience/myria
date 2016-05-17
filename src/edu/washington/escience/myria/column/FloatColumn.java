@@ -18,7 +18,7 @@ public final class FloatColumn extends Column<Float> {
 
   /**
    * Constructs a new column.
-   * 
+   *
    * @param data the underlying data
    * @param numData number of tuples.
    * */
@@ -36,7 +36,7 @@ public final class FloatColumn extends Column<Float> {
 
   /**
    * Returns the element at the specified row in this column.
-   * 
+   *
    * @param row row of element to return.
    * @return the element at the specified row in this column.
    */

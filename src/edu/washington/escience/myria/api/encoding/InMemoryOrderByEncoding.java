@@ -8,10 +8,8 @@ import edu.washington.escience.myria.operator.InMemoryOrderBy;
 
 public class InMemoryOrderByEncoding extends UnaryOperatorEncoding<InMemoryOrderBy> {
 
-  @Required
-  public int[] argSortColumns;
-  @Required
-  public boolean[] argAscending;
+  @Required public int[] argSortColumns;
+  @Required public boolean[] argAscending;
 
   @Override
   public InMemoryOrderBy construct(final ConstructArgs args) throws MyriaApiException {
@@ -21,8 +19,8 @@ public class InMemoryOrderByEncoding extends UnaryOperatorEncoding<InMemoryOrder
   @Override
   protected void validateExtra() {
     if (argSortColumns.length != argAscending.length) {
-      throw new MyriaApiException(Status.BAD_REQUEST, "sort columns number should be equal to ascending orders number!");
+      throw new MyriaApiException(
+          Status.BAD_REQUEST, "sort columns number should be equal to ascending orders number!");
     }
   }
-
 }

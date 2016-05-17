@@ -18,17 +18,22 @@ public class UriSink implements DataSink {
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
 
-  @JsonProperty
-  private URI uri;
+  @JsonProperty private URI uri;
 
-  public UriSink(@JsonProperty(value = "uri", required = true) final String uri) throws CatalogException,
-      URISyntaxException {
+  public UriSink(@JsonProperty(value = "uri", required = true) final String uri)
+      throws CatalogException, URISyntaxException {
     this.uri = URI.create(Objects.requireNonNull(uri, "Parameter uri cannot be null"));
     /* Force using the Hadoop S3A FileSystem */
     if (this.uri.getScheme().equals("s3")) {
       this.uri =
-          new URI("s3a", this.uri.getUserInfo(), this.uri.getHost(), this.uri.getPort(), this.uri.getPath(), this.uri
-              .getQuery(), this.uri.getFragment());
+          new URI(
+              "s3a",
+              this.uri.getUserInfo(),
+              this.uri.getHost(),
+              this.uri.getPort(),
+              this.uri.getPath(),
+              this.uri.getQuery(),
+              this.uri.getFragment());
     }
     if (!this.uri.getScheme().equals("hdfs") && !this.uri.getScheme().equals("s3a")) {
       throw new CatalogException("URI must be an HDFS or S3 URI");

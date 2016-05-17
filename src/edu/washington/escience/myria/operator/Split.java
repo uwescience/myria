@@ -18,7 +18,7 @@ import edu.washington.escience.myria.storage.TupleUtils;
 /**
  * Operator which splits a string-valued column on a Java regular expression and duplicates the input row with each
  * segment of the split result.
- * 
+ *
  * E.g., (1, 2, "foo:bar:baz") -> (1, 2, "foo"), (1, 2, "bar"), (1, 2, "baz")
  */
 public final class Split extends UnaryOperator {
@@ -41,7 +41,7 @@ public final class Split extends UnaryOperator {
   private TupleBatchBuffer outputBuffer;
 
   /**
-   * 
+   *
    * @param child child operator that data is fetched from
    * @param splitColumnIndex index of string column to split using {@link #regex}
    * @param regex regular expression to split value of column at {@link #splitColumnIndex}
@@ -55,7 +55,7 @@ public final class Split extends UnaryOperator {
 
   /**
    * Instantiate a Split operator with null child. (Must be set later by setChild() or setChildren().)
-   * 
+   *
    * @param splitColumnIndex index of string column to split using {@link #regex}
    * @param regex regular expression to split value of column at {@link #splitColumnIndex}
    */
@@ -102,8 +102,11 @@ public final class Split extends UnaryOperator {
     final Schema inputSchema = child.getSchema();
     Preconditions.checkNotNull(inputSchema);
     final Type colType = inputSchema.getColumnType(splitColumnIndex);
-    Preconditions.checkState(colType == Type.STRING_TYPE,
-        "Column to split at index %d (%s) must have type STRING_TYPE", splitColumnIndex, colType);
+    Preconditions.checkState(
+        colType == Type.STRING_TYPE,
+        "Column to split at index %d (%s) must have type STRING_TYPE",
+        splitColumnIndex,
+        colType);
 
     outputBuffer = new TupleBatchBuffer(getSchema());
   }

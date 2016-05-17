@@ -2,8 +2,8 @@ package edu.washington.escience.myria.operator;
 
 /**
  * Simple abstract operator meant to make it easy to implement leaf operators.
- * 
- * 
+ *
+ *
  */
 public abstract class LeafOperator extends Operator {
   /** Required for Java serialization. */

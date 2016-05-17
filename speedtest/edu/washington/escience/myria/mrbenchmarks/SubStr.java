@@ -29,12 +29,10 @@ public class SubStr extends UnaryOperator {
   private static final long serialVersionUID = 1471148052154135619L;
 
   @Override
-  protected void init(ImmutableMap<String, Object> execEnvVars) throws DbException {
-  }
+  protected void init(ImmutableMap<String, Object> execEnvVars) throws DbException {}
 
   @Override
-  protected void cleanup() throws DbException {
-  }
+  protected void cleanup() throws DbException {}
 
   @Override
   protected TupleBatch fetchNextReady() throws DbException {
@@ -45,7 +43,8 @@ public class SubStr extends UnaryOperator {
       builder.expandAll();
       ImmutableList<? extends Column<?>> source = tb.getDataColumns();
       for (int idx = 0; idx < tb.numTuples(); ++idx) {
-        String subStr = source.get(substrColumnIdx).getString(idx).substring(fromCharIdx, endCharIdx);
+        String subStr =
+            source.get(substrColumnIdx).getString(idx).substring(fromCharIdx, endCharIdx);
         builder.replaceString(subStr, idx);
       }
 
@@ -71,5 +70,4 @@ public class SubStr extends UnaryOperator {
   private final int substrColumnIdx;
   private final int fromCharIdx;
   private final int endCharIdx;
-
 }

@@ -39,11 +39,15 @@ public final class ConstantEvaluator extends GenericEvaluator {
    * @param parameters parameters that are passed to the expression
    * @throws DbException if there is an error compiling the expression
    */
-  public ConstantEvaluator(final Expression expression, final ExpressionOperatorParameter parameters)
+  public ConstantEvaluator(
+      final Expression expression, final ExpressionOperatorParameter parameters)
       throws DbException {
     super(expression, parameters);
-    Preconditions.checkArgument(!expression.hasOperator(VariableExpression.class)
-        && !expression.hasOperator(StateExpression.class), "Expression %s does not evaluate to a constant", expression);
+    Preconditions.checkArgument(
+        !expression.hasOperator(VariableExpression.class)
+            && !expression.hasOperator(StateExpression.class),
+        "Expression %s does not evaluate to a constant",
+        expression);
     type = expression.getOutputType(parameters);
     String java;
     try {
@@ -91,7 +95,11 @@ public final class ConstantEvaluator extends GenericEvaluator {
   }
 
   @Override
-  public void eval(final ReadableTable tb, final int rowIdx, final WritableColumn result, final ReadableTable state) {
+  public void eval(
+      final ReadableTable tb,
+      final int rowIdx,
+      final WritableColumn result,
+      final ReadableTable state) {
     throw new UnsupportedOperationException("Should not be here. Should be using eval() instead");
   }
 

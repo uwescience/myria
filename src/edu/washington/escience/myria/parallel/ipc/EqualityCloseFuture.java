@@ -4,7 +4,7 @@ import org.jboss.netty.channel.Channel;
 
 /**
  * A condition close future that is conditioned on the equality of the expected object and the actual object.
- * 
+ *
  * @param <T> type.
  * */
 public class EqualityCloseFuture<T> extends ConditionCloseFuture {
@@ -25,7 +25,7 @@ public class EqualityCloseFuture<T> extends ConditionCloseFuture {
 
   /**
    * Set the actual value.
-   * 
+   *
    * @param actual the actual value
    * */
   public final void setActual(final T actual) {
@@ -35,5 +35,4 @@ public class EqualityCloseFuture<T> extends ConditionCloseFuture {
       setCondition(expected.equals(actual));
     }
   }
-
 }

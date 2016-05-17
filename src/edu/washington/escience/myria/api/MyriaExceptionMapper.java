@@ -19,17 +19,18 @@ import edu.washington.escience.myria.util.ErrorUtils;
 /**
  * This class determines what HTTP response will be sent when a web request causes a certain exception type. The
  * standard ones are 500 (INTERNAL SERVER ERROR) and 400 (BAD REQUEST).
- * 
+ *
  * Note that any resource wishing to control its response type directly can simply throw a {@link MyriaApiException},
  * which is a subclass of {@link WebApplicationException} and thus already contains an HTTP Response that will be passed
  * through directly.
- * 
- * 
+ *
+ *
  */
 @Provider
 public final class MyriaExceptionMapper implements ExceptionMapper<Throwable> {
   /** The logger for this class. */
-  private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(MyriaExceptionMapper.class);
+  private static final org.slf4j.Logger LOGGER =
+      LoggerFactory.getLogger(MyriaExceptionMapper.class);
 
   @Override
   public Response toResponse(final Throwable ex) {
@@ -46,7 +47,8 @@ public final class MyriaExceptionMapper implements ExceptionMapper<Throwable> {
       return MyriaExceptionMapper.getResponse(Status.BAD_REQUEST, ex);
     }
     /** EOFException is thrown by Jackson on null input. */
-    if (ex instanceof EOFException && ex.getMessage().equals("No content to map to Object due to end of input")) {
+    if (ex instanceof EOFException
+        && ex.getMessage().equals("No content to map to Object due to end of input")) {
       return MyriaExceptionMapper.getResponse(Status.BAD_REQUEST, "JSON payload cannot be empty");
     }
 
@@ -56,7 +58,7 @@ public final class MyriaExceptionMapper implements ExceptionMapper<Throwable> {
 
   /**
    * Get the HTTP response for this status and explanation.
-   * 
+   *
    * @param status the HTTP status code of the response.
    * @param explanation the explanation of the HTTP error.
    * @return the Response.
@@ -70,7 +72,7 @@ public final class MyriaExceptionMapper implements ExceptionMapper<Throwable> {
   /**
    * Get the HTTP response for this status and cause. If the Status code is 500 (Internal Server Error) then we return
    * the entire stack trace. Otherwise, we just return the message.
-   * 
+   *
    * @param status the HTTP status code to be returned.
    * @param cause the reason for the exception.
    * @return the HTTP Response.
@@ -82,7 +84,9 @@ public final class MyriaExceptionMapper implements ExceptionMapper<Throwable> {
       return ((MyriaApiException) cause).getResponse();
     }
     ResponseBuilder ret = Response.status(status);
-    if (status.equals(Status.INTERNAL_SERVER_ERROR) || cause.getMessage() == null || cause.getMessage().length() == 0) {
+    if (status.equals(Status.INTERNAL_SERVER_ERROR)
+        || cause.getMessage() == null
+        || cause.getMessage().length() == 0) {
       ret.entity(ErrorUtils.getStackTrace(cause));
     } else {
       ret.entity(cause.getMessage());

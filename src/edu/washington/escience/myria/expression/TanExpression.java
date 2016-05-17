@@ -20,7 +20,7 @@ public class TanExpression extends UnaryExpression {
 
   /**
    * Take the {@link Math.tan} of the operand.
-   * 
+   *
    * @param operand the operand.
    */
   public TanExpression(final ExpressionOperator operand) {

@@ -11,12 +11,12 @@ import edu.washington.escience.myria.util.MyriaArrayUtils;
 
 /**
  * The consumer part of the Collect Exchange operator.
- * 
+ *
  * A Collect operator collects tuples from all the workers. There is a collect producer on each worker, and a collect
  * consumer on the server and a master worker if a master worker is needed.
- * 
+ *
  * The consumer passively collects Tuples from all the paired CollectProducers
- * 
+ *
  */
 public final class CollectConsumer extends Consumer {
 
@@ -31,7 +31,8 @@ public final class CollectConsumer extends Consumer {
    * @param operatorID my operatorID
    * @param workerIDs from which workers the data will come.
    * */
-  public CollectConsumer(final Schema schema, final ExchangePairID operatorID, final Set<Integer> workerIDs) {
+  public CollectConsumer(
+      final Schema schema, final ExchangePairID operatorID, final Set<Integer> workerIDs) {
     super(schema, operatorID, workerIDs);
     LOGGER.trace("created CollectConsumer for ExchangePairId=" + operatorID);
   }
@@ -41,8 +42,11 @@ public final class CollectConsumer extends Consumer {
    * @param operatorID my operatorID
    * @param workerIDs from which workers the data will come.
    * */
-  public CollectConsumer(final Schema schema, final ExchangePairID operatorID, final int[] workerIDs) {
-    this(schema, operatorID, MyriaArrayUtils.checkSet(org.apache.commons.lang3.ArrayUtils.toObject(workerIDs)));
+  public CollectConsumer(
+      final Schema schema, final ExchangePairID operatorID, final int[] workerIDs) {
+    this(
+        schema,
+        operatorID,
+        MyriaArrayUtils.checkSet(org.apache.commons.lang3.ArrayUtils.toObject(workerIDs)));
   }
-
 }

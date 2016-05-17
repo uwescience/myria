@@ -4,8 +4,8 @@ import edu.washington.escience.myria.Type;
 
 /**
  * An abstract Column<Integer> with a primitive type accessor.
- * 
- * 
+ *
+ *
  */
 public abstract class IntColumn extends Column<Integer> {
   /** Required for Java serialization. */
@@ -13,7 +13,7 @@ public abstract class IntColumn extends Column<Integer> {
 
   /**
    * Returns the element at the specified row in this column.
-   * 
+   *
    * @param row row of element to return.
    * @return the element at the specified row in this column.
    */

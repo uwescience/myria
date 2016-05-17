@@ -27,22 +27,24 @@ public class BinaryFileScanSpeedTest extends AbstractBenchmark {
   @BenchmarkOptions(benchmarkRounds = 5, warmupRounds = 1)
   @Test
   public void binaryFileScanTest() throws Exception {
-    File binaryFile = new File("data_nocommit/speedtest/dbcosmo50/cosmo50cmb.256g2bwK.00512.star.bin");
+    File binaryFile =
+        new File("data_nocommit/speedtest/dbcosmo50/cosmo50cmb.256g2bwK.00512.star.bin");
     /* We can read the file, right? */
     assertTrue(binaryFile.canRead());
 
-    Type[] typeAr = { Type.LONG_TYPE, // iOrder
-        Type.FLOAT_TYPE, // mass
-        Type.FLOAT_TYPE, // x
-        Type.FLOAT_TYPE, // y
-        Type.FLOAT_TYPE, // z
-        Type.FLOAT_TYPE, // vx
-        Type.FLOAT_TYPE, // vy
-        Type.FLOAT_TYPE, // vz
-        Type.FLOAT_TYPE, // metals
-        Type.FLOAT_TYPE, // tform
-        Type.FLOAT_TYPE, // eps
-        Type.FLOAT_TYPE, // phi
+    Type[] typeAr = {
+      Type.LONG_TYPE, // iOrder
+      Type.FLOAT_TYPE, // mass
+      Type.FLOAT_TYPE, // x
+      Type.FLOAT_TYPE, // y
+      Type.FLOAT_TYPE, // z
+      Type.FLOAT_TYPE, // vx
+      Type.FLOAT_TYPE, // vy
+      Type.FLOAT_TYPE, // vz
+      Type.FLOAT_TYPE, // metals
+      Type.FLOAT_TYPE, // tform
+      Type.FLOAT_TYPE, // eps
+      Type.FLOAT_TYPE, // phi
     };
     Schema schema = new Schema(Arrays.asList(typeAr));
 

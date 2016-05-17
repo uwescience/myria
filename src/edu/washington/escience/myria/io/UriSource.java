@@ -22,7 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 /**
  * A data source that pulls data from a specified URI. The URI may be: a path on the local file system; an HDFS link; a
  * web link; an AWS link; and perhaps more.
- * 
+ *
  * If the URI points to a directory, all files in that directory will be concatenated into a single {@link InputStream}.
  */
 public class UriSource implements DataSource, Serializable {
@@ -38,28 +38,37 @@ public class UriSource implements DataSource, Serializable {
   /**
    * Construct a source of data from the specified URI. The URI may be: a path on the local file system; an HDFS link; a
    * web link; an AWS link; and perhaps more.
-   * 
+   *
    * If the URI points to a directory in HDFS, all files in that directory will be concatenated into a single
    * {@link InputStream}.
-   * 
+   *
    * @param uri the Uniform Resource Indicator (URI) of the data source.
    * @throws URISyntaxException
    */
   @JsonCreator
-  public UriSource(@JsonProperty(value = "uri", required = true) final String uri) throws URISyntaxException {
-    parsedUri = URI.create(Objects.requireNonNull(uri, "Parameter uri to UriSource may not be null"));
+  public UriSource(@JsonProperty(value = "uri", required = true) final String uri)
+      throws URISyntaxException {
+    parsedUri =
+        URI.create(Objects.requireNonNull(uri, "Parameter uri to UriSource may not be null"));
     /* Force using the Hadoop S3A FileSystem */
     if (parsedUri.getScheme().equals("s3")) {
       parsedUri =
-          new URI("s3a", parsedUri.getUserInfo(), parsedUri.getHost(), parsedUri.getPort(), parsedUri.getPath(),
-              parsedUri.getQuery(), parsedUri.getFragment());
+          new URI(
+              "s3a",
+              parsedUri.getUserInfo(),
+              parsedUri.getHost(),
+              parsedUri.getPort(),
+              parsedUri.getPath(),
+              parsedUri.getQuery(),
+              parsedUri.getFragment());
     }
   }
 
   @Override
   public InputStream getInputStream() throws IOException {
-    return (parsedUri.getScheme().equals("http") || parsedUri.getScheme().equals("https")) ? parsedUri.toURL()
-        .openConnection().getInputStream() : getHadoopFileSystemInputStream(parsedUri);
+    return (parsedUri.getScheme().equals("http") || parsedUri.getScheme().equals("https"))
+        ? parsedUri.toURL().openConnection().getInputStream()
+        : getHadoopFileSystemInputStream(parsedUri);
   }
 
   /**

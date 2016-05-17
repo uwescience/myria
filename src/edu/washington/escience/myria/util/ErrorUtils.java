@@ -15,8 +15,7 @@ public final class ErrorUtils {
   /**
    * Utility classes cannot be constructed.
    */
-  private ErrorUtils() {
-  }
+  private ErrorUtils() {}
 
   /**
    * @param cause any throwable object
@@ -33,7 +32,8 @@ public final class ErrorUtils {
    * @param e exception
    * @param prefix space prefix for each line.
    * */
-  private static void mergeSQLExceptionMsg(final StringBuilder msgBuilder, final SQLException e, final String prefix) {
+  private static void mergeSQLExceptionMsg(
+      final StringBuilder msgBuilder, final SQLException e, final String prefix) {
     msgBuilder.append(prefix + "ErrorCode: ");
     msgBuilder.append(e.getErrorCode());
     msgBuilder.append(", SQLState: ");

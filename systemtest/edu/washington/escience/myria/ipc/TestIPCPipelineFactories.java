@@ -59,7 +59,8 @@ public class TestIPCPipelineFactories {
     /**
      * constructor.
      * */
-    public ServerPipelineFactory(final IPCConnectionPool ipcConnectionPool,
+    public ServerPipelineFactory(
+        final IPCConnectionPool ipcConnectionPool,
         final OrderedMemoryAwareThreadPoolExecutor executor) {
       ipcSessionManager = new IPCMessageHandler(ipcConnectionPool);
     }
@@ -72,12 +73,11 @@ public class TestIPCPipelineFactories {
       p.addLast("ipcSessionManager", ipcSessionManager); // upstream 5
       return p;
     }
-
   }
 
   /**
    * separate data streams to data frames.
    * */
-  static final ProtobufVarint32LengthFieldPrepender FRAME_ENCODER = new ProtobufVarint32LengthFieldPrepender();
-
+  static final ProtobufVarint32LengthFieldPrepender FRAME_ENCODER =
+      new ProtobufVarint32LengthFieldPrepender();
 }

@@ -16,8 +16,7 @@ public class ModuloExpression extends BinaryExpression {
    * This is not really unused, it's used automagically by Jackson deserialization.
    */
   @SuppressWarnings("unused")
-  private ModuloExpression() {
-  }
+  private ModuloExpression() {}
 
   /**
    * Divide the two operands and take the remainder.
@@ -31,7 +30,8 @@ public class ModuloExpression extends BinaryExpression {
 
   @Override
   public Type getOutputType(final ExpressionOperatorParameter parameters) {
-    return checkAndReturnDefaultNumericType(parameters, ImmutableList.of(Type.LONG_TYPE, Type.INT_TYPE));
+    return checkAndReturnDefaultNumericType(
+        parameters, ImmutableList.of(Type.LONG_TYPE, Type.INT_TYPE));
   }
 
   @Override

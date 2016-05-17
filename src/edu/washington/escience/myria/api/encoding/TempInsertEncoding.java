@@ -13,12 +13,11 @@ import edu.washington.escience.myria.operator.network.partition.PartitionFunctio
 
 /**
  * A JSON-able wrapper for the expected wire message for a new dataset.
- * 
+ *
  */
 public class TempInsertEncoding extends UnaryOperatorEncoding<DbInsertTemp> {
   /** The name under which the dataset will be stored. */
-  @Required
-  public String table;
+  @Required public String table;
   /** Whether to overwrite an existing dataset. */
   public Boolean argOverwriteTable;
   /** Indexes created. */
@@ -36,7 +35,12 @@ public class TempInsertEncoding extends UnaryOperatorEncoding<DbInsertTemp> {
   public DbInsertTemp construct(final ConstructArgs args) {
     /* default overwrite to {@code false}, so we append. */
     argOverwriteTable = MoreObjects.firstNonNull(argOverwriteTable, Boolean.FALSE);
-    return new DbInsertTemp(null, RelationKey.ofTemp(args.getQueryId(), table), connectionInfo, argOverwriteTable,
-        indexes, partitionFunction);
+    return new DbInsertTemp(
+        null,
+        RelationKey.ofTemp(args.getQueryId(), table),
+        connectionInfo,
+        argOverwriteTable,
+        indexes,
+        partitionFunction);
   }
 }

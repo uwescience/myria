@@ -26,8 +26,7 @@ public class CleanupFailureInjector extends UnaryOperator {
   private static final long serialVersionUID = 1L;
 
   @Override
-  protected final void init(final ImmutableMap<String, Object> initProperties) throws DbException {
-  }
+  protected final void init(final ImmutableMap<String, Object> initProperties) throws DbException {}
 
   @Override
   protected final void cleanup() throws DbException {

@@ -41,7 +41,10 @@ public class BigDataTest extends SystemTestBase {
     TestUtils.skipIfInTravis();
     final int NUM_DUPLICATES = 10000;
 
-    TupleBatch tb = TestUtils.generateRandomTuples(TupleBatch.BATCH_SIZE, TupleBatch.BATCH_SIZE, false).popAny();;
+    TupleBatch tb =
+        TestUtils.generateRandomTuples(TupleBatch.BATCH_SIZE, TupleBatch.BATCH_SIZE, false)
+            .popAny();
+    ;
 
     final ExchangePairID serverReceiveID = ExchangePairID.newID();
 
@@ -50,11 +53,13 @@ public class BigDataTest extends SystemTestBase {
     final HashMap<Integer, RootOperator[]> workerPlans = new HashMap<Integer, RootOperator[]>();
     final CollectProducer cp1 = new CollectProducer(scanTable, serverReceiveID, MASTER_ID);
     for (int workerID : workerIDs) {
-      workerPlans.put(workerID, new RootOperator[] { cp1 });
+      workerPlans.put(workerID, new RootOperator[] {cp1});
     }
 
-    final CollectConsumer serverCollect = new CollectConsumer(tb.getSchema(), serverReceiveID, workerIDs);
-    final LinkedBlockingQueue<TupleBatch> receivedTupleBatches = new LinkedBlockingQueue<TupleBatch>(10);
+    final CollectConsumer serverCollect =
+        new CollectConsumer(tb.getSchema(), serverReceiveID, workerIDs);
+    final LinkedBlockingQueue<TupleBatch> receivedTupleBatches =
+        new LinkedBlockingQueue<TupleBatch>(10);
     final TBQueueExporter queueStore = new TBQueueExporter(receivedTupleBatches, serverCollect);
     SinkRoot serverPlan = new SinkRoot(queueStore);
 
@@ -70,7 +75,6 @@ public class BigDataTest extends SystemTestBase {
     }
 
     assertEquals(NUM_DUPLICATES * TupleBatch.BATCH_SIZE * 2, numResultTuples);
-
   }
 
   @Test
@@ -82,8 +86,13 @@ public class BigDataTest extends SystemTestBase {
     final int NUM_DUPLICATES = 2000;
 
     URL url =
-        new URL(String.format("http://%s:%d/dataset/download_test?num_tb=%d&format=%s", "localhost", masterDaemonPort,
-            NUM_DUPLICATES, "json"));
+        new URL(
+            String.format(
+                "http://%s:%d/dataset/download_test?num_tb=%d&format=%s",
+                "localhost",
+                masterDaemonPort,
+                NUM_DUPLICATES,
+                "json"));
     HttpURLConnection conn = (HttpURLConnection) url.openConnection();
     conn.setDoOutput(true);
     conn.setRequestMethod("GET");
@@ -104,7 +113,9 @@ public class BigDataTest extends SystemTestBase {
     }
     long nanoElapse = System.nanoTime() - start;
     System.out.println("Download size: " + (numBytesRead * 1.0 / 1024 / 1024 / 1024) + " GB");
-    System.out.println("Speed is: " + (numBytesRead * 1.0 / 1024 / 1024 / TimeUnit.NANOSECONDS.toSeconds(nanoElapse))
-        + " MB/s");
+    System.out.println(
+        "Speed is: "
+            + (numBytesRead * 1.0 / 1024 / 1024 / TimeUnit.NANOSECONDS.toSeconds(nanoElapse))
+            + " MB/s");
   }
 }

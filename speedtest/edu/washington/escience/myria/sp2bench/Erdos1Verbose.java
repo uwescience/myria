@@ -35,18 +35,19 @@ public class Erdos1Verbose implements QueryPlanGenerator {
    * and pe.val='<http://localhost/persons/Paul_Erdoes>' <br>
    * and creator2.val='dc:creator' <br>
    * and pubs.subject=authors.subject;<br>
-   * 
+   *
    * */
   @Override
   public Map<Integer, RootOperator[]> getWorkerPlan(int[] allWorkers) throws Exception {
     ArrayList<Producer> producers = new ArrayList<Producer>();
-    return ErdosVerbose.getWorkerPlan(allWorkers, ErdosVerbose.erdosOne(allWorkers, producers), producers);
+    return ErdosVerbose.getWorkerPlan(
+        allWorkers, ErdosVerbose.erdosOne(allWorkers, producers), producers);
   }
 
   @Override
-  public RootOperator getMasterPlan(int[] allWorkers, final LinkedBlockingQueue<TupleBatch> receivedTupleBatches)
+  public RootOperator getMasterPlan(
+      int[] allWorkers, final LinkedBlockingQueue<TupleBatch> receivedTupleBatches)
       throws Exception {
     return ErdosVerbose.getMasterPlan(allWorkers, receivedTupleBatches);
   }
-
 }

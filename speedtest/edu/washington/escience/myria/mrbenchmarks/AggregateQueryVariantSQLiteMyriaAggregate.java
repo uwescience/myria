@@ -26,15 +26,18 @@ import edu.washington.escience.myria.storage.TupleBatch;
 public class AggregateQueryVariantSQLiteMyriaAggregate implements QueryPlanGenerator {
 
   /**
-   * 
+   *
    */
   private static final long serialVersionUID = 3909701237444119889L;
-  final static ImmutableList<Type> outputTypes = ImmutableList.of(Type.STRING_TYPE, Type.DOUBLE_TYPE);
-  final static ImmutableList<String> outputColumnNames = ImmutableList.of("sourceIPAddr", "sum_adRevenue");
+  final static ImmutableList<Type> outputTypes =
+      ImmutableList.of(Type.STRING_TYPE, Type.DOUBLE_TYPE);
+  final static ImmutableList<String> outputColumnNames =
+      ImmutableList.of("sourceIPAddr", "sum_adRevenue");
   final static Schema outputSchema = new Schema(outputTypes, outputColumnNames);
 
   final static ImmutableList<Type> scanTypes = ImmutableList.of(Type.STRING_TYPE, Type.DOUBLE_TYPE);
-  final static ImmutableList<String> scanColumnNames = ImmutableList.of("sourceIPAddr", "adRevenue");
+  final static ImmutableList<String> scanColumnNames =
+      ImmutableList.of("sourceIPAddr", "adRevenue");
   final static Schema scanSchema = new Schema(scanTypes, scanColumnNames);
 
   final ExchangePairID sendToMasterID = ExchangePairID.newID();
@@ -46,7 +49,8 @@ public class AggregateQueryVariantSQLiteMyriaAggregate implements QueryPlanGener
         new DbQueryScan("select substr(sourceIPAddr, 1, 7), adRevenue from UserVisits", scanSchema);
 
     final SingleGroupByAggregate localAgg =
-        new SingleGroupByAggregate(localScan, 0, new SingleColumnAggregatorFactory(1, AggregationOp.SUM));
+        new SingleGroupByAggregate(
+            localScan, 0, new SingleColumnAggregatorFactory(1, AggregationOp.SUM));
 
     final ExchangePairID shuffleLocalGroupByID = ExchangePairID.newID();
 
@@ -55,7 +59,8 @@ public class AggregateQueryVariantSQLiteMyriaAggregate implements QueryPlanGener
     final GenericShuffleProducer shuffleLocalGroupBy =
         new GenericShuffleProducer(localAgg, shuffleLocalGroupByID, allWorkers, pf);
     final GenericShuffleConsumer sc =
-        new GenericShuffleConsumer(shuffleLocalGroupBy.getSchema(), shuffleLocalGroupByID, allWorkers);
+        new GenericShuffleConsumer(
+            shuffleLocalGroupBy.getSchema(), shuffleLocalGroupByID, allWorkers);
 
     final SingleGroupByAggregate globalAgg =
         new SingleGroupByAggregate(sc, 0, new SingleColumnAggregatorFactory(1, AggregationOp.SUM));
@@ -64,15 +69,17 @@ public class AggregateQueryVariantSQLiteMyriaAggregate implements QueryPlanGener
 
     final Map<Integer, RootOperator[]> result = new HashMap<Integer, RootOperator[]>();
     for (int worker : allWorkers) {
-      result.put(worker, new RootOperator[] { shuffleLocalGroupBy, sendToMaster });
+      result.put(worker, new RootOperator[] {shuffleLocalGroupBy, sendToMaster});
     }
 
     return result;
   }
 
   @Override
-  public SinkRoot getMasterPlan(int[] allWorkers, final LinkedBlockingQueue<TupleBatch> receivedTupleBatches) {
-    final CollectConsumer serverCollect = new CollectConsumer(outputSchema, sendToMasterID, allWorkers);
+  public SinkRoot getMasterPlan(
+      int[] allWorkers, final LinkedBlockingQueue<TupleBatch> receivedTupleBatches) {
+    final CollectConsumer serverCollect =
+        new CollectConsumer(outputSchema, sendToMasterID, allWorkers);
     SinkRoot serverPlan = new SinkRoot(serverCollect);
     return serverPlan;
   }

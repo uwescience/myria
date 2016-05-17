@@ -79,8 +79,13 @@ public class JsonOperatorTests extends SystemTestBase {
   public void splitTest() throws Exception {
     File currentDir = new File(".");
     DataSource source =
-        new FileSource(Paths.get(currentDir.getAbsolutePath(), "testdata", "filescan", "one_col_string_array.txt")
-            .toString());
+        new FileSource(
+            Paths.get(
+                    currentDir.getAbsolutePath(),
+                    "testdata",
+                    "filescan",
+                    "one_col_string_array.txt")
+                .toString());
 
     Schema schema = Schema.of(ImmutableList.of(Type.STRING_TYPE), ImmutableList.of("string_array"));
     FileScanEncoding fs = new FileScanEncoding();
@@ -120,8 +125,13 @@ public class JsonOperatorTests extends SystemTestBase {
     assertEquals(status.message, Status.SUCCESS, status.status);
 
     String data =
-        JsonAPIUtils.download("localhost", masterDaemonPort, outputRelation.getUserName(), outputRelation
-            .getProgramName(), outputRelation.getRelationName(), "json");
+        JsonAPIUtils.download(
+            "localhost",
+            masterDaemonPort,
+            outputRelation.getUserName(),
+            outputRelation.getProgramName(),
+            outputRelation.getRelationName(),
+            "json");
     String expectedData =
         "[{\"string_array\":\"a:b:c:d:e:f\",\"string_array_splits\":\"a\"},{\"string_array\":\"a:b:c:d:e:f\",\"string_array_splits\":\"b\"},{\"string_array\":\"a:b:c:d:e:f\",\"string_array_splits\":\"c\"},{\"string_array\":\"a:b:c:d:e:f\",\"string_array_splits\":\"d\"},{\"string_array\":\"a:b:c:d:e:f\",\"string_array_splits\":\"e\"},{\"string_array\":\"a:b:c:d:e:f\",\"string_array_splits\":\"f\"}]";
     assertEquals(data, expectedData);

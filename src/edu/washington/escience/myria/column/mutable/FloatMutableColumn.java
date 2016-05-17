@@ -8,7 +8,7 @@ import edu.washington.escience.myria.storage.TupleBatch;
 
 /**
  * A mutable column of Float values.
- * 
+ *
  */
 public final class FloatMutableColumn extends MutableColumn<Float> {
   /** Required for Java serialization. */
@@ -20,7 +20,7 @@ public final class FloatMutableColumn extends MutableColumn<Float> {
 
   /**
    * Constructs a new column.
-   * 
+   *
    * @param data the underlying data
    * @param numData number of tuples.
    * */

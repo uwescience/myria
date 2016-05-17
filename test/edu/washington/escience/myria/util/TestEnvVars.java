@@ -8,14 +8,13 @@ import edu.washington.escience.myria.parallel.QueryExecutionMode;
 
 public final class TestEnvVars {
   /** Utility classes cannot be constructed. */
-  private TestEnvVars() {
-  }
+  private TestEnvVars() {}
 
   /**
    * Construct a test execution environment variables dictionary.
-   * 
+   *
    * By default, the <code>node id</code> is -1.
-   * 
+   *
    * @return the specified execution environment variables.
    */
   public static Map<String, Object> get() {
@@ -24,7 +23,7 @@ public final class TestEnvVars {
 
   /**
    * Construct a test execution environment variables dictionary.
-   * 
+   *
    * @param nodeId the node id (master or worker) that the operator is operating on.
    * @return the specified execution environment variables.
    */

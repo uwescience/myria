@@ -46,7 +46,7 @@ public class DoWhileTest extends SystemTestBase {
 
   /**
    * Here's the equivalent MyriaL query:
-   * 
+   *
    * <pre>
    * x = [0 as val, 1 as exp];
    * do
@@ -54,7 +54,7 @@ public class DoWhileTest extends SystemTestBase {
    * while [from x emit max(val) < 5];
    * store(x, OUTPUT);
    * </pre>
-   * 
+   *
    * This computes {@code exp=pow(2, val)} up to {@code val=5}.
    */
   @Test
@@ -79,8 +79,10 @@ public class DoWhileTest extends SystemTestBase {
     DbQueryScan scan = new DbQueryScan(x, schema);
     List<Expression> expressions =
         ImmutableList.of(
-            new Expression("val", new PlusExpression(new VariableExpression(0), new ConstantExpression(1))),
-            new Expression("exp", new TimesExpression(new VariableExpression(1), new ConstantExpression(2))));
+            new Expression(
+                "val", new PlusExpression(new VariableExpression(0), new ConstantExpression(1))),
+            new Expression(
+                "exp", new TimesExpression(new VariableExpression(1), new ConstantExpression(2))));
     Apply apply = new Apply(scan, expressions);
     DbInsert writeBack = new DbInsert(apply, x, true);
     // The loop body
@@ -88,11 +90,14 @@ public class DoWhileTest extends SystemTestBase {
 
     /* Condition: condition = [from x emit max(val) < 5]. */
     DbQueryScan scanXForCondition = new DbQueryScan(x, schema);
-    Aggregate maxX = new Aggregate(scanXForCondition, new SingleColumnAggregatorFactory(0, AggregationOp.MAX));
+    Aggregate maxX =
+        new Aggregate(scanXForCondition, new SingleColumnAggregatorFactory(0, AggregationOp.MAX));
     Expression filterExpression =
-        new Expression("f", new LessThanExpression(new VariableExpression(0), new ConstantExpression(5)));
+        new Expression(
+            "f", new LessThanExpression(new VariableExpression(0), new ConstantExpression(5)));
     Apply maxXapply = new Apply(maxX, ImmutableList.of(filterExpression));
-    DbInsertTemp writeCondition = new DbInsertTemp(maxXapply, RelationKey.ofTemp(1, condition), null, true, null);
+    DbInsertTemp writeCondition =
+        new DbInsertTemp(maxXapply, RelationKey.ofTemp(1, condition), null, true, null);
     // The condition
     SubQuery updateCondition = wrapForWorker1(writeCondition);
 
@@ -117,7 +122,12 @@ public class DoWhileTest extends SystemTestBase {
     assertEquals(1, status.getNumTuples());
     assertEquals(Long.valueOf(query.getQueryId()), status.getQueryId());
     String finalX =
-        JsonAPIUtils.download("localhost", masterDaemonPort, x.getUserName(), x.getProgramName(), x.getRelationName(),
+        JsonAPIUtils.download(
+            "localhost",
+            masterDaemonPort,
+            x.getUserName(),
+            x.getProgramName(),
+            x.getRelationName(),
             "csv");
     assertEquals("val,exp\r\n5,32\r\n", finalX);
   }

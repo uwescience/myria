@@ -7,8 +7,8 @@ import org.slf4j.LoggerFactory;
 
 /**
  * A helper function to easily create HTTP error responses in the API server.
- * 
- * 
+ *
+ *
  */
 public final class MyriaApiException extends WebApplicationException {
 
@@ -21,7 +21,7 @@ public final class MyriaApiException extends WebApplicationException {
    * Construct a MyriaApiException from the given status and cause. The entity of the HTTP Response includes the given
    * HTTP status code and the body is the exception cause. If the status code is 500 INTERNAL SERVER ERROR then we
    * return the entire stack trace. Otherwise, we just return the message.
-   * 
+   *
    * @param status the HTTP status code used for the HTTP response.
    * @param cause the Exception, whose message is used to explain the exception in the HTTP response.
    */
@@ -33,7 +33,7 @@ public final class MyriaApiException extends WebApplicationException {
   /**
    * Construct a MyriaApiException from the given status and explanation. The entity of the HTTP Response includes the
    * given HTTP status code and the body is the provided explanation string.
-   * 
+   *
    * @param status the HTTP status code used for the HTTP response.
    * @param explanation the message is used to explain the exception in the HTTP response.
    */

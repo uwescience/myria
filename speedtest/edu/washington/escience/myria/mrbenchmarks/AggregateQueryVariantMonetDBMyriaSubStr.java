@@ -30,8 +30,10 @@ import edu.washington.escience.myria.storage.TupleBatch;
 public class AggregateQueryVariantMonetDBMyriaSubStr implements QueryPlanGenerator {
 
   private static final long serialVersionUID = 1L;
-  final static ImmutableList<Type> outputTypes = ImmutableList.of(Type.STRING_TYPE, Type.DOUBLE_TYPE);
-  final static ImmutableList<String> outputColumnNames = ImmutableList.of("sourceIPAddr", "sum_adRevenue");
+  final static ImmutableList<Type> outputTypes =
+      ImmutableList.of(Type.STRING_TYPE, Type.DOUBLE_TYPE);
+  final static ImmutableList<String> outputColumnNames =
+      ImmutableList.of("sourceIPAddr", "sum_adRevenue");
   final static Schema outputSchema = new Schema(outputTypes, outputColumnNames);
 
   final ExchangePairID sendToMasterID = ExchangePairID.newID();
@@ -40,7 +42,9 @@ public class AggregateQueryVariantMonetDBMyriaSubStr implements QueryPlanGenerat
   public Map<Integer, RootOperator[]> getWorkerPlan(int[] allWorkers) throws Exception {
 
     final DbQueryScan localScan =
-        new DbQueryScan("select sourceIPAddr, SUM(adRevenue) from UserVisits group by sourceIPAddr", outputSchema);
+        new DbQueryScan(
+            "select sourceIPAddr, SUM(adRevenue) from UserVisits group by sourceIPAddr",
+            outputSchema);
 
     final int NUM_LOCAL_TASKS = 5;
 
@@ -62,21 +66,27 @@ public class AggregateQueryVariantMonetDBMyriaSubStr implements QueryPlanGenerat
       lsc[i] = new LocalShuffleConsumer(localsp.getSchema(), localShuffleIDs[i]);
 
       SubStr ss = new SubStr(0, 1, 7);
-      ss.setChildren(new Operator[] { lsc[i] });
+      ss.setChildren(new Operator[] {lsc[i]});
 
       final SingleGroupByAggregate localAgg =
-          new SingleGroupByAggregate(ss, 1, new AggregatorFactory[] { new SingleColumnAggregatorFactory(0,
-              AggregationOp.SUM) });
+          new SingleGroupByAggregate(
+              ss,
+              1,
+              new AggregatorFactory[] {new SingleColumnAggregatorFactory(0, AggregationOp.SUM)});
 
-      shuffleLocalGroupBys[i] = new GenericShuffleProducer(localAgg, shuffleLocalGroupByID, allWorkers, pf0);
+      shuffleLocalGroupBys[i] =
+          new GenericShuffleProducer(localAgg, shuffleLocalGroupByID, allWorkers, pf0);
     }
 
     final GenericShuffleConsumer sc =
-        new GenericShuffleConsumer(shuffleLocalGroupBys[0].getSchema(), shuffleLocalGroupByID, allWorkers);
+        new GenericShuffleConsumer(
+            shuffleLocalGroupBys[0].getSchema(), shuffleLocalGroupByID, allWorkers);
 
     final SingleGroupByAggregate agg =
-        new SingleGroupByAggregate(sc, 0, new AggregatorFactory[] { new SingleColumnAggregatorFactory(1,
-            AggregationOp.SUM) });
+        new SingleGroupByAggregate(
+            sc,
+            0,
+            new AggregatorFactory[] {new SingleColumnAggregatorFactory(1, AggregationOp.SUM)});
 
     final CollectProducer sendToMaster = new CollectProducer(agg, sendToMasterID, 0);
 
@@ -94,10 +104,11 @@ public class AggregateQueryVariantMonetDBMyriaSubStr implements QueryPlanGenerat
   }
 
   @Override
-  public SinkRoot getMasterPlan(int[] allWorkers, final LinkedBlockingQueue<TupleBatch> receivedTupleBatches) {
-    final CollectConsumer serverCollect = new CollectConsumer(outputSchema, sendToMasterID, allWorkers);
+  public SinkRoot getMasterPlan(
+      int[] allWorkers, final LinkedBlockingQueue<TupleBatch> receivedTupleBatches) {
+    final CollectConsumer serverCollect =
+        new CollectConsumer(outputSchema, sendToMasterID, allWorkers);
     SinkRoot serverPlan = new SinkRoot(serverCollect);
     return serverPlan;
   }
-
 }

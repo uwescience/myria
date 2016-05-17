@@ -55,7 +55,7 @@ public class SubQueryPlan implements Serializable, DbReader, DbWriter {
 
   /**
    * Constructor.
-   * 
+   *
    * @param op a root operator.
    */
   public SubQueryPlan(final RootOperator op) {
@@ -65,7 +65,7 @@ public class SubQueryPlan implements Serializable, DbReader, DbWriter {
 
   /**
    * Constructor.
-   * 
+   *
    * @param ops a list of root operators.
    */
   public SubQueryPlan(final RootOperator[] ops) {
@@ -75,7 +75,7 @@ public class SubQueryPlan implements Serializable, DbReader, DbWriter {
 
   /**
    * Return RootOperators.
-   * 
+   *
    * @return the rootOps.
    */
   public List<RootOperator> getRootOps() {
@@ -84,7 +84,7 @@ public class SubQueryPlan implements Serializable, DbReader, DbWriter {
 
   /**
    * Add a RootOperator.
-   * 
+   *
    * @param op the operator.
    */
   public void addRootOp(final RootOperator op) {
@@ -95,7 +95,7 @@ public class SubQueryPlan implements Serializable, DbReader, DbWriter {
   /**
    * A helper to walk various operators and compute what relations they read and write. This is for understanding query
    * contention.
-   * 
+   *
    * @param op a single operator, which will be recursively traversed
    * @param visited which objects have been visited already
    */
@@ -116,7 +116,7 @@ public class SubQueryPlan implements Serializable, DbReader, DbWriter {
 
   /**
    * Add a list of RootOperator.
-   * 
+   *
    * @param ops operators.
    */
   public void addRootOp(final RootOperator[] ops) {
@@ -127,7 +127,7 @@ public class SubQueryPlan implements Serializable, DbReader, DbWriter {
 
   /**
    * Set FT mode.
-   * 
+   *
    * @param ftMode the mode.
    */
   public void setFTMode(final FTMode ftMode) {
@@ -136,7 +136,7 @@ public class SubQueryPlan implements Serializable, DbReader, DbWriter {
 
   /**
    * Return FT mode.
-   * 
+   *
    * @return the ft mode.
    */
   public FTMode getFTMode() {
@@ -153,7 +153,7 @@ public class SubQueryPlan implements Serializable, DbReader, DbWriter {
 
   /**
    * Set profiling mode.
-   * 
+   *
    * @param profilingMode the profiling mode.
    */
   public void setProfilingMode(@Nonnull final Set<ProfilingMode> profilingMode) {

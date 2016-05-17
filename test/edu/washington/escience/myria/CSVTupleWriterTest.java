@@ -23,7 +23,8 @@ public class CSVTupleWriterTest {
     writer.writeColumnHeaders(ImmutableList.of("foo", "bar", "baz"));
 
     TupleBuffer tuples =
-        new TupleBuffer(new Schema(ImmutableList.of(Type.STRING_TYPE, Type.STRING_TYPE, Type.STRING_TYPE)));
+        new TupleBuffer(
+            new Schema(ImmutableList.of(Type.STRING_TYPE, Type.STRING_TYPE, Type.STRING_TYPE)));
     tuples.putString(0, "0");
     tuples.putString(1, "hello world");
     tuples.putString(2, "a, b");
@@ -34,7 +35,8 @@ public class CSVTupleWriterTest {
     writer.writeTuples(tuples);
     writer.done();
 
-    assertEquals("foo,bar,baz\r\n0,hello world,\"a, b\"\r\n1,\"\"\"heya\"\"\",last\r\n", out.toString());
+    assertEquals(
+        "foo,bar,baz\r\n0,hello world,\"a, b\"\r\n1,\"\"\"heya\"\"\",last\r\n", out.toString());
   }
 
   @Test
@@ -44,7 +46,8 @@ public class CSVTupleWriterTest {
     CsvTupleWriter writer = new CsvTupleWriter('_');
     writer.open(out);
     writer.writeColumnHeaders(ImmutableList.of("foo", "bar"));
-    TupleBuffer tuples = new TupleBuffer(new Schema(ImmutableList.of(Type.STRING_TYPE, Type.INT_TYPE)));
+    TupleBuffer tuples =
+        new TupleBuffer(new Schema(ImmutableList.of(Type.STRING_TYPE, Type.INT_TYPE)));
     tuples.putString(0, "a");
     tuples.putInt(1, 1);
     tuples.putString(0, "b");

@@ -35,7 +35,7 @@ public class RelationWriteMetadata implements Serializable {
 
   /**
    * Constructs a new relation metadata object.
-   * 
+   *
    * @param relationKey the relation to be written
    * @param schema the schema of the write.
    * @param overwrite if {@code true}, then the relation will be overwritten / created. if false, the relation will be
@@ -43,14 +43,17 @@ public class RelationWriteMetadata implements Serializable {
    * @param temporary if {@code true}, then the relation will be not be added to the Catalog, and its tuple count will
    *          not be maintained.
    */
-  public RelationWriteMetadata(@Nonnull final RelationKey relationKey, @Nonnull final Schema schema,
-      final boolean overwrite, final boolean temporary) {
+  public RelationWriteMetadata(
+      @Nonnull final RelationKey relationKey,
+      @Nonnull final Schema schema,
+      final boolean overwrite,
+      final boolean temporary) {
     this(relationKey, schema, overwrite, temporary, null);
   }
 
   /**
    * Constructs a new relation metadata object.
-   * 
+   *
    * @param relationKey the relation to be written
    * @param schema the schema of the write.
    * @param overwrite if {@code true}, then the relation will be overwritten / created. if false, the relation will be
@@ -59,8 +62,12 @@ public class RelationWriteMetadata implements Serializable {
    *          not be maintained.
    * @param partitionFunction the PartitionFunction used to partition the relation across workers.
    */
-  public RelationWriteMetadata(@Nonnull final RelationKey relationKey, @Nonnull final Schema schema,
-      final boolean overwrite, final boolean temporary, @Nullable final PartitionFunction partitionFunction) {
+  public RelationWriteMetadata(
+      @Nonnull final RelationKey relationKey,
+      @Nonnull final Schema schema,
+      final boolean overwrite,
+      final boolean temporary,
+      @Nullable final PartitionFunction partitionFunction) {
     this.relationKey = Objects.requireNonNull(relationKey, "relationKey");
     this.schema = Objects.requireNonNull(schema, "schema");
     this.overwrite = overwrite;
@@ -71,7 +78,7 @@ public class RelationWriteMetadata implements Serializable {
 
   /**
    * Add the specified worker to set of workers writing this relation.
-   * 
+   *
    * @param workerId the id of the worker
    */
   public void addWorker(final Integer workerId) {
@@ -82,7 +89,7 @@ public class RelationWriteMetadata implements Serializable {
    * Indicates whether the relation will be overwritten if it already exists. If {@code false} and the relation does
    * already exist, tuples will be appended to the relation and the schema of these tuples must match the schema already
    * in the catalog.
-   * 
+   *
    * @return {@code true} if the relation will be overwritten if it already exists, or {@code false} otherwise.
    */
   public boolean isOverwrite() {
@@ -92,7 +99,7 @@ public class RelationWriteMetadata implements Serializable {
   /**
    * Indicates whether the relation is a temporary relation ({@code true}) or will be persisted ({@code false}). If (
    * {@code false}), the relation will not be persisted and/or added to the catalog, reducing query overhead.
-   * 
+   *
    * @return if {@code false}, the relation will be persisted and entered into the catalog.
    */
   public boolean isTemporary() {
@@ -101,7 +108,7 @@ public class RelationWriteMetadata implements Serializable {
 
   /**
    * Get the key of the relation to be written.
-   * 
+   *
    * @return the key of the relation to be written.
    */
   public RelationKey getRelationKey() {
@@ -110,7 +117,7 @@ public class RelationWriteMetadata implements Serializable {
 
   /**
    * Get the schema of the tuples to be written to this relation.
-   * 
+   *
    * @return the schema of the tuples to be written to this relation
    */
   public Schema getSchema() {
@@ -119,7 +126,7 @@ public class RelationWriteMetadata implements Serializable {
 
   /**
    * Get the set of workers on which this relation will be written.
-   * 
+   *
    * @return the set of workers on which this relation will be written.
    */
   public Set<Integer> getWorkers() {
@@ -128,7 +135,7 @@ public class RelationWriteMetadata implements Serializable {
 
   /**
    * Get the PartitionFunction used to partition this relation.
-   * 
+   *
    * @return the PartitionFunction used to partition this relation
    */
   public PartitionFunction getPartitionFunction() {
@@ -141,7 +148,8 @@ public class RelationWriteMetadata implements Serializable {
       return false;
     }
     RelationWriteMetadata o = (RelationWriteMetadata) other;
-    return Objects.equals(schema, o.schema) && Objects.equals(relationKey, o.relationKey)
+    return Objects.equals(schema, o.schema)
+        && Objects.equals(relationKey, o.relationKey)
         && Objects.equals(overwrite, o.overwrite);
   }
 

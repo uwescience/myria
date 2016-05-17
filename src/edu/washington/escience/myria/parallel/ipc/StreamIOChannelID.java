@@ -3,14 +3,14 @@ package edu.washington.escience.myria.parallel.ipc;
 import java.io.Serializable;
 
 /**
- * 
+ *
  * ID of a stream I/O channel.
- * 
+ *
  * */
 public class StreamIOChannelID implements Comparable<StreamIOChannelID>, Serializable {
 
   /**
-   * 
+   *
    */
   private static final long serialVersionUID = -5362137244233871013L;
 
@@ -90,5 +90,4 @@ public class StreamIOChannelID implements Comparable<StreamIOChannelID>, Seriali
     }
     return false;
   }
-
 }

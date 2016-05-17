@@ -10,6 +10,7 @@ public interface QueryPlanGenerator {
 
   Map<Integer, RootOperator[]> getWorkerPlan(int[] allWorkers) throws Exception;
 
-  RootOperator getMasterPlan(int[] allWorkers, final LinkedBlockingQueue<TupleBatch> receivedTupleBatches)
+  RootOperator getMasterPlan(
+      int[] allWorkers, final LinkedBlockingQueue<TupleBatch> receivedTupleBatches)
       throws Exception;
 }

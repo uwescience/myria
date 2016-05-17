@@ -90,7 +90,8 @@ public class CrossWithSingletonTest {
 
   @Test(expected = IllegalStateException.class)
   public void testWithEmptyRelation() throws DbException {
-    CrossWithSingleton cross = new CrossWithSingleton(dataSource, EmptyRelation.of(singleton.getSchema()));
+    CrossWithSingleton cross =
+        new CrossWithSingleton(dataSource, EmptyRelation.of(singleton.getSchema()));
     verifyMatch(cross);
   }
 }

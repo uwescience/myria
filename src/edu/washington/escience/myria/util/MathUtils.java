@@ -7,7 +7,7 @@ public final class MathUtils {
 
   /**
    * Compute the number of 1s in a integer when written in binary.
-   * 
+   *
    * @param v the integer.
    * @return the number of 1s.
    * */
@@ -23,7 +23,7 @@ public final class MathUtils {
 
   /**
    * Safely cast a double to a float.
-   * 
+   *
    * @param v the double
    * @return the casted float of <code>v</code>
    * @throws ArithmeticException if the <code> v </code> is out of range.
@@ -38,7 +38,5 @@ public final class MathUtils {
   /**
    * util classes are not instantiable.
    * */
-  private MathUtils() {
-  }
-
+  private MathUtils() {}
 }

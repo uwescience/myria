@@ -38,7 +38,7 @@ import edu.washington.escience.myria.util.concurrent.ReentrantSpinLock;
 
 /**
  * Non-blocking driving code for one of the fragments in a {@link LocalSubQuery}.
- * 
+ *
  * {@link LocalFragment} state could be:<br>
  * 1) In execution.<br>
  * 2) In dormant.<br>
@@ -48,7 +48,8 @@ import edu.washington.escience.myria.util.concurrent.ReentrantSpinLock;
 public final class LocalFragment {
 
   /** The logger for this class. */
-  private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(LocalFragment.class);
+  private static final org.slf4j.Logger LOGGER =
+      org.slf4j.LoggerFactory.getLogger(LocalFragment.class);
 
   /**
    * The root operator.
@@ -152,7 +153,10 @@ public final class LocalFragment {
    * @param root the root operator this fragment will run.
    * @param executor the executor who provides the execution service for the fragment to run on
    */
-  LocalFragment(final IPCConnectionPool connectionPool, final LocalSubQuery localSubQuery, final RootOperator root,
+  LocalFragment(
+      final IPCConnectionPool connectionPool,
+      final LocalSubQuery localSubQuery,
+      final RootOperator root,
       final ExecutorService executor) {
     ipcEntityID = connectionPool.getMyIPCID();
     resourceManager = new LocalFragmentResourceManager(connectionPool, this);
@@ -166,7 +170,8 @@ public final class LocalFragment {
     HashSet<StreamIOChannelID> outputChannelSet = new HashSet<StreamIOChannelID>();
     collectDownChannels(root, outputChannelSet);
     outputChannels = outputChannelSet.toArray(new StreamIOChannelID[] {});
-    HashMap<StreamIOChannelID, Consumer> inputChannelMap = new HashMap<StreamIOChannelID, Consumer>();
+    HashMap<StreamIOChannelID, Consumer> inputChannelMap =
+        new HashMap<StreamIOChannelID, Consumer>();
     collectUpChannels(root, inputChannelMap);
     for (final Consumer operator : inputChannelMap.values()) {
       resourceManager.allocateInputBuffer(operator);
@@ -177,79 +182,82 @@ public final class LocalFragment {
       outputChannelAvailable.set(i);
     }
 
-    executionPlan = new Callable<Void>() {
-      @Override
-      public Void call() throws Exception {
-        // synchronized to keep memory consistency
-        if (LOGGER.isTraceEnabled()) {
-          LOGGER.trace("Start fragment execution: " + LocalFragment.this);
-        }
-        if (threadId == -1) {
-          threadId = Thread.currentThread().getId();
-        }
-        // otherwise threadId should always equal to Thread.currentThread().getId() based on the current design
+    executionPlan =
+        new Callable<Void>() {
+          @Override
+          public Void call() throws Exception {
+            // synchronized to keep memory consistency
+            if (LOGGER.isTraceEnabled()) {
+              LOGGER.trace("Start fragment execution: " + LocalFragment.this);
+            }
+            if (threadId == -1) {
+              threadId = Thread.currentThread().getId();
+            }
+            // otherwise threadId should always equal to Thread.currentThread().getId() based on the current design
 
-        Set<ProfilingMode> mode = localSubQuery.getProfilingMode();
-        if (mode.contains(ProfilingMode.RESOURCE)) {
-          synchronized (LocalFragment.this) {
-            cpuBefore = ManagementFactory.getThreadMXBean().getThreadCpuTime(threadId);
-          }
-        }
-        try {
-          synchronized (executionLock) {
-            LocalFragment.this.executeActually();
-          }
-        } catch (Error e) {
-          if (e instanceof OutOfMemoryError) {
-            JVMUtils.shutdownVM(e);
-          }
-          LOGGER.error("Unexpected Error: ", e);
-          throw e;
-        } catch (RuntimeException e) {
-          LOGGER.error("Unexpected RuntimeException: ", e);
-          throw e;
-        } finally {
-          executionHandle = null;
-        }
-        if (LOGGER.isTraceEnabled()) {
-          LOGGER.trace("End execution: " + LocalFragment.this);
-        }
+            Set<ProfilingMode> mode = localSubQuery.getProfilingMode();
+            if (mode.contains(ProfilingMode.RESOURCE)) {
+              synchronized (LocalFragment.this) {
+                cpuBefore = ManagementFactory.getThreadMXBean().getThreadCpuTime(threadId);
+              }
+            }
+            try {
+              synchronized (executionLock) {
+                LocalFragment.this.executeActually();
+              }
+            } catch (Error e) {
+              if (e instanceof OutOfMemoryError) {
+                JVMUtils.shutdownVM(e);
+              }
+              LOGGER.error("Unexpected Error: ", e);
+              throw e;
+            } catch (RuntimeException e) {
+              LOGGER.error("Unexpected RuntimeException: ", e);
+              throw e;
+            } finally {
+              executionHandle = null;
+            }
+            if (LOGGER.isTraceEnabled()) {
+              LOGGER.trace("End execution: " + LocalFragment.this);
+            }
 
-        if (mode.contains(ProfilingMode.RESOURCE)) {
-          synchronized (LocalFragment.this) {
-            cpuTotal += ManagementFactory.getThreadMXBean().getThreadCpuTime(threadId) - cpuBefore;
-            cpuBefore = 0;
+            if (mode.contains(ProfilingMode.RESOURCE)) {
+              synchronized (LocalFragment.this) {
+                cpuTotal +=
+                    ManagementFactory.getThreadMXBean().getThreadCpuTime(threadId) - cpuBefore;
+                cpuBefore = 0;
+              }
+            }
+            return null;
           }
-        }
-        return null;
-      }
-    };
+        };
 
-    initTask = new Callable<Void>() {
-      @Override
-      public Void call() throws Exception {
-        // synchronized to keep memory consistency
-        LOGGER.trace("Start fragment initialization: ", LocalFragment.this);
-        try {
-          synchronized (executionLock) {
-            LocalFragment.this.initActually();
+    initTask =
+        new Callable<Void>() {
+          @Override
+          public Void call() throws Exception {
+            // synchronized to keep memory consistency
+            LOGGER.trace("Start fragment initialization: ", LocalFragment.this);
+            try {
+              synchronized (executionLock) {
+                LocalFragment.this.initActually();
+              }
+            } catch (Throwable e) {
+              LOGGER.error("Fragment failed to open because of exception:", e);
+              if (e instanceof InterruptedException) {
+                Thread.currentThread().interrupt();
+              } else if (e instanceof OutOfMemoryError) {
+                JVMUtils.shutdownVM(e);
+              }
+              AtomicUtils.setBitByValue(executionCondition, STATE_FAIL);
+              if (fragmentExecutionFuture.setFailure(e)) {
+                cleanup(true);
+              }
+            }
+            LOGGER.trace("End fragment initialization: {}", LocalFragment.this);
+            return null;
           }
-        } catch (Throwable e) {
-          LOGGER.error("Fragment failed to open because of exception:", e);
-          if (e instanceof InterruptedException) {
-            Thread.currentThread().interrupt();
-          } else if (e instanceof OutOfMemoryError) {
-            JVMUtils.shutdownVM(e);
-          }
-          AtomicUtils.setBitByValue(executionCondition, STATE_FAIL);
-          if (fragmentExecutionFuture.setFailure(e)) {
-            cleanup(true);
-          }
-        }
-        LOGGER.trace("End fragment initialization: {}", LocalFragment.this);
-        return null;
-      }
-    };
+        };
   }
 
   /**
@@ -268,12 +276,12 @@ public final class LocalFragment {
 
   /**
    * gather all output (Producer or IDBController's EOI report) channel IDs.
-   * 
+   *
    * @param currentOperator current operator to check.
    * @param outputExchangeChannels the current collected output channel IDs.
    */
-  private void collectDownChannels(final Operator currentOperator,
-      final HashSet<StreamIOChannelID> outputExchangeChannels) {
+  private void collectDownChannels(
+      final Operator currentOperator, final HashSet<StreamIOChannelID> outputExchangeChannels) {
 
     if (currentOperator instanceof Producer) {
       Producer p = (Producer) currentOperator;
@@ -308,11 +316,12 @@ public final class LocalFragment {
 
   /**
    * gather all input (consumer) channel IDs.
-   * 
+   *
    * @param currentOperator current operator to check.
    * @param inputExchangeChannels the current collected input channels.
    */
-  private void collectUpChannels(final Operator currentOperator,
+  private void collectUpChannels(
+      final Operator currentOperator,
       final Map<StreamIOChannelID, Consumer> inputExchangeChannels) {
 
     if (currentOperator instanceof Consumer) {
@@ -345,7 +354,7 @@ public final class LocalFragment {
 
   /**
    * Called by Netty downstream IO worker threads.
-   * 
+   *
    * @param outputChannelID the logical output channel ID.
    */
   public void notifyOutputDisabled(final StreamIOChannelID outputChannelID) {
@@ -365,7 +374,7 @@ public final class LocalFragment {
 
   /**
    * Called by Netty downstream IO worker threads.
-   * 
+   *
    * @param outputChannelID the down channel ID.
    */
   public void notifyOutputEnabled(final StreamIOChannelID outputChannelID) {
@@ -430,13 +439,17 @@ public final class LocalFragment {
       stateS.append(splitter + "Output_Available");
       splitter = " | ";
     }
-    return String.format("%s: { Owner QID: %s, Root Op: %s, State: %s }", LocalFragment.class.getSimpleName(), queryID,
-        rootOp, stateS.toString());
+    return String.format(
+        "%s: { Owner QID: %s, Root Op: %s, State: %s }",
+        LocalFragment.class.getSimpleName(),
+        queryID,
+        rootOp,
+        stateS.toString());
   }
 
   /**
    * Actually execute this fragment.
-   * 
+   *
    * @return always null. The return value is unused.
    */
   private Object executeActually() {
@@ -444,13 +457,18 @@ public final class LocalFragment {
     beginMilliseconds = System.currentTimeMillis();
 
     Throwable failureCause = null;
-    if (executionCondition.compareAndSet(EXECUTION_READY | STATE_EXECUTION_REQUESTED, EXECUTION_READY
-        | STATE_EXECUTION_REQUESTED | STATE_IN_EXECUTION)) {
-      EXECUTE : while (true) {
+    if (executionCondition.compareAndSet(
+        EXECUTION_READY | STATE_EXECUTION_REQUESTED,
+        EXECUTION_READY | STATE_EXECUTION_REQUESTED | STATE_IN_EXECUTION)) {
+      EXECUTE:
+      while (true) {
         if (Thread.interrupted()) {
           Thread.currentThread().interrupt();
           if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("LocalFragment execution interrupted. Root operator: " + root + ". Close directly.");
+            LOGGER.debug(
+                "LocalFragment execution interrupted. Root operator: "
+                    + root
+                    + ". Close directly.");
           }
 
           // set interrupted
@@ -499,20 +517,19 @@ public final class LocalFragment {
             // we do not know whether all the inputs have been consumed, recover the input available bit
             AtomicUtils.setBitByValue(executionCondition, STATE_INPUT_AVAILABLE);
           }
-
         }
 
         // Check if another round of execution is needed.
         int oldV = executionCondition.get();
         while (oldV != EXECUTION_CONTINUE) {
           // try clear the STATE_EXECUTION_REQUESTED and STATE_IN_EXECUTION bit
-          if (executionCondition.compareAndSet(oldV, oldV & ~(STATE_EXECUTION_REQUESTED | STATE_IN_EXECUTION))) {
+          if (executionCondition.compareAndSet(
+              oldV, oldV & ~(STATE_EXECUTION_REQUESTED | STATE_IN_EXECUTION))) {
             // exit execution.
             break EXECUTE;
           }
           oldV = executionCondition.get();
         }
-
       }
 
       // clear interrupted
@@ -535,7 +552,8 @@ public final class LocalFragment {
       }
     } else if ((executionCondition.get() & STATE_KILLED) == STATE_KILLED) {
       // killed
-      if (fragmentExecutionFuture.setFailure(new QueryKilledException("LocalFragment was killed"))) {
+      if (fragmentExecutionFuture.setFailure(
+          new QueryKilledException("LocalFragment was killed"))) {
         cleanup(true);
       }
     }
@@ -607,7 +625,8 @@ public final class LocalFragment {
   /**
    * Non-blocking ready condition.
    */
-  public static final int EXECUTION_PRE_START = STATE_INITIALIZED | STATE_OUTPUT_AVAILABLE | STATE_INPUT_AVAILABLE;
+  public static final int EXECUTION_PRE_START =
+      STATE_INITIALIZED | STATE_OUTPUT_AVAILABLE | STATE_INPUT_AVAILABLE;
 
   /**
    * Non-blocking ready condition.
@@ -617,7 +636,8 @@ public final class LocalFragment {
   /**
    * Non-blocking continue execution condition.
    */
-  public static final int EXECUTION_CONTINUE = EXECUTION_READY | STATE_EXECUTION_REQUESTED | STATE_IN_EXECUTION;
+  public static final int EXECUTION_CONTINUE =
+      EXECUTION_READY | STATE_EXECUTION_REQUESTED | STATE_IN_EXECUTION;
 
   /**
    * @return if the {@link LocalFragment} has been killed.
@@ -628,7 +648,7 @@ public final class LocalFragment {
 
   /**
    * clean up the {@link LocalFragment}, release resources, etc.
-   * 
+   *
    * @param failed if the {@link LocalFragment} execution has already failed.
    */
   private void cleanup(final boolean failed) {
@@ -657,7 +677,7 @@ public final class LocalFragment {
 
   /**
    * Kill this {@link LocalFragment}.
-   * 
+   *
    */
   void kill() {
     if (!AtomicUtils.setBitIfUnsetByValue(executionCondition, STATE_KILLED)) {
@@ -686,7 +706,8 @@ public final class LocalFragment {
    */
   private void execute() {
 
-    if (executionCondition.compareAndSet(EXECUTION_READY, EXECUTION_READY | STATE_EXECUTION_REQUESTED)) {
+    if (executionCondition.compareAndSet(
+        EXECUTION_READY, EXECUTION_READY | STATE_EXECUTION_REQUESTED)) {
       // set in execution.
       executionHandle = myExecutor.submit(executionPlan);
     }
@@ -699,7 +720,7 @@ public final class LocalFragment {
 
   /**
    * Initialize the {@link LocalFragment}.
-   * 
+   *
    * @param execEnvVars execution environment variable.
    */
   public void init(final ImmutableMap<String, Object> execEnvVars) {
@@ -716,7 +737,7 @@ public final class LocalFragment {
 
   /**
    * The actual initialization method.
-   * 
+   *
    * @throws Exception if any exception occurs.
    */
   private void initActually() throws Exception {
@@ -729,7 +750,7 @@ public final class LocalFragment {
 
   /**
    * Return the {@link LocalSubQuery} of which this {@link LocalFragment} is a part.
-   * 
+   *
    * @return the {@link LocalSubQuery} of which this {@link LocalFragment} is a part
    */
   public LocalSubQuery getLocalSubQuery() {
@@ -738,7 +759,7 @@ public final class LocalFragment {
 
   /**
    * enable/disable output channels of the root(producer) of this {@link LocalFragment}.
-   * 
+   *
    * @param workerId the worker that changed its status.
    * @param enable enable/disable all the channels that belong to the worker.
    */
@@ -750,7 +771,7 @@ public final class LocalFragment {
 
   /**
    * return the root operator of this {@link LocalFragment}.
-   * 
+   *
    * @return the root operator
    */
   public RootOperator getRootOp() {
@@ -759,7 +780,7 @@ public final class LocalFragment {
 
   /**
    * return the resource manager of this {@link LocalFragment}.
-   * 
+   *
    * @return the resource manager.
    */
   public LocalFragmentResourceManager getResourceManager() {
@@ -781,7 +802,7 @@ public final class LocalFragment {
   }
 
   /**
-   * 
+   *
    * @param stats the stats to be added into
    * @param timestamp the timestamp of the collecting event
    * @param op the operator
@@ -789,34 +810,74 @@ public final class LocalFragment {
    * @param value the value
    * @param subQueryId the sunquery ID
    */
-  public void addResourceReport(final List<ResourceStats> stats, final long timestamp, final Operator op,
-      final String measurement, final long value, final SubQueryId subQueryId) {
+  public void addResourceReport(
+      final List<ResourceStats> stats,
+      final long timestamp,
+      final Operator op,
+      final String measurement,
+      final long value,
+      final SubQueryId subQueryId) {
     int opId = Preconditions.checkNotNull(op.getOpId(), "opId is null");
-    stats.add(new ResourceStats(timestamp, opId, measurement, value, subQueryId.getQueryId(), subQueryId
-        .getSubqueryId()));
+    stats.add(
+        new ResourceStats(
+            timestamp,
+            opId,
+            measurement,
+            value,
+            subQueryId.getQueryId(),
+            subQueryId.getSubqueryId()));
   }
 
   /**
-   * 
+   *
    * @param stats the stats
    * @param op the current operator
    * @param timestamp the starting timestamp of this event in milliseconds
    * @param subQueryId the subQuery Id
    */
-  public void collectOperatorResourceMeasurements(final List<ResourceStats> stats, final long timestamp,
-      final Operator op, final SubQueryId subQueryId) {
+  public void collectOperatorResourceMeasurements(
+      final List<ResourceStats> stats,
+      final long timestamp,
+      final Operator op,
+      final SubQueryId subQueryId) {
     if (op instanceof Producer) {
-      addResourceReport(stats, timestamp, op, "numTuplesWritten", ((Producer) op).getNumTuplesWrittenToChannels(),
+      addResourceReport(
+          stats,
+          timestamp,
+          op,
+          "numTuplesWritten",
+          ((Producer) op).getNumTuplesWrittenToChannels(),
           subQueryId);
-      addResourceReport(stats, timestamp, op, "numTuplesInBuffers", ((Producer) op).getNumTuplesInBuffers(), subQueryId);
+      addResourceReport(
+          stats,
+          timestamp,
+          op,
+          "numTuplesInBuffers",
+          ((Producer) op).getNumTuplesInBuffers(),
+          subQueryId);
     } else if (op instanceof IDBController) {
-      addResourceReport(stats, timestamp, op, "numTuplesInState", ((IDBController) op).getStreamingState().numTuples(),
+      addResourceReport(
+          stats,
+          timestamp,
+          op,
+          "numTuplesInState",
+          ((IDBController) op).getStreamingState().numTuples(),
           subQueryId);
     } else if (op instanceof SymmetricHashJoin) {
-      addResourceReport(stats, timestamp, op, "hashTableSize", ((SymmetricHashJoin) op).getNumTuplesInHashTables(),
+      addResourceReport(
+          stats,
+          timestamp,
+          op,
+          "hashTableSize",
+          ((SymmetricHashJoin) op).getNumTuplesInHashTables(),
           subQueryId);
     } else if (op instanceof LeapFrogJoin) {
-      addResourceReport(stats, timestamp, op, "hashTableSize", ((LeapFrogJoin) op).getNumTuplesInHashTables(),
+      addResourceReport(
+          stats,
+          timestamp,
+          op,
+          "hashTableSize",
+          ((LeapFrogJoin) op).getNumTuplesInHashTables(),
           subQueryId);
     }
     for (Operator child : op.getChildren()) {
@@ -825,7 +886,7 @@ public final class LocalFragment {
   }
 
   /**
-   * 
+   *
    */
   public void collectResourceMeasurements() {
     if (!(getLocalSubQuery() instanceof WorkerSubQuery)) {

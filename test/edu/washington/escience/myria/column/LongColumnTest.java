@@ -18,7 +18,8 @@ public class LongColumnTest {
     final LongColumnBuilder original = new LongColumnBuilder();
     original.appendLong(1).appendLong(2).appendLong(5).appendLong(11);
     final ColumnMessage serialized = original.build().serializeToProto();
-    final LongColumn deserialized = LongColumnBuilder.buildFromProtobuf(serialized, original.size());
+    final LongColumn deserialized =
+        LongColumnBuilder.buildFromProtobuf(serialized, original.size());
     assertTrue(original.build().toString().equals(deserialized.toString()));
   }
 
@@ -40,5 +41,4 @@ public class LongColumnTest {
     builder.appendLong(0);
     builder.build();
   }
-
 }

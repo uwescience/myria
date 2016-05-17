@@ -8,7 +8,7 @@ import edu.washington.escience.myria.Type;
 
 /**
  * A column of Date values.
- * 
+ *
  */
 public final class DateTimeColumn extends Column<DateTime> {
   /** Required for Java serialization. */
@@ -20,7 +20,7 @@ public final class DateTimeColumn extends Column<DateTime> {
 
   /**
    * Constructs a new column.
-   * 
+   *
    * @param data the data
    * @param numData number of tuples.
    * */
@@ -36,7 +36,7 @@ public final class DateTimeColumn extends Column<DateTime> {
 
   /**
    * Returns the element at the specified row in this column.
-   * 
+   *
    * @param row row of element to return.
    * @return the element at the specified row in this column.
    */

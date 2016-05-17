@@ -31,8 +31,7 @@ public class TenGBSender {
     /**
      * constructor.
      * */
-    ClientPipelineFactory() {
-    }
+    ClientPipelineFactory() {}
 
     @Override
     public ChannelPipeline getPipeline() throws Exception {
@@ -48,11 +47,10 @@ public class TenGBSender {
 
       return p;
     }
-
   }
 
-  final static Schema schema = new Schema(ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE), ImmutableList.of("id",
-      "id2"));
+  final static Schema schema =
+      new Schema(ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE), ImmutableList.of("id", "id2"));
 
   public static double elapsedInSeconds(final long startTimeMS) {
     return (System.currentTimeMillis() - startTimeMS) * 1.0 / 1000;
@@ -77,8 +75,9 @@ public class TenGBSender {
     final InetSocketAddress remoteAddress = new InetSocketAddress(hostName, port);
 
     final ClientBootstrap bootstrap =
-        new ClientBootstrap(new NioClientSocketChannelFactory(Executors.newCachedThreadPool(), Executors
-            .newCachedThreadPool()));
+        new ClientBootstrap(
+            new NioClientSocketChannelFactory(
+                Executors.newCachedThreadPool(), Executors.newCachedThreadPool()));
     bootstrap.setPipelineFactory(new ClientPipelineFactory());
     bootstrap.setOption("tcpNoDelay", true);
     bootstrap.setOption("keepAlive", false);
@@ -118,19 +117,23 @@ public class TenGBSender {
           cf.awaitUninterruptibly();
         }
         System.out.println(i + " sent");
-        System.out.println("Current Speed: " + buffer.length * 1.0 * numSent * 1.0 / 1024 / 1024
-            / elapsedInSeconds(start) + " mega-bytes/s");
+        System.out.println(
+            "Current Speed: "
+                + buffer.length * 1.0 * numSent * 1.0 / 1024 / 1024 / elapsedInSeconds(start)
+                + " mega-bytes/s");
       }
       cf = ch.write(cb.duplicate());
       numSent++;
     }
-    ch.write(new ByteBufferBackedChannelBuffer(ByteBuffer.wrap(new byte[] { 0 }))).awaitUninterruptibly();
+    ch.write(new ByteBufferBackedChannelBuffer(ByteBuffer.wrap(new byte[] {0})))
+        .awaitUninterruptibly();
     numSent++;
     System.out.println("Start at " + start);
     System.out.println("End at " + end);
     System.out.println("Total sent: " + numSent + " 512kb-size blocks");
     System.out.println("Time spent at receive: " + elapsedInSeconds(start) + " seconds");
-    System.out.println("Speed: " + tenGBytes * 1.0 / 1024 / 1024 / elapsedInSeconds(start) + "mega-bytes/s");
+    System.out.println(
+        "Speed: " + tenGBytes * 1.0 / 1024 / 1024 / elapsedInSeconds(start) + "mega-bytes/s");
 
     System.out.println();
     System.exit(0);

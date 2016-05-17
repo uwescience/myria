@@ -59,7 +59,8 @@ public class ConnectedComponentTest extends SystemTestBase {
   private final int numTbl2Worker1 = 100;
   private final int numTbl2Worker2 = 150;
 
-  public TupleBatchBuffer getConnectedComponentsResult(final TupleBatchBuffer g, final Schema schema) {
+  public TupleBatchBuffer getConnectedComponentsResult(
+      final TupleBatchBuffer g, final Schema schema) {
     final Iterator<List<? extends Column<?>>> iter = g.getAllAsRawColumn().iterator();
     boolean graph[][] = new boolean[MaxID][MaxID];
     while (iter.hasNext()) {
@@ -98,9 +99,15 @@ public class ConnectedComponentTest extends SystemTestBase {
     return ans;
   }
 
-  public List<RootOperator> generatePlan(final Schema table1Schema, final Schema table2Schema,
-      final ExchangePairID joinArrayId1, final ExchangePairID joinArrayId2, final ExchangePairID joinArrayId3,
-      final ExchangePairID eoiReceiverOpId, final ExchangePairID eosReceiverOpId, final ExchangePairID serverOpId,
+  public List<RootOperator> generatePlan(
+      final Schema table1Schema,
+      final Schema table2Schema,
+      final ExchangePairID joinArrayId1,
+      final ExchangePairID joinArrayId2,
+      final ExchangePairID joinArrayId3,
+      final ExchangePairID eoiReceiverOpId,
+      final ExchangePairID eosReceiverOpId,
+      final ExchangePairID serverOpId,
       final boolean prioritized) {
     final int numPartition = 2;
     final PartitionFunction pf0 = new SingleFieldHashPartitionFunction(numPartition, 0);
@@ -108,33 +115,48 @@ public class ConnectedComponentTest extends SystemTestBase {
 
     // the query plan
     final DbQueryScan scan1 = new DbQueryScan(RelationKey.of("test", "test", "c"), table1Schema);
-    final GenericShuffleProducer sp1 = new GenericShuffleProducer(scan1, joinArrayId1, workerIDs, pf0);
-    final GenericShuffleConsumer sc1 = new GenericShuffleConsumer(table1Schema, joinArrayId1, workerIDs);
-    final GenericShuffleConsumer sc3 = new GenericShuffleConsumer(table1Schema, joinArrayId3, workerIDs);
-    final Consumer eosReceiver = new Consumer(Schema.EMPTY_SCHEMA, eosReceiverOpId, new int[] { workerIDs[0] });
+    final GenericShuffleProducer sp1 =
+        new GenericShuffleProducer(scan1, joinArrayId1, workerIDs, pf0);
+    final GenericShuffleConsumer sc1 =
+        new GenericShuffleConsumer(table1Schema, joinArrayId1, workerIDs);
+    final GenericShuffleConsumer sc3 =
+        new GenericShuffleConsumer(table1Schema, joinArrayId3, workerIDs);
+    final Consumer eosReceiver =
+        new Consumer(Schema.EMPTY_SCHEMA, eosReceiverOpId, new int[] {workerIDs[0]});
     final IDBController idbController =
-        new IDBController(0, eoiReceiverOpId, workerIDs[0], sc1, sc3, eosReceiver, new KeepMinValue(new int[] { 0 },
-            new int[] { 1 }));
+        new IDBController(
+            0,
+            eoiReceiverOpId,
+            workerIDs[0],
+            sc1,
+            sc3,
+            eosReceiver,
+            new KeepMinValue(new int[] {0}, new int[] {1}));
 
     final DbQueryScan scan2 = new DbQueryScan(RelationKey.of("test", "test", "g"), table2Schema);
-    final GenericShuffleProducer sp2 = new GenericShuffleProducer(scan2, joinArrayId2, workerIDs, pf1);
-    final GenericShuffleConsumer sc2 = new GenericShuffleConsumer(table2Schema, joinArrayId2, workerIDs);
+    final GenericShuffleProducer sp2 =
+        new GenericShuffleProducer(scan2, joinArrayId2, workerIDs, pf1);
+    final GenericShuffleConsumer sc2 =
+        new GenericShuffleConsumer(table2Schema, joinArrayId2, workerIDs);
 
     final ExchangePairID mpId1 = ExchangePairID.newID();
     final ExchangePairID mpId2 = ExchangePairID.newID();
-    final LocalMultiwayProducer mp = new LocalMultiwayProducer(idbController, new ExchangePairID[] { mpId1, mpId2 });
+    final LocalMultiwayProducer mp =
+        new LocalMultiwayProducer(idbController, new ExchangePairID[] {mpId1, mpId2});
     final LocalMultiwayConsumer mc1 = new LocalMultiwayConsumer(table1Schema, mpId1);
     final LocalMultiwayConsumer mc2 = new LocalMultiwayConsumer(table1Schema, mpId2);
     final SymmetricHashJoin join =
-        new SymmetricHashJoin(sc2, mc1, new int[] { 1 }, new int[] { 0 }, new int[] { 0 }, new int[] { 1 }, false, true);
+        new SymmetricHashJoin(
+            sc2, mc1, new int[] {1}, new int[] {0}, new int[] {0}, new int[] {1}, false, true);
     final SingleGroupByAggregate agg =
         new SingleGroupByAggregate(mc2, 0, new SingleColumnAggregatorFactory(1, AggregationOp.MIN));
     final CollectProducer cp = new CollectProducer(agg, serverOpId, MASTER_ID);
-    final GenericShuffleProducer sp3 = new GenericShuffleProducer(join, joinArrayId3, workerIDs, pf0);
+    final GenericShuffleProducer sp3 =
+        new GenericShuffleProducer(join, joinArrayId3, workerIDs, pf0);
     if (prioritized) {
-      sp3.setBackupBufferAsPrioritizedMin(new int[] { 0 }, new int[] { 1 });
+      sp3.setBackupBufferAsPrioritizedMin(new int[] {0}, new int[] {1});
     } else {
-      sp3.setBackupBufferAsMin(new int[] { 0 }, new int[] { 1 });
+      sp3.setBackupBufferAsMin(new int[] {0}, new int[] {1});
     }
 
     List<RootOperator> ret = new ArrayList<RootOperator>();
@@ -146,7 +168,8 @@ public class ConnectedComponentTest extends SystemTestBase {
     return ret;
   }
 
-  public void connectedComponents(final boolean failure, final boolean prioritized) throws Exception {
+  public void connectedComponents(final boolean failure, final boolean prioritized)
+      throws Exception {
     if (failure) {
       TestUtils.skipIfInTravis();
       return;
@@ -203,8 +226,10 @@ public class ConnectedComponentTest extends SystemTestBase {
     TupleBatchBuffer table2 = new TupleBatchBuffer(table2Schema);
     table2.unionAll(tbl2Worker1);
     table2.unionAll(tbl2Worker2);
-    createTable(workerIDs[0], RelationKey.of("test", "test", "g"), "node_id long, node_id_another long");
-    createTable(workerIDs[1], RelationKey.of("test", "test", "g"), "node_id long, node_id_another long");
+    createTable(
+        workerIDs[0], RelationKey.of("test", "test", "g"), "node_id long, node_id_another long");
+    createTable(
+        workerIDs[1], RelationKey.of("test", "test", "g"), "node_id long, node_id_another long");
     while ((tb = tbl2Worker1.popAny()) != null) {
       insert(workerIDs[0], RelationKey.of("test", "test", "g"), table2Schema, tb);
     }
@@ -223,15 +248,33 @@ public class ConnectedComponentTest extends SystemTestBase {
     final ExchangePairID eosReceiverOpId = ExchangePairID.newID();
     final ExchangePairID serverOpId = ExchangePairID.newID();
     List<RootOperator> plan1 =
-        generatePlan(table1Schema, table2Schema, joinArrayId1, joinArrayId2, joinArrayId3, eoiReceiverOpId,
-            eosReceiverOpId, serverOpId, prioritized);
-    final Consumer eoiReceiver = new Consumer(IDBController.EOI_REPORT_SCHEMA, eoiReceiverOpId, workerIDs);
-    final UnionAll union = new UnionAll(new Operator[] { eoiReceiver });
-    final EOSController eosController = new EOSController(union, new ExchangePairID[] { eosReceiverOpId }, workerIDs);
+        generatePlan(
+            table1Schema,
+            table2Schema,
+            joinArrayId1,
+            joinArrayId2,
+            joinArrayId3,
+            eoiReceiverOpId,
+            eosReceiverOpId,
+            serverOpId,
+            prioritized);
+    final Consumer eoiReceiver =
+        new Consumer(IDBController.EOI_REPORT_SCHEMA, eoiReceiverOpId, workerIDs);
+    final UnionAll union = new UnionAll(new Operator[] {eoiReceiver});
+    final EOSController eosController =
+        new EOSController(union, new ExchangePairID[] {eosReceiverOpId}, workerIDs);
     plan1.add(eosController);
     List<RootOperator> plan2 =
-        generatePlan(table1Schema, table2Schema, joinArrayId1, joinArrayId2, joinArrayId3, eoiReceiverOpId,
-            eosReceiverOpId, serverOpId, prioritized);
+        generatePlan(
+            table1Schema,
+            table2Schema,
+            joinArrayId1,
+            joinArrayId2,
+            joinArrayId3,
+            eoiReceiverOpId,
+            eosReceiverOpId,
+            serverOpId,
+            prioritized);
 
     if (failure) {
       for (RootOperator root : plan1) {
@@ -253,7 +296,8 @@ public class ConnectedComponentTest extends SystemTestBase {
     workerPlans.put(workerIDs[1], new SubQueryPlan(plan2.toArray(new RootOperator[plan2.size()])));
 
     final CollectConsumer serverCollect = new CollectConsumer(table1Schema, serverOpId, workerIDs);
-    final LinkedBlockingQueue<TupleBatch> receivedTupleBatches = new LinkedBlockingQueue<TupleBatch>();
+    final LinkedBlockingQueue<TupleBatch> receivedTupleBatches =
+        new LinkedBlockingQueue<TupleBatch>();
     final TBQueueExporter queueStore = new TBQueueExporter(receivedTupleBatches, serverCollect);
     SubQueryPlan serverPlan = new SubQueryPlan(new SinkRoot(queueStore));
 
@@ -264,7 +308,8 @@ public class ConnectedComponentTest extends SystemTestBase {
       workerPlans.get(workerIDs[1]).setFTMode(FTMode.REJOIN);
       serverPlan.setFTMode(FTMode.REJOIN);
 
-      ListenableFuture<Query> qf = server.getQueryManager().submitQuery("", "", "", serverPlan, workerPlans);
+      ListenableFuture<Query> qf =
+          server.getQueryManager().submitQuery("", "", "", serverPlan, workerPlans);
       Thread.sleep(1000);
       LOGGER.info("killing worker " + workerIDs[1] + "!");
       workerProcess[1].destroy();

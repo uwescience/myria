@@ -21,8 +21,7 @@ public final class PlanFragmentEncoding extends MyriaApiEncoding {
   /** Override the workers that will execute this fragment. */
   public List<Integer> overrideWorkers;
   /** The Operators in this plan fragment. */
-  @Required
-  public List<OperatorEncoding<? extends Operator>> operators;
+  @Required public List<OperatorEncoding<? extends Operator>> operators;
   /** Index of this fragment. */
   public int fragmentIndex = -1;
   /** List of required fields. */
@@ -30,7 +29,7 @@ public final class PlanFragmentEncoding extends MyriaApiEncoding {
 
   /**
    * Construct a PlanFragmentEncoding wrapping the given operators
-   * 
+   *
    * @param operators
    */
   @SafeVarargs
@@ -52,8 +51,14 @@ public final class PlanFragmentEncoding extends MyriaApiEncoding {
       if (!opNames.contains(op.opId)) {
         opNames.add(op.opId);
       } else {
-        throw new MyriaApiException(Status.BAD_REQUEST, "duplicate operator IDs in a fragment: " + op.opId
-            + ". Found on operator " + op.opName + " of type " + op.getClass());
+        throw new MyriaApiException(
+            Status.BAD_REQUEST,
+            "duplicate operator IDs in a fragment: "
+                + op.opId
+                + ". Found on operator "
+                + op.opName
+                + " of type "
+                + op.getClass());
       }
     }
   }

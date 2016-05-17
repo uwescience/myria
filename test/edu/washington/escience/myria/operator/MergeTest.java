@@ -23,7 +23,7 @@ public class MergeTest {
     children[0] = new TupleSource(TestUtils.generateRandomTuples(10, 10, false));
     Merge merge = new Merge(null, null, null);
     merge.setChildren(children);
-    merge.setSortedColumns(new int[] { 0 }, new boolean[] { true });
+    merge.setSortedColumns(new int[] {0}, new boolean[] {true});
   }
 
   @Test
@@ -32,7 +32,7 @@ public class MergeTest {
     children[0] = new TupleSource(TestUtils.generateRandomTuples(12300, 5000, true));
     children[1] = new TupleSource(TestUtils.generateRandomTuples(4200, 2000, true));
     children[2] = new TupleSource(TestUtils.generateRandomTuples(9900, 5000, true));
-    NAryOperator merge = new Merge(children, new int[] { 0 }, new boolean[] { true });
+    NAryOperator merge = new Merge(children, new int[] {0}, new boolean[] {true});
     merge.open(null);
     TupleBatch tb = null;
     int count = 0;
@@ -58,7 +58,7 @@ public class MergeTest {
     children[1] = new TupleSource(randomTuples[1]);
     children[2] = new TupleSource(randomTuples[2]);
 
-    NAryOperator merge = new Merge(children, new int[] { 0, 1 }, new boolean[] { true, true });
+    NAryOperator merge = new Merge(children, new int[] {0, 1}, new boolean[] {true, true});
     merge.open(null);
     TupleBatch tb;
     final ArrayList<Entry<Long, String>> entries = new ArrayList<Entry<Long, String>>();
@@ -82,7 +82,5 @@ public class MergeTest {
       }
       previous = entry;
     }
-
   }
-
 }

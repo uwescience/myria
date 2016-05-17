@@ -33,36 +33,38 @@ public class Main {
     pb.redirectErrorStream(true);
     pb.redirectOutput(Redirect.PIPE);
 
-    Thread stdoutReader = new Thread("Script stdout reader") {
+    Thread stdoutReader =
+        new Thread("Script stdout reader") {
 
-      @Override
-      public void run() {
-        try {
-          Process ps = pb.start();
-          writeProcessOutput(ps);
-        } catch (final Exception e) {
-          e.printStackTrace();
-          throw new RuntimeException(e);
-        }
-      }
-
-      void writeProcessOutput(final Process process) throws Exception {
-
-        final InputStreamReader tempReader = new InputStreamReader(new BufferedInputStream(process.getInputStream()));
-        final BufferedReader reader = new BufferedReader(tempReader);
-        try {
-          while (true) {
-            final String line = reader.readLine();
-            if (line == null) {
-              break;
+          @Override
+          public void run() {
+            try {
+              Process ps = pb.start();
+              writeProcessOutput(ps);
+            } catch (final Exception e) {
+              e.printStackTrace();
+              throw new RuntimeException(e);
             }
-            System.out.println("script$ " + line);
           }
-        } catch (final IOException e) {
-          // remote has shutdown. Not an exception.
-        }
-      }
-    };
+
+          void writeProcessOutput(final Process process) throws Exception {
+
+            final InputStreamReader tempReader =
+                new InputStreamReader(new BufferedInputStream(process.getInputStream()));
+            final BufferedReader reader = new BufferedReader(tempReader);
+            try {
+              while (true) {
+                final String line = reader.readLine();
+                if (line == null) {
+                  break;
+                }
+                System.out.println("script$ " + line);
+              }
+            } catch (final IOException e) {
+              // remote has shutdown. Not an exception.
+            }
+          }
+        };
 
     stdoutReader.start();
   }
@@ -86,7 +88,8 @@ public class Main {
     System.out.println("End start workers");
 
     MyriaConfiguration config =
-        MyriaConfiguration.loadWithDefaultValues(FilenameUtils.concat(workingDir, MyriaConstants.DEPLOYMENT_CONF_FILE));
+        MyriaConfiguration.loadWithDefaultValues(
+            FilenameUtils.concat(workingDir, MyriaConstants.DEPLOYMENT_CONF_FILE));
 
     int[] allWorkers = Ints.toArray(config.getWorkerIds());
     QueryPlanGenerator qpg = (QueryPlanGenerator) (Class.forName(queryClassname).newInstance());
@@ -106,7 +109,8 @@ public class Main {
       numResult += tb.numTuples();
     }
 
-    System.out.println("Time spent: " + DateTimeUtils.nanoElapseToHumanReadable(System.nanoTime() - start));
+    System.out.println(
+        "Time spent: " + DateTimeUtils.nanoElapseToHumanReadable(System.nanoTime() - start));
     System.out.println("Total " + numResult + " tuples.");
 
     qf.get();
@@ -114,9 +118,9 @@ public class Main {
   }
 
   static Server startMaster() throws Exception {
-    Server server = new Server(FilenameUtils.concat(workingDir, MyriaConstants.DEPLOYMENT_CONF_FILE));
+    Server server =
+        new Server(FilenameUtils.concat(workingDir, MyriaConstants.DEPLOYMENT_CONF_FILE));
     server.start();
     return server;
   }
-
 }

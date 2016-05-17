@@ -20,7 +20,7 @@ public class FloorExpression extends UnaryExpression {
 
   /**
    * Take the {@link Math.floor} of the operand.
-   * 
+   *
    * @param operand the operand.
    */
   public FloorExpression(final ExpressionOperator operand) {

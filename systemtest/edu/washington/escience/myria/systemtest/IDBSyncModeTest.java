@@ -52,7 +52,8 @@ public class IDBSyncModeTest extends SystemTestBase {
 
   private final int MaxID = 10;
   private final int delayPerTuple = 100;
-  private final Schema table1Schema = new Schema(ImmutableList.of(Type.LONG_TYPE), ImmutableList.of("number"));
+  private final Schema table1Schema =
+      new Schema(ImmutableList.of(Type.LONG_TYPE), ImmutableList.of("number"));
   private final ExchangePairID arrayId1 = ExchangePairID.newID();
   private final ExchangePairID arrayId2 = ExchangePairID.newID();
   private final ExchangePairID serverOpId = ExchangePairID.newID();
@@ -68,12 +69,17 @@ public class IDBSyncModeTest extends SystemTestBase {
     final DbQueryScan scan1 = new DbQueryScan(RelationKey.of("test", "test", "r"), table1Schema);
     final DelayInjector di = new DelayInjector(delayPerTuple, TimeUnit.MILLISECONDS, scan1);
     final GenericShuffleProducer sp1 = new GenericShuffleProducer(di, arrayId1, workerIDs, pf0);
-    final GenericShuffleConsumer sc1 = new GenericShuffleConsumer(table1Schema, arrayId1, workerIDs);
-    final GenericShuffleConsumer sc3 = new GenericShuffleConsumer(table1Schema, arrayId2, workerIDs);
-    final Consumer eosReceiver = new Consumer(Schema.EMPTY_SCHEMA, eosReceiverOpId, new int[] { workerIDs[0] });
+    final GenericShuffleConsumer sc1 =
+        new GenericShuffleConsumer(table1Schema, arrayId1, workerIDs);
+    final GenericShuffleConsumer sc3 =
+        new GenericShuffleConsumer(table1Schema, arrayId2, workerIDs);
+    final Consumer eosReceiver =
+        new Consumer(Schema.EMPTY_SCHEMA, eosReceiverOpId, new int[] {workerIDs[0]});
     final IDBController idbController =
-        new IDBController(0, eoiReceiverOpId, workerIDs[0], sc1, sc3, eosReceiver, new DupElim(), sync);
-    final LocalMultiwayProducer mp = new LocalMultiwayProducer(idbController, new ExchangePairID[] { mpId1, mpId2 });
+        new IDBController(
+            0, eoiReceiverOpId, workerIDs[0], sc1, sc3, eosReceiver, new DupElim(), sync);
+    final LocalMultiwayProducer mp =
+        new LocalMultiwayProducer(idbController, new ExchangePairID[] {mpId1, mpId2});
     final LocalMultiwayConsumer mc1 = new LocalMultiwayConsumer(table1Schema, mpId1);
     final LocalMultiwayConsumer mc2 = new LocalMultiwayConsumer(table1Schema, mpId2);
     final CollectProducer cp = new CollectProducer(mc1, serverOpId, MASTER_ID);
@@ -85,8 +91,12 @@ public class IDBSyncModeTest extends SystemTestBase {
     ExpressionOperator zero = new ConstantExpression(0);
     ExpressionOperator one = new ConstantExpression(1);
     Expression expr =
-        new Expression("number", new ConditionalExpression(new LessThanExpression(var, maxId), new PlusExpression(var,
-            one), new PlusExpression(var, zero)));
+        new Expression(
+            "number",
+            new ConditionalExpression(
+                new LessThanExpression(var, maxId),
+                new PlusExpression(var, one),
+                new PlusExpression(var, zero)));
     Expressions.add(expr);
     final Apply apply = new Apply(mc2, Expressions.build());
 
@@ -97,9 +107,11 @@ public class IDBSyncModeTest extends SystemTestBase {
     ret.add(mp);
     ret.add(cp);
     if (putEosController) {
-      final Consumer eoiReceiver = new Consumer(IDBController.EOI_REPORT_SCHEMA, eoiReceiverOpId, workerIDs);
-      final UnionAll union = new UnionAll(new Operator[] { eoiReceiver });
-      final EOSController eosController = new EOSController(union, new ExchangePairID[] { eosReceiverOpId }, workerIDs);
+      final Consumer eoiReceiver =
+          new Consumer(IDBController.EOI_REPORT_SCHEMA, eoiReceiverOpId, workerIDs);
+      final UnionAll union = new UnionAll(new Operator[] {eoiReceiver});
+      final EOSController eosController =
+          new EOSController(union, new ExchangePairID[] {eosReceiverOpId}, workerIDs);
       ret.add(eosController);
     }
     return ret;

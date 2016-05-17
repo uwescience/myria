@@ -20,7 +20,7 @@ public class AbsExpression extends UnaryExpression {
 
   /**
    * Take the absolute value of the operand.
-   * 
+   *
    * @param operand the operand.
    */
   public AbsExpression(final ExpressionOperator operand) {

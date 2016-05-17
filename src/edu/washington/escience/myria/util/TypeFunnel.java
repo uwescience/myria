@@ -5,12 +5,13 @@ import com.google.common.hash.PrimitiveSink;
 
 /**
  * A TypeFunnel is a Guava {@link Funnel} intended for use in hashing.
- * 
- * 
+ *
+ *
  */
 public enum TypeFunnel implements Funnel<Object> {
   /** Enforce singleton. */
   INSTANCE;
+
   @Override
   public void funnel(final Object o, final PrimitiveSink into) {
     if (o instanceof Boolean) {

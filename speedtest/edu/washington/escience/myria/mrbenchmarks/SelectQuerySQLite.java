@@ -19,7 +19,7 @@ import edu.washington.escience.myria.storage.TupleBatch;
 public class SelectQuerySQLite implements QueryPlanGenerator {
 
   /**
-   * 
+   *
    */
   private static final long serialVersionUID = 1742284247760373620L;
   final static ImmutableList<Type> outputTypes = ImmutableList.of(Type.STRING_TYPE, Type.LONG_TYPE);
@@ -33,21 +33,24 @@ public class SelectQuerySQLite implements QueryPlanGenerator {
 
     // SELECT pageURL, pageRank FROM Rankings WHERE pageRank > X;
     final DbQueryScan selectPageRank =
-        new DbQueryScan("select pageURL, pageRank from Rankings where pageRank > 10 ", outputSchema);
+        new DbQueryScan(
+            "select pageURL, pageRank from Rankings where pageRank > 10 ", outputSchema);
 
     final CollectProducer sendToMaster = new CollectProducer(selectPageRank, sendToMasterID, 0);
 
     final Map<Integer, RootOperator[]> result = new HashMap<Integer, RootOperator[]>();
     for (int worker : allWorkers) {
-      result.put(worker, new RootOperator[] { sendToMaster });
+      result.put(worker, new RootOperator[] {sendToMaster});
     }
 
     return result;
   }
 
   @Override
-  public SinkRoot getMasterPlan(int[] allWorkers, final LinkedBlockingQueue<TupleBatch> receivedTupleBatches) {
-    final CollectConsumer serverCollect = new CollectConsumer(outputSchema, sendToMasterID, allWorkers);
+  public SinkRoot getMasterPlan(
+      int[] allWorkers, final LinkedBlockingQueue<TupleBatch> receivedTupleBatches) {
+    final CollectConsumer serverCollect =
+        new CollectConsumer(outputSchema, sendToMasterID, allWorkers);
     SinkRoot serverPlan = new SinkRoot(serverCollect);
     return serverPlan;
   }

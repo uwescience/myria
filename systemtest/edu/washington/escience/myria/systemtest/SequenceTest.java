@@ -88,13 +88,18 @@ public class SequenceTest extends SystemTestBase {
 
     /* Second task: count the number of tuples. */
     DbQueryScan scan = new DbQueryScan(storage, testSchema);
-    Aggregate localCount = new Aggregate(scan, new SingleColumnAggregatorFactory(0, AggregationOp.COUNT));
+    Aggregate localCount =
+        new Aggregate(scan, new SingleColumnAggregatorFactory(0, AggregationOp.COUNT));
     ExchangePairID collectId = ExchangePairID.newID();
-    final CollectProducer coll = new CollectProducer(localCount, collectId, MyriaConstants.MASTER_ID);
+    final CollectProducer coll =
+        new CollectProducer(localCount, collectId, MyriaConstants.MASTER_ID);
 
-    final CollectConsumer cons = new CollectConsumer(Schema.ofFields(Type.LONG_TYPE, "_COUNT0_"), collectId, workerIDs);
-    Aggregate masterSum = new Aggregate(cons, new SingleColumnAggregatorFactory(0, AggregationOp.SUM));
-    final LinkedBlockingQueue<TupleBatch> receivedTupleBatches = new LinkedBlockingQueue<TupleBatch>();
+    final CollectConsumer cons =
+        new CollectConsumer(Schema.ofFields(Type.LONG_TYPE, "_COUNT0_"), collectId, workerIDs);
+    Aggregate masterSum =
+        new Aggregate(cons, new SingleColumnAggregatorFactory(0, AggregationOp.SUM));
+    final LinkedBlockingQueue<TupleBatch> receivedTupleBatches =
+        new LinkedBlockingQueue<TupleBatch>();
     final TBQueueExporter queueStore = new TBQueueExporter(receivedTupleBatches, masterSum);
     SinkRoot root = new SinkRoot(queueStore);
     Map<Integer, SubQueryPlan> workerPlans = new HashMap<>();
@@ -133,8 +138,11 @@ public class SequenceTest extends SystemTestBase {
 
     ExchangePairID shuffleId = ExchangePairID.newID();
     final GenericShuffleProducer sp =
-        new GenericShuffleProducer(source, shuffleId, workerIDs, new SingleFieldHashPartitionFunction(workerIDs.length,
-            0));
+        new GenericShuffleProducer(
+            source,
+            shuffleId,
+            workerIDs,
+            new SingleFieldHashPartitionFunction(workerIDs.length, 0));
 
     final GenericShuffleConsumer cc = new GenericShuffleConsumer(testSchema, shuffleId, workerIDs);
     final DbInsert insert = new DbInsert(cc, storage, true);
@@ -142,20 +150,26 @@ public class SequenceTest extends SystemTestBase {
     /* First task: create, shuffle, insert the tuples. */
     Map<Integer, SubQueryPlan> workerPlans = new HashMap<>();
     for (int i : workerIDs) {
-      workerPlans.put(i, new SubQueryPlan(new RootOperator[] { insert, sp }));
+      workerPlans.put(i, new SubQueryPlan(new RootOperator[] {insert, sp}));
     }
     SubQueryPlan serverPlan = new SubQueryPlan(new SinkRoot(new EOSSource()));
-    QueryPlan first = new Sequence(ImmutableList.<QueryPlan> of(new SubQuery(serverPlan, workerPlans)));
+    QueryPlan first =
+        new Sequence(ImmutableList.<QueryPlan>of(new SubQuery(serverPlan, workerPlans)));
 
     /* Second task: count the number of tuples. */
     DbQueryScan scan = new DbQueryScan(storage, testSchema);
-    Aggregate localCount = new Aggregate(scan, new SingleColumnAggregatorFactory(0, AggregationOp.COUNT));
+    Aggregate localCount =
+        new Aggregate(scan, new SingleColumnAggregatorFactory(0, AggregationOp.COUNT));
     ExchangePairID collectId = ExchangePairID.newID();
-    final CollectProducer coll = new CollectProducer(localCount, collectId, MyriaConstants.MASTER_ID);
+    final CollectProducer coll =
+        new CollectProducer(localCount, collectId, MyriaConstants.MASTER_ID);
 
-    final CollectConsumer cons = new CollectConsumer(Schema.ofFields(Type.LONG_TYPE, "_COUNT0_"), collectId, workerIDs);
-    Aggregate masterSum = new Aggregate(cons, new SingleColumnAggregatorFactory(0, AggregationOp.SUM));
-    final LinkedBlockingQueue<TupleBatch> receivedTupleBatches = new LinkedBlockingQueue<TupleBatch>();
+    final CollectConsumer cons =
+        new CollectConsumer(Schema.ofFields(Type.LONG_TYPE, "_COUNT0_"), collectId, workerIDs);
+    Aggregate masterSum =
+        new Aggregate(cons, new SingleColumnAggregatorFactory(0, AggregationOp.SUM));
+    final LinkedBlockingQueue<TupleBatch> receivedTupleBatches =
+        new LinkedBlockingQueue<TupleBatch>();
     final TBQueueExporter queueStore = new TBQueueExporter(receivedTupleBatches, masterSum);
     SinkRoot root = new SinkRoot(queueStore);
     workerPlans = new HashMap<>();
@@ -191,15 +205,17 @@ public class SequenceTest extends SystemTestBase {
     /* First task: do nothing. */
     Map<Integer, SubQueryPlan> workerPlans = new HashMap<>();
     for (int i : workerIDs) {
-      workerPlans.put(i, new SubQueryPlan(new RootOperator[] { new SinkRoot(new EOSSource()) }));
+      workerPlans.put(i, new SubQueryPlan(new RootOperator[] {new SinkRoot(new EOSSource())}));
     }
     SubQueryPlan serverPlan = new SubQueryPlan(new SinkRoot(new EOSSource()));
     QueryPlan first = new SubQuery(serverPlan, workerPlans);
 
     /* Second task: crash just the first worker. */
     workerPlans = new HashMap<>();
-    workerPlans.put(workerIDs[0], new SubQueryPlan(new RootOperator[] { new SinkRoot(new InitFailureInjector(
-        new EOSSource())) }));
+    workerPlans.put(
+        workerIDs[0],
+        new SubQueryPlan(
+            new RootOperator[] {new SinkRoot(new InitFailureInjector(new EOSSource()))}));
     QueryPlan second = new SubQuery(serverPlan, workerPlans);
 
     /* Combine first and second into two queries, one after the other. */
@@ -285,7 +301,8 @@ public class SequenceTest extends SystemTestBase {
     AggregateEncoding agg = new AggregateEncoding();
     agg.argChild = cons.opId;
     agg.opId = AGG;
-    agg.aggregators = new AggregatorFactory[] { new SingleColumnAggregatorFactory(0, AggregationOp.SUM) };
+    agg.aggregators =
+        new AggregatorFactory[] {new SingleColumnAggregatorFactory(0, AggregationOp.SUM)};
     insert = new DbInsertEncoding();
     insert.opId = INSERT;
     insert.argChild = agg.opId;
@@ -297,7 +314,7 @@ public class SequenceTest extends SystemTestBase {
 
     // Sequence of firstJson, secondJson
     SequenceEncoding seq = new SequenceEncoding();
-    seq.plans = ImmutableList.<SubPlanEncoding> of(firstJson, secondJson);
+    seq.plans = ImmutableList.<SubPlanEncoding>of(firstJson, secondJson);
 
     QueryEncoding query = new QueryEncoding();
     query.plan = seq;
@@ -318,8 +335,13 @@ public class SequenceTest extends SystemTestBase {
     assertEquals(1, server.getDatasetStatus(resultKey).getNumTuples());
 
     String ret =
-        JsonAPIUtils.download("localhost", masterDaemonPort, resultKey.getUserName(), resultKey.getProgramName(),
-            resultKey.getRelationName(), "csv");
+        JsonAPIUtils.download(
+            "localhost",
+            masterDaemonPort,
+            resultKey.getUserName(),
+            resultKey.getProgramName(),
+            resultKey.getRelationName(),
+            "csv");
     assertEquals("sum_value\r\n9\r\n", ret);
   }
 
@@ -336,14 +358,17 @@ public class SequenceTest extends SystemTestBase {
       TupleSource source = new TupleSource(data.getAll());
       ExchangePairID shuffleId = ExchangePairID.newID();
       final GenericShuffleProducer sp =
-          new GenericShuffleProducer(source, shuffleId, workerIDs, new SingleFieldHashPartitionFunction(
-              workerIDs.length, 0));
+          new GenericShuffleProducer(
+              source,
+              shuffleId,
+              workerIDs,
+              new SingleFieldHashPartitionFunction(workerIDs.length, 0));
 
       final GenericShuffleConsumer cc = new GenericShuffleConsumer(schema, shuffleId, workerIDs);
 
       /* Only overwrite for the first seq when i == 0. After, append. */
       final DbInsert insert = new DbInsert(cc, dataKey, i == 0);
-      seqs.add(new RootOperator[] { insert, sp });
+      seqs.add(new RootOperator[] {insert, sp});
     }
 
     /* First Sequence: do the numCopies inserts, one after the other. */
@@ -360,13 +385,18 @@ public class SequenceTest extends SystemTestBase {
 
     /* Task to run after the first Sequence: Count the number of tuples. */
     DbQueryScan scan = new DbQueryScan(dataKey, schema);
-    Aggregate localCount = new Aggregate(scan, new SingleColumnAggregatorFactory(0, AggregationOp.COUNT));
+    Aggregate localCount =
+        new Aggregate(scan, new SingleColumnAggregatorFactory(0, AggregationOp.COUNT));
     ExchangePairID collectId = ExchangePairID.newID();
-    final CollectProducer coll = new CollectProducer(localCount, collectId, MyriaConstants.MASTER_ID);
+    final CollectProducer coll =
+        new CollectProducer(localCount, collectId, MyriaConstants.MASTER_ID);
 
-    final CollectConsumer cons = new CollectConsumer(Schema.ofFields(Type.LONG_TYPE, "_COUNT0_"), collectId, workerIDs);
-    Aggregate masterSum = new Aggregate(cons, new SingleColumnAggregatorFactory(0, AggregationOp.SUM));
-    final LinkedBlockingQueue<TupleBatch> receivedTupleBatches = new LinkedBlockingQueue<TupleBatch>();
+    final CollectConsumer cons =
+        new CollectConsumer(Schema.ofFields(Type.LONG_TYPE, "_COUNT0_"), collectId, workerIDs);
+    Aggregate masterSum =
+        new Aggregate(cons, new SingleColumnAggregatorFactory(0, AggregationOp.SUM));
+    final LinkedBlockingQueue<TupleBatch> receivedTupleBatches =
+        new LinkedBlockingQueue<TupleBatch>();
     final TBQueueExporter queueStore = new TBQueueExporter(receivedTupleBatches, masterSum);
     SinkRoot root = new SinkRoot(queueStore);
     Map<Integer, SubQueryPlan> workerPlans = new HashMap<>();
@@ -374,7 +404,9 @@ public class SequenceTest extends SystemTestBase {
       workerPlans.put(i, new SubQueryPlan(coll));
     }
     // Stick in a trivial Sequence of one subquery for good measure
-    QueryPlan second = new Sequence(ImmutableList.<QueryPlan> of(new SubQuery(new SubQueryPlan(root), workerPlans)));
+    QueryPlan second =
+        new Sequence(
+            ImmutableList.<QueryPlan>of(new SubQuery(new SubQueryPlan(root), workerPlans)));
 
     /* Combine first and second into two queries, one after the other. */
     QueryPlan all = new Sequence(ImmutableList.of(first, second));

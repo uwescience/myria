@@ -14,12 +14,11 @@ public class TimesExpression extends BinaryExpression {
    * This is not really unused, it's used automagically by Jackson deserialization.
    */
   @SuppressWarnings("unused")
-  private TimesExpression() {
-  }
+  private TimesExpression() {}
 
   /**
    * Multiply the two operands together.
-   * 
+   *
    * @param left the left operand.
    * @param right the right operand.
    */
@@ -36,9 +35,11 @@ public class TimesExpression extends BinaryExpression {
   public String getJavaString(final ExpressionOperatorParameter parameters) {
     Type t = getOutputType(parameters);
     if (t == Type.INT_TYPE) {
-      return getFunctionCallBinaryString("com.google.common.math.IntMath.checkedMultiply", parameters);
+      return getFunctionCallBinaryString(
+          "com.google.common.math.IntMath.checkedMultiply", parameters);
     } else if (t == Type.LONG_TYPE) {
-      return getFunctionCallBinaryString("com.google.common.math.LongMath.checkedMultiply", parameters);
+      return getFunctionCallBinaryString(
+          "com.google.common.math.LongMath.checkedMultiply", parameters);
     }
     return getInfixBinaryString("*", parameters);
   }

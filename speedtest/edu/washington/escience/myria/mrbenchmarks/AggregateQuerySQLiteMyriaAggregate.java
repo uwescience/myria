@@ -26,15 +26,18 @@ import edu.washington.escience.myria.storage.TupleBatch;
 public class AggregateQuerySQLiteMyriaAggregate implements QueryPlanGenerator {
 
   /**
-   * 
+   *
    */
   private static final long serialVersionUID = 5147615855012257218L;
-  final static ImmutableList<Type> outputTypes = ImmutableList.of(Type.STRING_TYPE, Type.DOUBLE_TYPE);
-  final static ImmutableList<String> outputColumnNames = ImmutableList.of("sourceIPAddr", "sum_adRevenue");
+  final static ImmutableList<Type> outputTypes =
+      ImmutableList.of(Type.STRING_TYPE, Type.DOUBLE_TYPE);
+  final static ImmutableList<String> outputColumnNames =
+      ImmutableList.of("sourceIPAddr", "sum_adRevenue");
   final static Schema outputSchema = new Schema(outputTypes, outputColumnNames);
 
   final static ImmutableList<Type> scanTypes = ImmutableList.of(Type.STRING_TYPE, Type.DOUBLE_TYPE);
-  final static ImmutableList<String> scanColumnNames = ImmutableList.of("sourceIPAddr", "adRevenue");
+  final static ImmutableList<String> scanColumnNames =
+      ImmutableList.of("sourceIPAddr", "adRevenue");
   final static Schema scanSchema = new Schema(scanTypes, scanColumnNames);
 
   final ExchangePairID sendToMasterID = ExchangePairID.newID();
@@ -42,10 +45,12 @@ public class AggregateQuerySQLiteMyriaAggregate implements QueryPlanGenerator {
   @Override
   public Map<Integer, RootOperator[]> getWorkerPlan(int[] allWorkers) throws Exception {
 
-    final DbQueryScan localScan = new DbQueryScan("select sourceIPAddr, adRevenue from UserVisits", scanSchema);
+    final DbQueryScan localScan =
+        new DbQueryScan("select sourceIPAddr, adRevenue from UserVisits", scanSchema);
 
     final SingleGroupByAggregate localAgg =
-        new SingleGroupByAggregate(localScan, 0, new SingleColumnAggregatorFactory(1, AggregationOp.SUM));
+        new SingleGroupByAggregate(
+            localScan, 0, new SingleColumnAggregatorFactory(1, AggregationOp.SUM));
 
     final ExchangePairID shuffleLocalGroupByID = ExchangePairID.newID();
 
@@ -54,7 +59,8 @@ public class AggregateQuerySQLiteMyriaAggregate implements QueryPlanGenerator {
     final GenericShuffleProducer shuffleLocalGroupBy =
         new GenericShuffleProducer(localAgg, shuffleLocalGroupByID, allWorkers, pf);
     final GenericShuffleConsumer sc =
-        new GenericShuffleConsumer(shuffleLocalGroupBy.getSchema(), shuffleLocalGroupByID, allWorkers);
+        new GenericShuffleConsumer(
+            shuffleLocalGroupBy.getSchema(), shuffleLocalGroupByID, allWorkers);
 
     final SingleGroupByAggregate globalAgg =
         new SingleGroupByAggregate(sc, 0, new SingleColumnAggregatorFactory(1, AggregationOp.SUM));
@@ -63,15 +69,17 @@ public class AggregateQuerySQLiteMyriaAggregate implements QueryPlanGenerator {
 
     final Map<Integer, RootOperator[]> result = new HashMap<Integer, RootOperator[]>();
     for (int worker : allWorkers) {
-      result.put(worker, new RootOperator[] { shuffleLocalGroupBy, sendToMaster });
+      result.put(worker, new RootOperator[] {shuffleLocalGroupBy, sendToMaster});
     }
 
     return result;
   }
 
   @Override
-  public SinkRoot getMasterPlan(int[] allWorkers, final LinkedBlockingQueue<TupleBatch> receivedTupleBatches) {
-    final CollectConsumer serverCollect = new CollectConsumer(outputSchema, sendToMasterID, allWorkers);
+  public SinkRoot getMasterPlan(
+      int[] allWorkers, final LinkedBlockingQueue<TupleBatch> receivedTupleBatches) {
+    final CollectConsumer serverCollect =
+        new CollectConsumer(outputSchema, sendToMasterID, allWorkers);
     SinkRoot serverPlan = new SinkRoot(serverCollect);
     return serverPlan;
   }

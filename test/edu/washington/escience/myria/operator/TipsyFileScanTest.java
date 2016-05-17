@@ -22,9 +22,9 @@ import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.util.TestEnvVars;
 
 /**
- * 
+ *
  * @author leelee
- * 
+ *
  */
 public class TipsyFileScanTest {
 
@@ -48,50 +48,64 @@ public class TipsyFileScanTest {
 
   @Test
   public void testSimpleBigEndian() throws IOException, DbException {
-    String binFilename = "testdata" + File.separatorChar + "tipsyfilescan" + File.separatorChar + "tipsy1";
-    String iOrderFilename = "testdata" + File.separatorChar + "tipsyfilescan" + File.separatorChar + "iOrder1.iord";
-    String grpFilename = "testdata" + File.separatorChar + "tipsyfilescan" + File.separatorChar + "grp1.amiga.grp";
+    String binFilename =
+        "testdata" + File.separatorChar + "tipsyfilescan" + File.separatorChar + "tipsy1";
+    String iOrderFilename =
+        "testdata" + File.separatorChar + "tipsyfilescan" + File.separatorChar + "iOrder1.iord";
+    String grpFilename =
+        "testdata" + File.separatorChar + "tipsyfilescan" + File.separatorChar + "grp1.amiga.grp";
     int ngas = 1;
     int ndark = 1;
     int nstar = 1;
     int ntot = ngas + ndark + nstar;
     TipsyFileScan filescan = new TipsyFileScan(binFilename, iOrderFilename, grpFilename);
     assertEquals(ntot, getRowCount(filescan));
-
   }
 
   @Test
   public void testSimpleBigEndianStar() throws IOException, DbException {
-    String binFilename = "testdata" + File.separatorChar + "tipsyfilescan" + File.separatorChar + "tipsy3";
-    String iOrderFilename = "testdata" + File.separatorChar + "tipsyfilescan" + File.separatorChar + "iOrder3.iord";
-    String grpFilename = "testdata" + File.separatorChar + "tipsyfilescan" + File.separatorChar + "grp3.amiga.grp";
+    String binFilename =
+        "testdata" + File.separatorChar + "tipsyfilescan" + File.separatorChar + "tipsy3";
+    String iOrderFilename =
+        "testdata" + File.separatorChar + "tipsyfilescan" + File.separatorChar + "iOrder3.iord";
+    String grpFilename =
+        "testdata" + File.separatorChar + "tipsyfilescan" + File.separatorChar + "grp3.amiga.grp";
     TipsyFileScan filescan = new TipsyFileScan(binFilename, iOrderFilename, grpFilename);
     ExpressionOperator expr =
-        new EqualsExpression(new VariableExpression(16), new ConstantExpression(Type.STRING_TYPE, "star"));
+        new EqualsExpression(
+            new VariableExpression(16), new ConstantExpression(Type.STRING_TYPE, "star"));
     Filter filter = new Filter(new Expression(null, expr), filescan);
     assertEquals(3, getRowCount(filter));
   }
 
   @Test
   public void testSimpleBigEndianDark() throws IOException, DbException {
-    String binFilename = "testdata" + File.separatorChar + "tipsyfilescan" + File.separatorChar + "tipsy3";
-    String iOrderFilename = "testdata" + File.separatorChar + "tipsyfilescan" + File.separatorChar + "iOrder3.iord";
-    String grpFilename = "testdata" + File.separatorChar + "tipsyfilescan" + File.separatorChar + "grp3.amiga.grp";
+    String binFilename =
+        "testdata" + File.separatorChar + "tipsyfilescan" + File.separatorChar + "tipsy3";
+    String iOrderFilename =
+        "testdata" + File.separatorChar + "tipsyfilescan" + File.separatorChar + "iOrder3.iord";
+    String grpFilename =
+        "testdata" + File.separatorChar + "tipsyfilescan" + File.separatorChar + "grp3.amiga.grp";
     TipsyFileScan filescan = new TipsyFileScan(binFilename, iOrderFilename, grpFilename);
     ExpressionOperator expr =
-        new EqualsExpression(new VariableExpression(16), new ConstantExpression(Type.STRING_TYPE, "dark"));
+        new EqualsExpression(
+            new VariableExpression(16), new ConstantExpression(Type.STRING_TYPE, "dark"));
     Filter filter = new Filter(new Expression(null, expr), filescan);
     assertEquals(2, getRowCount(filter));
   }
 
   @Test
   public void testSimpleBigEndianGas() throws IOException, DbException {
-    String binFilename = "testdata" + File.separatorChar + "tipsyfilescan" + File.separatorChar + "tipsy3";
-    String iOrderFilename = "testdata" + File.separatorChar + "tipsyfilescan" + File.separatorChar + "iOrder3.iord";
-    String grpFilename = "testdata" + File.separatorChar + "tipsyfilescan" + File.separatorChar + "grp3.amiga.grp";
+    String binFilename =
+        "testdata" + File.separatorChar + "tipsyfilescan" + File.separatorChar + "tipsy3";
+    String iOrderFilename =
+        "testdata" + File.separatorChar + "tipsyfilescan" + File.separatorChar + "iOrder3.iord";
+    String grpFilename =
+        "testdata" + File.separatorChar + "tipsyfilescan" + File.separatorChar + "grp3.amiga.grp";
     TipsyFileScan filescan = new TipsyFileScan(binFilename, iOrderFilename, grpFilename);
     ExpressionOperator expr =
-        new EqualsExpression(new VariableExpression(16), new ConstantExpression(Type.STRING_TYPE, "gas"));
+        new EqualsExpression(
+            new VariableExpression(16), new ConstantExpression(Type.STRING_TYPE, "gas"));
     Filter filter = new Filter(new Expression(null, expr), filescan);
     assertEquals(4, getRowCount(filter));
   }
@@ -103,7 +117,8 @@ public class TipsyFileScanTest {
     String grpFilename = "file:./testdata/tipsyfilescan/grp3.amiga.grp";
     TipsyFileScan fileScan = new TipsyFileScan(binFilename, iOrderFilename, grpFilename);
     ExpressionOperator expr =
-            new EqualsExpression(new VariableExpression(16), new ConstantExpression(Type.STRING_TYPE, "gas"));
+        new EqualsExpression(
+            new VariableExpression(16), new ConstantExpression(Type.STRING_TYPE, "gas"));
     Filter filter = new Filter(new Expression(null, expr), fileScan);
     assertEquals(4, getRowCount(filter));
   }
@@ -113,28 +128,42 @@ public class TipsyFileScanTest {
   // this test took 161796 ms which is about 2.7 minutes on a i7 processor 8gb ram machine
   public void testCosmo512Star() throws DbException {
     String binFileName =
-        "testdata" + File.separatorChar + "tipsyfilescan" + File.separatorChar + "cosmo50cmb.256g2MbwK.00512";
+        "testdata"
+            + File.separatorChar
+            + "tipsyfilescan"
+            + File.separatorChar
+            + "cosmo50cmb.256g2MbwK.00512";
     String iOrderFileName =
-        "testdata" + File.separatorChar + "tipsyfilescan" + File.separatorChar + "cosmo50cmb.256g2MbwK.00512.iord";
+        "testdata"
+            + File.separatorChar
+            + "tipsyfilescan"
+            + File.separatorChar
+            + "cosmo50cmb.256g2MbwK.00512.iord";
     String grpFileName =
-        "testdata" + File.separatorChar + "tipsyfilescan" + File.separatorChar + "cosmo50cmb.256g2MbwK.00512.amiga.grp";
+        "testdata"
+            + File.separatorChar
+            + "tipsyfilescan"
+            + File.separatorChar
+            + "cosmo50cmb.256g2MbwK.00512.amiga.grp";
     TipsyFileScan tfScan = new TipsyFileScan(binFileName, iOrderFileName, grpFileName);
     ExpressionOperator expr =
-        new EqualsExpression(new VariableExpression(16), new ConstantExpression(Type.STRING_TYPE, "star"));
+        new EqualsExpression(
+            new VariableExpression(16), new ConstantExpression(Type.STRING_TYPE, "star"));
     Filter filter = new Filter(new Expression(null, expr), tfScan);
     assertEquals(6949401, getRowCount(filter));
   }
 
   /**
    * Generate big endian binary file.
-   * 
+   *
    * @param filename The filename to generate the content.
    * @param ngas The number of gas records.
    * @param ndark The number of dark records.
    * @param nstar The number of star records.
    * @throws IOException if error writing to file.
    */
-  public static void generateTipsyFile(String filename, int ngas, int ndark, int nstar) throws IOException {
+  public static void generateTipsyFile(String filename, int ngas, int ndark, int nstar)
+      throws IOException {
     FileOutputStream fStream = new FileOutputStream(filename);
     DataOutputStream output = new DataOutputStream(fStream);
     // write header
@@ -175,13 +204,14 @@ public class TipsyFileScanTest {
 
   /**
    * Generate ascii file that contains row number of lines.
-   * 
+   *
    * @param fileName The filename to generate the content.
    * @param row The number of lines.
    * @throws FileNotFoundException
    * @throws IOException
    */
-  public static void generateAsciiFile(String fileName, int row) throws FileNotFoundException, IOException {
+  public static void generateAsciiFile(String fileName, int row)
+      throws FileNotFoundException, IOException {
     PrintStream output = new PrintStream(fileName);
     output.println(row);
     for (int i = 0; i < row; i++) {

@@ -16,12 +16,11 @@ public class DivideExpression extends BinaryExpression {
    * This is not really unused, it's used automagically by Jackson deserialization.
    */
   @SuppressWarnings("unused")
-  private DivideExpression() {
-  }
+  private DivideExpression() {}
 
   /**
    * Divide the two operands together.
-   * 
+   *
    * @param left the left operand.
    * @param right the right operand.
    */
@@ -36,7 +35,11 @@ public class DivideExpression extends BinaryExpression {
 
   @Override
   public String getJavaString(final ExpressionOperatorParameter parameters) {
-    return new StringBuilder("(((double)").append(getLeft().getJavaString(parameters)).append(")/").append(
-        getRight().getJavaString(parameters)).append(')').toString();
+    return new StringBuilder("(((double)")
+        .append(getLeft().getJavaString(parameters))
+        .append(")/")
+        .append(getRight().getJavaString(parameters))
+        .append(')')
+        .toString();
   }
 }

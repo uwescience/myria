@@ -47,7 +47,9 @@ public class TwitterJoinSpeedTest extends SystemTestBase {
   // the paths to the dataset on your local machine, copy them from /projects/db7/dataset/twitter/speedtest then change
   // the paths here
   private final static String[] srcPath = {
-      "data_nocommit/speedtest/twitter/test_worker1.db", "data_nocommit/speedtest/twitter/test_worker2.db" };
+    "data_nocommit/speedtest/twitter/test_worker1.db",
+    "data_nocommit/speedtest/twitter/test_worker2.db"
+  };
 
   /* Whether we were able to copy the data. */
   private static boolean successfulSetup = false;
@@ -57,12 +59,18 @@ public class TwitterJoinSpeedTest extends SystemTestBase {
     /* Load specific test data. */
     for (int i = 0; i < srcPath.length; ++i) {
       final Path src = FileSystems.getDefault().getPath(srcPath[i]);
-      final Path dst = Paths.get(DeploymentUtils.getPathToWorkerDir(workingDir, workerIDs[i]), "data.db");
+      final Path dst =
+          Paths.get(DeploymentUtils.getPathToWorkerDir(workingDir, workerIDs[i]), "data.db");
       try {
         Files.copy(src, dst);
       } catch (final Exception e) {
-        throw new RuntimeException("unable to copy files from " + src.toAbsolutePath() + " to " + dst.toAbsolutePath()
-            + ". you can find the dataset at /projects/db7/dataset/twitter/speedtest.", e);
+        throw new RuntimeException(
+            "unable to copy files from "
+                + src.toAbsolutePath()
+                + " to "
+                + dst.toAbsolutePath()
+                + ". you can find the dataset at /projects/db7/dataset/twitter/speedtest.",
+            e);
       }
     }
     successfulSetup = true;
@@ -97,18 +105,23 @@ public class TwitterJoinSpeedTest extends SystemTestBase {
 
     /* Each worker receives both partitions, then joins on them. */
     // SC1: receive based on followee (PF1, so SP2 and arrayID2)
-    final GenericShuffleConsumer sc1 = new GenericShuffleConsumer(sp2.getSchema(), arrayID2, workerIDs);
+    final GenericShuffleConsumer sc1 =
+        new GenericShuffleConsumer(sp2.getSchema(), arrayID2, workerIDs);
     // SC2: receive based on follower (PF0, so SP1 and arrayID1)
-    final GenericShuffleConsumer sc2 = new GenericShuffleConsumer(sp1.getSchema(), arrayID1, workerIDs);
+    final GenericShuffleConsumer sc2 =
+        new GenericShuffleConsumer(sp1.getSchema(), arrayID1, workerIDs);
     // Join on SC1.followee=SC2.follower
     final SymmetricHashJoin localProjJoin =
-        new SymmetricHashJoin(sc1, sc2, new int[] { 1 }, new int[] { 0 }, new int[] { 0 }, new int[] { 1 });
+        new SymmetricHashJoin(sc1, sc2, new int[] {1}, new int[] {0}, new int[] {0}, new int[] {1});
     /* Now reshuffle the results to partition based on the new followee, so that we can dupelim. */
     final ExchangePairID arrayID0 = ExchangePairID.newID();
-    final GenericShuffleProducer sp0 = new GenericShuffleProducer(localProjJoin, arrayID0, workerIDs, pf0);
-    final GenericShuffleConsumer sc0 = new GenericShuffleConsumer(sp0.getSchema(), arrayID0, workerIDs);
+    final GenericShuffleProducer sp0 =
+        new GenericShuffleProducer(localProjJoin, arrayID0, workerIDs, pf0);
+    final GenericShuffleConsumer sc0 =
+        new GenericShuffleConsumer(sp0.getSchema(), arrayID0, workerIDs);
     final StreamingStateWrapper dupelim = new StreamingStateWrapper(sc0, new DupElim());
-    final Aggregate count = new Aggregate(dupelim, new SingleColumnAggregatorFactory(0, AggregationOp.COUNT));
+    final Aggregate count =
+        new Aggregate(dupelim, new SingleColumnAggregatorFactory(0, AggregationOp.COUNT));
 
     /* Finally, send (CollectProduce) all the results to the master. */
     final ExchangePairID serverReceiveID = ExchangePairID.newID();
@@ -116,21 +129,24 @@ public class TwitterJoinSpeedTest extends SystemTestBase {
 
     /* Send the worker plans, rooted by CP, to the workers. Note that the plans are identical. */
     final HashMap<Integer, RootOperator[]> workerPlans = new HashMap<Integer, RootOperator[]>();
-    workerPlans.put(workerIDs[0], new RootOperator[] { cp, sp1, sp2, sp0 });
-    workerPlans.put(workerIDs[1], new RootOperator[] { cp, sp1, sp2, sp0 });
+    workerPlans.put(workerIDs[0], new RootOperator[] {cp, sp1, sp2, sp0});
+    workerPlans.put(workerIDs[1], new RootOperator[] {cp, sp1, sp2, sp0});
 
     /* The server plan. Basically, collect and count tuples. */
-    final Schema collectSchema = new Schema(ImmutableList.of(Type.LONG_TYPE), ImmutableList.of("COUNT"));
-    final CollectConsumer collectCounts = new CollectConsumer(collectSchema, serverReceiveID, workerIDs);
-    Aggregate sumCount = new Aggregate(collectCounts, new SingleColumnAggregatorFactory(0, AggregationOp.SUM));
-    final LinkedBlockingQueue<TupleBatch> receivedTupleBatches = new LinkedBlockingQueue<TupleBatch>();
+    final Schema collectSchema =
+        new Schema(ImmutableList.of(Type.LONG_TYPE), ImmutableList.of("COUNT"));
+    final CollectConsumer collectCounts =
+        new CollectConsumer(collectSchema, serverReceiveID, workerIDs);
+    Aggregate sumCount =
+        new Aggregate(collectCounts, new SingleColumnAggregatorFactory(0, AggregationOp.SUM));
+    final LinkedBlockingQueue<TupleBatch> receivedTupleBatches =
+        new LinkedBlockingQueue<TupleBatch>();
     TBQueueExporter queueStore = new TBQueueExporter(receivedTupleBatches, sumCount);
     SinkRoot serverPlan = new SinkRoot(queueStore);
 
     server.submitQueryPlan(serverPlan, workerPlans).get();
     /* Make sure the count matches the known result. */
     assertEquals(3361461, receivedTupleBatches.take().getLong(0, 0));
-
   }
 
   @Test
@@ -162,18 +178,22 @@ public class TwitterJoinSpeedTest extends SystemTestBase {
 
     /* Each worker receives both partitions, then joins on them. */
     // SC1: receive based on followee (PF1, so SP2 and arrayID2)
-    final GenericShuffleConsumer sc1 = new GenericShuffleConsumer(sp2.getSchema(), arrayID2, workerIDs);
+    final GenericShuffleConsumer sc1 =
+        new GenericShuffleConsumer(sp2.getSchema(), arrayID2, workerIDs);
     // SC2: receive based on follower (PF0, so SP1 and arrayID1)
-    final GenericShuffleConsumer sc2 = new GenericShuffleConsumer(sp1.getSchema(), arrayID1, workerIDs);
+    final GenericShuffleConsumer sc2 =
+        new GenericShuffleConsumer(sp1.getSchema(), arrayID1, workerIDs);
     // Join on SC1.followee=SC2.follower
     final List<String> joinSchema = ImmutableList.of("follower", "joinL", "joinR", "followee");
-    final SymmetricHashJoin localjoin = new SymmetricHashJoin(joinSchema, sc1, sc2, new int[] { 1 }, new int[] { 0 });
+    final SymmetricHashJoin localjoin =
+        new SymmetricHashJoin(joinSchema, sc1, sc2, new int[] {1}, new int[] {0});
     /* Select only the two columns of interest: SC1.follower now transitively follows SC2.followee. */
     final Apply proj = Applys.columnSelect(localjoin, 0, 3);
     /* Now reshuffle the results to partition based on the new followee, so that we can dupelim. */
     final ExchangePairID arrayID0 = ExchangePairID.newID();
     final GenericShuffleProducer sp0 = new GenericShuffleProducer(proj, arrayID0, workerIDs, pf0);
-    final GenericShuffleConsumer sc0 = new GenericShuffleConsumer(sp0.getSchema(), arrayID0, workerIDs);
+    final GenericShuffleConsumer sc0 =
+        new GenericShuffleConsumer(sp0.getSchema(), arrayID0, workerIDs);
     final StreamingStateWrapper dupelim = new StreamingStateWrapper(sc0, new DupElim());
 
     /* Finally, send (CollectProduce) all the results to the master. */
@@ -182,8 +202,8 @@ public class TwitterJoinSpeedTest extends SystemTestBase {
 
     /* Send the worker plans, rooted by CP, to the workers. Note that the plans are identical. */
     final HashMap<Integer, RootOperator[]> workerPlans = new HashMap<Integer, RootOperator[]>();
-    workerPlans.put(workerIDs[0], new RootOperator[] { cp, sp1, sp2, sp0 });
-    workerPlans.put(workerIDs[1], new RootOperator[] { cp, sp1, sp2, sp0 });
+    workerPlans.put(workerIDs[0], new RootOperator[] {cp, sp1, sp2, sp0});
+    workerPlans.put(workerIDs[1], new RootOperator[] {cp, sp1, sp2, sp0});
 
     /* The server plan. Basically, collect and count tuples. */
     final CollectConsumer collect = new CollectConsumer(cp.getSchema(), serverReceiveID, workerIDs);
@@ -192,7 +212,6 @@ public class TwitterJoinSpeedTest extends SystemTestBase {
     server.submitQueryPlan(serverPlan, workerPlans).get();
     /* Make sure the count matches the known result. */
     assertEquals(3361461, serverPlan.getCount());
-
   }
 
   @Test
@@ -224,16 +243,20 @@ public class TwitterJoinSpeedTest extends SystemTestBase {
 
     /* Each worker receives both partitions, then joins on them. */
     // SC1: receive based on followee (PF1, so SP2 and arrayID2)
-    final GenericShuffleConsumer sc1 = new GenericShuffleConsumer(sp2.getSchema(), arrayID2, workerIDs);
+    final GenericShuffleConsumer sc1 =
+        new GenericShuffleConsumer(sp2.getSchema(), arrayID2, workerIDs);
     // SC2: receive based on follower (PF0, so SP1 and arrayID1)
-    final GenericShuffleConsumer sc2 = new GenericShuffleConsumer(sp1.getSchema(), arrayID1, workerIDs);
+    final GenericShuffleConsumer sc2 =
+        new GenericShuffleConsumer(sp1.getSchema(), arrayID1, workerIDs);
     // Join on SC1.followee=SC2.follower
     final SymmetricHashJoin localProjJoin =
-        new SymmetricHashJoin(sc1, sc2, new int[] { 1 }, new int[] { 0 }, new int[] { 0 }, new int[] { 1 });
+        new SymmetricHashJoin(sc1, sc2, new int[] {1}, new int[] {0}, new int[] {0}, new int[] {1});
     /* Now reshuffle the results to partition based on the new followee, so that we can dupelim. */
     final ExchangePairID arrayID0 = ExchangePairID.newID();
-    final GenericShuffleProducer sp0 = new GenericShuffleProducer(localProjJoin, arrayID0, workerIDs, pf0);
-    final GenericShuffleConsumer sc0 = new GenericShuffleConsumer(sp0.getSchema(), arrayID0, workerIDs);
+    final GenericShuffleProducer sp0 =
+        new GenericShuffleProducer(localProjJoin, arrayID0, workerIDs, pf0);
+    final GenericShuffleConsumer sc0 =
+        new GenericShuffleConsumer(sp0.getSchema(), arrayID0, workerIDs);
     final StreamingStateWrapper dupelim = new StreamingStateWrapper(sc0, new DupElim());
 
     /* Finally, send (CollectProduce) all the results to the master. */
@@ -242,8 +265,8 @@ public class TwitterJoinSpeedTest extends SystemTestBase {
 
     /* Send the worker plans, rooted by CP, to the workers. Note that the plans are identical. */
     final HashMap<Integer, RootOperator[]> workerPlans = new HashMap<Integer, RootOperator[]>();
-    workerPlans.put(workerIDs[0], new RootOperator[] { cp, sp1, sp2, sp0 });
-    workerPlans.put(workerIDs[1], new RootOperator[] { cp, sp1, sp2, sp0 });
+    workerPlans.put(workerIDs[0], new RootOperator[] {cp, sp1, sp2, sp0});
+    workerPlans.put(workerIDs[1], new RootOperator[] {cp, sp1, sp2, sp0});
 
     /* The server plan. Basically, collect and count tuples. */
     final CollectConsumer collect = new CollectConsumer(cp.getSchema(), serverReceiveID, workerIDs);
@@ -252,6 +275,5 @@ public class TwitterJoinSpeedTest extends SystemTestBase {
     server.submitQueryPlan(serverPlan, workerPlans).get();
     /* Make sure the count matches the known result. */
     assertEquals(3361461, serverPlan.getCount());
-
   }
 }

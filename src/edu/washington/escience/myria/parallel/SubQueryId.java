@@ -27,7 +27,7 @@ public final class SubQueryId {
 
   /**
    * Construct the identifier for the corresponding query and subquery.
-   * 
+   *
    * @param queryId the query
    * @param subqueryId the subquery
    */

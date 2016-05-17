@@ -22,7 +22,7 @@ public final class QueryFuture implements ListenableFuture<Query> {
 
   /**
    * Create a future for the specified query.
-   * 
+   *
    * @param queryId the id of the query
    * @return a future for the specified query
    */
@@ -32,16 +32,16 @@ public final class QueryFuture implements ListenableFuture<Query> {
 
   /**
    * The future for a submitted query.
-   * 
+   *
    * @param queryId the id of the submitted query.
    */
   private QueryFuture(final long queryId) {
-    this(queryId, SettableFuture.<Query> create());
+    this(queryId, SettableFuture.<Query>create());
   }
 
   /**
    * The future for a submitted query.
-   * 
+   *
    * @param queryId the id of the submitted query.
    * @param future the future to be wrapped.
    */
@@ -78,8 +78,8 @@ public final class QueryFuture implements ListenableFuture<Query> {
   }
 
   @Override
-  public Query get(final long timeout, final TimeUnit unit) throws InterruptedException, ExecutionException,
-      TimeoutException {
+  public Query get(final long timeout, final TimeUnit unit)
+      throws InterruptedException, ExecutionException, TimeoutException {
     return future.get(timeout, unit);
   }
 
@@ -91,7 +91,7 @@ public final class QueryFuture implements ListenableFuture<Query> {
   /**
    * Sets the value of this future. This method will return {@code true} if the value was successfully set, or
    * {@code false} if the future has already been set or cancelled.
-   * 
+   *
    * @param value the value the future should hold.
    * @return true if the value was successfully set.
    */
@@ -106,7 +106,7 @@ public final class QueryFuture implements ListenableFuture<Query> {
    * Sets the future to having failed with the given exception. This exception will be wrapped in an
    * {@code ExecutionException} and thrown from the {@code get} methods. This method will return {@code true} if the
    * exception was successfully set, or {@code false} if the future has already been set or cancelled.
-   * 
+   *
    * @param throwable the exception the future should hold.
    * @return true if the exception was successfully set.
    */

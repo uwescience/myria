@@ -12,16 +12,17 @@ import edu.washington.escience.myria.storage.TupleBatchBuffer;
 
 public final class JoinTestUtils {
 
-  public static Schema leftSchema = Schema.ofFields("left1", Type.LONG_TYPE, "left2", Type.BOOLEAN_TYPE, "left3",
-      Type.STRING_TYPE);
-  public static Schema rightSchema = Schema.ofFields("right1", Type.STRING_TYPE, "right2", Type.LONG_TYPE, "right3",
-      Type.BOOLEAN_TYPE);
+  public static Schema leftSchema =
+      Schema.ofFields(
+          "left1", Type.LONG_TYPE, "left2", Type.BOOLEAN_TYPE, "left3", Type.STRING_TYPE);
+  public static Schema rightSchema =
+      Schema.ofFields(
+          "right1", Type.STRING_TYPE, "right2", Type.LONG_TYPE, "right3", Type.BOOLEAN_TYPE);
   public static ImmutableList<TupleBatch> leftInput = ImmutableList.copyOf(getLeftInput());
   public static ImmutableList<TupleBatch> rightInput = ImmutableList.copyOf(getRightInput());
 
   /** Utility class can't be constructed. */
-  private JoinTestUtils() {
-  }
+  private JoinTestUtils() {}
 
   private static List<TupleBatch> getLeftInput() {
     TupleBatchBuffer tbb = new TupleBatchBuffer(leftSchema);

@@ -45,13 +45,14 @@ public final class DeploymentUtils {
 
   /**
    * entry point.
-   * 
+   *
    * @param args args.
    * @throws ConfigFileException if error occurred parsing the config file.
    * @throws CatalogException if error occurred generating the catalog.
    * @throws IOException IOException
    * */
-  public static void main(final String[] args) throws ConfigFileException, CatalogException, IOException {
+  public static void main(final String[] args)
+      throws ConfigFileException, CatalogException, IOException {
     if (args.length < 2) {
       System.out.println(USAGE);
     }
@@ -84,14 +85,17 @@ public final class DeploymentUtils {
   }
 
   /**
-   * 
+   *
    * @param config a Myria configuration.
    * @throws ConfigFileException if error occurred parsing config file.
    */
   public static void startMaster(final MyriaConfiguration config) throws ConfigFileException {
-    int restPort = Integer.parseInt(config.getRequired("deployment", MyriaSystemConfigKeys.REST_PORT));
+    int restPort =
+        Integer.parseInt(config.getRequired("deployment", MyriaSystemConfigKeys.REST_PORT));
     String sslStr =
-        MoreObjects.firstNonNull(config.getOptional("deployment", MyriaSystemConfigKeys.SSL), "false").toLowerCase();
+        MoreObjects.firstNonNull(
+                config.getOptional("deployment", MyriaSystemConfigKeys.SSL), "false")
+            .toLowerCase();
     boolean ssl = false;
     if (sslStr.equals("true") || sslStr.equals("on") || sslStr.equals("1")) {
       ssl = true;
@@ -110,37 +114,51 @@ public final class DeploymentUtils {
     jvmOptions.add("-Djava.util.logging.config.file=logging.properties");
     jvmOptions.add("-Dlog4j.configuration=log4j.properties");
     jvmOptions.add("-Djava.library.path=" + workingDir + "/" + "sqlite4java-392");
-    String gangliaMasterHost = config.getOptional("deployment", MyriaSystemConfigKeys.GANGLIA_MASTER_HOST);
+    String gangliaMasterHost =
+        config.getOptional("deployment", MyriaSystemConfigKeys.GANGLIA_MASTER_HOST);
     if (gangliaMasterHost != null) {
       int gangliaMasterPort =
-          Integer.parseInt(config.getRequired("deployment", MyriaSystemConfigKeys.GANGLIA_MASTER_PORT));
+          Integer.parseInt(
+              config.getRequired("deployment", MyriaSystemConfigKeys.GANGLIA_MASTER_PORT));
       String metricsJarPath = workingDir + "/libs/jmxetric.jar";
       // if the metrics jar file isn't found, the JVM agent will fail to start
-      jvmOptions.add("-javaagent:" + metricsJarPath + "=host=" + gangliaMasterHost + ",port=" + gangliaMasterPort
-          + ",config=" + workingDir + "/conf/jmxetric.xml,process=MyriaMaster");
+      jvmOptions.add(
+          "-javaagent:"
+              + metricsJarPath
+              + "=host="
+              + gangliaMasterHost
+              + ",port="
+              + gangliaMasterPort
+              + ",config="
+              + workingDir
+              + "/conf/jmxetric.xml,process=MyriaMaster");
     }
     startMaster(hostname, workingDir, restPort, ssl, jvmOptions);
   }
 
   /**
-   * 
+   *
    * @param config a Myria configuration.
    * @param workerId worker ID.
    * @throws ConfigFileException if error occurred parsing config file.
    */
-  public static void startWorker(final MyriaConfiguration config, final int workerId) throws ConfigFileException {
+  public static void startWorker(final MyriaConfiguration config, final int workerId)
+      throws ConfigFileException {
     String hostname = config.getHostnameWithUsername(workerId);
     String workingDir = config.getWorkingDirectory(workerId);
     int port = config.getPort(workerId);
     boolean debug =
-        MoreObjects.firstNonNull(config.getOptional("deployment", MyriaSystemConfigKeys.DEBUG), "false").toLowerCase()
+        MoreObjects.firstNonNull(
+                config.getOptional("deployment", MyriaSystemConfigKeys.DEBUG), "false")
+            .toLowerCase()
             .equals("true");
     List<String> jvmOptions = new ArrayList<>(config.getJvmOptions());
     if (debug) {
       // required to run in debug mode
       jvmOptions.add("-Dorg.jboss.netty.debug");
       jvmOptions.add("-Xdebug");
-      jvmOptions.add("-Xrunjdwp:transport=dt_socket,address=" + (port + 1000) + ",server=y,suspend=n");
+      jvmOptions.add(
+          "-Xrunjdwp:transport=dt_socket,address=" + (port + 1000) + ",server=y,suspend=n");
     }
     String maxHeapSize = config.getOptional("runtime", MyriaSystemConfigKeys.JVM_HEAP_SIZE_MAX_GB);
     if (maxHeapSize != null) {
@@ -153,20 +171,31 @@ public final class DeploymentUtils {
     jvmOptions.add("-Djava.util.logging.config.file=logging.properties");
     jvmOptions.add("-Dlog4j.configuration=log4j.properties");
     jvmOptions.add("-Djava.library.path=" + workingDir + "/" + "sqlite4java-392");
-    String gangliaMasterHost = config.getOptional("deployment", MyriaSystemConfigKeys.GANGLIA_MASTER_HOST);
+    String gangliaMasterHost =
+        config.getOptional("deployment", MyriaSystemConfigKeys.GANGLIA_MASTER_HOST);
     if (gangliaMasterHost != null) {
       int gangliaMasterPort =
-          Integer.parseInt(config.getRequired("deployment", MyriaSystemConfigKeys.GANGLIA_MASTER_PORT));
+          Integer.parseInt(
+              config.getRequired("deployment", MyriaSystemConfigKeys.GANGLIA_MASTER_PORT));
       String metricsJarPath = workingDir + "/libs/jmxetric.jar";
       // if the metrics jar file isn't found, the JVM agent will fail to start
-      jvmOptions.add("-javaagent:" + metricsJarPath + "=host=" + gangliaMasterHost + ",port=" + gangliaMasterPort
-          + ",config=" + workingDir + "/conf/jmxetric.xml,process=MyriaWorker_" + workerId);
+      jvmOptions.add(
+          "-javaagent:"
+              + metricsJarPath
+              + "=host="
+              + gangliaMasterHost
+              + ",port="
+              + gangliaMasterPort
+              + ",config="
+              + workingDir
+              + "/conf/jmxetric.xml,process=MyriaWorker_"
+              + workerId);
     }
     startWorker(hostname, workingDir, workerId, port, jvmOptions);
   }
 
   /**
-   * 
+   *
    * @param configFile the path to a Myria config file.
    * @return the temp deployment directory.
    * @throws IOException I/O exception.
@@ -178,20 +207,23 @@ public final class DeploymentUtils {
     LOGGER.debug("generating temp deployment at " + tempDeployPath);
     Files.createSymbolicLink(Paths.get(tempDeployPath, "libs"), Paths.get(current, "libs"));
     Files.createSymbolicLink(Paths.get(tempDeployPath, "conf"), Paths.get(current, "conf"));
-    Files.createSymbolicLink(Paths.get(tempDeployPath, "sqlite4java-392"), Paths.get(current, "sqlite4java-392"));
-    Files.createSymbolicLink(Paths.get(tempDeployPath, MyriaConstants.DEPLOYMENT_CONF_FILE), Paths.get(current,
-        configFile));
+    Files.createSymbolicLink(
+        Paths.get(tempDeployPath, "sqlite4java-392"), Paths.get(current, "sqlite4java-392"));
+    Files.createSymbolicLink(
+        Paths.get(tempDeployPath, MyriaConstants.DEPLOYMENT_CONF_FILE),
+        Paths.get(current, configFile));
     return tempDeploy;
   }
 
   /**
-   * 
+   *
    * @param localDeployPath source local deployment.
    * @param config a Myria configuration.
    * @param workerId worker ID.
    * @throws ConfigFileException if error occurred parsing config file.
    */
-  public static void deployWorker(final String localDeployPath, final MyriaConfiguration config, final int workerId)
+  public static void deployWorker(
+      final String localDeployPath, final MyriaConfiguration config, final int workerId)
       throws ConfigFileException {
     ConfigFileGenerator.makeOneWorkerConfigFile(config, workerId, localDeployPath);
     String workingDir = config.getWorkingDirectory(workerId);
@@ -200,23 +232,29 @@ public final class DeploymentUtils {
     mkdir(hostname, workingDir);
     List<String> includes = Arrays.asList("workers/" + workerId);
     List<String> excludes =
-        Arrays.asList("workers/*", "master", "workers/" + workerId + "/data.db",
-            "workers/" + workerId + "/data.db-wal", "workers/" + workerId + "/data.db-shm");
+        Arrays.asList(
+            "workers/*",
+            "master",
+            "workers/" + workerId + "/data.db",
+            "workers/" + workerId + "/data.db-wal",
+            "workers/" + workerId + "/data.db-shm");
     rsyncFileToRemote(localDeployPath + "/", hostname, workingDir, includes, excludes);
   }
 
   /**
-   * 
+   *
    * @param localDeployPath source of local deployment.
    * @param config a Myria configuration.
    * @param cleanCatalog if deploying with a clean master catalog.
    * @throws ConfigFileException if error occurred parsing config file.
    */
-  public static void deployMaster(final String localDeployPath, final MyriaConfiguration config, boolean cleanCatalog)
+  public static void deployMaster(
+      final String localDeployPath, final MyriaConfiguration config, boolean cleanCatalog)
       throws ConfigFileException {
     String workingDir = config.getWorkingDirectory(MyriaConstants.MASTER_ID);
     String hostname = config.getHostnameWithUsername(MyriaConstants.MASTER_ID);
-    String keystoreFile = config.getOptional("deployment", MyriaApiConstants.MYRIA_API_SSL_KEYSTORE);
+    String keystoreFile =
+        config.getOptional("deployment", MyriaApiConstants.MYRIA_API_SSL_KEYSTORE);
     System.err.println("Start syncing distribution files to master @ " + hostname);
     mkdir(hostname, workingDir);
     if (!catalogExists(hostname, workingDir)) {
@@ -227,7 +265,11 @@ public final class DeploymentUtils {
     List<String> excludes = Arrays.asList("workers");
     if (!cleanCatalog) {
       excludes =
-          Arrays.asList("workers", "master/master.catalog", "master/master.catalog-wal", "master/master.catalog-shm");
+          Arrays.asList(
+              "workers",
+              "master/master.catalog",
+              "master/master.catalog-wal",
+              "master/master.catalog-shm");
       if (keystoreFile != null) {
         excludes = new ArrayList<>(excludes);
         excludes.add("master/" + keystoreFile);
@@ -238,14 +280,18 @@ public final class DeploymentUtils {
 
   /**
    * start a worker process on a remote machine.
-   * 
+   *
    * @param address e.g. beijing.cs.washington.edu
    * @param workingDir the working directory, path/name in deployment.cfg
    * @param workerId the worker id.
    * @param port the worker port number, need it to infer the port number used in debug mode.
    * @param jvmOptions a list of JVM options.
    */
-  private static void startWorker(final String address, final String workingDir, final int workerId, final int port,
+  private static void startWorker(
+      final String address,
+      final String workingDir,
+      final int workerId,
+      final int port,
       final List<String> jvmOptions) {
     System.err.println(workerId + " = " + address);
     String workerDir = String.format("%s/workers/%d", workingDir, workerId);
@@ -262,20 +308,24 @@ public final class DeploymentUtils {
     args.add("1>" + workerDir + "/stdout");
     args.add("2>" + workerDir + "/stderr");
     args.add("&");
-    String[] command = new String[] { "ssh", address, Joiner.on(" ").join(args) };
+    String[] command = new String[] {"ssh", address, Joiner.on(" ").join(args)};
     startAProcess(command, false);
   }
 
   /**
    * start a master process on a remote machine.
-   * 
+   *
    * @param address e.g. beijing.cs.washington.edu
    * @param workingDir the working directory, path/name in deployment.cfg
    * @param restPort the port number for restlet.
    * @param ssl whether the master uses SSL for the rest server.
    * @param jvmOptions a list of JVM options.
    */
-  private static void startMaster(final String address, final String workingDir, final int restPort, final boolean ssl,
+  private static void startMaster(
+      final String address,
+      final String workingDir,
+      final int restPort,
+      final boolean ssl,
       final List<String> jvmOptions) {
     System.err.println(MyriaConstants.MASTER_ID + " = " + address);
     String masterDir = workingDir + "/" + "master";
@@ -293,7 +343,7 @@ public final class DeploymentUtils {
     args.add("1>" + masterDir + "/stdout");
     args.add("2>" + masterDir + "/stderr");
     args.add("&");
-    String[] command = new String[] { "ssh", address, Joiner.on(" ").join(args) };
+    String[] command = new String[] {"ssh", address, Joiner.on(" ").join(args)};
     startAProcess(command, false);
     String hostname = address;
     if (hostname.indexOf('@') != -1) {
@@ -304,12 +354,13 @@ public final class DeploymentUtils {
 
   /**
    * Ensure that the master is alive. Wait for some time if necessary.
-   * 
+   *
    * @param hostname the hostname of the master
    * @param restPort the port number of the rest api master
    * @param ssl whether the master is using SSL.
    * */
-  public static void ensureMasterStart(final String hostname, final int restPort, final boolean ssl) {
+  public static void ensureMasterStart(
+      final String hostname, final int restPort, final boolean ssl) {
 
     URL masterAliveUrl;
     try {
@@ -351,14 +402,16 @@ public final class DeploymentUtils {
         notAliveException = e;
       }
       try {
-        Thread.sleep(TimeUnit.SECONDS.toMillis(MyriaConstants.MASTER_START_UP_TIMEOUT_IN_SECOND) / 50);
+        Thread.sleep(
+            TimeUnit.SECONDS.toMillis(MyriaConstants.MASTER_START_UP_TIMEOUT_IN_SECOND) / 50);
       } catch (InterruptedException e) {
         Thread.currentThread().interrupt();
         break;
       }
       int elapse = (int) TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis() - start);
       if (elapse > MyriaConstants.MASTER_START_UP_TIMEOUT_IN_SECOND) {
-        String message = "After " + elapse + "s master " + hostname + ":" + restPort + " is not alive.";
+        String message =
+            "After " + elapse + "s master " + hostname + ":" + restPort + " is not alive.";
         if (notAliveException != null) {
           message += " Exception: " + notAliveException.getMessage();
         }
@@ -369,25 +422,29 @@ public final class DeploymentUtils {
 
   /**
    * Call mkdir on a remote machine.
-   * 
+   *
    * @param address e.g. beijing.cs.washington.edu
    * @param remotePath e.g. /tmp/test
    */
   public static void mkdir(final String address, final String remotePath) {
-    startAProcess(new String[] { "ssh", address, "mkdir -p " + remotePath });
+    startAProcess(new String[] {"ssh", address, "mkdir -p " + remotePath});
   }
 
   /**
    * Rsync a local deployment to a remote machine.
-   * 
+   *
    * @param localPath path to the local file that you want to copy from
    * @param address e.g. beijing.cs.washington.edu
    * @param remotePath e.g. /tmp/test
    * @param includes a list of rsync include args
    * @param excludes list of rsync exclude args
    */
-  public static void rsyncFileToRemote(final String localPath, final String address, final String remotePath,
-      @Nonnull final List<String> includes, @Nonnull final List<String> excludes) {
+  public static void rsyncFileToRemote(
+      final String localPath,
+      final String address,
+      final String remotePath,
+      @Nonnull final List<String> includes,
+      @Nonnull final List<String> excludes) {
     ArrayList<String> command = new ArrayList<String>();
     command.add("rsync");
     command.add("-rtLDvz");
@@ -406,24 +463,26 @@ public final class DeploymentUtils {
 
   /**
    * Remove a file on a remote machine.
-   * 
+   *
    * @param address e.g. beijing.cs.washington.edu.
    * @param path the path to the file.
    */
   public static void rmFile(final String address, final String path) {
-    startAProcess(new String[] { "ssh", address, "rm -rf " + path });
+    startAProcess(new String[] {"ssh", address, "rm -rf " + path});
   }
 
   /**
    * check if the catalog already exists.
-   * 
+   *
    * @param address remote host.
    * @param workingDir master working directory.
    * @return if the catalog exists.
    */
   public static boolean catalogExists(final String address, final String workingDir) {
     Process p =
-        startAProcess(new String[] { "ssh", address, "test -f " + workingDir + "/master/master.catalog" }, false);
+        startAProcess(
+            new String[] {"ssh", address, "test -f " + workingDir + "/master/master.catalog"},
+            false);
     try {
       p.waitFor();
     } catch (InterruptedException e) {
@@ -434,7 +493,7 @@ public final class DeploymentUtils {
 
   /**
    * start a process by ProcessBuilder, wait for the process to finish.
-   * 
+   *
    * @param cmd cmd[0] is the command name, from cmd[1] are arguments.
    */
   public static Process startAProcess(final String[] cmd) {
@@ -443,7 +502,7 @@ public final class DeploymentUtils {
 
   /**
    * start a process by ProcessBuilder, wait for the process to finish.
-   * 
+   *
    * @param cmd cmd[0] is the command name, from cmd[1] are arguments.
    * @param waitFor do we wait for the process to finish.
    */
@@ -453,12 +512,13 @@ public final class DeploymentUtils {
 
   /**
    * start a process by ProcessBuilder.
-   * 
+   *
    * @param cmd cmd[0] is the command name, from cmd[1] are arguments.
    * @param waitFor do we wait for the process to finish.
    * @param inheritIO inherit all file descriptors from the parent process.
    */
-  public static Process startAProcess(final String[] cmd, final boolean waitFor, final boolean inheritIO) {
+  public static Process startAProcess(
+      final String[] cmd, final boolean waitFor, final boolean inheritIO) {
     LOGGER.debug(StringUtils.join(cmd, " "));
     Process p;
     try {
@@ -470,7 +530,8 @@ public final class DeploymentUtils {
       if (waitFor) {
         int ret = p.waitFor();
         if (ret != 0) {
-          throw new RuntimeException("Error " + ret + " executing command: " + StringUtils.join(cmd, " "));
+          throw new RuntimeException(
+              "Error " + ret + " executing command: " + StringUtils.join(cmd, " "));
         }
       }
     } catch (IOException | InterruptedException e) {
@@ -500,6 +561,5 @@ public final class DeploymentUtils {
   /**
    * util classes are not instantiable.
    * */
-  private DeploymentUtils() {
-  }
+  private DeploymentUtils() {}
 }

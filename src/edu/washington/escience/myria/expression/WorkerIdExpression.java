@@ -15,8 +15,7 @@ public class WorkerIdExpression extends ZeroaryExpression {
   /**
    * An expressions that returns the worker (or master) id.
    */
-  public WorkerIdExpression() {
-  }
+  public WorkerIdExpression() {}
 
   @Override
   public String getJavaString(final ExpressionOperatorParameter parameters) {

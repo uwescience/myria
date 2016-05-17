@@ -46,14 +46,15 @@ import edu.washington.escience.myria.util.Tuple;
 
 public class ProtobufTest {
   @Rule
-  public TestRule watcher = new TestWatcher() {
-    @Override
-    protected void starting(Description description) {
-      LOGGER.warn("*********************************************");
-      LOGGER.warn(String.format("Starting test: %s()...", description.getMethodName()));
-      LOGGER.warn("*********************************************");
-    };
-  };
+  public TestRule watcher =
+      new TestWatcher() {
+        @Override
+        protected void starting(Description description) {
+          LOGGER.warn("*********************************************");
+          LOGGER.warn(String.format("Starting test: %s()...", description.getMethodName()));
+          LOGGER.warn("*********************************************");
+        };
+      };
 
   /** The logger for this class. */
   private static final Logger LOGGER = LoggerFactory.getLogger(ProtobufTest.class);
@@ -121,7 +122,8 @@ public class ProtobufTest {
     final long[] ids = TestUtils.randomLong(1000, 1005, names.length);
 
     final Schema schema =
-        new Schema(ImmutableList.of(Type.LONG_TYPE, Type.STRING_TYPE), ImmutableList.of("id", "name"));
+        new Schema(
+            ImmutableList.of(Type.LONG_TYPE, Type.STRING_TYPE), ImmutableList.of("id", "name"));
 
     final TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
     for (int i = 0; i < names.length; i++) {
@@ -130,7 +132,8 @@ public class ProtobufTest {
     }
 
     final HashMap<Tuple, Integer> expectedOne = TestUtils.tupleBatchToTupleBag(tbb);
-    final List<HashMap<Tuple, Integer>> toMerge = new ArrayList<HashMap<Tuple, Integer>>(numThreads);
+    final List<HashMap<Tuple, Integer>> toMerge =
+        new ArrayList<HashMap<Tuple, Integer>>(numThreads);
     for (int i = 0; i < numThreads; i++) {
       toMerge.add(expectedOne);
     }
@@ -141,11 +144,13 @@ public class ProtobufTest {
     computingUnits.put(serverID, new SocketInfo("localhost", 19901));
 
     final IPCConnectionPool connectionPool =
-        IPCTestUtil.startIPCConnectionPool(serverID, computingUnits, null, new TransportMessageSerializer(), 10, 8, 2);
+        IPCTestUtil.startIPCConnectionPool(
+            serverID, computingUnits, null, new TransportMessageSerializer(), 10, 8, 2);
 
     ImmutableSet.Builder<StreamIOChannelID> ioSetBuilder = ImmutableSet.builder();
     for (int i = 0; i < numThreads; i++) {
-      StreamIOChannelID ioChannelID = new StreamIOChannelID(ExchangePairID.newID().getLong(), serverID);
+      StreamIOChannelID ioChannelID =
+          new StreamIOChannelID(ExchangePairID.newID().getLong(), serverID);
       ioSetBuilder.add(ioChannelID);
     }
     ImmutableSet<StreamIOChannelID> ioChannelSet = ioSetBuilder.build();
@@ -160,22 +165,24 @@ public class ProtobufTest {
     final AtomicInteger numSent = new AtomicInteger();
     int i = 0;
     for (final StreamIOChannelID outChannelID : ioChannelSet) {
-      final Thread tt = new Thread() {
-        @Override
-        public void run() {
-          final StreamOutputChannel<TupleBatch> ch =
-              Preconditions.checkNotNull(connectionPool.<TupleBatch> reserveLongTermConnection(outChannelID
-                  .getRemoteID(), outChannelID.getStreamID()));
-          try {
-            for (final TupleBatch tm : tbs) {
-              ch.write(tm);
-              numSent.incrementAndGet();
+      final Thread tt =
+          new Thread() {
+            @Override
+            public void run() {
+              final StreamOutputChannel<TupleBatch> ch =
+                  Preconditions.checkNotNull(
+                      connectionPool.<TupleBatch>reserveLongTermConnection(
+                          outChannelID.getRemoteID(), outChannelID.getStreamID()));
+              try {
+                for (final TupleBatch tm : tbs) {
+                  ch.write(tm);
+                  numSent.incrementAndGet();
+                }
+              } finally {
+                ch.release();
+              }
             }
-          } finally {
-            ch.release();
-          }
-        }
-      };
+          };
       threads[i++] = tt;
       tt.setName("protobufMultiThreadNoWaitTest-" + i);
       tt.setDaemon(false);
@@ -210,7 +217,6 @@ public class ProtobufTest {
     final HashMap<Tuple, Integer> actual = TestUtils.tupleBatchToTupleBag(actualTBB);
     TestUtils.assertTupleBagEqual(expected, actual);
     LOGGER.info("Received: " + numReceived + " TupleBatches");
-
   }
 
   @Test
@@ -229,24 +235,31 @@ public class ProtobufTest {
         new LinkedBlockingQueue<IPCMessage.Data<TransportMessage>>();
 
     final IPCConnectionPool connectionPool =
-        IPCTestUtil.startIPCConnectionPool(serverID, computingUnits, shortMessageQueue,
-            new TransportMessageSerializer(), 10, 8, 2);
+        IPCTestUtil.startIPCConnectionPool(
+            serverID,
+            computingUnits,
+            shortMessageQueue,
+            new TransportMessageSerializer(),
+            10,
+            8,
+            2);
 
     final Thread[] threads = new Thread[numThreads];
     final AtomicInteger numSent = new AtomicInteger();
     for (int i = 0; i < numThreads; i++) {
-      final Thread tt = new Thread() {
-        @Override
-        public void run() {
-          try {
-            for (int i = 0; i < numMessagesEach; i++) {
-              connectionPool.sendShortMessage(serverID, IPCUtils.CONTROL_SHUTDOWN);
-              numSent.incrementAndGet();
+      final Thread tt =
+          new Thread() {
+            @Override
+            public void run() {
+              try {
+                for (int i = 0; i < numMessagesEach; i++) {
+                  connectionPool.sendShortMessage(serverID, IPCUtils.CONTROL_SHUTDOWN);
+                  numSent.incrementAndGet();
+                }
+              } finally {
+              }
             }
-          } finally {
-          }
-        }
-      };
+          };
       threads[i] = tt;
       tt.setName("protobufMultiThreadSendMessageTest-" + i);
       tt.setDaemon(false);
@@ -276,7 +289,6 @@ public class ProtobufTest {
     connectionPool.releaseExternalResources();
     LOGGER.info("Received: " + numReceived + " messages");
     assertEquals(numSent.get(), numReceived);
-
   }
 
   @Test
@@ -296,7 +308,8 @@ public class ProtobufTest {
     final long[] ids = TestUtils.randomLong(1000, 1005, names.length);
 
     final Schema schema =
-        new Schema(ImmutableList.of(Type.LONG_TYPE, Type.STRING_TYPE), ImmutableList.of("id", "name"));
+        new Schema(
+            ImmutableList.of(Type.LONG_TYPE, Type.STRING_TYPE), ImmutableList.of("id", "name"));
 
     final TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
     for (int i = 0; i < names.length; i++) {
@@ -305,7 +318,8 @@ public class ProtobufTest {
     }
 
     final HashMap<Tuple, Integer> expectedOne = TestUtils.tupleBatchToTupleBag(tbb);
-    final List<HashMap<Tuple, Integer>> toMerge = new ArrayList<HashMap<Tuple, Integer>>(numThreads);
+    final List<HashMap<Tuple, Integer>> toMerge =
+        new ArrayList<HashMap<Tuple, Integer>>(numThreads);
     for (int i = 0; i < numThreads; i++) {
       toMerge.add(expectedOne);
     }
@@ -317,14 +331,17 @@ public class ProtobufTest {
     computingUnits.put(1, new SocketInfo("localhost", 19902));
 
     final IPCConnectionPool serverConnectionPool =
-        IPCTestUtil.startIPCConnectionPool(serverID, computingUnits, null, new TransportMessageSerializer(), 10, 8, 2);
+        IPCTestUtil.startIPCConnectionPool(
+            serverID, computingUnits, null, new TransportMessageSerializer(), 10, 8, 2);
     final IPCConnectionPool clientConnectionPool =
-        IPCTestUtil.startIPCConnectionPool(1, computingUnits, null, new TransportMessageSerializer(), 10, 8, 2);
+        IPCTestUtil.startIPCConnectionPool(
+            1, computingUnits, null, new TransportMessageSerializer(), 10, 8, 2);
 
     ImmutableSet.Builder<StreamIOChannelID> inputSetBuilder = ImmutableSet.builder();
     ImmutableSet.Builder<StreamIOChannelID> outputSetBuilder = ImmutableSet.builder();
     for (int i = 0; i < numThreads; i++) {
-      StreamIOChannelID outputChannelID = new StreamIOChannelID(ExchangePairID.newID().getLong(), serverID);
+      StreamIOChannelID outputChannelID =
+          new StreamIOChannelID(ExchangePairID.newID().getLong(), serverID);
       inputSetBuilder.add(new StreamIOChannelID(outputChannelID.getStreamID(), clientID));
       outputSetBuilder.add(outputChannelID);
     }
@@ -343,24 +360,26 @@ public class ProtobufTest {
     final ConcurrentLinkedQueue<ChannelFuture> cf = new ConcurrentLinkedQueue<ChannelFuture>();
     int idx = 0;
     for (final StreamIOChannelID outputChannelID : outputChannelSet) {
-      final Thread tt = new Thread() {
-        @Override
-        public void run() {
-          final StreamOutputChannel<TupleBatch> ch =
-              Preconditions.checkNotNull(clientConnectionPool.<TupleBatch> reserveLongTermConnection(outputChannelID
-                  .getRemoteID(), outputChannelID.getStreamID()));
+      final Thread tt =
+          new Thread() {
+            @Override
+            public void run() {
+              final StreamOutputChannel<TupleBatch> ch =
+                  Preconditions.checkNotNull(
+                      clientConnectionPool.<TupleBatch>reserveLongTermConnection(
+                          outputChannelID.getRemoteID(), outputChannelID.getStreamID()));
 
-          try {
-            for (final TupleBatch tm : tbs) {
-              ch.write(tm);
+              try {
+                for (final TupleBatch tm : tbs) {
+                  ch.write(tm);
 
-              numSent.incrementAndGet();
+                  numSent.incrementAndGet();
+                }
+              } finally {
+                ch.release();
+              }
             }
-          } finally {
-            ch.release();
-          }
-        }
-      };
+          };
       threads.add(tt);
       tt.setName("protobufMultiThreadSeparatePoolTest#" + idx++);
       tt.setDaemon(false);
@@ -405,7 +424,6 @@ public class ProtobufTest {
     final HashMap<Tuple, Integer> actual = TestUtils.tupleBatchToTupleBag(actualTBB);
     TestUtils.assertTupleBagEqual(expected, actual);
     LOGGER.info("Received: " + numReceived + " TupleBatches");
-
   }
 
   @Test
@@ -424,7 +442,8 @@ public class ProtobufTest {
     final long[] ids = TestUtils.randomLong(1000, 1005, names.length);
 
     final Schema schema =
-        new Schema(ImmutableList.of(Type.LONG_TYPE, Type.STRING_TYPE), ImmutableList.of("id", "name"));
+        new Schema(
+            ImmutableList.of(Type.LONG_TYPE, Type.STRING_TYPE), ImmutableList.of("id", "name"));
 
     final TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
     for (int i = 0; i < names.length; i++) {
@@ -433,7 +452,8 @@ public class ProtobufTest {
     }
 
     final HashMap<Tuple, Integer> expectedOne = TestUtils.tupleBatchToTupleBag(tbb);
-    final List<HashMap<Tuple, Integer>> toMerge = new ArrayList<HashMap<Tuple, Integer>>(numThreads);
+    final List<HashMap<Tuple, Integer>> toMerge =
+        new ArrayList<HashMap<Tuple, Integer>>(numThreads);
     for (int i = 0; i < numThreads; i++) {
       toMerge.add(expectedOne);
     }
@@ -444,11 +464,13 @@ public class ProtobufTest {
     computingUnits.put(serverID, new SocketInfo("localhost", 19901));
 
     final IPCConnectionPool connectionPool =
-        IPCTestUtil.startIPCConnectionPool(serverID, computingUnits, null, new TransportMessageSerializer(), 10, 8, 2);
+        IPCTestUtil.startIPCConnectionPool(
+            serverID, computingUnits, null, new TransportMessageSerializer(), 10, 8, 2);
 
     ImmutableSet.Builder<StreamIOChannelID> ioSetBuilder = ImmutableSet.builder();
     for (int i = 0; i < numThreads; i++) {
-      StreamIOChannelID outputChannelID = new StreamIOChannelID(ExchangePairID.newID().getLong(), serverID);
+      StreamIOChannelID outputChannelID =
+          new StreamIOChannelID(ExchangePairID.newID().getLong(), serverID);
       ioSetBuilder.add(outputChannelID);
     }
     ImmutableSet<StreamIOChannelID> ioChannelSet = ioSetBuilder.build();
@@ -464,23 +486,25 @@ public class ProtobufTest {
     final ConcurrentLinkedQueue<ChannelFuture> cf = new ConcurrentLinkedQueue<ChannelFuture>();
     int idx = 0;
     for (final StreamIOChannelID cID : ioChannelSet) {
-      final Thread tt = new Thread() {
-        @Override
-        public void run() {
-          final StreamOutputChannel<TupleBatch> ch =
-              Preconditions.checkNotNull(connectionPool.<TupleBatch> reserveLongTermConnection(cID.getRemoteID(), cID
-                  .getStreamID()));
+      final Thread tt =
+          new Thread() {
+            @Override
+            public void run() {
+              final StreamOutputChannel<TupleBatch> ch =
+                  Preconditions.checkNotNull(
+                      connectionPool.<TupleBatch>reserveLongTermConnection(
+                          cID.getRemoteID(), cID.getStreamID()));
 
-          try {
-            for (final TupleBatch tm : tbs) {
-              ch.write(tm);
-              numSent.incrementAndGet();
+              try {
+                for (final TupleBatch tm : tbs) {
+                  ch.write(tm);
+                  numSent.incrementAndGet();
+                }
+              } finally {
+                ch.release();
+              }
             }
-          } finally {
-            ch.release();
-          }
-        }
-      };
+          };
       threads[idx] = tt;
       tt.setName("protobufMultiThreadTest#" + idx++);
       tt.setDaemon(false);
@@ -522,7 +546,6 @@ public class ProtobufTest {
     final HashMap<Tuple, Integer> actual = TestUtils.tupleBatchToTupleBag(actualTBB);
     TestUtils.assertTupleBagEqual(expected, actual);
     LOGGER.info("Received: " + numReceived + " TupleBatches");
-
   }
 
   @Test
@@ -537,7 +560,8 @@ public class ProtobufTest {
     final long[] ids = TestUtils.randomLong(1000, 1005, names.length);
 
     final Schema schema =
-        new Schema(ImmutableList.of(Type.LONG_TYPE, Type.STRING_TYPE), ImmutableList.of("id", "name"));
+        new Schema(
+            ImmutableList.of(Type.LONG_TYPE, Type.STRING_TYPE), ImmutableList.of("id", "name"));
 
     final TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
     for (int i = 0; i < names.length; i++) {
@@ -551,7 +575,8 @@ public class ProtobufTest {
     computingUnits.put(serverID, new SocketInfo("localhost", 19901));
 
     final IPCConnectionPool connectionPool =
-        IPCTestUtil.startIPCConnectionPool(serverID, computingUnits, null, new TransportMessageSerializer(), 10, 8, 2);
+        IPCTestUtil.startIPCConnectionPool(
+            serverID, computingUnits, null, new TransportMessageSerializer(), 10, 8, 2);
     StreamIOChannelID ioChannel = new StreamIOChannelID(ExchangePairID.newID().getLong(), serverID);
     final SimpleBagInputBuffer<TupleBatch> inputBuffer =
         new SimpleBagInputBuffer<TupleBatch>(connectionPool, ImmutableSet.of(ioChannel));
@@ -562,8 +587,9 @@ public class ProtobufTest {
 
     final AtomicInteger numSent = new AtomicInteger();
     final StreamOutputChannel<TupleBatch> ch =
-        Preconditions.checkNotNull(connectionPool.<TupleBatch> reserveLongTermConnection(ioChannel.getRemoteID(),
-            ioChannel.getStreamID()));
+        Preconditions.checkNotNull(
+            connectionPool.<TupleBatch>reserveLongTermConnection(
+                ioChannel.getRemoteID(), ioChannel.getStreamID()));
 
     try {
       for (final TupleBatch tm : tbs) {
@@ -596,7 +622,6 @@ public class ProtobufTest {
       connectionPool.deRegisterStreamInput(inputBuffer);
       connectionPool.shutdown().await();
       connectionPool.releaseExternalResources();
-
     }
     final HashMap<Tuple, Integer> actual = TestUtils.tupleBatchToTupleBag(actualTBB);
     TestUtils.assertTupleBagEqual(expected, actual);
@@ -616,8 +641,14 @@ public class ProtobufTest {
     LinkedBlockingQueue<Data<TransportMessage>> shortMessageQueue =
         new LinkedBlockingQueue<IPCMessage.Data<TransportMessage>>();
     final IPCConnectionPool connectionPool =
-        IPCTestUtil.startIPCConnectionPool(serverID, computingUnits, shortMessageQueue,
-            new TransportMessageSerializer(), 10, 8, 2);
+        IPCTestUtil.startIPCConnectionPool(
+            serverID,
+            computingUnits,
+            shortMessageQueue,
+            new TransportMessageSerializer(),
+            10,
+            8,
+            2);
 
     final AtomicInteger numSent = new AtomicInteger();
     try {
@@ -650,7 +681,6 @@ public class ProtobufTest {
 
     LOGGER.info("Received: " + numReceived + " messages");
     assertEquals(numSent.get(), numReceived);
-
   }
 
   @Test
@@ -664,7 +694,8 @@ public class ProtobufTest {
     final long[] ids = TestUtils.randomLong(1000, 1005, names.length);
 
     final Schema schema =
-        new Schema(ImmutableList.of(Type.LONG_TYPE, Type.STRING_TYPE), ImmutableList.of("id", "name"));
+        new Schema(
+            ImmutableList.of(Type.LONG_TYPE, Type.STRING_TYPE), ImmutableList.of("id", "name"));
 
     final TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
     for (int i = 0; i < names.length; i++) {
@@ -682,15 +713,18 @@ public class ProtobufTest {
     computingUnits.put(clientID, new SocketInfo("localhost", 19902));
 
     final IPCConnectionPool connectionPoolServer =
-        IPCTestUtil.startIPCConnectionPool(serverID, computingUnits, null, new TransportMessageSerializer(), 10, 8, 2);
+        IPCTestUtil.startIPCConnectionPool(
+            serverID, computingUnits, null, new TransportMessageSerializer(), 10, 8, 2);
     final IPCConnectionPool connectionPoolClient =
-        IPCTestUtil.startIPCConnectionPool(clientID, computingUnits, null, new TransportMessageSerializer(), 10, 8, 2);
+        IPCTestUtil.startIPCConnectionPool(
+            clientID, computingUnits, null, new TransportMessageSerializer(), 10, 8, 2);
 
     final List<TupleBatch> tbs = tbb.getAll();
 
     final AtomicInteger numSent = new AtomicInteger();
 
-    StreamIOChannelID outputChannelID = new StreamIOChannelID(ExchangePairID.newID().getLong(), serverID);
+    StreamIOChannelID outputChannelID =
+        new StreamIOChannelID(ExchangePairID.newID().getLong(), serverID);
 
     ImmutableSet.Builder<StreamIOChannelID> inputSetBuilder = ImmutableSet.builder();
     inputSetBuilder.add(new StreamIOChannelID(outputChannelID.getStreamID(), clientID));
@@ -701,8 +735,9 @@ public class ProtobufTest {
     inputBuffer.start(this);
 
     final StreamOutputChannel<TupleBatch> ch =
-        Preconditions.checkNotNull(connectionPoolClient.<TupleBatch> reserveLongTermConnection(outputChannelID
-            .getRemoteID(), outputChannelID.getStreamID()));
+        Preconditions.checkNotNull(
+            connectionPoolClient.<TupleBatch>reserveLongTermConnection(
+                outputChannelID.getRemoteID(), outputChannelID.getStreamID()));
 
     try {
       for (final TupleBatch tm : tbs) {
@@ -739,7 +774,6 @@ public class ProtobufTest {
       cgfServer.await();
       connectionPoolClient.releaseExternalResources();
       connectionPoolServer.releaseExternalResources();
-
     }
     final HashMap<Tuple, Integer> actual = TestUtils.tupleBatchToTupleBag(actualTBB);
     LOGGER.info("Received: " + numReceived + " TupleBatches");
@@ -751,7 +785,8 @@ public class ProtobufTest {
     // The server IPC pool doesn't know the client IPC pool.
 
     final Schema schema =
-        new Schema(ImmutableList.of(Type.LONG_TYPE, Type.STRING_TYPE), ImmutableList.of("id", "name"));
+        new Schema(
+            ImmutableList.of(Type.LONG_TYPE, Type.STRING_TYPE), ImmutableList.of("id", "name"));
 
     final int serverID = 0;
     final int clientID = 1;
@@ -764,13 +799,14 @@ public class ProtobufTest {
     computingUnitsServer.put(serverID, new SocketInfo("localhost", 19901));
 
     final IPCConnectionPool connectionPoolServer =
-        IPCTestUtil.startIPCConnectionPool(serverID, computingUnitsServer, null, new TransportMessageSerializer(), 10,
-            8, 2);
+        IPCTestUtil.startIPCConnectionPool(
+            serverID, computingUnitsServer, null, new TransportMessageSerializer(), 10, 8, 2);
     final IPCConnectionPool connectionPoolClient =
-        IPCTestUtil.startIPCConnectionPool(clientID, computingUnitsClient, null, new TransportMessageSerializer(), 10,
-            8, 2);
+        IPCTestUtil.startIPCConnectionPool(
+            clientID, computingUnitsClient, null, new TransportMessageSerializer(), 10, 8, 2);
 
-    StreamIOChannelID outputChannelID = new StreamIOChannelID(ExchangePairID.newID().getLong(), serverID);
+    StreamIOChannelID outputChannelID =
+        new StreamIOChannelID(ExchangePairID.newID().getLong(), serverID);
 
     ImmutableSet.Builder<StreamIOChannelID> inputSetBuilder = ImmutableSet.builder();
     inputSetBuilder.add(new StreamIOChannelID(outputChannelID.getStreamID(), clientID));
@@ -783,8 +819,9 @@ public class ProtobufTest {
     StreamOutputChannel<TupleBatch> ch = null;
     try {
       ch =
-          Preconditions.checkNotNull(connectionPoolClient.<TupleBatch> reserveLongTermConnection(outputChannelID
-              .getRemoteID(), outputChannelID.getStreamID()));
+          Preconditions.checkNotNull(
+              connectionPoolClient.<TupleBatch>reserveLongTermConnection(
+                  outputChannelID.getRemoteID(), outputChannelID.getStreamID()));
 
     } finally {
       if (ch != null) {
@@ -798,7 +835,6 @@ public class ProtobufTest {
       connectionPoolClient.releaseExternalResources();
       connectionPoolServer.releaseExternalResources();
     }
-
   }
 
   @Test
@@ -812,7 +848,8 @@ public class ProtobufTest {
     final long[] ids = TestUtils.randomLong(1000, 1005, names.length);
 
     final Schema schema =
-        new Schema(ImmutableList.of(Type.LONG_TYPE, Type.STRING_TYPE), ImmutableList.of("id", "name"));
+        new Schema(
+            ImmutableList.of(Type.LONG_TYPE, Type.STRING_TYPE), ImmutableList.of("id", "name"));
 
     final TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
     for (int i = 0; i < names.length; i++) {
@@ -826,7 +863,8 @@ public class ProtobufTest {
     computingUnits.put(serverID, new SocketInfo("localhost", 19901));
 
     final IPCConnectionPool connectionPool =
-        IPCTestUtil.startIPCConnectionPool(serverID, computingUnits, null, new TransportMessageSerializer(), 10, 8, 2);
+        IPCTestUtil.startIPCConnectionPool(
+            serverID, computingUnits, null, new TransportMessageSerializer(), 10, 8, 2);
     ImmutableSet.Builder<StreamIOChannelID> builder = ImmutableSet.builder();
     StreamIOChannelID channelID = new StreamIOChannelID(ExchangePairID.newID().getLong(), serverID);
     builder.add(channelID);
@@ -840,8 +878,9 @@ public class ProtobufTest {
 
     final AtomicInteger numSent = new AtomicInteger();
     final StreamOutputChannel<TupleBatch> ch =
-        Preconditions.checkNotNull(connectionPool.<TupleBatch> reserveLongTermConnection(serverID, channelID
-            .getStreamID()));
+        Preconditions.checkNotNull(
+            connectionPool.<TupleBatch>reserveLongTermConnection(
+                serverID, channelID.getStreamID()));
 
     try {
       for (final TupleBatch tm : tbs) {
@@ -873,11 +912,9 @@ public class ProtobufTest {
       connectionPool.deRegisterStreamInput(inputBuffer);
       connectionPool.shutdown().await();
       connectionPool.releaseExternalResources();
-
     }
     final HashMap<Tuple, Integer> actual = TestUtils.tupleBatchToTupleBag(actualTBB);
     TestUtils.assertTupleBagEqual(expected, actual);
     LOGGER.info("Received: " + numReceived + " TupleBatches");
-
   }
 }

@@ -42,7 +42,7 @@ public class SerializationTests {
     assertEquals(3, pfSFH.getIndex());
 
     /* Multi-field hash */
-    int multiFieldIndex[] = new int[] { 3, 4, 2 };
+    int multiFieldIndex[] = new int[] {3, 4, 2};
     pf = new MultiFieldHashPartitionFunction(5, multiFieldIndex);
     serialized = mapper.writeValueAsString(pf);
     deserialized = reader.readValue(serialized);
@@ -81,5 +81,4 @@ public class SerializationTests {
     assertEquals(pf.getClass(), deserialized.getClass());
     assertEquals(3, ((SingleFieldHashPartitionFunction) deserialized).getIndex());
   }
-
 }

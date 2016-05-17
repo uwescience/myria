@@ -14,14 +14,14 @@ public class MyriaLauncher {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(MyriaLauncher.class);
 
-  public static void main(final String[] args) throws ConfigFileException, CatalogException, IOException,
-      InterruptedException {
+  public static void main(final String[] args)
+      throws ConfigFileException, CatalogException, IOException, InterruptedException {
     LOGGER.debug("MyriaLauncher started with args {}, {}", args[0], args[1]);
     final String deploymentFile = args[0];
     final int oldPid = Integer.parseInt(args[1]);
     pollForExit(oldPid);
-    DeploymentUtils.main(new String[] { deploymentFile, "--start-master" });
-    DeploymentUtils.main(new String[] { deploymentFile, "--start-workers" });
+    DeploymentUtils.main(new String[] {deploymentFile, "--start-master"});
+    DeploymentUtils.main(new String[] {deploymentFile, "--start-workers"});
   }
 
   private static void pollForExit(final int pidToExit) throws IOException, InterruptedException {

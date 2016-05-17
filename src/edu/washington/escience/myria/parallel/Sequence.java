@@ -18,7 +18,7 @@ public final class Sequence extends QueryPlan {
 
   /**
    * Construct a {@link QueryPlan} that runs the given tasks in sequence.
-   * 
+   *
    * @param plans the tasks to be run.
    */
   public Sequence(final List<QueryPlan> plans) {
@@ -26,10 +26,16 @@ public final class Sequence extends QueryPlan {
   }
 
   @Override
-  public void instantiate(final LinkedList<QueryPlan> planQ, final LinkedList<SubQuery> subQueryQ,
+  public void instantiate(
+      final LinkedList<QueryPlan> planQ,
+      final LinkedList<SubQuery> subQueryQ,
       final ConstructArgs args) {
     QueryPlan checkTask = planQ.peekFirst();
-    Verify.verify(checkTask == this, "this %s should be the first object on the queue, not %s!", this, checkTask);
+    Verify.verify(
+        checkTask == this,
+        "this %s should be the first object on the queue, not %s!",
+        this,
+        checkTask);
     planQ.removeFirst();
     planQ.addAll(0, plans);
   }

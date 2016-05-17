@@ -32,7 +32,7 @@ public final class Filter extends UnaryOperator {
 
   /**
    * Constructor accepts a predicate to apply and a child operator to read tuples to filter from.
-   * 
+   *
    * @param predicate the predicate by which to filter tuples.
    * @param child The child operator
    */
@@ -73,7 +73,8 @@ public final class Filter extends UnaryOperator {
 
     Schema inputSchema = getChild().getSchema();
 
-    final ExpressionOperatorParameter parameters = new ExpressionOperatorParameter(inputSchema, getNodeID());
+    final ExpressionOperatorParameter parameters =
+        new ExpressionOperatorParameter(inputSchema, getNodeID());
 
     evaluator = new BooleanEvaluator(predicate, parameters);
     if (evaluator.needsCompiling()) {

@@ -22,8 +22,8 @@ import edu.washington.escience.myria.util.AttachmentableAdapter;
  * Message handler for workers.
  * */
 @Sharable
-public final class WorkerShortMessageProcessor extends AttachmentableAdapter implements
-    ShortMessageProcessor<TransportMessage> {
+public final class WorkerShortMessageProcessor extends AttachmentableAdapter
+    implements ShortMessageProcessor<TransportMessage> {
 
   /**
    * The logger for this class.
@@ -74,7 +74,8 @@ public final class WorkerShortMessageProcessor extends AttachmentableAdapter imp
       // new received query.
       ObjectInputStream osis = null;
       try {
-        osis = new ObjectInputStream(new ByteArrayInputStream(qm.getQuery().getQuery().toByteArray()));
+        osis =
+            new ObjectInputStream(new ByteArrayInputStream(qm.getQuery().getQuery().toByteArray()));
         final SubQueryPlan operators = (SubQueryPlan) (osis.readObject());
         q = new WorkerSubQuery(operators, subQueryId, ownerWorker);
         if (!ownerWorker.getQueryQueue().offer(new QueryCommand(q, qm))) {
@@ -87,7 +88,10 @@ public final class WorkerShortMessageProcessor extends AttachmentableAdapter imp
       q = ownerWorker.getActiveQueries().get(subQueryId);
       if (q == null) {
         if (LOGGER.isErrorEnabled()) {
-          LOGGER.error("In receiving message {}, unknown query id: {}, current active queries are: {}", qm, subQueryId,
+          LOGGER.error(
+              "In receiving message {}, unknown query id: {}, current active queries are: {}",
+              qm,
+              subQueryId,
               ownerWorker.getActiveQueries().keySet());
         }
       } else {
@@ -105,7 +109,8 @@ public final class WorkerShortMessageProcessor extends AttachmentableAdapter imp
    * @param cm the control message
    * @return if the message is successfully processed.
    * */
-  private boolean processControlMessage(final Channel ch, final int remoteID, final ControlMessage cm) {
+  private boolean processControlMessage(
+      final Channel ch, final int remoteID, final ControlMessage cm) {
     if (LOGGER.isDebugEnabled()) {
       LOGGER.debug("Control message received: " + cm);
     }

@@ -30,14 +30,48 @@ import edu.washington.escience.myria.expression.VariableExpression;
 public class NChiladaFileScanTest {
 
   private static final String[] STAR_DIR_FILE_NAMES = {
-      "ENSRate", "FeMassFrac", "OxMassFracDot", "den", "iord", "mass", "metals", "pos", "pot", "smoothlength", "soft",
-      "vel", "igasord", "massform", "tform" };
+    "ENSRate",
+    "FeMassFrac",
+    "OxMassFracDot",
+    "den",
+    "iord",
+    "mass",
+    "metals",
+    "pos",
+    "pot",
+    "smoothlength",
+    "soft",
+    "vel",
+    "igasord",
+    "massform",
+    "tform"
+  };
   private static final String[] DARK_DIR_FILE_NAMES = {
-      "den", "iord", "mass", "pos", "pot", "smoothlength", "soft", "vel" };
+    "den", "iord", "mass", "pos", "pot", "smoothlength", "soft", "vel"
+  };
   private static final String[] GAS_DIR_FILE_NAMES = {
-      "ESNRate", "FeMassFrac", "FeMassFracdot", "GasDensity", "HI", "HeI", "HeII", "Metalsdot", "OxMassFrac",
-      "OxMassFracdot", "coolontime", "den", "iord", "mass", "metals", "pos", "pot", "smoothlength", "soft",
-      "temperature", "vel" };
+    "ESNRate",
+    "FeMassFrac",
+    "FeMassFracdot",
+    "GasDensity",
+    "HI",
+    "HeI",
+    "HeII",
+    "Metalsdot",
+    "OxMassFrac",
+    "OxMassFracdot",
+    "coolontime",
+    "den",
+    "iord",
+    "mass",
+    "metals",
+    "pos",
+    "pot",
+    "smoothlength",
+    "soft",
+    "temperature",
+    "vel"
+  };
   /** The star directory name. */
   private static final String STAR_DIR = "/star";
   /** The dark directory name. */
@@ -46,51 +80,68 @@ public class NChiladaFileScanTest {
   private static final String GAS_DIR = "/gas";
 
   @Test
-  public void testSimpleFile() throws NoSuchMethodException, SecurityException, InstantiationException,
-      IllegalAccessException, IllegalArgumentException, InvocationTargetException, FileNotFoundException, DbException {
+  public void testSimpleFile()
+      throws NoSuchMethodException, SecurityException, InstantiationException,
+          IllegalAccessException, IllegalArgumentException, InvocationTargetException,
+          FileNotFoundException, DbException {
     NChiladaFileScan fileScan = getNChiladaFileScanSimple();
     assertEquals(9, TipsyFileScanTest.getRowCount(fileScan));
   }
 
   @Test
-  public void testSimpleGas() throws DbException, NoSuchMethodException, SecurityException, InstantiationException,
-      IllegalAccessException, IllegalArgumentException, InvocationTargetException, FileNotFoundException {
+  public void testSimpleGas()
+      throws DbException, NoSuchMethodException, SecurityException, InstantiationException,
+          IllegalAccessException, IllegalArgumentException, InvocationTargetException,
+          FileNotFoundException {
     testSimple("gas");
   }
 
   @Test
-  public void testSimpleDark() throws DbException, NoSuchMethodException, SecurityException, InstantiationException,
-      IllegalAccessException, IllegalArgumentException, InvocationTargetException, FileNotFoundException {
+  public void testSimpleDark()
+      throws DbException, NoSuchMethodException, SecurityException, InstantiationException,
+          IllegalAccessException, IllegalArgumentException, InvocationTargetException,
+          FileNotFoundException {
     testSimple("dark");
   }
 
   @Test
-  public void testSimpleStar() throws DbException, NoSuchMethodException, SecurityException, InstantiationException,
-      IllegalAccessException, IllegalArgumentException, InvocationTargetException, FileNotFoundException {
+  public void testSimpleStar()
+      throws DbException, NoSuchMethodException, SecurityException, InstantiationException,
+          IllegalAccessException, IllegalArgumentException, InvocationTargetException,
+          FileNotFoundException {
     testSimple("star");
   }
 
-  private void testSimple(String filterType) throws DbException, NoSuchMethodException, SecurityException,
-      InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException,
-      FileNotFoundException {
+  private void testSimple(String filterType)
+      throws DbException, NoSuchMethodException, SecurityException, InstantiationException,
+          IllegalAccessException, IllegalArgumentException, InvocationTargetException,
+          FileNotFoundException {
     NChiladaFileScan fileScan = getNChiladaFileScanSimple();
     ExpressionOperator expr =
-        new EqualsExpression(new VariableExpression(29), new ConstantExpression(Type.STRING_TYPE, filterType));
+        new EqualsExpression(
+            new VariableExpression(29), new ConstantExpression(Type.STRING_TYPE, filterType));
     Filter filter = new Filter(new Expression(null, expr), fileScan);
     assertEquals(3, TipsyFileScanTest.getRowCount(filter));
   }
 
-  private NChiladaFileScan getNChiladaFileScanSimple() throws NoSuchMethodException, SecurityException,
-      InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException,
-      FileNotFoundException {
-    String dir = "testdata" + File.separatorChar + "nchiladafilescan" + File.separatorChar + "testsimple";
-    String groupFile = "testdata" + File.separatorChar + "nchiladafilescan" + File.separatorChar + "grpFile1";
+  private NChiladaFileScan getNChiladaFileScanSimple()
+      throws NoSuchMethodException, SecurityException, InstantiationException,
+          IllegalAccessException, IllegalArgumentException, InvocationTargetException,
+          FileNotFoundException {
+    String dir =
+        "testdata" + File.separatorChar + "nchiladafilescan" + File.separatorChar + "testsimple";
+    String groupFile =
+        "testdata" + File.separatorChar + "nchiladafilescan" + File.separatorChar + "grpFile1";
     Constructor<NChiladaFileScan> c =
-        NChiladaFileScan.class.getDeclaredConstructor(InputStream.class, Map.class, Map.class, Map.class);
+        NChiladaFileScan.class
+            .getDeclaredConstructor(InputStream.class, Map.class, Map.class, Map.class);
     c.setAccessible(true);
     NChiladaFileScan fileScan =
-        c.newInstance(getGroupFileStream(groupFile), getFilesToDataInput(dir + GAS_DIR), getFilesToDataInput(dir
-            + STAR_DIR), getFilesToDataInput(dir + DARK_DIR));
+        c.newInstance(
+            getGroupFileStream(groupFile),
+            getFilesToDataInput(dir + GAS_DIR),
+            getFilesToDataInput(dir + STAR_DIR),
+            getFilesToDataInput(dir + DARK_DIR));
     return fileScan;
   }
 
@@ -106,8 +157,9 @@ public class NChiladaFileScanTest {
     Map<String, DataInput> map = new HashMap<>();
     for (String fileName : dir.list()) {
       DataInput dataInputStream =
-          new DataInputStream(new BufferedInputStream(
-              new FileInputStream(dir.getPath() + File.separatorChar + fileName)));
+          new DataInputStream(
+              new BufferedInputStream(
+                  new FileInputStream(dir.getPath() + File.separatorChar + fileName)));
       map.put(fileName, dataInputStream);
     }
     return map;
@@ -136,15 +188,16 @@ public class NChiladaFileScanTest {
     outputData(gasFilesOutputStreams, GAS_DIR_FILE_NAMES, records);
   }
 
-  private static void populateOutputStreamsArray(DataOutputStream[] array, String[] fileNames, String path)
-      throws FileNotFoundException {
+  private static void populateOutputStreamsArray(
+      DataOutputStream[] array, String[] fileNames, String path) throws FileNotFoundException {
     for (int i = 0; i < fileNames.length; i++) {
       FileOutputStream fStream = new FileOutputStream(path + File.separatorChar + fileNames[i]);
       array[i] = new DataOutputStream(fStream);
     }
   }
 
-  private static void outputData(DataOutputStream[] array, String[] fileNames, int records) throws IOException {
+  private static void outputData(DataOutputStream[] array, String[] fileNames, int records)
+      throws IOException {
     for (int i = 0; i < array.length; i++) {
       String fileName = fileNames[i];
       DataOutputStream dataOutput = array[i];

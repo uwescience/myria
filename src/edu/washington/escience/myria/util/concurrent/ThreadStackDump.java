@@ -6,7 +6,7 @@ package edu.washington.escience.myria.util.concurrent;
 public class ThreadStackDump extends Throwable {
 
   /**
-   * 
+   *
    */
   private static final long serialVersionUID = 1L;
 
@@ -29,5 +29,4 @@ public class ThreadStackDump extends Throwable {
   public final Thread getThread() {
     return thread;
   }
-
 }

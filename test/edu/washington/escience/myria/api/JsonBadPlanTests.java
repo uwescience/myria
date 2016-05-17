@@ -81,7 +81,7 @@ public class JsonBadPlanTests {
     cons2.opId = 3;
     cons2.argOperatorId = prod.opId;
     UnionAllEncoding ua = new UnionAllEncoding();
-    ua.argChildren = new Integer[] { cons1.opId, cons2.opId };
+    ua.argChildren = new Integer[] {cons1.opId, cons2.opId};
     ua.opId = 4;
     SinkRootEncoding sink = new SinkRootEncoding();
     sink.opId = 5;
@@ -121,7 +121,7 @@ public class JsonBadPlanTests {
     cons2.opId = 5;
     cons2.argOperatorId = 3;
     UnionAllEncoding ua = new UnionAllEncoding();
-    ua.argChildren = new Integer[] { cons1.opId, cons2.opId };
+    ua.argChildren = new Integer[] {cons1.opId, cons2.opId};
     ua.opId = 6;
     SinkRootEncoding sink = new SinkRootEncoding();
     sink.opId = 7;
@@ -132,7 +132,8 @@ public class JsonBadPlanTests {
       QueryConstruct.sanityCheckEdges(ImmutableList.of(prodFrag, prodFrag2, consFrag));
       fail();
     } catch (IllegalArgumentException e) {
-      assertThat(e.getMessage()).contains("Two different operators cannot produce the same opId 1.");
+      assertThat(e.getMessage())
+          .contains("Two different operators cannot produce the same opId 1.");
     }
   }
 }

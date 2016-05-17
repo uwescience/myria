@@ -51,5 +51,4 @@ public class IntColumnTest {
     builder.appendInt(TupleBatch.BATCH_SIZE);
     builder.build();
   }
-
 }

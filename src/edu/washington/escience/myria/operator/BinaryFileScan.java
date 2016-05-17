@@ -20,11 +20,10 @@ import edu.washington.escience.myria.storage.TupleBatchBuffer;
 
 /**
  * Reads data from binary file. This class is written base on the code from FileScan.java
- * 
+ *
  * @author leelee
- * 
+ *
  */
-
 public class BinaryFileScan extends LeafOperator {
 
   /** Required for Java serialization. */
@@ -43,12 +42,13 @@ public class BinaryFileScan extends LeafOperator {
   /**
    * Construct a new BinaryFileScan object that reads the given binary file and create tuples from the file data that
    * has the given schema. The endianess of the binary file is indicated by the isLittleEndian flag.
-   * 
+   *
    * @param schema The tuple schema to be used for creating tuple from the binary file's data.
    * @param source The source of the binary input data.
    * @param isLittleEndian The flag that indicates the endianess of the binary file.
    */
-  public BinaryFileScan(final Schema schema, final DataSource source, final boolean isLittleEndian) {
+  public BinaryFileScan(
+      final Schema schema, final DataSource source, final boolean isLittleEndian) {
     this.schema = Objects.requireNonNull(schema, "schema");
     this.source = Objects.requireNonNull(source, "source");
     this.isLittleEndian = isLittleEndian;
@@ -57,7 +57,7 @@ public class BinaryFileScan extends LeafOperator {
   /**
    * Construct a new BinaryFileScan object that reads the given binary file and creates tuples from the file data that
    * has the given schema. The default endianess is big endian.
-   * 
+   *
    * @param schema The tuple schema to be used for creating tuple from the binary file's data.
    * @param source The source of the binary input data.
    */

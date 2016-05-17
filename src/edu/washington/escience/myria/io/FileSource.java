@@ -16,17 +16,17 @@ public class FileSource implements DataSource, Serializable {
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
   /** The filename. */
-  @JsonProperty
-  private final String filename;
+  @JsonProperty private final String filename;
 
   /**
    * Construct a source of data that pulls from a local file.
-   * 
+   *
    * @param filename the local file to be read.
    */
   @JsonCreator
   public FileSource(@JsonProperty(value = "filename", required = true) final String filename) {
-    this.filename = Objects.requireNonNull(filename, "Parameter filename to FileSource may not be null");
+    this.filename =
+        Objects.requireNonNull(filename, "Parameter filename to FileSource may not be null");
   }
 
   @Override

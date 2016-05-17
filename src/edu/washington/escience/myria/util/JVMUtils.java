@@ -22,6 +22,5 @@ public final class JVMUtils {
   /**
    * util classes are not instantiable.
    * */
-  private JVMUtils() {
-  }
+  private JVMUtils() {}
 }

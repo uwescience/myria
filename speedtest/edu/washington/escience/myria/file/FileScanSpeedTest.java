@@ -23,7 +23,7 @@ public class FileScanSpeedTest extends AbstractBenchmark {
   @BenchmarkOptions(benchmarkRounds = 2, warmupRounds = 1)
   @Test
   public void fileScanTest() throws Exception {
-    Type[] typeAr = { Type.INT_TYPE, Type.INT_TYPE, Type.FLOAT_TYPE, Type.STRING_TYPE };
+    Type[] typeAr = {Type.INT_TYPE, Type.INT_TYPE, Type.FLOAT_TYPE, Type.STRING_TYPE};
     Schema schema = new Schema(Arrays.asList(typeAr));
 
     // generated using:

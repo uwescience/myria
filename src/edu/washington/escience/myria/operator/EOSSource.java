@@ -12,19 +12,15 @@ import edu.washington.escience.myria.storage.TupleBatch;
 public class EOSSource extends LeafOperator {
 
   /**
-   * 
+   *
    */
   private static final long serialVersionUID = 1L;
 
   @Override
-  protected void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
-
-  }
+  protected void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {}
 
   @Override
-  protected void cleanup() throws DbException {
-
-  }
+  protected void cleanup() throws DbException {}
 
   @Override
   protected final TupleBatch fetchNextReady() throws DbException {
@@ -36,5 +32,4 @@ public class EOSSource extends LeafOperator {
   public final Schema generateSchema() {
     return Schema.EMPTY_SCHEMA;
   }
-
 }

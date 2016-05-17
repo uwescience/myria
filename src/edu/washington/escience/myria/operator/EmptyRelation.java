@@ -7,7 +7,7 @@ import edu.washington.escience.myria.storage.TupleBatch;
 
 /**
  * An empty relation with the given Schema.
- * 
+ *
  */
 public final class EmptyRelation extends LeafOperator {
   /** Required for Java serialization. */
@@ -17,7 +17,7 @@ public final class EmptyRelation extends LeafOperator {
 
   /**
    * Constructs an empty relation with the specified schema.
-   * 
+   *
    * @param schema the schema of the relation.
    */
   private EmptyRelation(final Schema schema) {
@@ -26,7 +26,7 @@ public final class EmptyRelation extends LeafOperator {
 
   /**
    * Constructs an empty relation with the specified schema.
-   * 
+   *
    * @param schema the schema of the relation.
    * @return an empty relation with the specified schema.
    */

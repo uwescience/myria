@@ -16,7 +16,7 @@ import edu.washington.escience.myria.storage.TupleBatchBuffer;
 
 /**
  * The Aggregation operator that computes an aggregate.
- * 
+ *
  * This class does not do group by.
  */
 public final class Aggregate extends UnaryOperator {
@@ -37,7 +37,7 @@ public final class Aggregate extends UnaryOperator {
 
   /**
    * Computes the value of one or more aggregates over the entire input relation.
-   * 
+   *
    * @param child The Operator that is feeding us tuples.
    * @param aggregators The {@link AggregatorFactory}s that creators the {@link Aggregator}s.
    */

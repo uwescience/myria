@@ -39,7 +39,8 @@ public class IDBController extends Operator implements StreamingStateful, DbWrit
   private static final long serialVersionUID = 1L;
 
   /** The logger for this class. */
-  private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(IDBController.class);
+  private static final org.slf4j.Logger LOGGER =
+      org.slf4j.LoggerFactory.getLogger(IDBController.class);
 
   /**
    * Initial IDB input.
@@ -98,7 +99,6 @@ public class IDBController extends Operator implements StreamingStateful, DbWrit
   private ArrayList<TupleBatch> bufferedIterTBs;
 
   /** delta tuples of the previous iteration. */
-
   private LinkedList<TupleBatch> deltaTuples;
 
   /** if the buffer of previous iteration tuples has been cleaned. */
@@ -140,10 +140,22 @@ public class IDBController extends Operator implements StreamingStateful, DbWrit
    * @param eosControllerInput see the corresponding field comment.
    * @param state the internal state.
    * */
-  public IDBController(final int selfIDBIdx, final ExchangePairID controllerOpID, final int controllerWorkerID,
-      final Operator initialIDBInput, final Operator iterationInput, final Consumer eosControllerInput,
+  public IDBController(
+      final int selfIDBIdx,
+      final ExchangePairID controllerOpID,
+      final int controllerWorkerID,
+      final Operator initialIDBInput,
+      final Operator iterationInput,
+      final Consumer eosControllerInput,
       final StreamingState state) {
-    this(selfIDBIdx, controllerOpID, controllerWorkerID, initialIDBInput, iterationInput, eosControllerInput, state,
+    this(
+        selfIDBIdx,
+        controllerOpID,
+        controllerWorkerID,
+        initialIDBInput,
+        iterationInput,
+        eosControllerInput,
+        state,
         false);
   }
 
@@ -157,9 +169,15 @@ public class IDBController extends Operator implements StreamingStateful, DbWrit
    * @param state the internal state.
    * @param sync if it's sync or async.
    * */
-  public IDBController(final int selfIDBIdx, final ExchangePairID controllerOpID, final int controllerWorkerID,
-      final Operator initialIDBInput, final Operator iterationInput, final Consumer eosControllerInput,
-      final StreamingState state, final Boolean sync) {
+  public IDBController(
+      final int selfIDBIdx,
+      final ExchangePairID controllerOpID,
+      final int controllerWorkerID,
+      final Operator initialIDBInput,
+      final Operator iterationInput,
+      final Consumer eosControllerInput,
+      final StreamingState state,
+      final Boolean sync) {
     Preconditions.checkNotNull(selfIDBIdx);
     Preconditions.checkNotNull(controllerOpID);
     Preconditions.checkNotNull(controllerWorkerID);
@@ -205,7 +223,7 @@ public class IDBController extends Operator implements StreamingStateful, DbWrit
 
   /**
    * Synchronous mode of IDBController fetchNextReady.
-   * 
+   *
    * @return next ready output TupleBatch.
    * @throws DbException if any error occurs
    */
@@ -326,7 +344,8 @@ public class IDBController extends Operator implements StreamingStateful, DbWrit
     initialInputEnded = false;
     emptyDelta = true;
     resourceManager =
-        (LocalFragmentResourceManager) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_FRAGMENT_RESOURCE_MANAGER);
+        (LocalFragmentResourceManager)
+            execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_FRAGMENT_RESOURCE_MANAGER);
     eoiReportChannel = resourceManager.startAStream(controllerWorkerID, controllerOpID);
     state.init(execEnvVars);
     deltaTuples = new LinkedList<TupleBatch>();
@@ -334,7 +353,8 @@ public class IDBController extends Operator implements StreamingStateful, DbWrit
 
     if (relationKey != null) {
       if (connectionInfo == null && execEnvVars != null) {
-        connectionInfo = (ConnectionInfo) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_DATABASE_CONN_INFO);
+        connectionInfo =
+            (ConnectionInfo) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_DATABASE_CONN_INFO);
       }
       if (connectionInfo == null) {
         throw new DbException("Unable to instantiate DbInsert: connection information unknown");
@@ -408,7 +428,7 @@ public class IDBController extends Operator implements StreamingStateful, DbWrit
   }
 
   /**
-   * 
+   *
    * @param key the relation key to store the final state to
    */
   public void setStoreRelationKey(final RelationKey key) {
@@ -420,6 +440,7 @@ public class IDBController extends Operator implements StreamingStateful, DbWrit
     if (relationKey == null) {
       return ImmutableMap.of();
     }
-    return ImmutableMap.of(relationKey, new RelationWriteMetadata(relationKey, getSchema(), true, false));
+    return ImmutableMap.of(
+        relationKey, new RelationWriteMetadata(relationKey, getSchema(), true, false));
   }
 }

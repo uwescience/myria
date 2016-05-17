@@ -26,7 +26,7 @@ public class Counter extends UnaryOperator {
 
   /**
    * Instantiate a Counter operator using the given column name.
-   * 
+   *
    * @param child the child operator.
    * @param columnName the name of the new column.
    */
@@ -39,7 +39,7 @@ public class Counter extends UnaryOperator {
 
   /**
    * Instantiate a Counter operator with null child. (Must be set later by setChild() or setChildren()).
-   * 
+   *
    * @param columnName the new column name.
    */
   public Counter(final String columnName) {

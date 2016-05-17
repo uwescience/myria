@@ -19,5 +19,6 @@ public interface ScriptEvalInterface {
    * @param result where the output should be written.
    * @param state state that is passed during evaluation, and written after the new state is computed.
    */
-  void evaluate(final ReadableTable tb, final int rowId, final AppendableTable result, final Tuple state);
+  void evaluate(
+      final ReadableTable tb, final int rowId, final AppendableTable result, final Tuple state);
 }

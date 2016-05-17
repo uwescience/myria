@@ -15,13 +15,14 @@ public abstract class QueryPlan {
   /**
    * Populate the given {@link QueryPlan} and {@link SubQuery} queues with the query and subquery tasks that arise from
    * unrolling this {@link QueryPlan}.
-   * 
+   *
    * @param planQ the queue of {@link QueryPlan} tasks
    * @param subQueryQ the queue of {@link SubQuery} tasks
    * @param args the {@link QueryConstruct#ConstructArgs} arguments needed to instantiate a query plan
    * @throws DbException if there is an error instantiating the next {@link SubQuery}
    */
-  public abstract void instantiate(LinkedList<QueryPlan> planQ, LinkedList<SubQuery> subQueryQ, ConstructArgs args)
+  public abstract void instantiate(
+      LinkedList<QueryPlan> planQ, LinkedList<SubQuery> subQueryQ, ConstructArgs args)
       throws DbException;
 
   /**

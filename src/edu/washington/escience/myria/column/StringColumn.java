@@ -4,7 +4,7 @@ import edu.washington.escience.myria.Type;
 
 /**
  * An abstract column of String values.
- * 
+ *
  */
 public abstract class StringColumn extends Column<String> {
   /** Required for Java serialization. */

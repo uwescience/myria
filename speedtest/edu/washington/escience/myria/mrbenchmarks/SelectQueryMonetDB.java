@@ -20,7 +20,7 @@ import edu.washington.escience.myria.storage.TupleBatch;
 public class SelectQueryMonetDB implements QueryPlanGenerator {
 
   /**
-   * 
+   *
    */
   private static final long serialVersionUID = 6884731165490018229L;
   final static ImmutableList<Type> outputTypes = ImmutableList.of(Type.STRING_TYPE, Type.INT_TYPE);
@@ -37,14 +37,16 @@ public class SelectQueryMonetDB implements QueryPlanGenerator {
   public static final String dbms = "monetdb";
   public static final String databaseName = "mrbenchmarks";
   public static final String jdbcDriverName = "nl.cwi.monetdb.jdbc.MonetDriver";
-  public static final JdbcInfo jdbcInfo = JdbcInfo.of(jdbcDriverName, dbms, host, port, databaseName, user, password);
+  public static final JdbcInfo jdbcInfo =
+      JdbcInfo.of(jdbcDriverName, dbms, host, port, databaseName, user, password);
 
   @Override
   public Map<Integer, RootOperator[]> getWorkerPlan(int[] allWorkers) throws Exception {
 
     // SELECT pageURL, pageRank FROM Rankings WHERE pageRank > X;
     DbQueryScan selectPageRank =
-        new DbQueryScan("select pageURL, pageRank from Rankings where pageRank > 10 ", outputSchema);
+        new DbQueryScan(
+            "select pageURL, pageRank from Rankings where pageRank > 10 ", outputSchema);
     // final SQLiteQueryScan selectPageRank =
     // new SQLiteQueryScan("select pageURL, pageRank from Rankings where pageRank > 10 ", outputSchema);
 
@@ -52,15 +54,17 @@ public class SelectQueryMonetDB implements QueryPlanGenerator {
 
     final Map<Integer, RootOperator[]> result = new HashMap<Integer, RootOperator[]>();
     for (int worker : allWorkers) {
-      result.put(worker, new RootOperator[] { sendToMaster });
+      result.put(worker, new RootOperator[] {sendToMaster});
     }
 
     return result;
   }
 
   @Override
-  public SinkRoot getMasterPlan(int[] allWorkers, final LinkedBlockingQueue<TupleBatch> receivedTupleBatches) {
-    final CollectConsumer serverCollect = new CollectConsumer(outputSchema, sendToMasterID, allWorkers);
+  public SinkRoot getMasterPlan(
+      int[] allWorkers, final LinkedBlockingQueue<TupleBatch> receivedTupleBatches) {
+    final CollectConsumer serverCollect =
+        new CollectConsumer(outputSchema, sendToMasterID, allWorkers);
     SinkRoot serverPlan = new SinkRoot(serverCollect);
     return serverPlan;
   }

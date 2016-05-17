@@ -45,7 +45,6 @@ public class TenGBReceiver {
 
       ctx.sendUpstream(e);
     }
-
   }
 
   public static class ServerPipelineFactory implements ChannelPipelineFactory {
@@ -81,8 +80,10 @@ public class TenGBReceiver {
 
     // Start server with Nb of active threads = 2*NB CPU + 1 as maximum.
     final ChannelFactory factory =
-        new NioServerSocketChannelFactory(Executors.newCachedThreadPool(), Executors.newCachedThreadPool(), Runtime
-            .getRuntime().availableProcessors() * 2 + 1);
+        new NioServerSocketChannelFactory(
+            Executors.newCachedThreadPool(),
+            Executors.newCachedThreadPool(),
+            Runtime.getRuntime().availableProcessors() * 2 + 1);
 
     final ServerBootstrap bootstrap = new ServerBootstrap(factory);
 
@@ -126,8 +127,10 @@ public class TenGBReceiver {
       numReceived++;
     }
     System.out.println("Total num received is " + numReceived);
-    System.out.println("Time spent at receive: " + TenGBTupleBatchSenderUsingConnectionPool.elapsedInSeconds(start)
-        + " seconds");
+    System.out.println(
+        "Time spent at receive: "
+            + TenGBTupleBatchSenderUsingConnectionPool.elapsedInSeconds(start)
+            + " seconds");
 
     server.close();
     server.disconnect();

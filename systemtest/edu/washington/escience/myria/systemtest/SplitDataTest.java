@@ -37,7 +37,8 @@ public class SplitDataTest extends SystemTestBase {
   public void splitDataTest() throws Exception {
     /* Create a source of tuples containing the numbers 1 to 10001. */
     final Schema schema =
-        new Schema(ImmutableList.of(Type.LONG_TYPE, Type.STRING_TYPE), ImmutableList.of("id", "name"));
+        new Schema(
+            ImmutableList.of(Type.LONG_TYPE, Type.STRING_TYPE), ImmutableList.of("id", "name"));
     final TupleBatchBuffer tuples = new TupleBatchBuffer(schema);
     final int numTuplesInserted = 10001;
     for (long i = 0; i < numTuplesInserted; ++i) {
@@ -51,10 +52,12 @@ public class SplitDataTest extends SystemTestBase {
     final ExchangePairID shuffleId = ExchangePairID.newID();
 
     final GenericShuffleProducer scatter =
-        new GenericShuffleProducer(source, shuffleId, workerIDs, new RoundRobinPartitionFunction(workerIDs.length));
+        new GenericShuffleProducer(
+            source, shuffleId, workerIDs, new RoundRobinPartitionFunction(workerIDs.length));
 
     /* ... and the corresponding shuffle consumer. */
-    final GenericShuffleConsumer gather = new GenericShuffleConsumer(schema, shuffleId, new int[] { MASTER_ID });
+    final GenericShuffleConsumer gather =
+        new GenericShuffleConsumer(schema, shuffleId, new int[] {MASTER_ID});
 
     final RelationKey tuplesRRKey = RelationKey.of("test", "test", "tuples_rr");
 
@@ -63,7 +66,7 @@ public class SplitDataTest extends SystemTestBase {
 
     final HashMap<Integer, RootOperator[]> workerPlans = new HashMap<Integer, RootOperator[]>();
     for (final int i : workerIDs) {
-      workerPlans.put(i, new RootOperator[] { insert });
+      workerPlans.put(i, new RootOperator[] {insert});
     }
 
     server.submitQueryPlan(scatter, workerPlans).get();
@@ -71,21 +74,24 @@ public class SplitDataTest extends SystemTestBase {
 
     /*** TEST PHASE 2: Count them up, make sure the answer agrees. ***/
     /* Create the worker plan: DbQueryScan with count, then send it to master. */
-    Schema countResultSchema = new Schema(ImmutableList.of(Type.LONG_TYPE), ImmutableList.of("localCount"));
+    Schema countResultSchema =
+        new Schema(ImmutableList.of(Type.LONG_TYPE), ImmutableList.of("localCount"));
     final DbQueryScan scanCount =
-        new DbQueryScan("SELECT COUNT(*) FROM " + tuplesRRKey.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE),
+        new DbQueryScan(
+            "SELECT COUNT(*) FROM " + tuplesRRKey.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE),
             countResultSchema);
 
     final ExchangePairID collectId = ExchangePairID.newID();
     final CollectProducer send = new CollectProducer(scanCount, collectId, 0);
     workerPlans.clear();
     for (final int i : workerIDs) {
-      workerPlans.put(i, new RootOperator[] { send });
+      workerPlans.put(i, new RootOperator[] {send});
     }
     /* Create the Server plan: CollectConsumer and Sum. */
     final CollectConsumer receive = new CollectConsumer(countResultSchema, collectId, workerIDs);
     Aggregate sumCount =
-        new Aggregate(receive, new SingleColumnAggregatorFactory(0, AggregationOp.COUNT, AggregationOp.SUM));
+        new Aggregate(
+            receive, new SingleColumnAggregatorFactory(0, AggregationOp.COUNT, AggregationOp.SUM));
     final LinkedBlockingQueue<TupleBatch> aggResult = new LinkedBlockingQueue<TupleBatch>();
     final TBQueueExporter queueStore = new TBQueueExporter(aggResult, sumCount);
     final SinkRoot serverPlan = new SinkRoot(queueStore);
@@ -100,6 +106,5 @@ public class SplitDataTest extends SystemTestBase {
 
     LOGGER.debug("numTuplesInsert=" + numTuplesInserted + ", sum=" + result.getLong(0, 0));
     assertEquals(numTuplesInserted, result.getLong(1, 0));
-
   }
 }

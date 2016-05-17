@@ -20,5 +20,9 @@ public interface ExpressionEvalInterface {
    * @param result the result column that the value should be appended to
    * @param state optional state that is passed during evaluation
    */
-  void evaluate(final ReadableTable tb, final int rowId, final WritableColumn result, final ReadableTable state);
+  void evaluate(
+      final ReadableTable tb,
+      final int rowId,
+      final WritableColumn result,
+      final ReadableTable state);
 }

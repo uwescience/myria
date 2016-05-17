@@ -7,7 +7,7 @@ import edu.washington.escience.myria.Schema;
 public interface StreamingStateful {
   /**
    * set its streaming state.
-   * 
+   *
    * @param state the streaming state.
    * */
   void setStreamingState(final StreamingState state);

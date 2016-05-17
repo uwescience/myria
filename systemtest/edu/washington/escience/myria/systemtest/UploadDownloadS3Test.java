@@ -43,13 +43,21 @@ public class UploadDownloadS3Test extends SystemTestBase {
   public void s3UploadTest() throws Exception {
 
     /* Ingest test data */
-    String filePath = Paths.get("testdata", "filescan", "simple_two_col_int_to_hash.txt").toString();
+    String filePath =
+        Paths.get("testdata", "filescan", "simple_two_col_int_to_hash.txt").toString();
     DataSource relationSource = new FileSource(filePath);
     RelationKey relationKeyUpload = RelationKey.of("public", "adhoc", "upload");
     Schema relationSchema = Schema.ofFields("x", Type.INT_TYPE, "y", Type.INT_TYPE);
 
-    JsonAPIUtils.ingestData("localhost", masterDaemonPort, ingest(relationKeyUpload, relationSchema, relationSource,
-        ' ', new RoundRobinPartitionFunction(workerIDs.length)));
+    JsonAPIUtils.ingestData(
+        "localhost",
+        masterDaemonPort,
+        ingest(
+            relationKeyUpload,
+            relationSchema,
+            relationSource,
+            ' ',
+            new RoundRobinPartitionFunction(workerIDs.length)));
 
     /* File to upload and download */
     String fileName = String.format("s3://myria-test/test-%d.txt", System.currentTimeMillis());
@@ -61,10 +69,12 @@ public class UploadDownloadS3Test extends SystemTestBase {
 
     Map<Integer, RootOperator[]> workerPlans = new HashMap<Integer, RootOperator[]>();
     for (int workerID : workerIDs) {
-      workerPlans.put(workerID, new RootOperator[] { workerProducer });
+      workerPlans.put(workerID, new RootOperator[] {workerProducer});
     }
-    CollectConsumer serverConsumer = new CollectConsumer(relationSchema, serverReceiveID, workerIDs);
-    InMemoryOrderBy sortOperator = new InMemoryOrderBy(serverConsumer, new int[] { 1 }, new boolean[] { true });
+    CollectConsumer serverConsumer =
+        new CollectConsumer(relationSchema, serverReceiveID, workerIDs);
+    InMemoryOrderBy sortOperator =
+        new InMemoryOrderBy(serverConsumer, new int[] {1}, new boolean[] {true});
     DataSink dataSink = new UriSink(fileName);
     DataOutput masterRoot = new DataOutput(sortOperator, new CsvTupleWriter(), dataSink);
     server.submitQueryPlan(masterRoot, workerPlans).get();
@@ -76,20 +86,28 @@ public class UploadDownloadS3Test extends SystemTestBase {
     ExchangePairID workerReceiveID = ExchangePairID.newID();
     FileScan serverFileScan = new FileScan(relationSourceS3, relationSchema, ',', null, null, 1);
     GenericShuffleProducer serverProduce =
-        new GenericShuffleProducer(serverFileScan, workerReceiveID, workerIDs, new SingleFieldHashPartitionFunction(
-            workerIDs.length, 0));
+        new GenericShuffleProducer(
+            serverFileScan,
+            workerReceiveID,
+            workerIDs,
+            new SingleFieldHashPartitionFunction(workerIDs.length, 0));
     GenericShuffleConsumer workerConsumer =
-        new GenericShuffleConsumer(relationSchema, workerReceiveID, new int[] { MASTER_ID });
+        new GenericShuffleConsumer(relationSchema, workerReceiveID, new int[] {MASTER_ID});
     DbInsert workerInsert = new DbInsert(workerConsumer, relationKeyDownload, true);
     Map<Integer, RootOperator[]> workerPlansInsert = new HashMap<Integer, RootOperator[]>();
     for (int workerID : workerIDs) {
-      workerPlansInsert.put(workerID, new RootOperator[] { workerInsert });
+      workerPlansInsert.put(workerID, new RootOperator[] {workerInsert});
     }
     server.submitQueryPlan(serverProduce, workerPlansInsert).get();
 
     String dstData =
-        JsonAPIUtils.download("localhost", masterDaemonPort, relationKeyDownload.getUserName(), relationKeyDownload
-            .getProgramName(), relationKeyDownload.getRelationName(), "json");
+        JsonAPIUtils.download(
+            "localhost",
+            masterDaemonPort,
+            relationKeyDownload.getUserName(),
+            relationKeyDownload.getProgramName(),
+            relationKeyDownload.getRelationName(),
+            "json");
 
     String srcData =
         "[{\"x\":1,\"y\":2},{\"x\":1,\"y\":2},{\"x\":1,\"y\":4},{\"x\":1,\"y\":4},{\"x\":1,\"y\":6},{\"x\":1,\"y\":6}]";

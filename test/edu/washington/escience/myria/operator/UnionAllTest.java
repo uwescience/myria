@@ -140,8 +140,13 @@ public class UnionAllTest {
 
     /* Child 2 will have tuples with different type -- cast int to long */
     children[2] =
-        new Apply(new TupleSource(TestUtils.range(50)), ImmutableList.of(new Expression("long", new CastExpression(
-            new VariableExpression(0), new TypeExpression(Type.LONG_TYPE)))));
+        new Apply(
+            new TupleSource(TestUtils.range(50)),
+            ImmutableList.of(
+                new Expression(
+                    "long",
+                    new CastExpression(
+                        new VariableExpression(0), new TypeExpression(Type.LONG_TYPE)))));
 
     UnionAll union = new UnionAll(children);
     union.open(TestEnvVars.get(2));

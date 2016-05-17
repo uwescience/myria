@@ -16,10 +16,24 @@ public class BooleanColumnTest {
   @Test
   public void testProto() {
     final BooleanColumnBuilder original = new BooleanColumnBuilder();
-    original.appendBoolean(true).appendBoolean(false).appendBoolean(true).appendBoolean(false).appendBoolean(false).appendBoolean(false).appendBoolean(false).appendBoolean(
-        false).appendBoolean(true).appendBoolean(false).appendBoolean(false).appendBoolean(false).appendBoolean(false).appendBoolean(false);
+    original
+        .appendBoolean(true)
+        .appendBoolean(false)
+        .appendBoolean(true)
+        .appendBoolean(false)
+        .appendBoolean(false)
+        .appendBoolean(false)
+        .appendBoolean(false)
+        .appendBoolean(false)
+        .appendBoolean(true)
+        .appendBoolean(false)
+        .appendBoolean(false)
+        .appendBoolean(false)
+        .appendBoolean(false)
+        .appendBoolean(false);
     final ColumnMessage serialized = original.build().serializeToProto();
-    final BooleanColumn deserialized = BooleanColumnBuilder.buildFromProtobuf(serialized, original.size());
+    final BooleanColumn deserialized =
+        BooleanColumnBuilder.buildFromProtobuf(serialized, original.size());
     assertTrue(original.build().toString().equals(deserialized.toString()));
   }
 
@@ -41,5 +55,4 @@ public class BooleanColumnTest {
     builder.appendBoolean(true);
     builder.build();
   }
-
 }

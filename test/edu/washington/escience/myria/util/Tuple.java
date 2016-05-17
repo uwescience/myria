@@ -1,6 +1,6 @@
 package edu.washington.escience.myria.util;
 
-@SuppressWarnings({ "rawtypes", "unchecked" })
+@SuppressWarnings({"rawtypes", "unchecked"})
 public class Tuple implements Comparable<Tuple> {
   Comparable[] values;
 

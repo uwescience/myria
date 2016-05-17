@@ -9,15 +9,14 @@ import edu.washington.escience.myria.MyriaConstants;
 
 /**
  * Holds the info for a SQLite Connection.
- * 
- * 
+ *
+ *
  */
 public final class SQLiteInfo extends ConnectionInfo implements Serializable {
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
   /** The database to connect to. */
-  @JsonProperty
-  private final String databaseFilename;
+  @JsonProperty private final String databaseFilename;
 
   /**
    * This is not really unused, it's used automagically by Jackson deserialization.
@@ -28,7 +27,7 @@ public final class SQLiteInfo extends ConnectionInfo implements Serializable {
 
   /**
    * Private constructor.
-   * 
+   *
    * @param databaseFilename the file containing the database.
    */
   private SQLiteInfo(final String databaseFilename) {
@@ -37,20 +36,21 @@ public final class SQLiteInfo extends ConnectionInfo implements Serializable {
 
   /**
    * Creates a new SQLiteInfo object.
-   * 
+   *
    * @param dbms a string, which must equal MyriaConstants.STORAGE_SYSTEM_SQLITE.
    * @param databaseFilename the file containing the database.
    * @return a new SQLiteInfo containing this information.
    */
   public static SQLiteInfo of(final String dbms, final String databaseFilename) {
-    Preconditions.checkArgument(dbms.equals(MyriaConstants.STORAGE_SYSTEM_SQLITE), "The dbms parameter must equal "
-        + MyriaConstants.STORAGE_SYSTEM_SQLITE);
+    Preconditions.checkArgument(
+        dbms.equals(MyriaConstants.STORAGE_SYSTEM_SQLITE),
+        "The dbms parameter must equal " + MyriaConstants.STORAGE_SYSTEM_SQLITE);
     return new SQLiteInfo(databaseFilename);
   }
 
   /**
    * Creates a new SQLiteInfo object.
-   * 
+   *
    * @param databaseFilename the file containing the database.
    * @return a new SQLiteInfo containing this information.
    */

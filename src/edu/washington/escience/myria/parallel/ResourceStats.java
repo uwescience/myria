@@ -69,11 +69,10 @@ public final class ResourceStats implements Serializable {
   }
 
   /** empty constructor, needed for jersey to build response. */
-  public ResourceStats() {
-  }
+  public ResourceStats() {}
 
   /**
-   * 
+   *
    * @param timestamp timestamp
    * @param opId opId
    * @param measurement measurement
@@ -81,8 +80,13 @@ public final class ResourceStats implements Serializable {
    * @param queryId queryId
    * @param subqueryId subqueryId
    */
-  public ResourceStats(final long timestamp, final int opId, final String measurement, final long value,
-      final long queryId, final long subqueryId) {
+  public ResourceStats(
+      final long timestamp,
+      final int opId,
+      final String measurement,
+      final long value,
+      final long queryId,
+      final long subqueryId) {
     this.timestamp = timestamp;
     this.opId = opId;
     this.measurement = measurement;
@@ -100,8 +104,14 @@ public final class ResourceStats implements Serializable {
    * @return the protobuf message representation of this class.
    * */
   public ControlProto.ResourceStats toProtobuf() {
-    return ControlProto.ResourceStats.newBuilder().setTimestamp(timestamp).setOpId(opId).setMeasurement(measurement)
-        .setValue(value).setQueryId(queryId).setSubqueryId(subqueryId).build();
+    return ControlProto.ResourceStats.newBuilder()
+        .setTimestamp(timestamp)
+        .setOpId(opId)
+        .setMeasurement(measurement)
+        .setValue(value)
+        .setQueryId(queryId)
+        .setSubqueryId(subqueryId)
+        .build();
   }
 
   /**
@@ -109,7 +119,12 @@ public final class ResourceStats implements Serializable {
    * @return a translated ResourceStats object.
    * */
   public static ResourceStats fromProtobuf(final ControlProto.ResourceStats stats) {
-    return new ResourceStats(stats.getTimestamp(), stats.getOpId(), stats.getMeasurement(), stats.getValue(), stats
-        .getQueryId(), stats.getSubqueryId());
+    return new ResourceStats(
+        stats.getTimestamp(),
+        stats.getOpId(),
+        stats.getMeasurement(),
+        stats.getValue(),
+        stats.getQueryId(),
+        stats.getSubqueryId());
   }
 }

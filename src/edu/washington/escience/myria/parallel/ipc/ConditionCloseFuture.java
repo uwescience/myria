@@ -36,7 +36,8 @@ public class ConditionCloseFuture implements ChannelFuture {
    * */
   private final Object conditionSetLock = new Object();
   /** The logger for this class. */
-  private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(ConditionCloseFuture.class);
+  private static final org.slf4j.Logger LOGGER =
+      org.slf4j.LoggerFactory.getLogger(ConditionCloseFuture.class);
   /**
    * If the condition is unsatisfied, treat the future as a failure.
    * */
@@ -240,7 +241,7 @@ public class ConditionCloseFuture implements ChannelFuture {
 
   /**
    * set the condition.
-   * 
+   *
    * @param conditionSatisfied if the condition is true
    * */
   public final void setCondition(final boolean conditionSatisfied) {
@@ -304,13 +305,14 @@ public class ConditionCloseFuture implements ChannelFuture {
 
   /**
    * Wait the condition to be set for at most timeoutMS milliseconds and nanos nanoseconds.
-   * 
+   *
    * @param timeoutMS milliseconds
    * @param nanos nanoseconds.
    * @throws InterruptedException if interrupted.
    * @return the amount of waiting time remain in nanoseconds.
    * */
-  private long waitForConditionSet(final long timeoutMS, final int nanos) throws InterruptedException {
+  private long waitForConditionSet(final long timeoutMS, final int nanos)
+      throws InterruptedException {
     final long start = System.nanoTime();
     synchronized (conditionSetLock) {
       if (!conditionSetFlag) {
@@ -326,7 +328,7 @@ public class ConditionCloseFuture implements ChannelFuture {
 
   /**
    * Wait the condition to be set for at most timeoutMS milliseconds and nanos nanoseconds without interruption.
-   * 
+   *
    * @param timeoutMS milliseconds
    * @param nanos nanoseconds.
    * @return the amount of waiting time remain in nanoseconds.
@@ -352,5 +354,4 @@ public class ConditionCloseFuture implements ChannelFuture {
     }
     return System.nanoTime() - start;
   }
-
 }

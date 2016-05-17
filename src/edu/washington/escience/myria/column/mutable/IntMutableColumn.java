@@ -7,7 +7,7 @@ import edu.washington.escience.myria.column.IntArrayColumn;
 
 /**
  * A mutable column of Int values.
- * 
+ *
  */
 public final class IntMutableColumn extends MutableColumn<Integer> {
   /** Required for Java serialization. */
@@ -19,7 +19,7 @@ public final class IntMutableColumn extends MutableColumn<Integer> {
 
   /**
    * Constructs a new column.
-   * 
+   *
    * @param data the data
    * @param numData number of tuples.
    * */

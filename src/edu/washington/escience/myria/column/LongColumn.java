@@ -6,8 +6,8 @@ import edu.washington.escience.myria.Type;
 
 /**
  * A column of Long values.
- * 
- * 
+ *
+ *
  */
 public final class LongColumn extends Column<Long> {
   /** Required for Java serialization. */
@@ -19,7 +19,7 @@ public final class LongColumn extends Column<Long> {
 
   /**
    * Constructs a new column.
-   * 
+   *
    * @param data the data
    * @param numData number of tuples.
    * */

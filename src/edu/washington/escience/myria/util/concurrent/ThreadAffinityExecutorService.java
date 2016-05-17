@@ -29,7 +29,10 @@ public interface ThreadAffinityExecutorService extends ExecutorService {
 
     @Override
     public Thread newThread(final Runnable r) {
-      return new Thread(ThreadAffinityExecutorService.class.getSimpleName() + "#" + ID_GENERATOR.getAndIncrement()) {
+      return new Thread(
+          ThreadAffinityExecutorService.class.getSimpleName()
+              + "#"
+              + ID_GENERATOR.getAndIncrement()) {
         @Override
         public void run() {
           r.run();
@@ -54,5 +57,4 @@ public interface ThreadAffinityExecutorService extends ExecutorService {
    * @return a {@link ThreadAffinityExecutor}.
    * */
   ThreadAffinityExecutor nextExecutor();
-
 }

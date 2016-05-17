@@ -31,7 +31,8 @@ public final class BooleanAggregator extends PrimitiveAggregator {
    * @param aggOps the aggregate operation to simultaneously compute.
    * @param column the column being aggregated over.
    */
-  public BooleanAggregator(final String aFieldName, final AggregationOp[] aggOps, final int column) {
+  public BooleanAggregator(
+      final String aFieldName, final AggregationOp[] aggOps, final int column) {
     super(aFieldName, aggOps);
     fromColumn = column;
   }
@@ -45,7 +46,7 @@ public final class BooleanAggregator extends PrimitiveAggregator {
 
   /**
    * Add the specified value to this aggregator.
-   * 
+   *
    * @param value the value to be added.
    * @param state the current state of the aggregate.
    */
@@ -93,7 +94,8 @@ public final class BooleanAggregator extends PrimitiveAggregator {
   }
 
   @Override
-  public void addRow(final ReadableTable from, final int row, final Object state) throws DbException {
+  public void addRow(final ReadableTable from, final int row, final Object state)
+      throws DbException {
     addBoolean(from.getBoolean(fromColumn, row), state);
   }
 

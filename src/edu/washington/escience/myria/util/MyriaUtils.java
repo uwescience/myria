@@ -13,18 +13,17 @@ import com.google.common.base.Preconditions;
 
 /**
  * Generic utilities for Myria.
- * 
+ *
  */
 public final class MyriaUtils {
   /**
    * Utility classes should not be instantiated.
    */
-  private MyriaUtils() {
-  }
+  private MyriaUtils() {}
 
   /**
    * Get the only element in single-element list.
-   * 
+   *
    * @param input a non-null list of a single object.
    * @param <T> the type of the objects in the list.
    * @return the object.
@@ -37,7 +36,7 @@ public final class MyriaUtils {
 
   /**
    * Get the only element in single-element set.
-   * 
+   *
    * @param input a non-null set of a single object.
    * @param <T> the type of the objects in the set.
    * @return the object.
@@ -54,7 +53,7 @@ public final class MyriaUtils {
 
   /**
    * Convert a collection of integers to a sorted int[].
-   * 
+   *
    * @param input the collection of integers.
    * @return an int[] containing the given integers.
    */
@@ -76,7 +75,7 @@ public final class MyriaUtils {
 
   /**
    * Helper function that generates an array of the numbers 0..max-1.
-   * 
+   *
    * @param max the size of the array.
    * @return an array of the numbers 0..max-1.
    */
@@ -90,7 +89,7 @@ public final class MyriaUtils {
 
   /**
    * Throws an {@link IllegalArgumentException} if the specified iterable contains a null value.
-   * 
+   *
    * @param <T> any object type that extends Iterable
    * @param iter the iterable
    * @param message a message to be included with the exception
@@ -109,7 +108,7 @@ public final class MyriaUtils {
   /**
    * Copy all mappings from the source to the destination, ensuring that if any keys were already present, then the
    * values match. This is sort of a "map Union" operator.
-   * 
+   *
    * @param <K> the type of the keys.
    * @param <V> the type of the values.
    * @param source the new mappings to be added.
@@ -123,15 +122,19 @@ public final class MyriaUtils {
       if (oldV == null) {
         dest.put(newK, newV);
       } else {
-        Preconditions.checkArgument(oldV.equals(newV), "New value %s for key %s does not match old value %s", newV,
-            newK, oldV);
+        Preconditions.checkArgument(
+            oldV.equals(newV),
+            "New value %s for key %s does not match old value %s",
+            newV,
+            newK,
+            oldV);
       }
     }
   }
 
   /**
    * Ensure that the given object is a valid Myria object type and can be stored in e.g., a Column or a Field.
-   * 
+   *
    * @param o the object to be tested.
    * @return o.
    * @throws IllegalArgumentException if the object is not a valid Myria type.
@@ -152,6 +155,7 @@ public final class MyriaUtils {
     if (o instanceof String) {
       return o;
     }
-    throw new IllegalArgumentException("Object of type " + o.getClass() + " is not a valid Myria type");
+    throw new IllegalArgumentException(
+        "Object of type " + o.getClass() + " is not a valid Myria type");
   }
 }

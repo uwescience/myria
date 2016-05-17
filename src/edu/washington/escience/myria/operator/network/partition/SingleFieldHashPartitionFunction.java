@@ -12,7 +12,7 @@ import edu.washington.escience.myria.util.HashUtils;
 
 /**
  * The default implementation of the partition function.
- * 
+ *
  * The partition of a tuple is decided by the hash code of a preset field of the tuple.
  */
 public final class SingleFieldHashPartitionFunction extends PartitionFunction {
@@ -23,14 +23,12 @@ public final class SingleFieldHashPartitionFunction extends PartitionFunction {
   /**
    * The index of the partition field.
    */
-  @JsonProperty
-  private final int index;
+  @JsonProperty private final int index;
 
   /**
    * The index of the chosen hashcode in <code>HashUtils</code>.
    */
-  @JsonProperty
-  private final int seedIndex;
+  @JsonProperty private final int seedIndex;
 
   /**
    * @param numPartitions number of partitions.
@@ -38,15 +36,16 @@ public final class SingleFieldHashPartitionFunction extends PartitionFunction {
    * @param seedIndex the index of chosen hash seed.
    */
   @JsonCreator
-  public SingleFieldHashPartitionFunction(@JsonProperty("numPartitions") final Integer numPartitions,
+  public SingleFieldHashPartitionFunction(
+      @JsonProperty("numPartitions") final Integer numPartitions,
       @JsonProperty(value = "index", required = true) final Integer index,
       @JsonProperty(value = "seedIndex") final Integer seedIndex) {
     super(numPartitions);
     /* TODO(dhalperi) once Jackson actually implements support for required, remove these checks. */
     this.index = java.util.Objects.requireNonNull(index, "missing property index");
     this.seedIndex = MoreObjects.firstNonNull(seedIndex, 0) % HashUtils.NUM_OF_HASHFUNCTIONS;
-    Preconditions.checkArgument(this.index >= 0, "SingleFieldHash field index cannot take negative value %s",
-        this.index);
+    Preconditions.checkArgument(
+        this.index >= 0, "SingleFieldHash field index cannot take negative value %s", this.index);
   }
 
   /**

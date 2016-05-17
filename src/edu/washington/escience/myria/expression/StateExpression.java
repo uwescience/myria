@@ -16,8 +16,7 @@ public class StateExpression extends ZeroaryExpression {
   private static final long serialVersionUID = 1L;
 
   /** The index in the input that is referenced. */
-  @JsonProperty
-  private final int columnIdx;
+  @JsonProperty private final int columnIdx;
 
   /**
    * This is not really unused, it's used automagically by Jackson deserialization.
@@ -29,7 +28,7 @@ public class StateExpression extends ZeroaryExpression {
 
   /**
    * Default constructor.
-   * 
+   *
    * @param columnIdx the index in the state.
    */
   public StateExpression(final int columnIdx) {
@@ -44,8 +43,13 @@ public class StateExpression extends ZeroaryExpression {
   @Override
   public String getJavaString(final ExpressionOperatorParameter parameters) {
     // We generate a variable access into the state tuple.
-    return new StringBuilder(Expression.STATE).append(".get").append(getOutputType(parameters).getName())
-        .append("(").append(getColumnIdx()).append(", 0)").toString();
+    return new StringBuilder(Expression.STATE)
+        .append(".get")
+        .append(getOutputType(parameters).getName())
+        .append("(")
+        .append(getColumnIdx())
+        .append(", 0)")
+        .toString();
   }
 
   /**

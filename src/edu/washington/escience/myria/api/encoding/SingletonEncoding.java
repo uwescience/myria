@@ -8,5 +8,4 @@ public class SingletonEncoding extends LeafOperatorEncoding<SingletonRelation> {
   public SingletonRelation construct(ConstructArgs args) {
     return new SingletonRelation();
   }
-
 }

@@ -14,5 +14,4 @@ public interface ThreadAffinityExecutor extends Executor {
    * @return the future to refer to the running state of the task.
    * */
   <T> ExecutionFuture<T> submit(final Callable<T> task);
-
 }

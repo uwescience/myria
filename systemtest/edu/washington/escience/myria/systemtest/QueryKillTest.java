@@ -40,7 +40,8 @@ public class QueryKillTest extends SystemTestBase {
     final int numTuples = TupleBatch.BATCH_SIZE * 10;
 
     final Schema schema =
-        new Schema(ImmutableList.of(Type.LONG_TYPE, Type.STRING_TYPE), ImmutableList.of("id", "name"));
+        new Schema(
+            ImmutableList.of(Type.LONG_TYPE, Type.STRING_TYPE), ImmutableList.of("id", "name"));
 
     final TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
     TupleBatch tb = null;
@@ -66,15 +67,16 @@ public class QueryKillTest extends SystemTestBase {
 
     final HashMap<Integer, RootOperator[]> workerPlans = new HashMap<Integer, RootOperator[]>();
     final CollectProducer cp1 = new CollectProducer(scanTable, serverReceiveID, MASTER_ID);
-    workerPlans.put(workerIDs[0], new RootOperator[] { cp1 });
+    workerPlans.put(workerIDs[0], new RootOperator[] {cp1});
 
-    final DelayInjector di = new DelayInjector(1, TimeUnit.SECONDS, scanTable); // totally delay 10 seconds.
+    final DelayInjector di =
+        new DelayInjector(1, TimeUnit.SECONDS, scanTable); // totally delay 10 seconds.
     final CollectProducer cp2 = new CollectProducer(di, serverReceiveID, MASTER_ID);
 
-    workerPlans.put(workerIDs[1], new RootOperator[] { cp2 });
+    workerPlans.put(workerIDs[1], new RootOperator[] {cp2});
 
     final CollectConsumer serverCollect =
-        new CollectConsumer(schema, serverReceiveID, new int[] { workerIDs[0], workerIDs[1] });
+        new CollectConsumer(schema, serverReceiveID, new int[] {workerIDs[0], workerIDs[1]});
 
     final SinkRoot serverPlan = new SinkRoot(serverCollect);
 

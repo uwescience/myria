@@ -13,15 +13,17 @@ import org.slf4j.LoggerFactory;
 /**
  * ChannelSink implementation for InJVM channels. <br>
  * All the messages reaching the sink will automatically be pushed into the associated @{link MessageChannelHandler}.
- * 
+ *
  * */
 public class InJVMLoopbackChannelSink extends AbstractChannelSink {
 
   /** The logger for this class. */
-  protected static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(InJVMLoopbackChannelSink.class);
+  protected static final org.slf4j.Logger LOGGER =
+      LoggerFactory.getLogger(InJVMLoopbackChannelSink.class);
 
   @Override
-  public final void eventSunk(final ChannelPipeline pipeline, final ChannelEvent e) throws Exception {
+  public final void eventSunk(final ChannelPipeline pipeline, final ChannelEvent e)
+      throws Exception {
     InJVMChannel channel = (InJVMChannel) e.getChannel();
     ChannelFuture future = e.getFuture();
 

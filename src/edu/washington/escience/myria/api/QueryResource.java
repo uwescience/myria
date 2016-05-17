@@ -35,20 +35,19 @@ import edu.washington.escience.myria.parallel.SubQueryId;
 
 /**
  * Class that handles queries.
- * 
+ *
  */
 @Consumes(MediaType.APPLICATION_JSON)
 @Produces(MyriaApiConstants.JSON_UTF_8)
 @Path("/query")
 public final class QueryResource {
   /** The Myria server running on the master. */
-  @Context
-  private Server server;
+  @Context private Server server;
 
   /**
    * For testing purposes, simply deserialize the submitted query and instantiate it with physical parameters (specific
    * machines, etc.). Return the result.
-   * 
+   *
    * @param query the query to be validated.
    * @param uriInfo the URI of the current request.
    * @return the deserialized query.
@@ -64,8 +63,9 @@ public final class QueryResource {
     try {
       MyriaJsonMapperProvider.getWriter().writeValueAsString(query);
     } catch (JsonProcessingException e) {
-      throw new MyriaApiException(Status.INTERNAL_SERVER_ERROR, new IOException(
-          "Unable to re-serialize the validated query", e));
+      throw new MyriaApiException(
+          Status.INTERNAL_SERVER_ERROR,
+          new IOException("Unable to re-serialize the validated query", e));
     }
     /* Send back the deserialized query. */
     return Response.ok(query).build();
@@ -73,14 +73,15 @@ public final class QueryResource {
 
   /**
    * For now, simply echoes back its input.
-   * 
+   *
    * @param query the query to be executed.
    * @param uriInfo the URI of the current request.
    * @return the URI of the created query.
    * @throws CatalogException if there is an error in the catalog.
    */
   @POST
-  public Response postNewQuery(final QueryEncoding query, @Context final UriInfo uriInfo) throws CatalogException {
+  public Response postNewQuery(final QueryEncoding query, @Context final UriInfo uriInfo)
+      throws CatalogException {
     /* Validate the input. */
     Preconditions.checkArgument(query != null, "Missing query encoding.");
     query.validate();
@@ -101,7 +102,8 @@ public final class QueryResource {
 
     /* Check to see if the query was submitted successfully. */
     if (qf == null) {
-      throw new MyriaApiException(Status.SERVICE_UNAVAILABLE, "The server cannot accept new queries right now.");
+      throw new MyriaApiException(
+          Status.SERVICE_UNAVAILABLE, "The server cannot accept new queries right now.");
     }
 
     long queryId = qf.getQueryId();
@@ -109,13 +111,16 @@ public final class QueryResource {
     QueryStatusEncoding qs = server.getQueryManager().getQueryStatus(queryId);
     URI queryUri = getCanonicalResourcePath(uriInfo, queryId);
     qs.url = queryUri;
-    return Response.status(Status.ACCEPTED).cacheControl(MyriaApiUtils.doNotCache()).location(queryUri).entity(qs)
+    return Response.status(Status.ACCEPTED)
+        .cacheControl(MyriaApiUtils.doNotCache())
+        .location(queryUri)
+        .entity(qs)
         .build();
   }
 
   /**
    * Get information about a query. This includes when it started, when it finished, its URL, etc.
-   * 
+   *
    * @param queryId the query id.
    * @param uriInfo the URL of the current request.
    * @return information about the query.
@@ -123,12 +128,15 @@ public final class QueryResource {
    */
   @GET
   @Path("query-{queryId:\\d+}")
-  public Response getQueryStatus(@PathParam("queryId") final long queryId, @Context final UriInfo uriInfo)
+  public Response getQueryStatus(
+      @PathParam("queryId") final long queryId, @Context final UriInfo uriInfo)
       throws CatalogException {
     final QueryStatusEncoding queryStatus = server.getQueryManager().getQueryStatus(queryId);
     final URI uri = uriInfo.getAbsolutePath();
     if (queryStatus == null) {
-      return Response.status(Status.NOT_FOUND).contentLocation(uri).entity("Query " + queryId + " was not found")
+      return Response.status(Status.NOT_FOUND)
+          .contentLocation(uri)
+          .entity("Query " + queryId + " was not found")
           .build();
     }
     queryStatus.url = uri;
@@ -155,7 +163,7 @@ public final class QueryResource {
 
   /**
    * Get the cached execution plan for a specific subquery.
-   * 
+   *
    * @param queryId the query id.
    * @param subQueryId the query id.
    * @param uriInfo the URL of the current request.
@@ -164,13 +172,18 @@ public final class QueryResource {
    */
   @GET
   @Path("query-{queryId:\\d+}/subquery-{subQueryId:\\d+}")
-  public Response getQueryPlan(@PathParam("queryId") final long queryId,
-      @PathParam("subQueryId") final long subQueryId, @Context final UriInfo uriInfo) throws DbException {
+  public Response getQueryPlan(
+      @PathParam("queryId") final long queryId,
+      @PathParam("subQueryId") final long subQueryId,
+      @Context final UriInfo uriInfo)
+      throws DbException {
     final String queryPlan = server.getQueryPlan(new SubQueryId(queryId, subQueryId));
     final URI uri = uriInfo.getAbsolutePath();
     if (queryPlan == null) {
-      return Response.status(Status.NOT_FOUND).contentLocation(uri).entity(
-          "Query " + queryId + "." + subQueryId + " has no saved execution plan.").build();
+      return Response.status(Status.NOT_FOUND)
+          .contentLocation(uri)
+          .entity("Query " + queryId + "." + subQueryId + " has no saved execution plan.")
+          .build();
     }
     ResponseBuilder response = Response.ok().location(uri).entity(queryPlan);
     return response.build();
@@ -178,7 +191,7 @@ public final class QueryResource {
 
   /**
    * Cancel a running query.
-   * 
+   *
    * @param queryId the query id.
    * @param uriInfo the URL of the current request.
    * @return whether the cancellation succeeded.
@@ -186,7 +199,8 @@ public final class QueryResource {
    */
   @DELETE
   @Path("query-{queryId:\\d+}")
-  public Response cancelQuery(@PathParam("queryId") final long queryId, @Context final UriInfo uriInfo)
+  public Response cancelQuery(
+      @PathParam("queryId") final long queryId, @Context final UriInfo uriInfo)
       throws CatalogException {
     try {
       server.getQueryManager().killQuery(queryId);
@@ -202,7 +216,7 @@ public final class QueryResource {
 
   /**
    * Get information about a query. This includes when it started, when it finished, its URL, etc.
-   * 
+   *
    * @param uriInfo the URL of the current request.
    * @param limit the maximum number of results to return. If null, the default of
    *          {@link MyriaApiConstants.MYRIA_API_DEFAULT_NUM_RESULTS} is used. Any value <= 0 is interpreted as all
@@ -216,15 +230,21 @@ public final class QueryResource {
    * @throws CatalogException if there is an error in the catalog.
    */
   @GET
-  public Response getQueries(@Context final UriInfo uriInfo, @QueryParam("limit") final Long limit,
-      @QueryParam("max") final Long maxId, @QueryParam("min") final Long minId, @QueryParam("q") final String searchTerm)
+  public Response getQueries(
+      @Context final UriInfo uriInfo,
+      @QueryParam("limit") final Long limit,
+      @QueryParam("max") final Long maxId,
+      @QueryParam("min") final Long minId,
+      @QueryParam("q") final String searchTerm)
       throws CatalogException {
-    long realLimit = MoreObjects.firstNonNull(limit, MyriaApiConstants.MYRIA_API_DEFAULT_NUM_RESULTS);
+    long realLimit =
+        MoreObjects.firstNonNull(limit, MyriaApiConstants.MYRIA_API_DEFAULT_NUM_RESULTS);
     String realSearchTerm = searchTerm;
     if ("".equals(realSearchTerm)) {
       realSearchTerm = null;
     }
-    List<QueryStatusEncoding> queries = server.getQueryManager().getQueries(realLimit, maxId, minId, realSearchTerm);
+    List<QueryStatusEncoding> queries =
+        server.getQueryManager().getQueries(realLimit, maxId, minId, realSearchTerm);
     for (QueryStatusEncoding status : queries) {
       status.url = getCanonicalResourcePath(uriInfo, status.queryId);
     }
@@ -266,7 +286,8 @@ public final class QueryResource {
    * @param queryId the id of the query.
    * @return a builder for the canonical URL for this API.
    */
-  public static UriBuilder getCanonicalResourcePathBuilder(final UriInfo uriInfo, final long queryId) {
+  public static UriBuilder getCanonicalResourcePathBuilder(
+      final UriInfo uriInfo, final long queryId) {
     return getCanonicalResourcePathBuilder(uriInfo).path("query-" + queryId);
   }
 }

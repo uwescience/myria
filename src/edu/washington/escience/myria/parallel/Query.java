@@ -80,13 +80,14 @@ public final class Query {
 
   /**
    * Construct a new {@link Query} object for this query.
-   * 
+   *
    * @param queryId the id of this query
    * @param query contains the query options (profiling, fault tolerance)
    * @param plan the execution plan
    * @param server the server on which this query will be executed
    */
-  public Query(final long queryId, final QueryEncoding query, final QueryPlan plan, final Server server) {
+  public Query(
+      final long queryId, final QueryEncoding query, final QueryPlan plan, final Server server) {
     Preconditions.checkNotNull(query, "query");
     this.server = Preconditions.checkNotNull(server, "server");
     profiling = ImmutableSet.copyOf(query.profilingMode);
@@ -109,7 +110,7 @@ public final class Query {
 
   /**
    * Return the id of this query.
-   * 
+   *
    * @return the id of this query
    */
   public long getQueryId() {
@@ -118,7 +119,7 @@ public final class Query {
 
   /**
    * Return the status of this query.
-   * 
+   *
    * @return the status of this query.
    */
   public synchronized QueryStatusEncoding.Status getStatus() {
@@ -127,7 +128,7 @@ public final class Query {
 
   /**
    * Returns <code>true</code> if this query has finished, and <code>false</code> otherwise.
-   * 
+   *
    * @return <code>true</code> if this query has finished, and <code>false</code> otherwise
    */
   public synchronized boolean isDone() {
@@ -136,7 +137,7 @@ public final class Query {
 
   /**
    * Returns the {@link SubQuery} that is currently executing, or <code>null</code> if nothing is running.
-   * 
+   *
    * @return the {@link SubQuery} that is currently executing, or <code>null</code> if nothing is running
    */
   public synchronized SubQuery getCurrentSubQuery() {
@@ -146,7 +147,7 @@ public final class Query {
   /**
    * If the sub-query we're about to execute writes to any persistent relations, generate and enqueue the
    * "update tuple relation count" sub-query to be run next.
-   * 
+   *
    * @param subQuery the subquery about to be executed. This subquery must have already been removed from the queue.
    * @throws DbException if there is an error getting metadata about existing relations from the Server.
    */
@@ -154,20 +155,22 @@ public final class Query {
     Map<RelationKey, RelationWriteMetadata> relationsWritten =
         currentSubQuery.getPersistentRelationWriteMetadata(server);
     if (!relationsWritten.isEmpty()) {
-      SubQuery updateCatalog = QueryConstruct.getRelationTupleUpdateSubQuery(relationsWritten, server);
+      SubQuery updateCatalog =
+          QueryConstruct.getRelationTupleUpdateSubQuery(relationsWritten, server);
       subQueryQ.addFirst(updateCatalog);
     }
   }
 
   /**
    * Generates and returns the next {@link SubQuery} to run.
-   * 
+   *
    * @return the next {@link SubQuery} to run
    * @throws DbException if there is an error
    * @throws QueryKilledException if the query has been killed.
    */
   public synchronized SubQuery nextSubQuery() throws DbException, QueryKilledException {
-    Preconditions.checkState(currentSubQuery == null, "must call finishSubQuery before calling nextSubQuery");
+    Preconditions.checkState(
+        currentSubQuery == null, "must call finishSubQuery before calling nextSubQuery");
     if (isDone()) {
       return null;
     }
@@ -189,13 +192,16 @@ public final class Query {
         }
       }
 
-      QueryConstruct.setQueryExecutionOptions(currentSubQuery.getWorkerPlans(), ftMode, profilingMode);
+      QueryConstruct.setQueryExecutionOptions(
+          currentSubQuery.getWorkerPlans(), ftMode, profilingMode);
       currentSubQuery.getMasterPlan().setFTMode(ftMode);
-      currentSubQuery.getMasterPlan().setProfilingMode(ImmutableSet.<ProfilingMode> of());
+      currentSubQuery.getMasterPlan().setProfilingMode(ImmutableSet.<ProfilingMode>of());
       ++subqueryId;
       if (subqueryId >= MyriaConstants.MAXIMUM_NUM_SUBQUERIES) {
-        throw new DbException("Infinite-loop safeguard: quitting after " + MyriaConstants.MAXIMUM_NUM_SUBQUERIES
-            + " subqueries.");
+        throw new DbException(
+            "Infinite-loop safeguard: quitting after "
+                + MyriaConstants.MAXIMUM_NUM_SUBQUERIES
+                + " subqueries.");
       }
       return currentSubQuery;
     }
@@ -216,7 +222,7 @@ public final class Query {
 
   /**
    * Returns the time this query started, in ISO8601 format, or <code>null</code> if the query has not yet been started.
-   * 
+   *
    * @return the time this query started, in ISO8601 format, or <code>null</code> if the query has not yet been started
    */
   public synchronized DateTime getStartTime() {
@@ -233,13 +239,17 @@ public final class Query {
 
   /**
    * Set this query as having failed due to the specified cause.
-   * 
+   *
    * @param cause the reason the query failed.
    */
   public synchronized void markFailed(final Throwable cause) {
     Preconditions.checkNotNull(cause, "cause");
     if (Status.finished(status)) {
-      LOGGER.warn("Ignoring markFailed({}) because already finished: status {}, message {}", cause, status, message);
+      LOGGER.warn(
+          "Ignoring markFailed({}) because already finished: status {}, message {}",
+          cause,
+          status,
+          message);
       return;
     }
     status = Status.ERROR;
@@ -254,7 +264,10 @@ public final class Query {
   public synchronized void markSuccess() {
     Verify.verify(currentSubQuery == null, "expect current subquery to be null when query ends");
     if (Status.finished(status)) {
-      LOGGER.warn("Ignoring markSuccess() because already finished: status {}, message {}", status, message);
+      LOGGER.warn(
+          "Ignoring markSuccess() because already finished: status {}, message {}",
+          status,
+          message);
       return;
     }
     status = Status.SUCCESS;
@@ -271,7 +284,7 @@ public final class Query {
 
   /**
    * Returns the time this query ended, in ISO8601 format, or <code>null</code> if the query has not yet ended.
-   * 
+   *
    * @return the time this query ended, in ISO8601 format, or <code>null</code> if the query has not yet ended
    */
   public synchronized DateTime getEndTime() {
@@ -280,7 +293,7 @@ public final class Query {
 
   /**
    * Returns the time elapsed (in nanoseconds) since the query started.
-   * 
+   *
    * @return the time elapsed (in nanoseconds) since the query started
    */
   public synchronized Long getElapsedTime() {
@@ -289,7 +302,7 @@ public final class Query {
 
   /**
    * Return a message explaining why a query failed, or <code>null</code> if the query did not fail.
-   * 
+   *
    * @return a message explaining why a query failed, or <code>null</code> if the query did not fail
    */
   public synchronized String getMessage() {
@@ -298,7 +311,7 @@ public final class Query {
 
   /**
    * Returns the future on the execution of this query.
-   * 
+   *
    * @return the future on the execution of this query
    */
   public QueryFuture getFuture() {
@@ -311,11 +324,14 @@ public final class Query {
   public synchronized void markKilled() {
     markEnd();
     if (Status.finished(status)) {
-      LOGGER.warn("Ignoring markKilled() because already finished: status {}, message {}", status, message);
+      LOGGER.warn(
+          "Ignoring markKilled() because already finished: status {}, message {}", status, message);
       return;
     }
-    Preconditions.checkState(status == Status.KILLING,
-        "cannot mark a query killed unless its status is KILLING, not %s", status);
+    Preconditions.checkState(
+        status == Status.KILLING,
+        "cannot mark a query killed unless its status is KILLING, not %s",
+        status);
     status = Status.KILLED;
     future.cancel(true);
   }
@@ -337,7 +353,7 @@ public final class Query {
 
   /**
    * Return the value of the global variable named by the specified key.
-   * 
+   *
    * @param key the name of the variable
    * @return the value of the variable, nor {@code null} if the variable does not exist.
    */
@@ -347,7 +363,7 @@ public final class Query {
 
   /**
    * Set the global variable named by the specified key to the specified value.
-   * 
+   *
    * @param key the name of the variable
    * @param value the new value for the variable
    */
@@ -360,7 +376,8 @@ public final class Query {
    */
   public synchronized void kill() {
     if (!Status.ongoing(status)) {
-      LOGGER.warn("Ignoring kill() because query is not ongoing; status {}, message {}", status, message);
+      LOGGER.warn(
+          "Ignoring kill() because query is not ongoing; status {}, message {}", status, message);
       return;
     }
     status = Status.KILLING;
@@ -374,15 +391,16 @@ public final class Query {
    * Determines and sanity-checks the set of relations created by the currently running subquery. Assuming the checks
    * pass, creates a {@link DatasetMetadataUpdater} future for this subquery and adds it as a pre-listener to the
    * specified {@code future}.
-   * 
+   *
    * @param catalog the Catalog in which the relation metadata will be updated
    * @param future the future on the subquery
    * @throws DbException if there is an error
    */
-  public synchronized void addDatasetMetadataUpdater(final MasterCatalog catalog, final LocalSubQueryFuture future)
-      throws DbException {
+  public synchronized void addDatasetMetadataUpdater(
+      final MasterCatalog catalog, final LocalSubQueryFuture future) throws DbException {
     SubQuery subQuery = currentSubQuery;
-    final Map<RelationKey, RelationWriteMetadata> relationsCreated = subQuery.getRelationWriteMetadata(server);
+    final Map<RelationKey, RelationWriteMetadata> relationsCreated =
+        subQuery.getRelationWriteMetadata(server);
     if (relationsCreated.size() == 0) {
       return;
     }
@@ -407,18 +425,29 @@ public final class Query {
         try {
           oldSchema = server.getSchema(relation);
         } catch (CatalogException e) {
-          throw new DbException(Joiner.on(' ').join("Error checking catalog for schema of", relation,
-              "during subquery", subQuery.getSubQueryId()), e);
+          throw new DbException(
+              Joiner.on(' ')
+                  .join(
+                      "Error checking catalog for schema of",
+                      relation,
+                      "during subquery",
+                      subQuery.getSubQueryId()),
+              e);
         }
       }
       if (oldSchema != null) {
-        Preconditions.checkArgument(oldSchema.equals(meta.getSchema()),
-            "Cannot append to existing %s relation %s (schema: %s) with new schema (%s)", relationType, relation,
-            oldSchema, meta.getSchema());
+        Preconditions.checkArgument(
+            oldSchema.equals(meta.getSchema()),
+            "Cannot append to existing %s relation %s (schema: %s) with new schema (%s)",
+            relationType,
+            relation,
+            oldSchema,
+            meta.getSchema());
       }
     }
 
-    Map<RelationKey, RelationWriteMetadata> persistentRelations = subQuery.getPersistentRelationWriteMetadata(server);
+    Map<RelationKey, RelationWriteMetadata> persistentRelations =
+        subQuery.getPersistentRelationWriteMetadata(server);
     if (persistentRelations.size() == 0) {
       return;
     }
@@ -426,13 +455,14 @@ public final class Query {
      * Add the DatasetMetadataUpdater, which will update the catalog with the set of workers created when the query
      * succeeds. Note that we only use persistent relations here.
      */
-    DatasetMetadataUpdater dsmd = new DatasetMetadataUpdater(catalog, persistentRelations, subQuery.getSubQueryId());
+    DatasetMetadataUpdater dsmd =
+        new DatasetMetadataUpdater(catalog, persistentRelations, subQuery.getSubQueryId());
     future.addPreListener(dsmd);
   }
 
   /**
    * Returns the schema for the specified temp relation.
-   * 
+   *
    * @param relationKey the desired temp relation
    * @return the schema for the specified temp relation
    */
@@ -442,7 +472,7 @@ public final class Query {
 
   /**
    * Returns the workers storing the specified temp relation.
-   * 
+   *
    * @param relationKey the desired temp relation
    * @return the set of workers storing the specified temp relation
    */
@@ -452,7 +482,7 @@ public final class Query {
 
   /**
    * Get the {@link RelationWriteMetadata} for the specified temp relation.
-   * 
+   *
    * @param relationKey the key of the temp relation
    * @return the {@link RelationWriteMetadata} for the specified temp relation
    * @throws IllegalArgumentException if there is no such temp relation
@@ -460,7 +490,8 @@ public final class Query {
   private RelationWriteMetadata getMetadata(@Nonnull final RelationKey relationKey) {
     Preconditions.checkNotNull(relationKey, "relationKey");
     RelationWriteMetadata meta = tempRelations.get(relationKey);
-    Preconditions.checkArgument(meta != null, "Query #%s, no temp relation with key %s found", queryId, relationKey);
+    Preconditions.checkArgument(
+        meta != null, "Query #%s, no temp relation with key %s found", queryId, relationKey);
     return meta;
   }
 
@@ -477,7 +508,8 @@ public final class Query {
    * @return resource usage stats in a tuple buffer.
    */
   public TupleBuffer getResourceUsage() {
-    Schema schema = Schema.appendColumn(MyriaConstants.RESOURCE_PROFILING_SCHEMA, Type.INT_TYPE, "workerId");
+    Schema schema =
+        Schema.appendColumn(MyriaConstants.RESOURCE_PROFILING_SCHEMA, Type.INT_TYPE, "workerId");
     TupleBuffer tb = new TupleBuffer(schema);
     for (int workerId : resourceUsage.keySet()) {
       ConcurrentLinkedDeque<ResourceStats> statsList = resourceUsage.get(workerId);

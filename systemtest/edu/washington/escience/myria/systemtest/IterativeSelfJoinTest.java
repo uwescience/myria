@@ -40,7 +40,8 @@ public class IterativeSelfJoinTest extends SystemTestBase {
   private final int numTbl1Worker1 = 2000;
   private final int numTbl1Worker2 = 2000;
 
-  public TupleBatchBuffer getResultInMemory(final TupleBatchBuffer table1, final Schema schema, final int numIteration) {
+  public TupleBatchBuffer getResultInMemory(
+      final TupleBatchBuffer table1, final Schema schema, final int numIteration) {
     // a brute force check
 
     final Iterator<List<? extends Column<?>>> tbs = table1.getAllAsRawColumn().iterator();
@@ -165,22 +166,33 @@ public class IterativeSelfJoinTest extends SystemTestBase {
     arrayID1 = ExchangePairID.newID();
     arrayID2 = ExchangePairID.newID();
 
-    sp1[0] = new GenericShuffleProducer(scan1, arrayID1, new int[] { workerIDs[0], workerIDs[1] }, pf1);
-    sp2[0] = new GenericShuffleProducer(scan2, arrayID2, new int[] { workerIDs[0], workerIDs[1] }, pf0);
+    sp1[0] =
+        new GenericShuffleProducer(scan1, arrayID1, new int[] {workerIDs[0], workerIDs[1]}, pf1);
+    sp2[0] =
+        new GenericShuffleProducer(scan2, arrayID2, new int[] {workerIDs[0], workerIDs[1]}, pf0);
     subqueries.add(sp1[0]);
     subqueries.add(sp2[0]);
 
     for (int i = 1; i < numIteration; ++i) {
 
-      sc1[i] = new GenericShuffleConsumer(sp1[i - 1].getSchema(), arrayID1, new int[] { workerIDs[0], workerIDs[1] });
-      sc2[i] = new GenericShuffleConsumer(sp2[i - 1].getSchema(), arrayID2, new int[] { workerIDs[0], workerIDs[1] });
+      sc1[i] =
+          new GenericShuffleConsumer(
+              sp1[i - 1].getSchema(), arrayID1, new int[] {workerIDs[0], workerIDs[1]});
+      sc2[i] =
+          new GenericShuffleConsumer(
+              sp2[i - 1].getSchema(), arrayID2, new int[] {workerIDs[0], workerIDs[1]});
       localjoin[i] =
-          new SymmetricHashJoin(sc1[i], sc2[i], new int[] { 1 }, new int[] { 0 }, new int[] { 0 }, new int[] { 1 });
+          new SymmetricHashJoin(
+              sc1[i], sc2[i], new int[] {1}, new int[] {0}, new int[] {0}, new int[] {1});
       arrayID0 = ExchangePairID.newID();
 
-      sp0[i] = new GenericShuffleProducer(localjoin[i], arrayID0, new int[] { workerIDs[0], workerIDs[1] }, pf0);
+      sp0[i] =
+          new GenericShuffleProducer(
+              localjoin[i], arrayID0, new int[] {workerIDs[0], workerIDs[1]}, pf0);
       subqueries.add(sp0[i]);
-      sc0[i] = new GenericShuffleConsumer(sp0[i].getSchema(), arrayID0, new int[] { workerIDs[0], workerIDs[1] });
+      sc0[i] =
+          new GenericShuffleConsumer(
+              sp0[i].getSchema(), arrayID0, new int[] {workerIDs[0], workerIDs[1]});
       dupelim[i] = new StreamingStateWrapper(sc0[i], new DupElim());
       if (i == numIteration - 1) {
         break;
@@ -189,13 +201,18 @@ public class IterativeSelfJoinTest extends SystemTestBase {
       arrayID1 = ExchangePairID.newID();
       arrayID2 = ExchangePairID.newID();
 
-      sp1[i] = new GenericShuffleProducer(scan[i], arrayID1, new int[] { workerIDs[0], workerIDs[1] }, pf1);
-      sp2[i] = new GenericShuffleProducer(dupelim[i], arrayID2, new int[] { workerIDs[0], workerIDs[1] }, pf0);
+      sp1[i] =
+          new GenericShuffleProducer(
+              scan[i], arrayID1, new int[] {workerIDs[0], workerIDs[1]}, pf1);
+      sp2[i] =
+          new GenericShuffleProducer(
+              dupelim[i], arrayID2, new int[] {workerIDs[0], workerIDs[1]}, pf0);
       subqueries.add(sp1[i]);
       subqueries.add(sp2[i]);
     }
     final ExchangePairID serverReceiveID = ExchangePairID.newID();
-    final CollectProducer cp = new CollectProducer(dupelim[numIteration - 1], serverReceiveID, MASTER_ID);
+    final CollectProducer cp =
+        new CollectProducer(dupelim[numIteration - 1], serverReceiveID, MASTER_ID);
     subqueries.add(cp);
 
     final HashMap<Integer, RootOperator[]> workerPlans = new HashMap<Integer, RootOperator[]>();
@@ -203,8 +220,9 @@ public class IterativeSelfJoinTest extends SystemTestBase {
     workerPlans.put(workerIDs[1], subqueries.toArray(new RootOperator[subqueries.size()]));
 
     final CollectConsumer serverCollect =
-        new CollectConsumer(tableSchema, serverReceiveID, new int[] { workerIDs[0], workerIDs[1] });
-    final LinkedBlockingQueue<TupleBatch> receivedTupleBatches = new LinkedBlockingQueue<TupleBatch>();
+        new CollectConsumer(tableSchema, serverReceiveID, new int[] {workerIDs[0], workerIDs[1]});
+    final LinkedBlockingQueue<TupleBatch> receivedTupleBatches =
+        new LinkedBlockingQueue<TupleBatch>();
     final TBQueueExporter queueStore = new TBQueueExporter(receivedTupleBatches, serverCollect);
     SinkRoot serverPlan = new SinkRoot(queueStore);
 
@@ -218,6 +236,5 @@ public class IterativeSelfJoinTest extends SystemTestBase {
     }
     final HashMap<Tuple, Integer> resultBag = TestUtils.tupleBatchToTupleBag(actualResult);
     TestUtils.assertTupleBagEqual(expectedResult, resultBag);
-
   }
 }

@@ -43,7 +43,7 @@ public final class JsonSubQuery extends QueryPlan {
   /**
    * Construct a {@link QueryPlan} that runs the given subquery. The subquery will be instantiated using
    * {@link QueryConstruct#instantiate(List, edu.washington.escience.myria.parallel.Server)}.
-   * 
+   *
    * @param fragments the JSON query to be executed, broken into fragments
    * @see QueryConstruct#instantiate(List, edu.washington.escience.myria.parallel.Server)
    */
@@ -52,10 +52,17 @@ public final class JsonSubQuery extends QueryPlan {
   }
 
   @Override
-  public void instantiate(final LinkedList<QueryPlan> planQ, final LinkedList<SubQuery> subQueryQ,
-      final ConstructArgs args) throws DbException {
+  public void instantiate(
+      final LinkedList<QueryPlan> planQ,
+      final LinkedList<SubQuery> subQueryQ,
+      final ConstructArgs args)
+      throws DbException {
     QueryPlan task = planQ.peekFirst();
-    Verify.verify(task == this, "this Fragment %s should be the first object on the queue, not %s!", this, task);
+    Verify.verify(
+        task == this,
+        "this Fragment %s should be the first object on the queue, not %s!",
+        this,
+        task);
     planQ.removeFirst();
 
     Map<Integer, SubQueryPlan> allPlans;

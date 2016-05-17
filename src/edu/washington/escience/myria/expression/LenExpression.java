@@ -8,7 +8,7 @@ import edu.washington.escience.myria.expression.evaluate.ExpressionOperatorParam
 
 /**
  * Return the length of a string.
- * 
+ *
  */
 public class LenExpression extends UnaryExpression {
   /***/
@@ -24,7 +24,7 @@ public class LenExpression extends UnaryExpression {
 
   /**
    * Get the lenght of a string.
-   * 
+   *
    * @param operand the operand.
    */
   public LenExpression(final ExpressionOperator operand) {
@@ -36,8 +36,12 @@ public class LenExpression extends UnaryExpression {
     Type operandType = getOperand().getOutputType(parameters);
     ImmutableList<Type> validTypes = ImmutableList.of(Type.STRING_TYPE);
     int operandIdx = validTypes.indexOf(operandType);
-    Preconditions.checkArgument(operandIdx != -1, "%s cannot handle operand [%s] of Type %s", getClass()
-        .getSimpleName(), getOperand(), operandType);
+    Preconditions.checkArgument(
+        operandIdx != -1,
+        "%s cannot handle operand [%s] of Type %s",
+        getClass().getSimpleName(),
+        getOperand(),
+        operandType);
     return Type.INT_TYPE;
   }
 
@@ -45,5 +49,4 @@ public class LenExpression extends UnaryExpression {
   public String getJavaString(final ExpressionOperatorParameter parameters) {
     return getDotFunctionCallUnaryString(".length()", parameters);
   }
-
 }

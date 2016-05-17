@@ -6,7 +6,8 @@ import com.fasterxml.jackson.annotation.JsonValue;
  * Enumeration of supported sampling types.
  */
 public enum SamplingType {
-  WithReplacement("WR"), WithoutReplacement("WoR");
+  WithReplacement("WR"),
+  WithoutReplacement("WoR");
 
   private String shortName;
 

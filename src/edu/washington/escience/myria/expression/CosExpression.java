@@ -20,7 +20,7 @@ public class CosExpression extends UnaryExpression {
 
   /**
    * Take the {@link Math.cos} of the operand.
-   * 
+   *
    * @param operand the operand.
    */
   public CosExpression(final ExpressionOperator operand) {

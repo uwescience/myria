@@ -27,17 +27,29 @@ public class TenGBTupleBatchReceiverUsingConnectionPool {
 
     final HashMap<Integer, SocketInfo> computingUnits = new HashMap<Integer, SocketInfo>();
     computingUnits.put(IPCID, new SocketInfo(InetAddress.getLocalHost().getHostName(), PORT));
-    computingUnits.put(TenGBTupleBatchSenderUsingConnectionPool.IPCID, new SocketInfo(senderHostName,
-        TenGBTupleBatchSenderUsingConnectionPool.PORT));
+    computingUnits.put(
+        TenGBTupleBatchSenderUsingConnectionPool.IPCID,
+        new SocketInfo(senderHostName, TenGBTupleBatchSenderUsingConnectionPool.PORT));
 
     final IPCConnectionPool connectionPool =
-        IPCTestUtil.startIPCConnectionPool(IPCID, computingUnits, null, new TransportMessageSerializer(), 10, 8,
+        IPCTestUtil.startIPCConnectionPool(
+            IPCID,
+            computingUnits,
+            null,
+            new TransportMessageSerializer(),
+            10,
+            8,
             Runtime.getRuntime().availableProcessors() * 2 + 1);
     ImmutableSet.Builder<StreamIOChannelID> sourceChannelSetBuilder = ImmutableSet.builder();
     SimpleBagInputBuffer<TupleBatch> sib =
-        new SimpleBagInputBuffer<TupleBatch>(connectionPool, sourceChannelSetBuilder.add(
-            new StreamIOChannelID(TenGBTupleBatchSenderUsingConnectionPool.streamID,
-                TenGBTupleBatchSenderUsingConnectionPool.IPCID)).build());
+        new SimpleBagInputBuffer<TupleBatch>(
+            connectionPool,
+            sourceChannelSetBuilder
+                .add(
+                    new StreamIOChannelID(
+                        TenGBTupleBatchSenderUsingConnectionPool.streamID,
+                        TenGBTupleBatchSenderUsingConnectionPool.IPCID))
+                .build());
     sib.setAttachment(TenGBTupleBatchSenderUsingConnectionPool.schema);
     sib.start(TenGBTupleBatchReceiverUsingConnectionPool.class);
 
@@ -46,7 +58,8 @@ public class TenGBTupleBatchReceiverUsingConnectionPool {
 
     long start = 0;
     long end = 0;
-    final TupleBatchBuffer tbb = new TupleBatchBuffer(TenGBTupleBatchSenderUsingConnectionPool.schema);
+    final TupleBatchBuffer tbb =
+        new TupleBatchBuffer(TenGBTupleBatchSenderUsingConnectionPool.schema);
 
     while (!sib.isEmpty() || !sib.isEOS()) {
       m = sib.take();
@@ -62,7 +75,6 @@ public class TenGBTupleBatchReceiverUsingConnectionPool {
 
         numReceived += 1;
       }
-
     }
     System.out.println("Receive start at " + start);
     System.out.println("Receive end at " + end);

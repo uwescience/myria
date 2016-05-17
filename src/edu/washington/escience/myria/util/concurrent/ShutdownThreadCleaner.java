@@ -18,8 +18,8 @@ import edu.washington.escience.myria.util.JVMUtils;
 public class ShutdownThreadCleaner extends Thread {
 
   /** The logger for this class. */
-  private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(ShutdownThreadCleaner.class
-      .getName());
+  private static final org.slf4j.Logger LOGGER =
+      org.slf4j.LoggerFactory.getLogger(ShutdownThreadCleaner.class.getName());
 
   /**
    * In wait state for at most 5 seconds.
@@ -61,7 +61,9 @@ public class ShutdownThreadCleaner extends Thread {
    * @param waitBeforeInterruptMS wait this amount of milliseconds before interrupting
    * @param numInterruptBeforeKill number of interrupts before kill a thread
    * */
-  public ShutdownThreadCleaner(final ThreadGroup mainThreadGroup, final int waitBeforeInterruptMS,
+  public ShutdownThreadCleaner(
+      final ThreadGroup mainThreadGroup,
+      final int waitBeforeInterruptMS,
       final int numInterruptBeforeKill) {
     super.setDaemon(true);
     this.mainThreadGroup = mainThreadGroup;
@@ -92,7 +94,7 @@ public class ShutdownThreadCleaner extends Thread {
 
   /**
    * utility method, add an integer v to the value of m[t] and return the new value. null key and value are taken ca of.
-   * 
+   *
    * @return the new value
    * @param <KEY> the map key type
    * @param m a map
@@ -110,7 +112,7 @@ public class ShutdownThreadCleaner extends Thread {
 
   /**
    * utility method, get the value of m[t] . null key and value are taken care of.
-   * 
+   *
    * @param m a map
    * @param t a thread
    * @return the value
@@ -131,8 +133,10 @@ public class ShutdownThreadCleaner extends Thread {
       Set<Thread> allThreads = Thread.getAllStackTraces().keySet();
       HashMap<Thread, Integer> nonSystemThreads = new HashMap<Thread, Integer>();
       for (final Thread t : allThreads) {
-        if (t.getThreadGroup() != null && t.getThreadGroup() != mainThreadGroup
-            && t.getThreadGroup() != mainThreadGroup.getParent() && t != Thread.currentThread()
+        if (t.getThreadGroup() != null
+            && t.getThreadGroup() != mainThreadGroup
+            && t.getThreadGroup() != mainThreadGroup.getParent()
+            && t != Thread.currentThread()
             && !abandonThreads.contains(t)) {
           nonSystemThreads.put(t, 0);
         }
@@ -153,22 +157,29 @@ public class ShutdownThreadCleaner extends Thread {
       }
 
       for (final Thread t : nonSystemThreads.keySet()) {
-        if (addToMap(waitedForMSThreadName, t.getName(), MyriaConstants.SHORT_WAITING_INTERVAL_100_MS) >= waitBeforeInterruptMS
-            * numInterruptBeforeKill) {
+        if (addToMap(
+                waitedForMSThreadName, t.getName(), MyriaConstants.SHORT_WAITING_INTERVAL_100_MS)
+            >= waitBeforeInterruptMS * numInterruptBeforeKill) {
           abandonThreads.add(t);
-        } else if (addToMap(waitedForMS, t, MyriaConstants.SHORT_WAITING_INTERVAL_100_MS) > waitBeforeInterruptMS) {
+        } else if (addToMap(waitedForMS, t, MyriaConstants.SHORT_WAITING_INTERVAL_100_MS)
+            > waitBeforeInterruptMS) {
           waitedForMS.put(t, 0);
           if (addToMap(interruptTimes, t, 1) > numInterruptBeforeKill) {
             if (LOGGER.isDebugEnabled()) {
-              LOGGER.debug("Thread {} have been interrupted for {} times. Kill it directly.", t, getFromMap(
-                  interruptTimes, t) - 1);
+              LOGGER.debug(
+                  "Thread {} have been interrupted for {} times. Kill it directly.",
+                  t,
+                  getFromMap(interruptTimes, t) - 1);
             }
             abandonThreads.add(t);
             t.stop();
           } else {
             if (LOGGER.isDebugEnabled()) {
-              LOGGER.debug("Waited Thread {} to finish for {} seconds. I'll try interrupting it.", t,
-                  TimeUnit.MILLISECONDS.toSeconds(waitBeforeInterruptMS) * getFromMap(interruptTimes, t));
+              LOGGER.debug(
+                  "Waited Thread {} to finish for {} seconds. I'll try interrupting it.",
+                  t,
+                  TimeUnit.MILLISECONDS.toSeconds(waitBeforeInterruptMS)
+                      * getFromMap(interruptTimes, t));
             }
             t.interrupt();
           }

@@ -16,8 +16,8 @@ import com.fasterxml.jackson.jaxrs.json.JacksonJaxbJsonProvider;
 /**
  * This class generates a custom JSON {@link ObjectMapper} that will properly convert Java CamelCase field names to JSON
  * lower_case_with_underscores field names.
- * 
- * 
+ *
+ *
  */
 @Provider
 @Produces(MyriaApiConstants.JSON_UTF_8)
@@ -53,7 +53,7 @@ public class MyriaJsonMapperProvider extends JacksonJaxbJsonProvider {
 
   /**
    * Create the standard Myria custom ObjectMapper.
-   * 
+   *
    * @return the standard Myria custom ObjectMapper.
    */
   private static ObjectMapper newMapper() {

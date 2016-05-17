@@ -10,15 +10,16 @@ import org.jboss.netty.channel.SucceededChannelFuture;
 import edu.washington.escience.myria.operator.network.Consumer;
 
 /**
- * 
+ *
  * An {@link StreamInputChannel} represents a partition of a {@link Consumer} input .
- * 
+ *
  * @param <PAYLOAD> the type of payload that this input channel will receive.
  * */
 public class StreamInputChannel<PAYLOAD> extends StreamIOChannel {
 
   /** The logger for this class. */
-  static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(StreamInputChannel.class);
+  static final org.slf4j.Logger LOGGER =
+      org.slf4j.LoggerFactory.getLogger(StreamInputChannel.class);
 
   /**
    * The input buffer into which the messages from this channel should be pushed.
@@ -51,7 +52,11 @@ public class StreamInputChannel<PAYLOAD> extends StreamIOChannel {
 
   @Override
   public final String toString() {
-    return "StreamInput{ ID: " + getID() + ", IOChannel: " + ChannelContext.channelToString(getIOChannel()) + " }";
+    return "StreamInput{ ID: "
+        + getID()
+        + ", IOChannel: "
+        + ChannelContext.channelToString(getIOChannel())
+        + " }";
   }
 
   /**
@@ -63,7 +68,7 @@ public class StreamInputChannel<PAYLOAD> extends StreamIOChannel {
 
   /**
    * pause the read from this logical input channel, no matter the state of the underlying physical input channel.
-   * 
+   *
    * @return future of this operation.
    */
   public ChannelFuture pauseRead() {
@@ -80,7 +85,7 @@ public class StreamInputChannel<PAYLOAD> extends StreamIOChannel {
 
   /**
    * Resume the read of all IO channels that are inputs of this input buffer.
-   * 
+   *
    * @return ChannelGroupFuture denotes the future of the resume read action.
    * */
   public ChannelFuture resumeRead() {
