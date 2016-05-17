@@ -1,5 +1,6 @@
 package edu.washington.escience.myria.column;
 
+import java.nio.ByteBuffer;
 import java.util.BitSet;
 
 import org.joda.time.DateTime;
@@ -70,6 +71,11 @@ class FilteredColumn<T extends Comparable<?>> extends Column<T> {
   @Override
   public DateTime getDateTime(final int row) {
     return inner.getDateTime(convertRow(row));
+  }
+
+  @Override
+  public ByteBuffer getByteBuffer(final int row) {
+    return inner.getByteBuffer(convertRow(row));
   }
 
   @Override

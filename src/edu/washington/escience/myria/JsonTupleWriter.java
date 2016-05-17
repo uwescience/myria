@@ -184,6 +184,12 @@ public class JsonTupleWriter implements TupleWriter {
             print(StringEscapeUtils.escapeJson(tuples.getString(j, i)));
             print('"');
             break;
+          case BYTES_TYPE:
+            // TODO: fix this later
+            print('"');
+            print("Byte buffer, cannot be written to json yet!");
+            print('"');
+            break;
         }
       }
       print('}');
@@ -206,8 +212,7 @@ public class JsonTupleWriter implements TupleWriter {
       } else {
         output.write("{");
       }
-      output.write(
-          "\"error\":\"There was an error. Investigate the query status to see the message\"}]");
+      output.write("\"error\":\"There was an error. Investigate the query status to see the message\"}]");
       output.flush();
     } finally {
       output.close();

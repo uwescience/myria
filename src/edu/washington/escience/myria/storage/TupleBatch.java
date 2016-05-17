@@ -1,6 +1,7 @@
 package edu.washington.escience.myria.storage;
 
 import java.io.Serializable;
+import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.BitSet;
 import java.util.List;
@@ -30,7 +31,7 @@ public class TupleBatch implements ReadableTable, Serializable {
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
   /** The hard-coded number of tuples in a batch. */
-  public static final int BATCH_SIZE = 10 * 1000;
+  public static final int BATCH_SIZE = 1; // 10 * 1000;
   /** Schema of tuples in this batch. */
   private final Schema schema;
   /** Tuple data stored as columns in this batch. */
@@ -62,8 +63,7 @@ public class TupleBatch implements ReadableTable, Serializable {
    * @return a shallow copy of the specified TupleBatch with the new column names.
    */
   public TupleBatch rename(final List<String> columnNames) {
-    Schema newSchema =
-        Schema.of(schema.getColumnTypes(), Objects.requireNonNull(columnNames, "columnNames"));
+    Schema newSchema = Schema.of(schema.getColumnTypes(), Objects.requireNonNull(columnNames, "columnNames"));
     return new TupleBatch(newSchema, columns, numTuples, isEOI);
   }
 
@@ -74,8 +74,7 @@ public class TupleBatch implements ReadableTable, Serializable {
    * @param columns contains the column-stored data. Must match schema.
    * @param numTuples the number of tuples in this TupleBatch.
    */
-  public TupleBatch(
-      final Schema schema, final List<? extends Column<?>> columns, final int numTuples) {
+  public TupleBatch(final Schema schema, final List<? extends Column<?>> columns, final int numTuples) {
     this(schema, columns, numTuples, false);
   }
 
@@ -97,24 +96,16 @@ public class TupleBatch implements ReadableTable, Serializable {
    * @param numTuples the number of tuples in this batch. Must match columns.
    * @param isEOI whether this is an EOI TupleBatch.
    */
-  public TupleBatch(
-      final Schema schema,
-      final List<? extends Column<?>> columns,
-      final int numTuples,
+  public TupleBatch(final Schema schema, final List<? extends Column<?>> columns, final int numTuples,
       final boolean isEOI) {
     this.schema = Objects.requireNonNull(schema, "schema");
     this.columns = ImmutableList.copyOf(Objects.requireNonNull(columns, "columns"));
-    Preconditions.checkArgument(
-        columns.size() == schema.numColumns(),
+    Preconditions.checkArgument(columns.size() == schema.numColumns(),
         "Number of columns in data must equal the number of fields in schema");
     for (int i = 0; i < columns.size(); i++) {
       Column<?> column = columns.get(i);
-      Preconditions.checkArgument(
-          numTuples == column.size(),
-          "Incorrect size for column %s. Expected %s tuples, but found %s tuples.",
-          i,
-          numTuples,
-          column.size());
+      Preconditions.checkArgument(numTuples == column.size(),
+          "Incorrect size for column %s. Expected %s tuples, but found %s tuples.", i, numTuples, column.size());
     }
     this.numTuples = numTuples;
     this.isEOI = isEOI;
@@ -148,11 +139,8 @@ public class TupleBatch implements ReadableTable, Serializable {
    * @return a TupleBatch that contains only the filtered rows of the current dataset.
    */
   public final TupleBatch filter(final BitSet filter) {
-    Preconditions.checkArgument(
-        filter.length() <= numTuples(),
-        "Error: trying to filter a TupleBatch of length %s with a filter of length %s",
-        numTuples(),
-        filter.length());
+    Preconditions.checkArgument(filter.length() <= numTuples(),
+        "Error: trying to filter a TupleBatch of length %s with a filter of length %s", numTuples(), filter.length());
     int newNumTuples = filter.cardinality();
 
     /* Shortcut: the filter is full, so all current tuples are retained. Just return this. */
@@ -173,13 +161,10 @@ public class TupleBatch implements ReadableTable, Serializable {
    * @param prefix the number of rows in the prefix to be retained.
    * @return a TupleBatch that contains only the filtered rows of the current dataset.
    */
-  @SuppressWarnings({"rawtypes", "unchecked"})
+  @SuppressWarnings({ "rawtypes", "unchecked" })
   public final TupleBatch prefix(final int prefix) {
-    Preconditions.checkArgument(
-        prefix <= numTuples(),
-        "Error: cannot take a prefix of length %s from a batch of length %s",
-        prefix,
-        numTuples());
+    Preconditions.checkArgument(prefix <= numTuples(),
+        "Error: cannot take a prefix of length %s from a batch of length %s", prefix, numTuples());
     ImmutableList.Builder<Column<?>> newColumns = ImmutableList.builder();
     for (Column<?> column : columns) {
       newColumns.add(new PrefixColumn(column, prefix));
@@ -231,6 +216,11 @@ public class TupleBatch implements ReadableTable, Serializable {
   @Override
   public final DateTime getDateTime(final int column, final int row) {
     return columns.get(column).getDateTime(row);
+  }
+
+  @Override
+  public ByteBuffer getByteBuffer(final int column, final int row) {
+    return columns.get(column).getByteBuffer(row);
   }
 
   @Override
@@ -363,14 +353,10 @@ public class TupleBatch implements ReadableTable, Serializable {
    * @return a new TupleBatch containing the tuples of this column plus the tuples of the other.
    */
   public TupleBatch appendColumn(final String columnName, final Column<?> column) {
-    Preconditions.checkArgument(
-        numTuples() == column.size(),
-        "Cannot append column of size %s to batch of size %s",
-        column.size(),
-        numTuples());
+    Preconditions.checkArgument(numTuples() == column.size(), "Cannot append column of size %s to batch of size %s",
+        column.size(), numTuples());
     Schema newSchema = Schema.appendColumn(schema, column.getType(), columnName);
-    List<Column<?>> newColumns =
-        ImmutableList.<Column<?>>builder().addAll(columns).add(column).build();
+    List<Column<?>> newColumns = ImmutableList.<Column<?>> builder().addAll(columns).add(column).build();
     return new TupleBatch(newSchema, newColumns, numTuples, isEOI);
   }
 

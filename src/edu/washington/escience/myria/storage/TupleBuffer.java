@@ -1,5 +1,6 @@
 package edu.washington.escience.myria.storage;
 
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.List;
@@ -68,11 +69,8 @@ public class TupleBuffer implements ReadableTable, AppendableTable {
    *
    */
   private void finishBatch() {
-    Preconditions.checkState(
-        currentBatchSize == TupleBatch.BATCH_SIZE,
-        "cannot finish a batch with %s < %s rows ready",
-        currentBatchSize,
-        TupleBatch.BATCH_SIZE);
+    Preconditions.checkState(currentBatchSize == TupleBatch.BATCH_SIZE,
+        "cannot finish a batch with %s < %s rows ready", currentBatchSize, TupleBatch.BATCH_SIZE);
     finishBatchEvenIfSmall();
     currentBatch = ColumnFactory.allocateColumns(schema);
   }
@@ -81,9 +79,7 @@ public class TupleBuffer implements ReadableTable, AppendableTable {
    * Actually finish the batch. Does not ensure that the batch is full, and thus can only be used when finalizing.
    */
   private void finishBatchEvenIfSmall() {
-    Preconditions.checkState(
-        numColumnsReady == 0,
-        "cannot finish a batch with with %s != 0 columns ready",
+    Preconditions.checkState(numColumnsReady == 0, "cannot finish a batch with with %s != 0 columns ready",
         numColumnsReady);
     Preconditions.checkState(!finalized, "cannot force finish a batch once finalized");
     if (currentBatchSize == 0) {
@@ -197,6 +193,17 @@ public class TupleBuffer implements ReadableTable, AppendableTable {
   }
 
   @Override
+  public final ByteBuffer getByteBuffer(final int column, final int row) {
+    Preconditions.checkElementIndex(row, numTuples());
+    int batchIndex = row / TupleBatch.BATCH_SIZE;
+    int localRow = row % TupleBatch.BATCH_SIZE;
+    if (batchIndex < readyBatches.size()) {
+      return readyBatches.get(batchIndex).getByteBuffer(column, localRow);
+    }
+    return currentBatch.get(column).getByteBuffer(localRow);
+  }
+
+  @Override
   public final int numColumns() {
     return numColumns;
   }
@@ -258,6 +265,13 @@ public class TupleBuffer implements ReadableTable, AppendableTable {
     columnPut(column);
   }
 
+  @Override
+  public final void putByteBuffer(final int column, final ByteBuffer value) {
+    checkPutIndex(column);
+    currentBatch.get(column).appendByteBuffer(value);
+    columnPut(column);
+  }
+
   /**
    * Helper function: checks whether the specified column can be inserted into.
    *
@@ -266,8 +280,7 @@ public class TupleBuffer implements ReadableTable, AppendableTable {
   private void checkPutIndex(final int column) {
     Preconditions.checkState(!finalized, "cannot append to a TupleBuffer once finalized");
     Preconditions.checkElementIndex(column, numColumns);
-    Preconditions.checkState(
-        !columnsReady.get(column), "need to fill up one row before starting new one");
+    Preconditions.checkState(!columnsReady.get(column), "need to fill up one row before starting new one");
   }
 
   /**

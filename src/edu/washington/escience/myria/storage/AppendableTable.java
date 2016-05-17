@@ -1,5 +1,7 @@
 package edu.washington.escience.myria.storage;
 
+import java.nio.ByteBuffer;
+
 import javax.annotation.Nonnull;
 
 import org.joda.time.DateTime;
@@ -25,6 +27,14 @@ public interface AppendableTable extends TupleTable {
    * @param value value to be appended.
    */
   void putDateTime(final int column, @Nonnull final DateTime value);
+
+  /**
+   * Append the specified value to the specified column.
+   *
+   * @param column index of the column.
+   * @param value value to be appended.
+   */
+  void putByteBuffer(final int column, final @Nonnull ByteBuffer value);
 
   /**
    * Append the specified value to the specified column.

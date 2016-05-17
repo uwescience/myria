@@ -1,5 +1,7 @@
 package edu.washington.escience.myria.operator;
 
+import java.nio.ByteBuffer;
+
 import org.joda.time.DateTime;
 
 import com.google.common.collect.ImmutableList;
@@ -71,6 +73,9 @@ public final class TupleRangeSource extends LeafOperator {
           break;
         case STRING_TYPE:
           tbb.putString(0, String.valueOf(currentValue));
+          break;
+        case BYTES_TYPE:
+          tbb.putByteBuffer(0, ByteBuffer.allocate(Long.SIZE / Byte.SIZE).putLong(currentValue));
           break;
       }
       currentValue++;

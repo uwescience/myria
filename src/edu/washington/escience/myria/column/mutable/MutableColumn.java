@@ -1,6 +1,7 @@
 package edu.washington.escience.myria.column.mutable;
 
 import java.io.Serializable;
+import java.nio.ByteBuffer;
 
 import javax.annotation.Nonnull;
 
@@ -17,14 +18,19 @@ import edu.washington.escience.myria.storage.ReplaceableColumn;
  * @param <T> type of the objects in this column.
  *
  */
-public abstract class MutableColumn<T extends Comparable<?>>
-    implements Cloneable, ReadableColumn, ReplaceableColumn, Serializable {
+public abstract class MutableColumn<T extends Comparable<?>> implements Cloneable, ReadableColumn, ReplaceableColumn,
+    Serializable {
 
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
 
   @Override
   public boolean getBoolean(final int row) {
+    throw new UnsupportedOperationException(getClass().getName());
+  }
+
+  @Override
+  public ByteBuffer getByteBuffer(final int row) {
     throw new UnsupportedOperationException(getClass().getName());
   }
 
@@ -75,6 +81,11 @@ public abstract class MutableColumn<T extends Comparable<?>>
 
   @Override
   public void replaceDateTime(@Nonnull final DateTime value, final int row) {
+    throw new UnsupportedOperationException(getClass().getName());
+  }
+
+  @Override
+  public void replaceByteBuffer(@Nonnull final ByteBuffer value, final int row) {
     throw new UnsupportedOperationException(getClass().getName());
   }
 

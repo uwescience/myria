@@ -1,5 +1,6 @@
 package edu.washington.escience.myria.storage;
 
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.LinkedList;
@@ -85,8 +86,7 @@ public class TupleBatchBuffer implements AppendableTable {
    */
   private void checkPutIndex(final int column) {
     Preconditions.checkElementIndex(column, numColumns);
-    Preconditions.checkState(
-        !columnsReady.get(column),
+    Preconditions.checkState(!columnsReady.get(column),
         "need to fill up one row of TupleBatchBuffer before starting new one");
   }
 
@@ -129,8 +129,7 @@ public class TupleBatchBuffer implements AppendableTable {
    * @return true if any tuples were added.
    */
   private boolean finishBatch() {
-    Preconditions.checkState(
-        numColumnsReady == 0, "Cannot finish a batch with partially-completed tuples");
+    Preconditions.checkState(numColumnsReady == 0, "Cannot finish a batch with partially-completed tuples");
     if (currentInProgressTuples == 0) {
       return false;
     }
@@ -343,24 +342,14 @@ public class TupleBatchBuffer implements AppendableTable {
    * @param rightAnswerColumns an array that specifies which columns from the right tuple batch
    *
    */
-  public final void put(
-      final TupleBatch leftTb,
-      final int leftIdx,
-      final int[] leftAnswerColumns,
-      final TupleBatch rightTb,
-      final int rightIdx,
-      final int[] rightAnswerColumns) {
+  public final void put(final TupleBatch leftTb, final int leftIdx, final int[] leftAnswerColumns,
+      final TupleBatch rightTb, final int rightIdx, final int[] rightAnswerColumns) {
     for (int i = 0; i < leftAnswerColumns.length; ++i) {
-      TupleUtils.copyValue(
-          leftTb.getDataColumns().get(leftAnswerColumns[i]),
-          leftIdx,
-          currentBuildingColumns.get(i));
+      TupleUtils.copyValue(leftTb.getDataColumns().get(leftAnswerColumns[i]), leftIdx, currentBuildingColumns.get(i));
     }
     for (int i = 0; i < rightAnswerColumns.length; ++i) {
-      TupleUtils.copyValue(
-          rightTb.getDataColumns().get(rightAnswerColumns[i]),
-          rightIdx,
-          currentBuildingColumns.get(i + leftAnswerColumns.length));
+      TupleUtils.copyValue(rightTb.getDataColumns().get(rightAnswerColumns[i]), rightIdx, currentBuildingColumns.get(i
+          + leftAnswerColumns.length));
     }
     currentInProgressTuples++;
     if (currentInProgressTuples == TupleBatch.BATCH_SIZE) {
@@ -375,8 +364,7 @@ public class TupleBatchBuffer implements AppendableTable {
    * @param sourceColumn the column from which data will be retrieved.
    * @param sourceRow the row in the source column from which data will be retrieved.
    */
-  public final void put(
-      final int destColumn, final ReadableColumn sourceColumn, final int sourceRow) {
+  public final void put(final int destColumn, final ReadableColumn sourceColumn, final int sourceRow) {
     TupleUtils.copyValue(sourceColumn, sourceRow, this, destColumn);
   }
 
@@ -432,6 +420,13 @@ public class TupleBatchBuffer implements AppendableTable {
   public final void putLong(final int column, final long value) {
     checkPutIndex(column);
     currentBuildingColumns.get(column).appendLong(value);
+    columnPut(column);
+  }
+
+  @Override
+  public final void putByteBuffer(final int column, final ByteBuffer value) {
+    checkPutIndex(column);
+    currentBuildingColumns.get(column).appendByteBuffer(value);
     columnPut(column);
   }
 

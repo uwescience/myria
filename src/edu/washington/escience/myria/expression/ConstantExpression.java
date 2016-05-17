@@ -19,18 +19,19 @@ public class ConstantExpression extends ZeroaryExpression {
   private static final long serialVersionUID = 1L;
 
   /** The type of this object. */
-  @JsonProperty private final Type valueType;
+  @JsonProperty
+  private final Type valueType;
 
   /** The value of this object. */
-  @JsonProperty private final String value;
+  @JsonProperty
+  private final String value;
 
   /**
    * @param type the type of this object.
    * @param value the value of this constant.
    */
   @JsonCreator
-  public ConstantExpression(
-      @JsonProperty("valueType") final Type type, @JsonProperty("value") final String value) {
+  public ConstantExpression(@JsonProperty("valueType") final Type type, @JsonProperty("value") final String value) {
     valueType = type;
     if (type == Type.LONG_TYPE && value.toUpperCase().indexOf('L') == -1) {
       this.value = value + 'L';
@@ -113,6 +114,8 @@ public class ConstantExpression extends ZeroaryExpression {
         throw new UnsupportedOperationException("using constant value of type DateTime");
       case STRING_TYPE:
         return '\"' + StringEscapeUtils.escapeJava(value) + '\"';
+      case BYTES_TYPE:
+        throw new UnsupportedOperationException("using constant value of type BYTES");
     }
     throw new UnsupportedOperationException("using constant value of type " + valueType);
   }

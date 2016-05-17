@@ -2,6 +2,7 @@ package edu.washington.escience.myria.accessmethod;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
@@ -53,8 +54,7 @@ public final class SQLiteAccessMethod extends AccessMethod {
    * @param readOnly whether read-only connection or not
    * @throws DbException if there is an error making the connection.
    */
-  public SQLiteAccessMethod(final SQLiteInfo sqliteInfo, final Boolean readOnly)
-      throws DbException {
+  public SQLiteAccessMethod(final SQLiteInfo sqliteInfo, final Boolean readOnly) throws DbException {
     Objects.requireNonNull(sqliteInfo);
 
     this.sqliteInfo = sqliteInfo;
@@ -63,8 +63,7 @@ public final class SQLiteAccessMethod extends AccessMethod {
   }
 
   @Override
-  public void connect(final ConnectionInfo connectionInfo, final Boolean readOnly)
-      throws DbException {
+  public void connect(final ConnectionInfo connectionInfo, final Boolean readOnly) throws DbException {
     Objects.requireNonNull(connectionInfo);
 
     this.readOnly = readOnly;
@@ -83,8 +82,7 @@ public final class SQLiteAccessMethod extends AccessMethod {
           throw new DbException("Could not create database file" + dbFile.getAbsolutePath(), e);
         }
       } else {
-        throw new DbException(
-            "Database file " + sqliteInfo.getDatabaseFilename() + " does not exist!");
+        throw new DbException("Database file " + sqliteInfo.getDatabaseFilename() + " does not exist!");
       }
     }
 
@@ -117,74 +115,72 @@ public final class SQLiteAccessMethod extends AccessMethod {
   }
 
   @Override
-  public void tupleBatchInsert(final RelationKey relationKey, final TupleBatch tupleBatch)
-      throws DbException {
+  public void tupleBatchInsert(final RelationKey relationKey, final TupleBatch tupleBatch) throws DbException {
     Objects.requireNonNull(sqliteQueue);
 
     try {
-      sqliteQueue
-          .execute(
-              new SQLiteJob<Object>() {
-                @Override
-                protected Object job(final SQLiteConnection sqliteConnection) throws DbException {
-                  SQLiteStatement statement = null;
-                  Schema schema = tupleBatch.getSchema();
-                  try {
-                    /* BEGIN TRANSACTION */
-                    sqliteConnection.exec("BEGIN TRANSACTION");
-                    /* Set up and execute the query */
-                    statement =
-                        sqliteConnection.prepare(insertStatementFromSchema(schema, relationKey));
-                    for (int row = 0; row < tupleBatch.numTuples(); ++row) {
-                      for (int col = 0; col < tupleBatch.numColumns(); ++col) {
-                        switch (schema.getColumnType(col)) {
-                          case BOOLEAN_TYPE:
-                            /* In SQLite, booleans are integers represented as 0 (false) or 1 (true). */
-                            int colVal = 0;
-                            if (tupleBatch.getBoolean(col, row)) {
-                              colVal = 1;
-                            }
-                            statement.bind(col + 1, colVal);
-                            break;
-                          case DATETIME_TYPE:
-                            statement.bind(
-                                col + 1,
-                                tupleBatch.getDateTime(col, row).getMillis()); // SQLite long
-                            break;
-                          case DOUBLE_TYPE:
-                            statement.bind(col + 1, tupleBatch.getDouble(col, row));
-                            break;
-                          case FLOAT_TYPE:
-                            statement.bind(col + 1, tupleBatch.getFloat(col, row));
-                            break;
-                          case INT_TYPE:
-                            statement.bind(col + 1, tupleBatch.getInt(col, row));
-                            break;
-                          case LONG_TYPE:
-                            statement.bind(col + 1, tupleBatch.getLong(col, row));
-                            break;
-                          case STRING_TYPE:
-                            statement.bind(col + 1, tupleBatch.getString(col, row));
-                            break;
-                        }
-                      }
-                      statement.step();
-                      statement.reset();
+      sqliteQueue.execute(new SQLiteJob<Object>() {
+        @Override
+        protected Object job(final SQLiteConnection sqliteConnection) throws DbException {
+          SQLiteStatement statement = null;
+          Schema schema = tupleBatch.getSchema();
+          try {
+            /* BEGIN TRANSACTION */
+            sqliteConnection.exec("BEGIN TRANSACTION");
+            /* Set up and execute the query */
+            statement = sqliteConnection.prepare(insertStatementFromSchema(schema, relationKey));
+            for (int row = 0; row < tupleBatch.numTuples(); ++row) {
+              for (int col = 0; col < tupleBatch.numColumns(); ++col) {
+                switch (schema.getColumnType(col)) {
+                  case BOOLEAN_TYPE:
+                    /* In SQLite, booleans are integers represented as 0 (false) or 1 (true). */
+                    int colVal = 0;
+                    if (tupleBatch.getBoolean(col, row)) {
+                      colVal = 1;
                     }
-                    /* COMMIT TRANSACTION */
-                    sqliteConnection.exec("COMMIT TRANSACTION");
-                  } catch (final SQLiteException e) {
-                    LOGGER.error(e.getMessage());
-                    throw new DbException(e);
-                  } finally {
-                    if (statement != null && !statement.isDisposed()) {
-                      statement.dispose();
-                    }
-                  }
-                  return null;
+                    statement.bind(col + 1, colVal);
+                    break;
+                  case DATETIME_TYPE:
+                    statement.bind(col + 1, tupleBatch.getDateTime(col, row).getMillis()); // SQLite long
+                    break;
+                  case DOUBLE_TYPE:
+                    statement.bind(col + 1, tupleBatch.getDouble(col, row));
+                    break;
+                  case FLOAT_TYPE:
+                    statement.bind(col + 1, tupleBatch.getFloat(col, row));
+                    break;
+                  case INT_TYPE:
+                    statement.bind(col + 1, tupleBatch.getInt(col, row));
+                    break;
+                  case LONG_TYPE:
+                    statement.bind(col + 1, tupleBatch.getLong(col, row));
+                    break;
+                  case STRING_TYPE:
+                    statement.bind(col + 1, tupleBatch.getString(col, row));
+                    break;
+                  case BYTES_TYPE:
+                    ByteBuffer bb = tupleBatch.getByteBuffer(col, row);
+                    byte[] data = new byte[bb.remaining()];
+                    bb.get(data);
+                    statement.bind(col + 1, data);
                 }
-              })
-          .get();
+              }
+              statement.step();
+              statement.reset();
+            }
+            /* COMMIT TRANSACTION */
+            sqliteConnection.exec("COMMIT TRANSACTION");
+          } catch (final SQLiteException e) {
+            LOGGER.error(e.getMessage());
+            throw new DbException(e);
+          } finally {
+            if (statement != null && !statement.isDisposed()) {
+              statement.dispose();
+            }
+          }
+          return null;
+        }
+      }).get();
     } catch (InterruptedException | ExecutionException e) {
       throw new DbException(e);
     }
@@ -194,8 +190,8 @@ public final class SQLiteAccessMethod extends AccessMethod {
   private static final int MAX_RETRY_ATTEMPTS = 1000;
 
   @Override
-  public Iterator<TupleBatch> tupleBatchIteratorFromQuery(
-      final String queryString, final Schema schema) throws DbException {
+  public Iterator<TupleBatch> tupleBatchIteratorFromQuery(final String queryString, final Schema schema)
+      throws DbException {
     Objects.requireNonNull(sqliteConnection);
     Objects.requireNonNull(schema);
 
@@ -219,7 +215,7 @@ public final class SQLiteAccessMethod extends AccessMethod {
           Thread.sleep(MyriaConstants.SHORT_WAITING_INTERVAL_10_MS);
         } catch (InterruptedException e1) {
           Thread.currentThread().interrupt();
-          return Collections.<TupleBatch>emptyList().iterator();
+          return Collections.<TupleBatch> emptyList().iterator();
         }
       }
     }
@@ -245,21 +241,18 @@ public final class SQLiteAccessMethod extends AccessMethod {
     Objects.requireNonNull(sqliteQueue);
 
     try {
-      sqliteQueue
-          .execute(
-              new SQLiteJob<Object>() {
-                @Override
-                protected Object job(final SQLiteConnection sqliteConnection) throws DbException {
-                  try {
-                    sqliteConnection.exec(ddlCommand);
-                  } catch (final SQLiteException e) {
-                    LOGGER.error(e.getMessage(), e);
-                    throw new DbException(e);
-                  }
-                  return null;
-                }
-              })
-          .get();
+      sqliteQueue.execute(new SQLiteJob<Object>() {
+        @Override
+        protected Object job(final SQLiteConnection sqliteConnection) throws DbException {
+          try {
+            sqliteConnection.exec(ddlCommand);
+          } catch (final SQLiteException e) {
+            LOGGER.error(e.getMessage(), e);
+            throw new DbException(e);
+          }
+          return null;
+        }
+      }).get();
     } catch (InterruptedException | ExecutionException e) {
       throw new DbException("Error executing DDL command: " + ddlCommand, e);
     }
@@ -289,9 +282,8 @@ public final class SQLiteAccessMethod extends AccessMethod {
    * @param tupleBatch TupleBatch that contains the data to be inserted.
    * @throws DbException if there is an error in the database.
    */
-  public static synchronized void tupleBatchInsert(
-      final SQLiteInfo sqliteInfo, final RelationKey relationKey, final TupleBatch tupleBatch)
-      throws DbException {
+  public static synchronized void tupleBatchInsert(final SQLiteInfo sqliteInfo, final RelationKey relationKey,
+      final TupleBatch tupleBatch) throws DbException {
 
     SQLiteAccessMethod sqliteAccessMethod = null;
     try {
@@ -315,9 +307,8 @@ public final class SQLiteAccessMethod extends AccessMethod {
    * @return an Iterator<TupleBatch> containing the results of the query
    * @throws DbException if there is an error in the database.
    */
-  public static Iterator<TupleBatch> tupleBatchIteratorFromQuery(
-      final SQLiteInfo sqliteInfo, final String queryString, final Schema schema)
-      throws DbException {
+  public static Iterator<TupleBatch> tupleBatchIteratorFromQuery(final SQLiteInfo sqliteInfo, final String queryString,
+      final Schema schema) throws DbException {
 
     SQLiteAccessMethod sqliteAccessMethod = null;
     try {
@@ -334,9 +325,7 @@ public final class SQLiteAccessMethod extends AccessMethod {
   @Override
   public String insertStatementFromSchema(final Schema schema, final RelationKey relationKey) {
     final StringBuilder sb = new StringBuilder();
-    sb.append("INSERT INTO ")
-        .append(relationKey.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE))
-        .append(" ([");
+    sb.append("INSERT INTO ").append(relationKey.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE)).append(" ([");
     sb.append(StringUtils.join(schema.getColumnNames(), "],["));
     sb.append("]) VALUES (");
     for (int i = 0; i < schema.numColumns(); ++i) {
@@ -350,20 +339,15 @@ public final class SQLiteAccessMethod extends AccessMethod {
   }
 
   @Override
-  public String createIfNotExistsStatementFromSchema(
-      final Schema schema, final RelationKey relationKey) {
+  public String createIfNotExistsStatementFromSchema(final Schema schema, final RelationKey relationKey) {
     final StringBuilder sb = new StringBuilder();
-    sb.append("CREATE TABLE IF NOT EXISTS ")
-        .append(relationKey.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE))
-        .append(" (");
+    sb.append("CREATE TABLE IF NOT EXISTS ").append(relationKey.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE)).append(
+        " (");
     for (int i = 0; i < schema.numColumns(); ++i) {
       if (i > 0) {
         sb.append(", ");
       }
-      sb.append('[')
-          .append(schema.getColumnName(i))
-          .append("] ")
-          .append(typeToSQLiteType(schema.getColumnType(i)));
+      sb.append('[').append(schema.getColumnName(i)).append("] ").append(typeToSQLiteType(schema.getColumnType(i)));
     }
     sb.append(");");
     return sb.toString();
@@ -389,14 +373,15 @@ public final class SQLiteAccessMethod extends AccessMethod {
         return "INTEGER";
       case STRING_TYPE:
         return "TEXT";
+      case BYTES_TYPE:
+        return "BLOB";
       default:
         throw new UnsupportedOperationException("Type " + type + " is not supported");
     }
   }
 
   @Override
-  public void createTableIfNotExists(final RelationKey relationKey, final Schema schema)
-      throws DbException {
+  public void createTableIfNotExists(final RelationKey relationKey, final Schema schema) throws DbException {
     Objects.requireNonNull(sqliteQueue);
     Objects.requireNonNull(sqliteInfo);
     Objects.requireNonNull(relationKey);
@@ -406,8 +391,7 @@ public final class SQLiteAccessMethod extends AccessMethod {
   }
 
   @Override
-  public void dropAndRenameTables(final RelationKey oldRelation, final RelationKey newRelation)
-      throws DbException {
+  public void dropAndRenameTables(final RelationKey oldRelation, final RelationKey newRelation) throws DbException {
     dropTableIfExists(oldRelation);
     final String oldName = oldRelation.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE);
     final String newName = newRelation.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE);
@@ -426,8 +410,7 @@ public final class SQLiteAccessMethod extends AccessMethod {
   }
 
   @Override
-  public void createIndexes(
-      final RelationKey relationKey, final Schema schema, final List<List<IndexRef>> indexes)
+  public void createIndexes(final RelationKey relationKey, final Schema schema, final List<List<IndexRef>> indexes)
       throws DbException {
 
     Objects.requireNonNull(relationKey);
@@ -439,10 +422,7 @@ public final class SQLiteAccessMethod extends AccessMethod {
      * timestamp because SQLite doesn't have a rename indexes command.
      */
     final String indexProgramName =
-        new StringBuilder(relationKey.getProgramName())
-            .append("__myria_indexes_")
-            .append(System.nanoTime())
-            .toString();
+        new StringBuilder(relationKey.getProgramName()).append("__myria_indexes_").append(System.nanoTime()).toString();
 
     final String tempTableName = relationKey.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE);
     for (List<IndexRef> index : indexes) {
@@ -468,28 +448,21 @@ public final class SQLiteAccessMethod extends AccessMethod {
       }
       columns.append(')');
 
-      RelationKey indexRelationKey =
-          RelationKey.of(relationKey.getUserName(), indexProgramName, name.toString());
+      RelationKey indexRelationKey = RelationKey.of(relationKey.getUserName(), indexProgramName, name.toString());
       final String indexName = indexRelationKey.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE);
 
       StringBuilder statement = new StringBuilder();
-      statement
-          .append("CREATE INDEX ")
-          .append(indexName)
-          .append(" ON ")
-          .append(tempTableName)
-          .append(columns.toString());
+      statement.append("CREATE INDEX ").append(indexName).append(" ON ").append(tempTableName).append(
+          columns.toString());
 
       execute(statement.toString());
     }
   }
 
   @Override
-  public void createIndexIfNotExists(
-      final RelationKey relationKey, final Schema schema, final List<IndexRef> index)
+  public void createIndexIfNotExists(final RelationKey relationKey, final Schema schema, final List<IndexRef> index)
       throws DbException {
-    throw new UnsupportedOperationException(
-        "create index if not exists is not supported in sqlite yet, implement me");
+    throw new UnsupportedOperationException("create index if not exists is not supported in sqlite yet, implement me");
   }
 
   @Override

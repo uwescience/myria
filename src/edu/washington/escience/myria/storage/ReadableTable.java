@@ -1,5 +1,7 @@
 package edu.washington.escience.myria.storage;
 
+import java.nio.ByteBuffer;
+
 import javax.annotation.Nonnull;
 
 import org.joda.time.DateTime;
@@ -22,6 +24,14 @@ public interface ReadableTable extends TupleTable {
    */
   @Nonnull
   DateTime getDateTime(final int column, final int row);
+
+  /**
+   * @param column the column of the desired value.
+   * @param row the row of the desired value.
+   * @return the value in the specified column and row.
+   */
+  @Nonnull
+  ByteBuffer getByteBuffer(final int column, final int row);
 
   /**
    * @param column the column of the desired value.

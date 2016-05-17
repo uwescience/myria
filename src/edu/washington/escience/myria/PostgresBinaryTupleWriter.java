@@ -4,6 +4,7 @@ import java.io.BufferedOutputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -44,7 +45,8 @@ public class PostgresBinaryTupleWriter implements TupleWriter {
    * No-op
    */
   @Override
-  public void writeColumnHeaders(final List<String> columnNames) throws IOException {}
+  public void writeColumnHeaders(final List<String> columnNames) throws IOException {
+  }
 
   /**
    * Converts the given java seconds to postgresql seconds. The conversion is valid for any year 100 BC onwards.
@@ -149,6 +151,14 @@ public class PostgresBinaryTupleWriter implements TupleWriter {
             final byte[] utf8Bytes = string.getBytes("UTF-8");
             buffer.writeInt(utf8Bytes.length);
             buffer.write(utf8Bytes);
+            break;
+          case BYTES_TYPE:
+            ByteBuffer bb = tuples.getByteBuffer(j, i);
+            int length = bb.remaining();
+            byte[] data = new byte[length];
+            bb.get(data);
+            buffer.writeInt(length);
+            buffer.write(data);
             break;
         }
       }

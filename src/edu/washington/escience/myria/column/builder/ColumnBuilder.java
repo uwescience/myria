@@ -1,6 +1,7 @@
 package edu.washington.escience.myria.column.builder;
 
 import java.nio.BufferOverflowException;
+import java.nio.ByteBuffer;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
@@ -18,10 +19,10 @@ import edu.washington.escience.myria.storage.ReplaceableColumn;
 
 /**
  * @param <T> type of the objects in this column.
- *
+ * 
  */
-public abstract class ColumnBuilder<T extends Comparable<?>>
-    implements ReadableColumn, WritableColumn, ReplaceableColumn {
+public abstract class ColumnBuilder<T extends Comparable<?>> implements ReadableColumn, WritableColumn,
+    ReplaceableColumn {
 
   @Override
   public ColumnBuilder<T> appendBoolean(final boolean value) throws BufferOverflowException {
@@ -30,6 +31,11 @@ public abstract class ColumnBuilder<T extends Comparable<?>>
 
   @Override
   public ColumnBuilder<T> appendDateTime(final DateTime value) throws BufferOverflowException {
+    throw new UnsupportedOperationException(getClass().getName());
+  }
+
+  @Override
+  public ColumnBuilder<T> appendByteBuffer(final ByteBuffer value) throws BufferOverflowException {
     throw new UnsupportedOperationException(getClass().getName());
   }
 
@@ -69,6 +75,11 @@ public abstract class ColumnBuilder<T extends Comparable<?>>
   }
 
   @Override
+  public ByteBuffer getByteBuffer(final int row) {
+    throw new UnsupportedOperationException(getClass().getName());
+  }
+
+  @Override
   public ColumnBuilder<T> appendDouble(final double value) throws BufferOverflowException {
     throw new UnsupportedOperationException(getClass().getName());
   }
@@ -95,27 +106,27 @@ public abstract class ColumnBuilder<T extends Comparable<?>>
 
   /**
    * Extracts the appropriate value from a JDBC ResultSet object and appends it to this column.
-   *
+   * 
    * @param resultSet contains the results
    * @param jdbcIndex the position of the element to extract. 1-indexed.
    * @return this column builder.
    * @throws SQLException if there are JDBC errors.
    * @throws BufferOverflowException if the column is already full
    */
-  public abstract ColumnBuilder<T> appendFromJdbc(ResultSet resultSet, int jdbcIndex)
-      throws SQLException, BufferOverflowException;
+  public abstract ColumnBuilder<T> appendFromJdbc(ResultSet resultSet, int jdbcIndex) throws SQLException,
+      BufferOverflowException;
 
   /**
    * Extracts the appropriate value from a SQLiteStatement object and appends it to this column.
-   *
+   * 
    * @param statement contains the results
    * @return this column builder.
    * @param index the position of the element to extract. 0-indexed.
    * @throws SQLiteException if there are SQLite errors.
    * @throws BufferOverflowException if the column is already full
    */
-  public abstract ColumnBuilder<T> appendFromSQLite(SQLiteStatement statement, int index)
-      throws SQLiteException, BufferOverflowException;
+  public abstract ColumnBuilder<T> appendFromSQLite(SQLiteStatement statement, int index) throws SQLiteException,
+      BufferOverflowException;
 
   /**
    * @return a column with the contents built.
@@ -129,7 +140,7 @@ public abstract class ColumnBuilder<T extends Comparable<?>>
 
   /**
    * expand some size.
-   *
+   * 
    * @param size to expand
    * @return this column builder.
    * @throws BufferOverflowException if expanding size exceeds the column capacity
@@ -138,7 +149,7 @@ public abstract class ColumnBuilder<T extends Comparable<?>>
 
   /**
    * expand to full size.
-   *
+   * 
    * @return this column builder.
    */
   public abstract ColumnBuilder<T> expandAll();
@@ -150,6 +161,11 @@ public abstract class ColumnBuilder<T extends Comparable<?>>
 
   @Override
   public void replaceBoolean(final boolean value, final int row) {
+    throw new UnsupportedOperationException(getClass().getName());
+  }
+
+  @Override
+  public void replaceByteBuffer(@Nonnull final ByteBuffer value, final int row) {
     throw new UnsupportedOperationException(getClass().getName());
   }
 
@@ -182,4 +198,5 @@ public abstract class ColumnBuilder<T extends Comparable<?>>
   public void replaceString(@Nonnull final String value, final int row) {
     throw new UnsupportedOperationException(getClass().getName());
   }
+
 }

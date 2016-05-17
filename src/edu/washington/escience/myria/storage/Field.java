@@ -2,6 +2,7 @@ package edu.washington.escience.myria.storage;
 
 import java.io.Serializable;
 import java.nio.BufferOverflowException;
+import java.nio.ByteBuffer;
 
 import org.joda.time.DateTime;
 
@@ -30,6 +31,12 @@ public class Field<T extends Comparable<?>> implements WritableColumn, Serializa
 
   @Override
   public WritableColumn appendDateTime(final DateTime value) throws BufferOverflowException {
+    this.value = value;
+    return this;
+  }
+
+  @Override
+  public WritableColumn appendByteBuffer(final ByteBuffer value) throws BufferOverflowException {
     this.value = value;
     return this;
   }

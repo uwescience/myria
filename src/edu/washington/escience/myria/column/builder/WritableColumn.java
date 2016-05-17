@@ -1,6 +1,7 @@
 package edu.washington.escience.myria.column.builder;
 
 import java.nio.BufferOverflowException;
+import java.nio.ByteBuffer;
 
 import org.joda.time.DateTime;
 
@@ -27,6 +28,15 @@ public interface WritableColumn {
    * @throws BufferOverflowException if exceeds buffer up bound.
    */
   WritableColumn appendDateTime(final DateTime value) throws BufferOverflowException;
+
+  /**
+   * Inserts the specified element at end of this column.
+   *
+   * @param value element to be inserted.
+   * @return this column.
+   * @throws BufferOverflowException if exceeds buffer up bound.
+   */
+  WritableColumn appendByteBuffer(final ByteBuffer value) throws BufferOverflowException;
 
   /**
    * Inserts the specified element at end of this column.

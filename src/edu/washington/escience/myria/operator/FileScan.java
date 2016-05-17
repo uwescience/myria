@@ -3,6 +3,10 @@ package edu.washington.escience.myria.operator;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.nio.ByteBuffer;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Iterator;
 
 import javax.annotation.Nullable;
@@ -126,13 +130,8 @@ public final class FileScan extends LeafOperator {
    * @param escape An optional escape character.
    * @param numberOfSkippedLines number of lines to be skipped.
    */
-  public FileScan(
-      final String filename,
-      final Schema schema,
-      @Nullable final Character delimiter,
-      @Nullable final Character quote,
-      @Nullable final Character escape,
-      @Nullable final Integer numberOfSkippedLines) {
+  public FileScan(final String filename, final Schema schema, @Nullable final Character delimiter,
+      @Nullable final Character quote, @Nullable final Character escape, @Nullable final Integer numberOfSkippedLines) {
     this(new FileSource(filename), schema, delimiter, quote, escape, numberOfSkippedLines);
   }
 
@@ -149,13 +148,8 @@ public final class FileScan extends LeafOperator {
    * @param escape An optional escape character.
    * @param numberOfSkippedLines number of lines to be skipped (number of lines in header).
    */
-  public FileScan(
-      final DataSource source,
-      final Schema schema,
-      @Nullable final Character delimiter,
-      @Nullable final Character quote,
-      @Nullable final Character escape,
-      @Nullable final Integer numberOfSkippedLines) {
+  public FileScan(final DataSource source, final Schema schema, @Nullable final Character delimiter,
+      @Nullable final Character quote, @Nullable final Character escape, @Nullable final Integer numberOfSkippedLines) {
     this.source = Preconditions.checkNotNull(source, "source");
     this.schema = Preconditions.checkNotNull(schema, "schema");
 
@@ -194,14 +188,8 @@ public final class FileScan extends LeafOperator {
       CSVRecord record = iterator.next();
 
       if (record.size() != schema.numColumns()) {
-        throw new DbException(
-            "Error parsing row "
-                + lineNumber
-                + ": Found "
-                + record.size()
-                + " column(s) but expected "
-                + schema.numColumns()
-                + " column(s).");
+        throw new DbException("Error parsing row " + lineNumber + ": Found " + record.size()
+            + " column(s) but expected " + schema.numColumns() + " column(s).");
       }
       for (int column = 0; column < schema.numColumns(); ++column) {
         String cell = record.get(column);
@@ -232,18 +220,13 @@ public final class FileScan extends LeafOperator {
             case DATETIME_TYPE:
               buffer.putDateTime(column, DateTimeUtils.parse(cell));
               break;
+            case BYTES_TYPE:
+              buffer.putByteBuffer(column, getFile(cell));// read filename
+              break;
           }
         } catch (final IllegalArgumentException e) {
-          throw new DbException(
-              "Error parsing column "
-                  + column
-                  + " of row "
-                  + lineNumber
-                  + ", expected type: "
-                  + schema.getColumnType(column)
-                  + ", scanned value: "
-                  + cell,
-              e);
+          throw new DbException("Error parsing column " + column + " of row " + lineNumber + ", expected type: "
+              + schema.getColumnType(column) + ", scanned value: " + cell, e);
         }
       }
     }
@@ -263,9 +246,8 @@ public final class FileScan extends LeafOperator {
     buffer = new TupleBatchBuffer(getSchema());
     try {
       parser =
-          new CSVParser(
-              new BufferedReader(new InputStreamReader(source.getInputStream())),
-              CSVFormat.newFormat(delimiter).withQuote(quote).withEscape(escape));
+          new CSVParser(new BufferedReader(new InputStreamReader(source.getInputStream())), CSVFormat.newFormat(
+              delimiter).withQuote(quote).withEscape(escape));
       iterator = parser.iterator();
       for (int i = 0; i < numberOfSkippedLines; i++) {
         iterator.next();
@@ -275,5 +257,23 @@ public final class FileScan extends LeafOperator {
     }
 
     lineNumber = 0;
+  }
+
+  protected ByteBuffer getFile(final String filename) throws DbException {
+    Preconditions.checkNotNull(filename, "byte[] filename was null");
+
+    // LOGGER.info("filename " + filename);
+    Path path = Paths.get(filename);
+    // LOGGER.info("path " + path.toString());
+
+    byte[] data = null;
+    try {
+      data = Files.readAllBytes(path);
+    } catch (IOException e) {
+      throw new DbException(e);
+    }
+    // LOGGER.info("size of bytebuffer written: " + data.length);
+    return ByteBuffer.wrap(data);
+
   }
 }

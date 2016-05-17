@@ -10,7 +10,8 @@ import edu.washington.escience.myria.column.builder.ColumnBuilder;
  */
 public final class TupleUtils {
   /** Utility class cannot be instantiated. */
-  private TupleUtils() {}
+  private TupleUtils() {
+  }
 
   /**
    * Copy the specified from a {@link ReadableColumn} to a {@link AppendableTable}.
@@ -19,8 +20,7 @@ public final class TupleUtils {
    * @param fromRow the row of the source value
    * @param to the destination of the value
    */
-  public static void copyValue(
-      final ReadableColumn from, final int fromRow, final ColumnBuilder<?> to) {
+  public static void copyValue(final ReadableColumn from, final int fromRow, final ColumnBuilder<?> to) {
     Type t = from.getType();
     switch (t) {
       case BOOLEAN_TYPE:
@@ -28,6 +28,9 @@ public final class TupleUtils {
         break;
       case DATETIME_TYPE:
         to.appendDateTime(from.getDateTime(fromRow));
+        break;
+      case BYTES_TYPE:
+        to.appendByteBuffer(from.getByteBuffer(fromRow));
         break;
       case DOUBLE_TYPE:
         to.appendDouble(from.getDouble(fromRow));
@@ -55,8 +58,8 @@ public final class TupleUtils {
    * @param to the destination of the value
    * @param toColumn the destination column
    */
-  public static void copyValue(
-      final ReadableColumn from, final int fromRow, final AppendableTable to, final int toColumn) {
+  public static void copyValue(final ReadableColumn from, final int fromRow, final AppendableTable to,
+      final int toColumn) {
     Type t = from.getType();
     switch (t) {
       case BOOLEAN_TYPE:
@@ -64,6 +67,9 @@ public final class TupleUtils {
         break;
       case DATETIME_TYPE:
         to.putDateTime(toColumn, from.getDateTime(fromRow));
+        break;
+      case BYTES_TYPE:
+        to.putByteBuffer(toColumn, from.getByteBuffer(fromRow));
         break;
       case DOUBLE_TYPE:
         to.putDouble(toColumn, from.getDouble(fromRow));
@@ -92,12 +98,8 @@ public final class TupleUtils {
    * @param to the destination of the value
    * @param toColumn the destination column
    */
-  public static void copyValue(
-      final ReadableTable from,
-      final int fromColumn,
-      final int fromRow,
-      final ColumnBuilder<?> to,
-      final int toColumn) {
+  public static void copyValue(final ReadableTable from, final int fromColumn, final int fromRow,
+      final ColumnBuilder<?> to, final int toColumn) {
     Type t = from.getSchema().getColumnType(fromColumn);
     switch (t) {
       case BOOLEAN_TYPE:
@@ -105,6 +107,9 @@ public final class TupleUtils {
         break;
       case DATETIME_TYPE:
         to.appendDateTime(from.getDateTime(fromColumn, fromRow));
+        break;
+      case BYTES_TYPE:
+        to.appendByteBuffer(from.getByteBuffer(fromColumn, fromRow));
         break;
       case DOUBLE_TYPE:
         to.appendDouble(from.getDouble(fromColumn, fromRow));
@@ -133,12 +138,8 @@ public final class TupleUtils {
    * @param to the destination of the value
    * @param toColumn the destination column
    */
-  public static void copyValue(
-      final ReadableTable from,
-      final int fromColumn,
-      final int fromRow,
-      final AppendableTable to,
-      final int toColumn) {
+  public static void copyValue(final ReadableTable from, final int fromColumn, final int fromRow,
+      final AppendableTable to, final int toColumn) {
     Type t = from.getSchema().getColumnType(fromColumn);
     switch (t) {
       case BOOLEAN_TYPE:
@@ -146,6 +147,9 @@ public final class TupleUtils {
         break;
       case DATETIME_TYPE:
         to.putDateTime(toColumn, from.getDateTime(fromColumn, fromRow));
+        break;
+      case BYTES_TYPE:
+        to.putByteBuffer(toColumn, from.getByteBuffer(fromColumn, fromRow));
         break;
       case DOUBLE_TYPE:
         to.putDouble(toColumn, from.getDouble(fromColumn, fromRow));
@@ -174,16 +178,10 @@ public final class TupleUtils {
    * @param row2 row number of cell 2
    * @return comparison result
    */
-  public static int cellCompare(
-      final ReadableTable table1,
-      final int column1,
-      final int row1,
-      final ReadableTable table2,
-      final int column2,
-      final int row2) {
-    Preconditions.checkArgument(
-        table1.getSchema().getColumnType(column1).equals(table2.getSchema().getColumnType(column2)),
-        "The types of comparing cells are not matched.");
+  public static int cellCompare(final ReadableTable table1, final int column1, final int row1,
+      final ReadableTable table2, final int column2, final int row2) {
+    Preconditions.checkArgument(table1.getSchema().getColumnType(column1).equals(
+        table2.getSchema().getColumnType(column2)), "The types of comparing cells are not matched.");
     switch (table1.getSchema().getColumnType(column1)) {
       case BOOLEAN_TYPE:
         return Type.compareRaw(table1.getBoolean(column1, row1), table2.getBoolean(column2, row2));
@@ -198,8 +196,9 @@ public final class TupleUtils {
       case STRING_TYPE:
         return Type.compareRaw(table1.getString(column1, row1), table2.getString(column2, row2));
       case DATETIME_TYPE:
-        return Type.compareRaw(
-            table1.getDateTime(column1, row1), table2.getDateTime(column2, row2));
+        return Type.compareRaw(table1.getDateTime(column1, row1), table2.getDateTime(column2, row2));
+      case BYTES_TYPE:
+        return Type.compareRaw(table1.getByteBuffer(column1, row1), table2.getByteBuffer(column2, row2));
     }
 
     throw new IllegalStateException("Invalid type.");
@@ -219,18 +218,10 @@ public final class TupleUtils {
    * @return a negative integer, zero, or a positive integer as the first argument is less than, equal to, or greater
    *         than the second
    */
-  public static int tupleCompare(
-      final ReadableTable table1,
-      final int[] compareIndexes1,
-      final int rowIdx1,
-      final ReadableTable table2,
-      final int[] compareIndexes2,
-      final int rowIdx2,
-      final boolean[] ascending) {
+  public static int tupleCompare(final ReadableTable table1, final int[] compareIndexes1, final int rowIdx1,
+      final ReadableTable table2, final int[] compareIndexes2, final int rowIdx2, final boolean[] ascending) {
     for (int i = 0; i < compareIndexes1.length; i++) {
-      int compared =
-          TupleUtils.cellCompare(
-              table1, compareIndexes1[i], rowIdx1, table2, compareIndexes2[i], rowIdx2);
+      int compared = TupleUtils.cellCompare(table1, compareIndexes1[i], rowIdx1, table2, compareIndexes2[i], rowIdx2);
       if (compared != 0) {
         if (!ascending[i]) {
           return -compared;
@@ -254,14 +245,9 @@ public final class TupleUtils {
    * @return a negative integer, zero, or a positive integer as the first argument is less than, equal to, or greater
    *         than the second
    */
-  public static int tupleCompare(
-      final ReadableTable table,
-      final int[] columnCompareIndexes,
-      final int rowIdx,
-      final int rowIdx2,
-      final boolean[] ascending) {
-    return tupleCompare(
-        table, columnCompareIndexes, rowIdx, table, columnCompareIndexes, rowIdx2, ascending);
+  public static int tupleCompare(final ReadableTable table, final int[] columnCompareIndexes, final int rowIdx,
+      final int rowIdx2, final boolean[] ascending) {
+    return tupleCompare(table, columnCompareIndexes, rowIdx, table, columnCompareIndexes, rowIdx2, ascending);
   }
 
   /**
@@ -276,33 +262,25 @@ public final class TupleUtils {
    *
    * @return true if equals.
    */
-  public static boolean tupleEquals(
-      final ReadableTable table1,
-      final int[] compareColumns1,
-      final int row1,
-      final ReadableTable table2,
-      final int[] compareColumns2,
-      final int row2) {
+  public static boolean tupleEquals(final ReadableTable table1, final int[] compareColumns1, final int row1,
+      final ReadableTable table2, final int[] compareColumns2, final int row2) {
     if (compareColumns1.length != compareColumns2.length) {
       return false;
     }
     for (int i = 0; i < compareColumns1.length; ++i) {
       switch (table1.getSchema().getColumnType(compareColumns1[i])) {
         case BOOLEAN_TYPE:
-          if (table1.getBoolean(compareColumns1[i], row1)
-              != table2.getBoolean(compareColumns2[i], row2)) {
+          if (table1.getBoolean(compareColumns1[i], row1) != table2.getBoolean(compareColumns2[i], row2)) {
             return false;
           }
           break;
         case DOUBLE_TYPE:
-          if (table1.getDouble(compareColumns1[i], row1)
-              != table2.getDouble(compareColumns2[i], row2)) {
+          if (table1.getDouble(compareColumns1[i], row1) != table2.getDouble(compareColumns2[i], row2)) {
             return false;
           }
           break;
         case FLOAT_TYPE:
-          if (table1.getFloat(compareColumns1[i], row1)
-              != table2.getFloat(compareColumns2[i], row2)) {
+          if (table1.getFloat(compareColumns1[i], row1) != table2.getFloat(compareColumns2[i], row2)) {
             return false;
           }
           break;
@@ -312,22 +290,22 @@ public final class TupleUtils {
           }
           break;
         case LONG_TYPE:
-          if (table1.getLong(compareColumns1[i], row1)
-              != table2.getLong(compareColumns2[i], row2)) {
+          if (table1.getLong(compareColumns1[i], row1) != table2.getLong(compareColumns2[i], row2)) {
             return false;
           }
           break;
         case STRING_TYPE:
-          if (!table1
-              .getString(compareColumns1[i], row1)
-              .equals(table2.getString(compareColumns2[i], row2))) {
+          if (!table1.getString(compareColumns1[i], row1).equals(table2.getString(compareColumns2[i], row2))) {
             return false;
           }
           break;
         case DATETIME_TYPE:
-          if (!table1
-              .getDateTime(compareColumns1[i], row1)
-              .equals(table2.getDateTime(compareColumns2[i], row2))) {
+          if (!table1.getDateTime(compareColumns1[i], row1).equals(table2.getDateTime(compareColumns2[i], row2))) {
+            return false;
+          }
+          break;
+        case BYTES_TYPE:
+          if (!table1.getByteBuffer(compareColumns1[i], row1).equals(table2.getByteBuffer(compareColumns2[i], row2))) {
             return false;
           }
           break;
@@ -345,8 +323,8 @@ public final class TupleUtils {
    * @param row2 row index of the tuple in table2 to compare against
    * @return true if equals
    */
-  public static boolean tupleEquals(
-      final ReadableTable table1, final int row1, final ReadableTable table2, final int row2) {
+  public static boolean tupleEquals(final ReadableTable table1, final int row1, final ReadableTable table2,
+      final int row2) {
     if (table1.numColumns() != table2.numColumns()) {
       return false;
     }
@@ -387,6 +365,11 @@ public final class TupleUtils {
             return false;
           }
           break;
+        case BYTES_TYPE:
+          if (!table1.getByteBuffer(i, row1).equals(table2.getByteBuffer(i, row2))) {
+            return false;
+          }
+          break;
       }
     }
     return true;
@@ -403,12 +386,8 @@ public final class TupleUtils {
    *
    * @return true if equals
    */
-  public static boolean tupleEquals(
-      final ReadableTable table1,
-      final int[] compareColumns,
-      final int row1,
-      final ReadableTable table2,
-      final int index) {
+  public static boolean tupleEquals(final ReadableTable table1, final int[] compareColumns, final int row1,
+      final ReadableTable table2, final int index) {
     if (compareColumns.length != table2.numColumns()) {
       return false;
     }
@@ -446,6 +425,11 @@ public final class TupleUtils {
           break;
         case DATETIME_TYPE:
           if (!table1.getDateTime(compareColumns[i], row1).equals(table2.getDateTime(i, index))) {
+            return false;
+          }
+          break;
+        case BYTES_TYPE:
+          if (!table1.getByteBuffer(compareColumns[i], row1).equals(table2.getByteBuffer(i, index))) {
             return false;
           }
           break;

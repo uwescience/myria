@@ -1,0 +1,17 @@
+{
+  "relationKey" : {
+    "userName" : "public",
+    "programName" : "blob_operator",
+    "relationName" : "binarydata"
+  },
+  "schema" : {
+    "columnTypes" : ["INT_TYPE", "BYTES_TYPE","BYTES_TYPE" ],
+    "columnNames" : ["index", "images", "mask"]
+  },
+  "source" : {
+    "dataType" : "File",
+    "filename" : "/Users/parmita/myria/myria-expr/myria/jsonQueries/pythonUDF/dmridata.csv"
+  },
+  "overwrite" : true,
+  "delimiter": ","
+}
