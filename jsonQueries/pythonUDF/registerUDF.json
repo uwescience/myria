@@ -1,0 +1,14 @@
+{
+  "name": "denoise",
+  "text": "CREATE OR REPLACE FUNCTION inc(val integer) RETURNS integer AS $$ BEGIN RETURN val + 1; END; $$ LANGUAGE PLPGSQL",
+  "lang":0,
+  "workers": [  1],
+  "outputSchema" : {
+    "columnTypes" : ["INT_TYPE", "BYTES_TYPE"],
+    "columnNames" : ["id", "image"]
+  },
+  "inputSchema" : {
+    "columnTypes" : ["INT_TYPE", "BYTES_TYPE", "BYTES_TYPE"],
+    "columnNames" : ["id", "image", "mask"]
+  }
+}

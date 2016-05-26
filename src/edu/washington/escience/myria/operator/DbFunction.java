@@ -3,18 +3,22 @@
  */
 package edu.washington.escience.myria.operator;
 
+import java.nio.ByteBuffer;
+
 import com.google.common.collect.ImmutableMap;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
+import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.accessmethod.AccessMethod;
 import edu.washington.escience.myria.accessmethod.ConnectionInfo;
+import edu.washington.escience.myria.api.encoding.FunctionEncoding.FunctionLanguage;
 import edu.washington.escience.myria.storage.TupleBatch;
 
 /**
-* 
-*/
-public class DbCreateUDF extends RootOperator {
+ * 
+ */
+public class DbFunction extends RootOperator {
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
 
@@ -23,17 +27,27 @@ public class DbCreateUDF extends RootOperator {
   /** The information for the database connection. */
   private ConnectionInfo connectionInfo;
 
-  private final String udfDefinition;
+  private final ByteBuffer binary;
+  private final Schema inputSchema;
+  private final Schema outputSchema;
+  private final FunctionLanguage lang;
+  private final String text;
 
   /**
    * @param child the source of tuples to be inserted.
    * @param relationKey the key of the table the tuples should be inserted into.
    * @param connectionInfo the parameters of the database connection.
    */
-  public DbCreateUDF(final Operator child, final String sqlString, final ConnectionInfo connectionInfo) {
+  public DbFunction(final Operator child, final String text, final Schema input, final Schema output,
+      final ByteBuffer binary, final FunctionLanguage lang, final ConnectionInfo connectionInfo) {
     super(child);
     this.connectionInfo = connectionInfo;
-    udfDefinition = sqlString;
+    this.text = text;
+    outputSchema = output;
+    inputSchema = input;
+    this.lang = lang;
+    this.binary = binary;
+
   }
 
   @Override
@@ -42,11 +56,14 @@ public class DbCreateUDF extends RootOperator {
     if (connectionInfo == null && execEnvVars != null) {
       connectionInfo = (ConnectionInfo) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_DATABASE_CONN_INFO);
     }
-    /* Open the database connection */
-    accessMethod = AccessMethod.of(connectionInfo.getDbms(), connectionInfo, false);
 
-    /* Drop the table */
-    accessMethod.executeSQLCommand(udfDefinition);
+    if (lang == FunctionLanguage.POSTGRES) {
+      /* Open the database connection */
+      accessMethod = AccessMethod.of(connectionInfo.getDbms(), connectionInfo, false);
+      /* Add the POSTGRES UDF */
+      accessMethod.executeSQLCommand(text);
+    }
+
   }
 
   @Override

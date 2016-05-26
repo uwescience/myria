@@ -33,7 +33,7 @@ import edu.washington.escience.myria.operator.Operator;
     @Type(name = "DbQueryScan", value = QueryScanEncoding.class),
     @Type(name = "DbCreateIndex", value = CreateIndexEncoding.class),
     @Type(name = "DbCreateView", value = CreateViewEncoding.class),
-    @Type(name = "DbCreateUDF", value = CreateUDFEncoding.class),
+    @Type(name = "DbFunction", value = FunctionEncoding.class),
     @Type(name = "Difference", value = DifferenceEncoding.class),
     @Type(name = "DupElim", value = DupElimEncoding.class), @Type(name = "Empty", value = EmptyRelationEncoding.class),
     @Type(name = "EOSController", value = EOSControllerEncoding.class),
@@ -72,7 +72,8 @@ import edu.washington.escience.myria.operator.Operator;
     @Type(name = "UnionAll", value = UnionAllEncoding.class) })
 public abstract class OperatorEncoding<T extends Operator> extends MyriaApiEncoding {
 
-  @Required public Integer opId;
+  @Required
+  public Integer opId;
 
   public String opName;
 

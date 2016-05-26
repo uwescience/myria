@@ -37,13 +37,11 @@ public abstract class Evaluator {
     this.expression = Preconditions.checkNotNull(expression, "expression");
     this.parameters = Preconditions.checkNotNull(parameters, "parameters");
     if (getExpression().hasOperator(VariableExpression.class)) {
-      Preconditions.checkNotNull(
-          parameters.getSchema(), "ExpressionOperatorParameter input schema");
+      Preconditions.checkNotNull(parameters.getSchema(), "ExpressionOperatorParameter input schema");
     }
     needsState = getExpression().hasOperator(StateExpression.class);
     if (needsState) {
-      Preconditions.checkNotNull(
-          parameters.getStateSchema(), "ExpressionOperatorParameter state schema");
+      Preconditions.checkNotNull(parameters.getStateSchema(), "ExpressionOperatorParameter state schema");
     }
   }
 
@@ -87,7 +85,8 @@ public abstract class Evaluator {
    *
    * @throws DbException compilation failed
    */
-  public void compile() throws DbException {}
+  public void compile() throws DbException {
+  }
 
   /**
    * @return the Java form of this expression, including appending to the result.
@@ -118,7 +117,7 @@ public abstract class Evaluator {
    * @return true if the expression does not have to be compiled.
    */
   public boolean needsCompiling() {
-    return !(isCopyFromInput() || isConstant());
+    return !(isCopyFromInput() || isConstant() || isPredefinedUDF());
   }
 
   /**
@@ -126,6 +125,10 @@ public abstract class Evaluator {
    */
   public boolean isConstant() {
     return getExpression().isConstant();
+  }
+
+  public boolean isPredefinedUDF() {
+    return getExpression().isPredefinedUDF();
   }
 
   /**

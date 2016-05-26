@@ -21,17 +21,20 @@ public class Expression implements Serializable {
   /**
    * Name of the column that the result will be written to.
    */
-  @JsonProperty private final String outputName;
+  @JsonProperty
+  private final String outputName;
 
   /**
    * The java expression to be evaluated.
    */
-  @JsonProperty private String javaExpression;
+  @JsonProperty
+  private String javaExpression;
 
   /**
    * Expression encoding reference is needed to get the output type.
    */
-  @JsonProperty private final ExpressionOperator rootExpressionOperator;
+  @JsonProperty
+  private final ExpressionOperator rootExpressionOperator;
 
   /**
    * Variable name of result.
@@ -109,13 +112,8 @@ public class Expression implements Serializable {
    * @return the Java form of this expression that also writes the results to a {@link ColumnBuilder}.
    */
   public String getJavaExpressionWithAppend(final ExpressionOperatorParameter parameters) {
-    return new StringBuilder(RESULT)
-        .append(".append")
-        .append(getOutputType(parameters).getName())
-        .append("(")
-        .append(getJavaExpression(parameters))
-        .append(")")
-        .toString();
+    return new StringBuilder(RESULT).append(".append").append(getOutputType(parameters).getName()).append("(").append(
+        getJavaExpression(parameters)).append(")").toString();
   }
 
   /**
@@ -157,8 +155,18 @@ public class Expression implements Serializable {
    * @return if this expression evaluates to a constant
    */
   public boolean isConstant() {
-    return !hasOperator(VariableExpression.class)
-        && !hasOperator(StateExpression.class)
+    return !hasOperator(VariableExpression.class) && !hasOperator(StateExpression.class)
         && !hasOperator(RandomExpression.class);
+  }
+
+  /**
+   * An expression is a constant expression when it has to be evaluated only once. This means that an expression with
+   * variables, state or random is likely not a constant.
+   *
+   * @return if this expression evaluates to a constant
+   */
+  public boolean isPredefinedUDF() {
+    return false;
+    // hasOperator(UDFExpression.class);
   }
 }
