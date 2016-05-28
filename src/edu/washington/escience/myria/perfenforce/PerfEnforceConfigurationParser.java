@@ -39,4 +39,21 @@ public class PerfEnforceConfigurationParser {
     }
     return listTablesOfType;
   }
+
+  public static List<TableDescriptionEncoding> getAllTables(final String configFilePath) {
+    List<TableDescriptionEncoding> listTablesOfType = new ArrayList<TableDescriptionEncoding>();
+    Gson gson = new Gson();
+    String stringFromFile;
+    try {
+      stringFromFile = Files.toString(new File(configFilePath), Charsets.UTF_8);
+      TableDescriptionEncoding[] tableList = gson.fromJson(stringFromFile, TableDescriptionEncoding[].class);
+
+      for (TableDescriptionEncoding currentTable : tableList) {
+        listTablesOfType.add(currentTable);
+      }
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+    return listTablesOfType;
+  }
 }

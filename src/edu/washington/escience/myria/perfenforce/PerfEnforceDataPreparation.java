@@ -3,11 +3,16 @@
  */
 package edu.washington.escience.myria.perfenforce;
 
+import java.io.BufferedReader;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
@@ -45,8 +50,17 @@ public class PerfEnforceDataPreparation {
   /*
    * Ingesting the fact table in a parallel sequence
    */
-  public void ingestFact(final RelationKey relationKey, final DataSource source, final Schema schema,
-      final Character delimiter, final Set<Integer> configurations) {
+  public HashMap<Integer, RelationKey> ingestFact(final Set<Integer> configurations,
+      final TableDescriptionEncoding tableDesc) {
+    // Mapper to Return
+    HashMap<Integer, RelationKey> factTableMapper = new HashMap<Integer, RelationKey>();
+
+    // Table Parameters
+    RelationKey relationKey = tableDesc.relationKey;
+    DataSource source = tableDesc.source;
+    Schema schema = tableDesc.schema;
+    Character delimiter = tableDesc.delimiter;
+
     ArrayList<RelationKey> relationKeysToUnion = new ArrayList<RelationKey>();
     ArrayList<Integer> configs = new ArrayList<Integer>(configurations);
     Collections.sort(configs, Collections.reverseOrder());
@@ -70,8 +84,8 @@ public class PerfEnforceDataPreparation {
 
       server.createView(maxConfigRelationKey.toString(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL), PerfEnforceUtils
           .createUnionQuery(relationKeysToUnion), rangeMax);
-
       server.addDatasetToCatalog(maxConfigRelationKey, schema, rangeMax);
+      factTableMapper.put(maxConfig, maxConfigRelationKey);
     } catch (DbException | InterruptedException | CatalogException e1) {
       e1.printStackTrace();
     }
@@ -122,6 +136,7 @@ public class PerfEnforceDataPreparation {
         server.createView(currentConfigRelationKey.toString(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL), PerfEnforceUtils
             .createUnionQuery(relationKeysToUnion), currentRange);
         server.addDatasetToCatalog(currentConfigRelationKey, schema, currentRange);
+        factTableMapper.put(currentSize, currentConfigRelationKey);
       } catch (InterruptedException | ExecutionException | DbException | CatalogException e) {
         e.printStackTrace();
       }
@@ -129,13 +144,18 @@ public class PerfEnforceDataPreparation {
       previousRange = currentRange;
       previousRelationKey = currentRelationKeyToUnion;
     }
+    return factTableMapper;
   }
 
   /*
    * Ingesting dimension tables for broadcasting
    */
-  public void ingestDimension(final RelationKey relationKey, final DataSource source, final Schema schema,
-      final Character delimiter, final Set<Integer> configurations) {
+  public void ingestDimension(final Set<Integer> configurations, final TableDescriptionEncoding tableDesc) {
+    // Table Parameters
+    RelationKey relationKey = tableDesc.relationKey;
+    DataSource source = tableDesc.source;
+    Schema schema = tableDesc.schema;
+    Character delimiter = tableDesc.delimiter;
 
     Set<Integer> totalWorkers = PerfEnforceUtils.getRangeSet(Collections.max(configurations));
 
@@ -188,10 +208,61 @@ public class PerfEnforceDataPreparation {
   }
 
   /*
-   * For each primary, determine the rank
+   * For each primary key, determine the rank based on the selectivity and return the result
    */
-  public void runTableRanking(final double selectivity) {
+  public StatsTableEncoding runTableRanking(final RelationKey relationKey, final int tableCount,
+      final Set<Integer> keys, final Schema schema, final String path) {
+    String keyString = "";
+    String statsFile = path + "/statsFile.txt";
 
+    // handle the more than 1 key scenario (just in case)
+    int counter = 1;
+    for (int key : keys) {
+      keyString += schema.getColumnName(key);
+      if (counter != keys.size()) {
+        keyString += ",";
+      }
+      counter++;
+    }
+
+    // for each selectivity
+    List<Double> selectivityList = Arrays.asList(new Double[] { .001, .01, .1, 1.0 });
+    for (int i = 0; i < selectivityList.size(); i++) {
+      String rankingQuery =
+          String
+              .format(
+                  "/o | cat - >> %s;select %s from (select %s, CAST(rank() over (order by %s asc) AS float)/%d as rank from %s) as r where r.rank >= %d LIMIT 1; /o",
+                  statsFile, keyString, keyString, keyString, tableCount, relationKey
+                      .toString(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL), selectivityList.get(i));
+      server.executeSQLCommand(rankingQuery, new HashSet<Integer>(Arrays.asList(1)));
+    }
+
+    // read stats file
+    StatsTableEncoding tableStats = null;
+    BufferedReader br;
+    try {
+      br = new BufferedReader(new InputStreamReader(new FileInputStream(statsFile)));
+
+      String tableName = relationKey.toString(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL);
+      int size = tableCount;
+      String selectivity1 = br.readLine();
+      String selectivity10 = br.readLine();
+      String selectivity100 = br.readLine();
+      tableStats = new StatsTableEncoding(tableName, size, selectivity1, selectivity10, selectivity100);
+      br.close();
+
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+
+    return tableStats;
+  }
+
+  /*
+   * Get the table count
+   */
+  public int runTableCount(final RelationKey relationKey) {
+    return 0;
   }
 
   public void generatePostgresFeatures(final String queryFilePath) {

@@ -128,7 +128,7 @@
         "STRING_TYPE"
       ]
     },
-    "delimiter": "|",
+    "delimiter": ",",
     "keys": [
       0
     ]
