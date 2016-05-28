@@ -1,22 +1,16 @@
 ---
 layout: default
-title: Architecture
+title: MyriaX Internals
 group: "docs"
-section: 5
+weight: 1
+section: 4
 ---
 
-
 # Overview of the architecture
-
-* Design philosophy?
 
 The MyriaX execution layer is modeled after the [Actor Model](http://en.wikipedia.org/wiki/Actor_model). But it is not a general purpose Actor Model implementation. It does not allow creation of new actors by existing actors. It allows only relational data as messages. And it restricts the processing of the messages by only using the Operator interface.
 
 # Components
-
-* MyriaX REST API
-
-* MyriaX Query Plans
 
 * Special Features
     * Expression library
@@ -32,31 +26,19 @@ The MyriaX execution layer is modeled after the [Actor Model](http://en.wikipedi
     * Networking layer
     * Failure handling
 
-Query Execution
--------------
+## Query Execution
 
 ### Operators: data processing units
-Operators are MyriaX's data processing units. Each operator has a set of children operators (may be 0). Relational data (in format of TupleBatch) are drawn from the children operators (i.e. the inputs of the operator). Output relational data can be drawn by calling
- > Operator.fetchNextReady().
-
+Operators are MyriaX's data processing units. Each operator has a set of children operators (may be 0). Relational data (in format of TupleBatch) are drawn from the children operators (i.e. the inputs of the operator). Output relational data can be drawn by calling "Operator.fetchNextReady()".
 Each operator can have a set of children operators, but only one or zero parent operator. In this way, operators can be linked together to form an operator tree. 
 
 #### Initialization and cleanup.
-Before data processing, an Operator must be initialized, by calling
->Operator.open()
-
-This method in turn calls
-> Operator.init()
-
+Before data processing, an Operator must be initialized, by calling "Operator.open()", which in turn calls "Operator.init()".
 It is a method that is required to be implemented by the Operator developers to do actual initialization. It may include memory allocation, system resource reservation, etc. 
 
-Once an operator is opend by the MyriaX system, it is guarranted that the Operator's
->Operator.close()
-
-method will be called after the execution of the Operator, either successfully or erroneously. And in turn
-> Operator.cleanup()
-
-is called . The Operator developer should do exactly the opposite of init in the cleanup method.
+Once an operator is opend by the MyriaX system, it is guarranted that the Operator's "Operator.close()".
+method will be called after the execution of the Operator, either successfully or erroneously. And in turn "Operator.cleanup()"
+is called. The Operator developer should do exactly the opposite of init in the cleanup method.
 
 #### RootOperator and LeafOperator
 
@@ -66,7 +48,6 @@ LeafOperator are the leafs of operator trees. There are also several implementat
 
 #### States
 Each Operator has a EOS state variable. An Operator should execute and process data only if the EOS state is not true. If the EOS state becomes true, the Operator no longer process any data. It may still return data because it may maintain an output data buffer.
-
 
 ### Operator trees: execution units
 
@@ -167,7 +148,7 @@ In the code block of the last section, the *yield* of a LocalFragment is impleme
 The blocking mode has no such execution pool. Each time a LocalFragment is created, a new Java Thread is created to execute the operator tree. The executionConditions and the break will be ignored. The execution keeps going when any of the LocalFragements is not EOS and no errors occur.
 
 
-####Execution condition
+#### Execution condition
 
 Each LocalFragment has a long state variable recording the current execution condition. Each bit of the long variable is a state indicator. Currently we have the following state bits:
 
@@ -191,17 +172,9 @@ Each LocalFragment has a long state variable recording the current execution con
 
   - STATE_IN_EXECUTION = (1 << 9) is set when the LocalFragment is in an execution. Together with the STATE_EXECUTION_REQUESTED, it also prevents from multiple parallel execution of the same LocalFragment.
 
-To start executing a LocalFragment, the execution condition must be: 
-
-> EXECUTION_PRE_START = STATE_INITIALIZED | STATE_OUTPUT_AVAILABLE | STATE_INPUT_AVAILABLE;
-
-After execution starts, if the LocalFragment is ready to actually gets executed, the exeuction condition is:
-
-> EXECUTION_READY = EXECUTION_PRE_START | STATE_STARTED;
-
-When a LocalFragment executed a round (i.e. a call of fetchNextReady on the root Operator), it needs to check if currently another round of execution is needed. The execution condition is:
-
->  EXECUTION_READY | STATE_EXECUTION_REQUESTED | STATE_IN_EXECUTION;
+To start executing a LocalFragment, the execution condition must be: "EXECUTION_PRE_START = STATE_INITIALIZED | STATE_OUTPUT_AVAILABLE | STATE_INPUT_AVAILABLE".
+After execution starts, if the LocalFragment is ready to actually gets executed, the exeuction condition is: "EXECUTION_READY = EXECUTION_PRE_START | STATE_STARTED".
+When a LocalFragment executed a round (i.e. a call of fetchNextReady on the root Operator), it needs to check if currently another round of execution is needed. The execution condition is: "EXECUTION_READY | STATE_EXECUTION_REQUESTED | STATE_IN_EXECUTION".
 
 ### Scheduling
 Currently there are no schedulers in Myria. Once a LocalFragment gets executed, it keeps executing until it yields. And also if there is a set of LocalFragments waiting for execution, and now a execution thread becomes free, it is not defined which waiting LocalFragment should get executed.
@@ -234,7 +207,7 @@ The typical usage of the IPC layer is like the following code example:
     }
 ```
 
-### The IPCEntities. 
+### The IPCEntities
 
 The IPC layer is designed to support not only inter-process communications, but also intra-process communications. To provide this flexibility, the IPC layer abstracts the various senders and receivers using IPCEntity.
 
@@ -242,30 +215,28 @@ Each IPCEntity has an IPCID. It is currently an integer. Given a set of IPCEntit
 
 Each IPCEntity also has a SocketInfo recording the address of the IPCEntity.  Currently, only IP4 addresses/host names together with port numbers are supported.
 
-Each IPCEntity is mapped into a single instance of an IPCConnectionPool. If a Java process has several IPCConnectionPool instances, each of them is an IPCEntity. They are able to talk to each other as long as their IPCID are unique and the SocketInfo addresses are also unique.
+Each IPCEntity is mapped into a single instance of an IPCConnectionPool. If a Java process has several IPCConnectionPool instances,
+each of them is an IPCEntity. They are able to talk to each other as long as their IPCID are unique and the SocketInfo addresses are also unique.
 
-### Services.
+### Services
 
 The IPC layer tries to hide all the complex and error prone concurrency/parallelism issues under a clean and easy to use interface. It provides two services for the users. 
 
-  - **Standalone message delivery service**. This service can be accessed through the call of
-  >  IPCConnectionPool.sendShortMessage(ipcID, message).
-  
-  This service is suitable for control message delivery. Given two calls of the sendShortMessage, there's no guarantee that the message sent by the first call is delivered and processed by the recipient before the message sent by the second call. 
+#### Standalone message delivery service
 
-  - **Stream data delivery service**. To use this service, firstly call 
-  > streamOChannel = IPCConnectionPool.reserveLongTermConnection(ipcID, streamID, ...)
-  
-  and get a StreamOutputChannel instance. This will establish a data transfer channel (using TCP connections). And then data transfer can be achieved by calling
-  > streamOChannel.write(message);  
- 
- as many times as the number of messages there are waiting for getting transferred. Given two calls of the write method in the same *streamOChannel* instance, the message written by the first call is guaranteed to get delivered and processed before the second one.
- 
- after all the messages are written, call
- >streamOChannel.release();
- 
- to release the connection.
+This service can be accessed through the call of "IPCConnectionPool.sendShortMessage(ipcID, message)".
+This service is suitable for control message delivery. Given two calls of the sendShortMessage, there's no guarantee that
+the message sent by the first call is delivered and processed by the recipient before the message sent by the second call. 
 
+#### Stream data delivery service. 
+
+To use this service, firstly call "streamOChannel = IPCConnectionPool.reserveLongTermConnection(ipcID, streamID, ...)" and
+get a "StreamOutputChannel" instance. This will establish a data transfer channel (using TCP connections). And then data transfer can be achieved by calling
+"streamOChannel.write(message)" as many times as the number of messages there are waiting for getting transferred.
+Given two calls of the write method in the same "streamOChannel" instance, the message written by the first call is
+guaranteed to get delivered and processed before the second one.
+
+After all the messages are written, call "streamOChannel.release()" to release the connection.
 
 ### IPC messages
 The data unit that carries around by the IPC layer is IPCMessage.
@@ -355,7 +326,7 @@ The input buffers are filled by IO workers. In current implementation, the IO wo
 Data Outputs:
 The threading model of pulling data out of an input buffer is upon implementations of input buffers. Current major implementation, i.e. the FlowControlInputBuffer, requires that only a single thread pulls data.
 
-### Connection pooling.
+### Connection pooling
 MyriaX relies on Java NIO for actual connection creation and data transferring. More specifically we use [Netty](http://netty.io).
 
 MyriaX maintains a one-to-one mapping between stream data connections or standalone message data connections and Netty connections. 
@@ -372,12 +343,14 @@ For remote Netty connections, the IPC layer will not immediately release them at
 
   - When a user releases a connection, if currently the size of the connection pool < MIN_POOL_SIZE, the connection will not be released and also no timeout releasing.
  
-### Flow control.
+### Flow control
 
-Netty abstracts all the data transferring operations through a Channel interface. For each Channel, there is a bit controlling whether currently the channel should read data from the underlying system network stack.  The bit can be set by calling  
->Channel.setReadable(readable).
+Netty abstracts all the data transferring operations through a Channel interface. For each Channel, there is a bit
+controlling whether currently the channel should read data from the underlying system network stack. 
+The bit can be set by calling "Channel.setReadable(readable)".
 
- If data reading is paused, the system network layer at the recipient side notifies the sender side to stop sending data once the system receive buffer is full. This mechanism of flow control is called network back pressure.
+If data reading is paused, the system network layer at the recipient side notifies the sender side to stop sending data once
+the system receive buffer is full. This mechanism of flow control is called network back pressure.
 
 MyriaX adopts a push based data transferring model. The sender keeps sending data until the recipient is not able to process them quickly enough. And the flow control in MyriaX is exactly the back pressure mechanism.
 
@@ -387,19 +360,11 @@ Currently the flow controlling is implemented in input buffers, more specificall
   - Let the size of current input buffer is *x*, i.e. currently there are *x* data messages stored in the input buffer.
   - When a new data message comes, it does the following:
   ```
-   if x+1 >= capacity and the last event triggered is not buffer full
-      trigger buffer full event
-      // the buffer full listeners are executed,
-      // including stop reading from all the underlying Netty channels
-    
+   if x+1 >= capacity and the last event triggered is not buffer full, trigger buffer full event
    ```
   - When a data message gets drawn, it does the following:
   ```
-   if x+1 <= recover trigger and the last event triggered is buffer full
-      trigger buffer recover event
-      // the buffer recover listeners are executed,
-      // including resume reading from all the underlying Netty channels
-    
+   if x+1 <= recover trigger and the last event triggered is buffer full, trigger buffer recover event
    ```
   - When a data message gets drawn and results an empty input buffer, the buffer empty event is triggered. Currently, it resumes reading of the channels too, although is not necessary actually.
   
