@@ -5,7 +5,6 @@ package edu.washington.escience.myria.perfenforce;
 
 import java.io.BufferedReader;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.file.Path;
@@ -217,7 +216,7 @@ public class PerfEnforceDataPreparation {
   /*
    * For each primary key, determine the rank based on the selectivity and return the result
    */
-  public StatsTableEncoding runTableRanking(final RelationKey relationKey, final int tableCount,
+  public StatsTableEncoding runTableRanking(final RelationKey relationKey, final long tableSize,
       final Set<Integer> keys, final Schema schema) {
     String keyString = "";
     String statsFile = "/tmp/statsFile.txt";
@@ -239,19 +238,16 @@ public class PerfEnforceDataPreparation {
     StatsTableEncoding tableStats = null;
 
     String tableName = relationKey.toString(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL);
-    int size = tableCount;
     List<String> selectivityKeys = new ArrayList<String>();
     for (int i = 0; i < selectivityList.size(); i++) {
-      String outputCall = String.format("\\o | head -3 | tail -1 | cat - >> %s;", statsFile);
-      LOGGER.warn(outputCall);
       String rankingQuery =
           String
               .format(
-                  "select %s from (select %s, CAST(rank() over (order by %s asc) AS float)/%d as rank from %s) as r where r.rank >= %d LIMIT 1;",
-                  keyString, keyString, keyString, tableCount, relationKey
-                      .toString(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL), selectivityList.get(i));
+                  "COPY (select %s from (select %s, CAST(rank() over (order by %s asc) AS float)/%d as rank from %s) as r where r.rank >= %d LIMIT 1;) to %s",
+                  keyString, keyString, keyString, tableSize, relationKey
+                      .toString(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL), selectivityList.get(i), statsFile);
       LOGGER.warn(rankingQuery);
-      server.executeSQLCommand(outputCall + rankingQuery, new HashSet<Integer>(Arrays.asList(1)));
+      server.executeSQLCommand(rankingQuery, new HashSet<Integer>(Arrays.asList(1)));
 
       // read the result
       try {
@@ -266,7 +262,8 @@ public class PerfEnforceDataPreparation {
     }
 
     tableStats =
-        new StatsTableEncoding(tableName, size, selectivityKeys.get(0), selectivityKeys.get(1), selectivityKeys.get(2));
+        new StatsTableEncoding(tableName, tableSize, selectivityKeys.get(0), selectivityKeys.get(1), selectivityKeys
+            .get(2));
 
     return tableStats;
   }
@@ -274,47 +271,23 @@ public class PerfEnforceDataPreparation {
   /*
    * Get the table count
    */
-  public int runTableCount(final RelationKey relationKey) {
-    String countFile = "/tmp/countFile.txt";
-
-    String outputCall = String.format("\\o | head -3 | tail -1 | cat - >> %s;", countFile);
-    LOGGER.warn(outputCall);
-
-    String countQuery =
-        String.format("select count(*) from %s;", relationKey.toString(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL));
-    LOGGER.warn(countQuery);
-
-    server.executeSQLCommand(outputCall + countQuery, new HashSet<Integer>(Arrays.asList(1)));
-
-    BufferedReader br;
-    int count = 0;
-    try {
-      br = new BufferedReader(new InputStreamReader(new FileInputStream(countFile)));
-      count = (int) Double.parseDouble(br.readLine());
-      br.close();
-    } catch (IOException e) {
-      e.printStackTrace();
-    }
-    return count;
+  public long runTableCount(final RelationKey relationKey) throws DbException {
+    return server.getDatasetStatus(relationKey).getNumTuples();
   }
 
   public void generatePostgresFeatures(final Path path) {
     // run something on postgres and output results to some directly -- possibly the same as the configuration ---
     // this should first scan all
 
-    String outputCall =
-        String
-            .format(
-                "\\o | head -3 %s | tail -1 | sed  -e 's/.*cost=//' -e 's/\\.\\./,/' -e 's/ rows=/,/' -e 's/ width=/,/' -e 's/)//' | cat - >> %s;",
-                "", "");
-
-    try {
-      BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(path + "queries.txt")));
-      // run the query on worker send output to file(replace file)
-      // read the file first line, parse the output (sed?) and put in output file
-    } catch (FileNotFoundException e) {
-      e.printStackTrace();
-    }
+    /*
+     * String outputCall = String .format(
+     * "\\o | head -3 %s | tail -1 | sed  -e 's/.*cost=//' -e 's/\\.\\./,/' -e 's/ rows=/,/' -e 's/ width=/,/' -e 's/)//' | cat - >> %s;"
+     * , "", "");
+     * 
+     * try { BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(path + "queries.txt")));
+     * // run the query on worker send output to file(replace file) // read the file first line, parse the output (sed?)
+     * and put in output file } catch (FileNotFoundException e) { e.printStackTrace(); }
+     */
 
   }
 }

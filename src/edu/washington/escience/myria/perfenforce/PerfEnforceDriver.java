@@ -15,6 +15,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map.Entry;
 import java.util.Set;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -50,21 +51,37 @@ public class PerfEnforceDriver {
     List<TableDescriptionEncoding> allTables =
         PerfEnforceConfigurationParser.getAllTables(configFilePath + "deployment_tables.json");
 
+    List<TableDescriptionEncoding> dimensionTables =
+        PerfEnforceConfigurationParser.getTablesOfType("dimension", configFilePath);
+
     // ingest all relations
     for (TableDescriptionEncoding currentTable : allTables) {
-      if (server.getDatasetStatus(currentTable.relationKey) == null) {
-        if (currentTable.type.equalsIgnoreCase("fact")) {
+      if (currentTable.type.equalsIgnoreCase("fact")) {
+        if (factTableMapper.isEmpty()) {
           factTableMapper = dataPrepare.ingestFact(configurations, currentTable);
           factTableDesc = currentTable;
-        } else {
+        }
+      } else {
+        if (server.getDatasetStatus(currentTable.relationKey) == null) {
           dataPrepare.ingestDimension(configurations, currentTable);
         }
       }
     }
 
-    // run statistics on all columns for all tables for worker #1
-    for (TableDescriptionEncoding t : allTables) {
-      dataPrepare.runPostgresStatistics(t);
+    // run statistics on all columns of the fact partitions (UNIONS ONLY!!!)
+    for (Entry<Integer, RelationKey> entry : factTableMapper.entrySet()) {
+      // This is a yucky workaround to get the partition info (borrowed from the original table)
+      TableDescriptionEncoding temp = factTableDesc;
+      temp.relationKey =
+          new RelationKey(entry.getValue().getUserName(), entry.getValue().getProgramName(), entry.getValue()
+              .getRelationName()
+              + "_U");
+      dataPrepare.runPostgresStatistics(temp);
+    }
+
+    // run statistics on all columns of the dimension tables
+    for (TableDescriptionEncoding d : dimensionTables) {
+      dataPrepare.runPostgresStatistics(d);
     }
 
     // prepare query generation directories
@@ -78,18 +95,17 @@ public class PerfEnforceDriver {
 
       // We can make this better, but let's make sure it works for now
       ArrayList<StatsTableEncoding> statsTable = new ArrayList<StatsTableEncoding>();
-      PrintWriter writer = new PrintWriter(path + "stats.json", "UTF-8");
+      PrintWriter writer = new PrintWriter(path + "/stats.json", "UTF-8");
       // corresponding fact partition
       RelationKey factRelationKey = factTableMapper.get(config);
-      int factTableCount = dataPrepare.runTableCount(factRelationKey);
+      long factTableCount = dataPrepare.runTableCount(factRelationKey);
       StatsTableEncoding factStats =
           dataPrepare.runTableRanking(factRelationKey, factTableCount, factTableDesc.keys, factTableDesc.schema);
       statsTable.add(factStats);
 
-      for (TableDescriptionEncoding dimensionTableDesc : PerfEnforceConfigurationParser.getTablesOfType("dimension",
-          configFilePath)) {
+      for (TableDescriptionEncoding dimensionTableDesc : dimensionTables) {
         RelationKey dimensionTableKey = dimensionTableDesc.relationKey;
-        int dimensionTableCount = dataPrepare.runTableCount(dimensionTableKey);
+        long dimensionTableCount = dataPrepare.runTableCount(dimensionTableKey);
         StatsTableEncoding dimensionStats =
             dataPrepare.runTableRanking(dimensionTableKey, dimensionTableCount, dimensionTableDesc.keys,
                 dimensionTableDesc.schema);
