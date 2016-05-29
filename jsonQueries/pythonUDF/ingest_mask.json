@@ -1,0 +1,18 @@
+{
+  "relationKey" : {
+    "userName" : "public",
+    "programName" : "adhoc",
+    "relationName" : "Mask"
+  },
+  "schema" : {
+    "columnTypes" : ["BYTES_TYPE"],
+    "columnNames" : [ "mask"]
+  },
+  "source" : {
+    "dataType" : "File",
+    "filename" : "/Users/parmita/myria/myria-expr/myria/jsonQueries/pythonUDF/dmrimask.csv"
+  },
+  "overwrite" : true,
+  "delimiter": ","
+}
+

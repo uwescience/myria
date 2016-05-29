@@ -3,7 +3,6 @@ package edu.washington.escience.myria.coordinator;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.util.ArrayList;
@@ -24,6 +23,8 @@ import org.apache.commons.io.FilenameUtils;
 import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import sun.misc.BASE64Decoder;
 
 import com.almworks.sqlite4java.SQLiteConnection;
 import com.almworks.sqlite4java.SQLiteException;
@@ -1656,13 +1657,11 @@ public final class MasterCatalog {
    */
 
   public void registerFunction(@Nonnull final String name, @Nonnull final String text,
-      @Nonnull final Schema outputSchema, final Schema inputSchema, final FunctionLanguage lang, final ByteBuffer binary)
+      @Nonnull final Schema outputSchema, final Schema inputSchema, final FunctionLanguage lang, final String binary)
       throws CatalogException {
-    Objects.requireNonNull(name, "udf name");
-    Objects.requireNonNull(text, "udf definition");
-    Objects.requireNonNull(outputSchema, "output schema");
-    Objects.requireNonNull(inputSchema, "input schema");
-    Objects.requireNonNull(lang, "language");
+    LOGGER.info("in register UDFs");
+    LOGGER.info("name " + name + "\t" + text + "\t" + lang);
+    LOGGER.info("outputschema " + outputSchema.toString());
 
     LOGGER.info("in register UDFs");
 
@@ -1674,7 +1673,8 @@ public final class MasterCatalog {
       queue.execute(new SQLiteJob<Void>() {
 
         @Override
-        protected Void job(final SQLiteConnection sqliteConnection) throws CatalogException, SQLiteException {
+        protected Void job(final SQLiteConnection sqliteConnection) throws CatalogException, SQLiteException,
+            IOException {
           try {
             long udf_id = sqliteConnection.getLastInsertId();
             /* First register the UDF */
@@ -1686,10 +1686,11 @@ public final class MasterCatalog {
             statement.bind(2, name);
             statement.bind(3, text);
             statement.bind(4, lang.toString());
-            if (binary != null && binary.hasArray()) {
-              byte[] data = new byte[binary.remaining()];
-              binary.get(data);
-              statement.bind(5, data);
+            if (binary != null) {
+              // unencode the blob
+              BASE64Decoder decoder = new BASE64Decoder();
+              byte[] decodedBytes = decoder.decodeBuffer(binary);
+              statement.bind(5, decodedBytes);
             }
 
             statement.stepThrough();
@@ -1714,14 +1715,16 @@ public final class MasterCatalog {
               statement.reset(false);
             }
             // input schema
-            for (int i = 0; i < outputSchema.numColumns(); ++i) {
-              statement.bind(2, 1);// input schema
-              statement.bind(3, 0);
-              statement.bind(4, i);
-              statement.bind(5, outputSchema.getColumnName(i));
-              statement.bind(6, outputSchema.getColumnType(i).toString());
-              statement.step();
-              statement.reset(false);
+            if (inputSchema != null) {
+              for (int i = 0; i < inputSchema.numColumns(); ++i) {
+                statement.bind(2, 1);// input schema
+                statement.bind(3, 0);
+                statement.bind(4, i);
+                statement.bind(5, inputSchema.getColumnName(i));
+                statement.bind(6, inputSchema.getColumnType(i).toString());
+                statement.step();
+                statement.reset(false);
+              }
             }
             statement.dispose();
             statement = null;

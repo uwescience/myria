@@ -1,0 +1,112 @@
+{
+"fragments":
+[{
+  "operators":
+  [{
+    "opType": "LocalMultiwayConsumer",
+    "argOperatorId": 1,
+    "opId": 0,
+    "opName": "MyriaSplitConsumer"
+    },
+    {
+    "opType": "Apply",
+    "argChild": 0,
+    "emitExpressions":
+    [{
+        "outputName": "denoised",
+        "rootExpressionOperator": {
+          "type": "PYUDF",
+          "name": "denoise",
+          "left": {
+            "type": "VARIABLE",
+            "columnIdx": 1
+            },
+          "right": {
+                  "type": "VARIABLE",
+                  "columnIdx": 2
+                  }
+          }
+        },
+        {
+          "outputName": "id",
+          "rootExpressionOperator": {
+          "type": "VARIABLE",
+          "columnIdx": 0 }
+        }],
+        "opId": 2,
+        "opName": "Apply(denoised=(PyUDF(Denoise,T1.image,T2.mask)),id = id)"
+        },
+        {
+          "argOverwriteTable": true,
+          "opName": "MyriaStore(public:adhoc:Twitter_aggregate)",
+          "argChild": 2,
+          "opId": 3,
+          "partitionFunction": null,
+          "relationKey": {
+            "userName": "public",
+            "programName": "adhoc",
+            "relationName": "Denoised_images"
+            },
+          "opType": "DbInsert"
+      }]
+    },
+    {
+    "operators":
+    [{
+        "opType": "BroadcastConsumer",
+        "argOperatorId": 5,
+        "opId": 4,
+        "opName": "MyriaBroadcastConsumer"
+     },
+     {
+        "opType": "TableScan",
+        "relationKey": {
+            "userName": "public",
+            "programName": "adhoc",
+            "relationName": "Images"},
+        "opId": 6,
+        "opName": "MyriaScan(public:adhoc:Images)"
+      },
+      {
+      "argChild2": 4,
+      "argChild1": 6,
+      "argColumnNames": [ "id", "image", "mask"],
+      "opName": "MyriaCrossProduct",
+      "argColumns1": [ ],
+      "argSelect2": [0],
+      "opType": "SymmetricHashJoin",
+      "argColumns2": [ ],
+      "opId": 7,
+      "argSelect1": [ 0,  1 ]
+    },
+    {
+      "opType": "LocalMultiwayProducer",
+      "argChild": 7,
+      "opId": 1,
+      "opName": "MyriaSplitProducer"
+    }
+  ]},
+  {
+    "operators":
+    [{
+      "opType": "TableScan",
+      "relationKey": {
+      "userName": "public",
+      "programName": "adhoc",
+      "relationName": "Mask"
+      },
+    "opId": 8,
+    "opName": "MyriaScan(public:adhoc:Mask)"
+    },
+    {
+    "opType": "BroadcastProducer",
+    "argChild": 8,
+    "opId": 5,
+    "opName": "MyriaBroadcastProducer"
+    }]
+}],
+
+"rawQuery": "T1=scan(Images);T2=scan(Mask);imgs = [from T1,T2 emit denoise(T1.image, T2.mask) As denoised, T1.id as id];store(imgs, Denoised_images);",
+"logicalRa": "store(public:adhoc:Denoised_images);Apply(denoised=(PyUDF(Denoise,T1.image,T2.mask)),id = id);[CrossProduct[Scan(public:adhoc:Images),Scan(public:adhoc:Mask)]]] ",
+"language": "myrial"
+}

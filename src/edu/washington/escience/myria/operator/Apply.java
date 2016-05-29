@@ -18,6 +18,7 @@ import edu.washington.escience.myria.expression.Expression;
 import edu.washington.escience.myria.expression.evaluate.ConstantEvaluator;
 import edu.washington.escience.myria.expression.evaluate.ExpressionOperatorParameter;
 import edu.washington.escience.myria.expression.evaluate.GenericEvaluator;
+import edu.washington.escience.myria.expression.evaluate.PythonUDFEvaluator;
 import edu.washington.escience.myria.storage.TupleBatch;
 
 /**
@@ -26,6 +27,9 @@ import edu.washington.escience.myria.storage.TupleBatch;
 public class Apply extends UnaryOperator {
   /***/
   private static final long serialVersionUID = 1L;
+
+  /** logger for this class. */
+  private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(GenericEvaluator.class);
 
   /**
    * List of expressions that will be used to create the output.
@@ -97,12 +101,14 @@ public class Apply extends UnaryOperator {
     Schema inputSchema = Objects.requireNonNull(getChild().getSchema());
 
     emitEvaluators = new ArrayList<>(emitExpressions.size());
-    final ExpressionOperatorParameter parameters =
-        new ExpressionOperatorParameter(inputSchema, getNodeID());
+    final ExpressionOperatorParameter parameters = new ExpressionOperatorParameter(inputSchema, getNodeID());
     for (Expression expr : emitExpressions) {
       GenericEvaluator evaluator;
       if (expr.isConstant()) {
         evaluator = new ConstantEvaluator(expr, parameters);
+      } else if (expr.isRegisteredUDF()) {
+        LOGGER.info("PythonUDF!!");
+        evaluator = new PythonUDFEvaluator(expr, parameters);
       } else {
         evaluator = new GenericEvaluator(expr, parameters);
       }

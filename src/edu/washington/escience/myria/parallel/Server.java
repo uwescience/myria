@@ -6,7 +6,6 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.net.URISyntaxException;
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -1148,7 +1147,7 @@ public final class Server {
    * encoding.binary,encoding.inputSchema, encoding.outputSchema
    */
   public long createFunction(final String name, final String text, final FunctionLanguage lang,
-      final Set<Integer> workers, final ByteBuffer binary, final Schema inputSchema, final Schema outputSchema)
+      final Set<Integer> workers, final String binary, final Schema inputSchema, final Schema outputSchema)
       throws DbException, InterruptedException {
     long queryID = 0;
 
@@ -1164,8 +1163,11 @@ public final class Server {
     /* Register the UDF to the catalog */
     try {
       LOGGER.info("trying to register UDF");
+
       catalog.registerFunction(name, text, inputSchema, outputSchema, lang, binary);
+
     } catch (CatalogException e) {
+      LOGGER.info(e.toString());
       throw new DbException(e);
     }
 

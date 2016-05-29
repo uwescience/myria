@@ -160,13 +160,13 @@ public class Expression implements Serializable {
   }
 
   /**
-   * An expression is a constant expression when it has to be evaluated only once. This means that an expression with
-   * variables, state or random is likely not a constant.
+   * An expression is a pythonUDF when it has to be evaluated only once. This means that an expression with variables,
+   * state or random is likely not a constant.
    *
-   * @return if this expression evaluates to a constant
+   * @return if this expression evaluates to a pythonUDF
    */
-  public boolean isPredefinedUDF() {
-    return false;
-    // hasOperator(UDFExpression.class);
+  public boolean isRegisteredUDF() {
+    return hasOperator(PyUDFExpression.class);
+
   }
 }

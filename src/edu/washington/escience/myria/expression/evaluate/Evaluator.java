@@ -117,7 +117,8 @@ public abstract class Evaluator {
    * @return true if the expression does not have to be compiled.
    */
   public boolean needsCompiling() {
-    return !(isCopyFromInput() || isConstant() || isPredefinedUDF());
+    return !(isCopyFromInput() || isConstant() || isRegisteredUDF());
+
   }
 
   /**
@@ -127,8 +128,8 @@ public abstract class Evaluator {
     return getExpression().isConstant();
   }
 
-  public boolean isPredefinedUDF() {
-    return getExpression().isPredefinedUDF();
+  public boolean isRegisteredUDF() {
+    return getExpression().isRegisteredUDF();
   }
 
   /**

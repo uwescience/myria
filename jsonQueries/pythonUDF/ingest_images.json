@@ -1,0 +1,18 @@
+{
+  "relationKey" : {
+    "userName" : "public",
+    "programName" : "adhoc",
+    "relationName" : "Images"
+  },
+  "schema" : {
+    "columnTypes" : ["INT_TYPE", "BYTES_TYPE"],
+    "columnNames" : ["id", "image"]
+  },
+  "source" : {
+    "dataType" : "File",
+    "filename" : "/Users/parmita/myria/myria-expr/myria/jsonQueries/pythonUDF/dmridata.csv"
+  },
+  "overwrite" : true,
+  "delimiter": ","
+}
+
