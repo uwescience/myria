@@ -47,11 +47,12 @@ public class PerfEnforceDriver {
       DbException {
 
     PerfEnforceDataPreparation dataPrepare = new PerfEnforceDataPreparation(server);
-    List<TableDescriptionEncoding> allTables = PerfEnforceConfigurationParser.getAllTables(configFilePath);
+    List<TableDescriptionEncoding> allTables =
+        PerfEnforceConfigurationParser.getAllTables(configFilePath + "deployment_tables.json");
 
     // ingest all relations
     for (TableDescriptionEncoding currentTable : allTables) {
-      if (server.getDatasetStatus(currentTable.relationKey) != null) {
+      if (server.getDatasetStatus(currentTable.relationKey) == null) {
         if (currentTable.type.equalsIgnoreCase("fact")) {
           factTableMapper = dataPrepare.ingestFact(configurations, currentTable);
           factTableDesc = currentTable;
@@ -68,7 +69,7 @@ public class PerfEnforceDriver {
 
     // prepare query generation directories
     for (Integer config : configurations) {
-      Path path = Paths.get(configFilePath + config + "_Workers");
+      Path path = Paths.get(configFilePath + config + "_Workers/");
       try {
         Files.createDirectories(path);
       } catch (IOException e) {
@@ -80,19 +81,18 @@ public class PerfEnforceDriver {
       PrintWriter writer = new PrintWriter(path + "stats.json", "UTF-8");
       // corresponding fact partition
       RelationKey factRelationKey = factTableMapper.get(config);
-      int factTableCount = dataPrepare.runTableCount(factRelationKey);
+      int factTableCount = dataPrepare.runTableCount(factRelationKey, path);
       StatsTableEncoding factStats =
-          dataPrepare.runTableRanking(factRelationKey, factTableCount, factTableDesc.keys, factTableDesc.schema, path
-              .toString());
+          dataPrepare.runTableRanking(factRelationKey, factTableCount, factTableDesc.keys, factTableDesc.schema, path);
       statsTable.add(factStats);
 
       for (TableDescriptionEncoding dimensionTableDesc : PerfEnforceConfigurationParser.getTablesOfType("dimension",
           configFilePath)) {
         RelationKey dimensionTableKey = dimensionTableDesc.relationKey;
-        int dimensionTableCount = dataPrepare.runTableCount(dimensionTableKey);
+        int dimensionTableCount = dataPrepare.runTableCount(dimensionTableKey, path);
         StatsTableEncoding dimensionStats =
             dataPrepare.runTableRanking(dimensionTableKey, dimensionTableCount, dimensionTableDesc.keys,
-                dimensionTableDesc.schema, path.toString());
+                dimensionTableDesc.schema, path);
         statsTable.add(dimensionStats);
       }
       ObjectMapper mapper = new ObjectMapper();
@@ -103,10 +103,10 @@ public class PerfEnforceDriver {
       }
       writer.close();
 
-      String queryFilePath = pslaManager.generateQueries(configFilePath);
-      dataPrepare.generatePostgresFeatures(queryFilePath);
+      pslaManager.generateQueries(path);
 
-      // run a function to collect features for the configuration
+      // generate features for THIS config
+      dataPrepare.generatePostgresFeatures(path);
     }
     // generate PSLA for all configs given all the features
     pslaManager.generatePSLA();

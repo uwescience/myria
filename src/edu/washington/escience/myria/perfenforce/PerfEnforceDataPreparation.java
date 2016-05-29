@@ -7,6 +7,7 @@ import java.io.BufferedReader;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -16,6 +17,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
+
+import org.slf4j.LoggerFactory;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
@@ -42,6 +45,9 @@ import edu.washington.escience.myria.util.MyriaUtils;
 public class PerfEnforceDataPreparation {
 
   private final Server server;
+
+  /** Logger. */
+  protected static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(PerfEnforceDataPreparation.class);
 
   public PerfEnforceDataPreparation(final Server server) {
     this.server = server;
@@ -211,7 +217,7 @@ public class PerfEnforceDataPreparation {
    * For each primary key, determine the rank based on the selectivity and return the result
    */
   public StatsTableEncoding runTableRanking(final RelationKey relationKey, final int tableCount,
-      final Set<Integer> keys, final Schema schema, final String path) {
+      final Set<Integer> keys, final Schema schema, final Path path) {
     String keyString = "";
     String statsFile = path + "/statsFile.txt";
 
@@ -234,6 +240,7 @@ public class PerfEnforceDataPreparation {
                   "/o | cat - >> %s;select %s from (select %s, CAST(rank() over (order by %s asc) AS float)/%d as rank from %s) as r where r.rank >= %d LIMIT 1; /o",
                   statsFile, keyString, keyString, keyString, tableCount, relationKey
                       .toString(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL), selectivityList.get(i));
+      LOGGER.warn(rankingQuery);
       server.executeSQLCommand(rankingQuery, new HashSet<Integer>(Arrays.asList(1)));
     }
 
@@ -261,11 +268,25 @@ public class PerfEnforceDataPreparation {
   /*
    * Get the table count
    */
-  public int runTableCount(final RelationKey relationKey) {
-    return 0;
+  public int runTableCount(final RelationKey relationKey, final Path path) {
+    String countFile = path + "/countFile.txt";
+
+    server.executeSQLCommand(String.format("/o | cat - >> %s; select count(*) from %s; /o", countFile, relationKey
+        .toString(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL)), new HashSet<Integer>(Arrays.asList(1)));
+
+    BufferedReader br;
+    int count = 0;
+    try {
+      br = new BufferedReader(new InputStreamReader(new FileInputStream(countFile)));
+      count = (int) Double.parseDouble(br.readLine());
+      br.close();
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+    return count;
   }
 
-  public void generatePostgresFeatures(final String queryFilePath) {
+  public void generatePostgresFeatures(final Path path) {
     // run something on postgres and output results to some directly -- possibly the same as the configuration ---
     // this should first scan all
   }
