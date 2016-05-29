@@ -240,13 +240,14 @@ public class PerfEnforceDataPreparation {
     String tableName = relationKey.toString(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL);
     List<String> selectivityKeys = new ArrayList<String>();
     for (int i = 0; i < selectivityList.size(); i++) {
+      LOGGER.warn("BEFORE STRING ");
       String rankingQuery =
           String
               .format(
-                  "COPY (select %s from (select %s, CAST(rank() over (order by %s asc) AS float)/%d as rank from %s) as r where r.rank >= %d LIMIT 1;) to %s",
+                  "select %s from (select %s, CAST(rank() over (order by %s asc) AS float)/%s as rank from %s) as r where r.rank >= %s LIMIT 1;",
                   keyString, keyString, keyString, tableSize, relationKey
                       .toString(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL), selectivityList.get(i), statsFile);
-      LOGGER.warn(rankingQuery);
+      LOGGER.warn("RANKING QUERY : " + rankingQuery);
       server.executeSQLCommand(rankingQuery, new HashSet<Integer>(Arrays.asList(1)));
 
       // read the result
@@ -271,8 +272,9 @@ public class PerfEnforceDataPreparation {
   /*
    * Get the table count
    */
-  public long runTableCount(final RelationKey relationKey) throws DbException {
-    return server.getDatasetStatus(relationKey).getNumTuples();
+  public long runTableCount(final RelationKey relationKey, final int config) throws DbException {
+    return server.getDatasetStatus(relationKey).getNumTuples() / config;
+
   }
 
   public void generatePostgresFeatures(final Path path) {

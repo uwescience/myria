@@ -1011,8 +1011,8 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
     ListenableFuture<Query> qf;
     try {
       qf =
-          queryManager.submitQuery("execute sql command", "execute sql command", "execute sql command",
-              new SubQueryPlan(new SinkRoot(new EOSSource())), workerPlans);
+          queryManager.submitQuery(sqlString, "execute sql command", "execute sql command", new SubQueryPlan(
+              new SinkRoot(new EOSSource())), workerPlans);
       qf.get();
     } catch (DbException | CatalogException | InterruptedException | ExecutionException e) {
       e.printStackTrace();

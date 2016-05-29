@@ -36,12 +36,13 @@ public class PerfEnforceDriver {
   TableDescriptionEncoding factTableDesc;
 
   // holds an instance of the PSLAManagerWrapper
-  PSLAManagerWrapper pslaManager = new PSLAManagerWrapper();
+  PSLAManagerWrapper pslaManager;
 
   public PerfEnforceDriver(final String configFilePath) {
     this.configFilePath = configFilePath;
     configurations = new HashSet<Integer>(Arrays.asList(4, 6, 8, 10, 12));
     factTableMapper = new HashMap<Integer, RelationKey>();
+
   }
 
   public void beginDataPreparation(final Server server) throws FileNotFoundException, UnsupportedEncodingException,
@@ -52,7 +53,7 @@ public class PerfEnforceDriver {
         PerfEnforceConfigurationParser.getAllTables(configFilePath + "deployment_tables.json");
 
     List<TableDescriptionEncoding> dimensionTables =
-        PerfEnforceConfigurationParser.getTablesOfType("dimension", configFilePath);
+        PerfEnforceConfigurationParser.getTablesOfType("dimension", configFilePath + "deployment_tables.json");
 
     // ingest all relations
     for (TableDescriptionEncoding currentTable : allTables) {
@@ -98,14 +99,14 @@ public class PerfEnforceDriver {
       PrintWriter writer = new PrintWriter(path + "/stats.json", "UTF-8");
       // corresponding fact partition
       RelationKey factRelationKey = factTableMapper.get(config);
-      long factTableCount = dataPrepare.runTableCount(factRelationKey);
+      long factTableCount = dataPrepare.runTableCount(factRelationKey, config);
       StatsTableEncoding factStats =
           dataPrepare.runTableRanking(factRelationKey, factTableCount, factTableDesc.keys, factTableDesc.schema);
       statsTable.add(factStats);
 
       for (TableDescriptionEncoding dimensionTableDesc : dimensionTables) {
         RelationKey dimensionTableKey = dimensionTableDesc.relationKey;
-        long dimensionTableCount = dataPrepare.runTableCount(dimensionTableKey);
+        long dimensionTableCount = dataPrepare.runTableCount(dimensionTableKey, 1);
         StatsTableEncoding dimensionStats =
             dataPrepare.runTableRanking(dimensionTableKey, dimensionTableCount, dimensionTableDesc.keys,
                 dimensionTableDesc.schema);
