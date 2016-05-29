@@ -5,6 +5,7 @@ package edu.washington.escience.myria.perfenforce;
 
 import java.io.BufferedReader;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.file.Path;
@@ -217,9 +218,9 @@ public class PerfEnforceDataPreparation {
    * For each primary key, determine the rank based on the selectivity and return the result
    */
   public StatsTableEncoding runTableRanking(final RelationKey relationKey, final int tableCount,
-      final Set<Integer> keys, final Schema schema, final Path path) {
+      final Set<Integer> keys, final Schema schema) {
     String keyString = "";
-    String statsFile = path + "/statsFile.txt";
+    String statsFile = "/tmp/statsFile.txt";
 
     // handle the more than 1 key scenario (just in case)
     int counter = 1;
@@ -233,34 +234,39 @@ public class PerfEnforceDataPreparation {
 
     // for each selectivity
     List<Double> selectivityList = Arrays.asList(new Double[] { .001, .01, .1, 1.0 });
+
+    // find the table stats
+    StatsTableEncoding tableStats = null;
+
+    String tableName = relationKey.toString(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL);
+    int size = tableCount;
+    List<String> selectivityKeys = new ArrayList<String>();
     for (int i = 0; i < selectivityList.size(); i++) {
+      String outputCall = String.format("\\o | head -3 | tail -1 | cat - >> %s;", statsFile);
+      LOGGER.warn(outputCall);
       String rankingQuery =
           String
               .format(
-                  "/o | cat - >> %s;select %s from (select %s, CAST(rank() over (order by %s asc) AS float)/%d as rank from %s) as r where r.rank >= %d LIMIT 1; /o",
-                  statsFile, keyString, keyString, keyString, tableCount, relationKey
+                  "select %s from (select %s, CAST(rank() over (order by %s asc) AS float)/%d as rank from %s) as r where r.rank >= %d LIMIT 1;",
+                  keyString, keyString, keyString, tableCount, relationKey
                       .toString(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL), selectivityList.get(i));
       LOGGER.warn(rankingQuery);
-      server.executeSQLCommand(rankingQuery, new HashSet<Integer>(Arrays.asList(1)));
+      server.executeSQLCommand(outputCall + rankingQuery, new HashSet<Integer>(Arrays.asList(1)));
+
+      // read the result
+      try {
+        BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(statsFile)));
+        String selectivityFound = br.readLine().replace('|', ',').trim().replaceAll("\\s+", " ");
+        selectivityKeys.add(selectivityFound);
+        br.close();
+      } catch (IOException e) {
+        e.printStackTrace();
+      }
+
     }
 
-    // read stats file
-    StatsTableEncoding tableStats = null;
-    BufferedReader br;
-    try {
-      br = new BufferedReader(new InputStreamReader(new FileInputStream(statsFile)));
-
-      String tableName = relationKey.toString(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL);
-      int size = tableCount;
-      String selectivity1 = br.readLine();
-      String selectivity10 = br.readLine();
-      String selectivity100 = br.readLine();
-      tableStats = new StatsTableEncoding(tableName, size, selectivity1, selectivity10, selectivity100);
-      br.close();
-
-    } catch (IOException e) {
-      e.printStackTrace();
-    }
+    tableStats =
+        new StatsTableEncoding(tableName, size, selectivityKeys.get(0), selectivityKeys.get(1), selectivityKeys.get(2));
 
     return tableStats;
   }
@@ -268,11 +274,17 @@ public class PerfEnforceDataPreparation {
   /*
    * Get the table count
    */
-  public int runTableCount(final RelationKey relationKey, final Path path) {
-    String countFile = path + "/countFile.txt";
+  public int runTableCount(final RelationKey relationKey) {
+    String countFile = "/tmp/countFile.txt";
 
-    server.executeSQLCommand(String.format("/o | cat - >> %s; select count(*) from %s; /o", countFile, relationKey
-        .toString(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL)), new HashSet<Integer>(Arrays.asList(1)));
+    String outputCall = String.format("\\o | head -3 | tail -1 | cat - >> %s;", countFile);
+    LOGGER.warn(outputCall);
+
+    String countQuery =
+        String.format("select count(*) from %s;", relationKey.toString(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL));
+    LOGGER.warn(countQuery);
+
+    server.executeSQLCommand(outputCall + countQuery, new HashSet<Integer>(Arrays.asList(1)));
 
     BufferedReader br;
     int count = 0;
@@ -289,5 +301,20 @@ public class PerfEnforceDataPreparation {
   public void generatePostgresFeatures(final Path path) {
     // run something on postgres and output results to some directly -- possibly the same as the configuration ---
     // this should first scan all
+
+    String outputCall =
+        String
+            .format(
+                "\\o | head -3 %s | tail -1 | sed  -e 's/.*cost=//' -e 's/\\.\\./,/' -e 's/ rows=/,/' -e 's/ width=/,/' -e 's/)//' | cat - >> %s;",
+                "", "");
+
+    try {
+      BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(path + "queries.txt")));
+      // run the query on worker send output to file(replace file)
+      // read the file first line, parse the output (sed?) and put in output file
+    } catch (FileNotFoundException e) {
+      e.printStackTrace();
+    }
+
   }
 }

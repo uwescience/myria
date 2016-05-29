@@ -81,18 +81,18 @@ public class PerfEnforceDriver {
       PrintWriter writer = new PrintWriter(path + "stats.json", "UTF-8");
       // corresponding fact partition
       RelationKey factRelationKey = factTableMapper.get(config);
-      int factTableCount = dataPrepare.runTableCount(factRelationKey, path);
+      int factTableCount = dataPrepare.runTableCount(factRelationKey);
       StatsTableEncoding factStats =
-          dataPrepare.runTableRanking(factRelationKey, factTableCount, factTableDesc.keys, factTableDesc.schema, path);
+          dataPrepare.runTableRanking(factRelationKey, factTableCount, factTableDesc.keys, factTableDesc.schema);
       statsTable.add(factStats);
 
       for (TableDescriptionEncoding dimensionTableDesc : PerfEnforceConfigurationParser.getTablesOfType("dimension",
           configFilePath)) {
         RelationKey dimensionTableKey = dimensionTableDesc.relationKey;
-        int dimensionTableCount = dataPrepare.runTableCount(dimensionTableKey, path);
+        int dimensionTableCount = dataPrepare.runTableCount(dimensionTableKey);
         StatsTableEncoding dimensionStats =
             dataPrepare.runTableRanking(dimensionTableKey, dimensionTableCount, dimensionTableDesc.keys,
-                dimensionTableDesc.schema, path);
+                dimensionTableDesc.schema);
         statsTable.add(dimensionStats);
       }
       ObjectMapper mapper = new ObjectMapper();
