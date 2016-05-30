@@ -213,15 +213,15 @@ public class PerfEnforceDataPreparation {
   /*
    * Get the table count
    */
-  public long runTableCount(final RelationKey relationKey, final int config) throws DbException {
-    return server.getDatasetStatus(relationKey).getNumTuples() / config;
+  public long runTableCount(final RelationKey relationKey) throws DbException {
+    return server.getDatasetStatus(relationKey).getNumTuples();
   }
 
   /*
    * For each primary key, determine the rank based on the selectivity and return the result
    */
-  public StatsTableEncoding runTableRanking(final RelationKey relationKey, final long tableSize,
-      final Set<Integer> keys, final Schema schema) throws IOException, DbException {
+  public StatsTableEncoding runTableRanking(final RelationKey relationKey, final long tableSize, final int config,
+      final String type, final Set<Integer> keys, final Schema schema) throws IOException, DbException {
     String keyString = "";
     Schema keySchema = Schema.EMPTY_SCHEMA;
 
@@ -249,7 +249,7 @@ public class PerfEnforceDataPreparation {
           String
               .format(
                   "select %s from (select %s, CAST(rank() over (order by %s asc) AS float)/%s as rank from %s) as r where r.rank >= %s LIMIT 1;",
-                  keyString, keyString, keyString, tableSize, relationKey
+                  keyString, keyString, keyString, tableSize / config, relationKey
                       .toString(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL), selectivityList.get(i));
       // only run on worker 1
       String result = server.executeSQLCommandSingleRowSingleWorker(rankingQuery, keySchema, 1);
@@ -257,8 +257,16 @@ public class PerfEnforceDataPreparation {
       selectivityKeys.add(result);
     }
 
+    // because I can't count broadcast tables correctly
+    long modifiedSize = tableSize;
+    if (type.equalsIgnoreCase("fact")) {
+      modifiedSize = tableSize;
+    } else {
+      modifiedSize = tableSize / Collections.max(PerfEnforceDriver.configurations);
+    }
+
     tableStats =
-        new StatsTableEncoding(tableName, tableSize, selectivityKeys.get(0), selectivityKeys.get(1), selectivityKeys
+        new StatsTableEncoding(tableName, modifiedSize, selectivityKeys.get(0), selectivityKeys.get(1), selectivityKeys
             .get(2));
 
     return tableStats;

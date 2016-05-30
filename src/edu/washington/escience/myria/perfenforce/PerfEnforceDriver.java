@@ -10,6 +10,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -29,7 +30,7 @@ import edu.washington.escience.myria.parallel.Server;
 public class PerfEnforceDriver {
 
   String configFilePath;
-  Set<Integer> configurations;
+  static Set<Integer> configurations;
   HashMap<Integer, RelationKey> factTableMapper;
   TableDescriptionEncoding factTableDesc;
 
@@ -89,8 +90,12 @@ public class PerfEnforceDriver {
       try {
         Files.createDirectories(path);
 
+        // This should be changed from the PSLAManager side. Shouldn't have to copy the file over
         String copyCmd = "cp " + configFilePath + "/SchemaDefinition.json " + configFilePath + config + "_Workers/";
-        Process process = Runtime.getRuntime().exec(copyCmd);
+        Runtime.getRuntime().exec(copyCmd);
+
+        copyCmd = "cp " + configFilePath + "/tiers.txt " + configFilePath + config + "_Workers/";
+        Runtime.getRuntime().exec(copyCmd);
       } catch (IOException e) {
         e.printStackTrace();
       }
@@ -100,17 +105,18 @@ public class PerfEnforceDriver {
       PrintWriter writer = new PrintWriter(path + "/stats.json", "UTF-8");
       // corresponding fact partition
       RelationKey factRelationKey = factTableMapper.get(config);
-      long factTableCount = dataPrepare.runTableCount(factRelationKey, config);
+      long factTableCount = dataPrepare.runTableCount(factRelationKey);
       StatsTableEncoding factStats =
-          dataPrepare.runTableRanking(factRelationKey, factTableCount, factTableDesc.keys, factTableDesc.schema);
+          dataPrepare.runTableRanking(factRelationKey, factTableCount, config, factTableDesc.type, factTableDesc.keys,
+              factTableDesc.schema);
       statsTable.add(factStats);
 
       for (TableDescriptionEncoding dimensionTableDesc : dimensionTables) {
         RelationKey dimensionTableKey = dimensionTableDesc.relationKey;
-        long dimensionTableCount = dataPrepare.runTableCount(dimensionTableKey, 12);
+        long dimensionTableCount = dataPrepare.runTableCount(dimensionTableKey);
         StatsTableEncoding dimensionStats =
-            dataPrepare.runTableRanking(dimensionTableKey, dimensionTableCount, dimensionTableDesc.keys,
-                dimensionTableDesc.schema);
+            dataPrepare.runTableRanking(dimensionTableKey, dimensionTableCount, Collections.max(configurations),
+                dimensionTableDesc.type, dimensionTableDesc.keys, dimensionTableDesc.schema);
         statsTable.add(dimensionStats);
       }
       ObjectMapper mapper = new ObjectMapper();
