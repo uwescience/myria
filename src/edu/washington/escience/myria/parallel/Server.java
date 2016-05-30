@@ -1,13 +1,17 @@
 package edu.washington.escience.myria.parallel;
 
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.ObjectInputStream;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -82,6 +86,7 @@ import edu.washington.escience.myria.expression.Expression;
 import edu.washington.escience.myria.expression.MinusExpression;
 import edu.washington.escience.myria.expression.VariableExpression;
 import edu.washington.escience.myria.expression.WorkerIdExpression;
+import edu.washington.escience.myria.io.ByteSink;
 import edu.washington.escience.myria.io.DataSink;
 import edu.washington.escience.myria.io.DataSource;
 import edu.washington.escience.myria.io.UriSink;
@@ -1017,6 +1022,44 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
     } catch (DbException | CatalogException | InterruptedException | ExecutionException e) {
       e.printStackTrace();
     }
+  }
+
+  /**
+   * Execute a SQL Statement and retrieve a tuple result
+   * 
+   * @throws IOException
+   * @throws DbException
+   */
+  public String executeSQLCommandSingleRowSingleWorker(final String sqlString, final Schema outputSchema,
+      final int workerId) throws IOException, DbException {
+    ByteSink byteSink = new ByteSink();
+    TupleWriter writer = new CsvTupleWriter();
+
+    // worker plan
+    DbQueryScan scan = new DbQueryScan(sqlString, outputSchema);
+    final ExchangePairID operatorId = ExchangePairID.newID();
+    CollectProducer producer = new CollectProducer(scan, operatorId, MyriaConstants.MASTER_ID);
+    SubQueryPlan workerPlan = new SubQueryPlan(producer);
+    Map<Integer, SubQueryPlan> workerPlans = new HashMap<>(workerId);
+    workerPlans.put(workerId, workerPlan);
+
+    // master plan
+    final CollectConsumer consumer =
+        new CollectConsumer(outputSchema, operatorId, new HashSet<Integer>(Arrays.asList(workerId)));
+    DataOutput output = new DataOutput(consumer, writer, byteSink);
+    final SubQueryPlan masterPlan = new SubQueryPlan(output);
+
+    String planString = "execute single worker : " + sqlString;
+    try {
+      queryManager.submitQuery(planString, planString, planString, masterPlan, workerPlans);
+    } catch (CatalogException | DbException e) {
+      throw new DbException(e);
+    }
+
+    // get query response
+    byte[] responseBytes = ((ByteArrayOutputStream) byteSink.getOutputStream()).toByteArray();
+    String response = new String(responseBytes, Charset.forName("UTF-8"));
+    return response;
   }
 
   /**

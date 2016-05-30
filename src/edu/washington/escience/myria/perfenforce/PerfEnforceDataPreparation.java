@@ -3,10 +3,7 @@
  */
 package edu.washington.escience.myria.perfenforce;
 
-import java.io.BufferedReader;
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -24,6 +21,7 @@ import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.Schema;
+import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.coordinator.CatalogException;
 import edu.washington.escience.myria.io.DataSource;
 import edu.washington.escience.myria.operator.DbInsert;
@@ -217,9 +215,8 @@ public class PerfEnforceDataPreparation {
    * For each primary key, determine the rank based on the selectivity and return the result
    */
   public StatsTableEncoding runTableRanking(final RelationKey relationKey, final long tableSize,
-      final Set<Integer> keys, final Schema schema) {
+      final Set<Integer> keys, final Schema schema) throws IOException, DbException {
     String keyString = "";
-    String statsFile = "/tmp/statsFile.txt";
 
     // handle the more than 1 key scenario (just in case)
     int counter = 1;
@@ -240,26 +237,16 @@ public class PerfEnforceDataPreparation {
     String tableName = relationKey.toString(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL);
     List<String> selectivityKeys = new ArrayList<String>();
     for (int i = 0; i < selectivityList.size(); i++) {
-      LOGGER.warn("BEFORE STRING ");
       String rankingQuery =
           String
               .format(
                   "select %s from (select %s, CAST(rank() over (order by %s asc) AS float)/%s as rank from %s) as r where r.rank >= %s LIMIT 1;",
                   keyString, keyString, keyString, tableSize, relationKey
-                      .toString(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL), selectivityList.get(i), statsFile);
-      LOGGER.warn("RANKING QUERY : " + rankingQuery);
-      server.executeSQLCommand(rankingQuery, new HashSet<Integer>(Arrays.asList(1)));
-
-      // read the result
-      try {
-        BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(statsFile)));
-        String selectivityFound = br.readLine().replace('|', ',').trim().replaceAll("\\s+", " ");
-        selectivityKeys.add(selectivityFound);
-        br.close();
-      } catch (IOException e) {
-        e.printStackTrace();
-      }
-
+                      .toString(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL), selectivityList.get(i));
+      // only run on worker 1
+      String result =
+          server.executeSQLCommandSingleRowSingleWorker(rankingQuery, Schema.ofFields("count", Type.STRING_TYPE), 1);
+      selectivityKeys.add(result);
     }
 
     tableStats =

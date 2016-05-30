@@ -3,10 +3,8 @@
  */
 package edu.washington.escience.myria.perfenforce;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.io.UnsupportedEncodingException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -45,8 +43,7 @@ public class PerfEnforceDriver {
 
   }
 
-  public void beginDataPreparation(final Server server) throws FileNotFoundException, UnsupportedEncodingException,
-      DbException {
+  public void beginDataPreparation(final Server server) throws DbException, IOException {
 
     PerfEnforceDataPreparation dataPrepare = new PerfEnforceDataPreparation(server);
     List<TableDescriptionEncoding> allTables =
