@@ -17,7 +17,7 @@ import com.amazonaws.services.s3.model.GetObjectRequest;
  */
 public class PSLAManagerWrapper {
 
-  int tierSelected;
+  int tierSelected = 4; // hard coded for now, but should allow the user to pick
 
   public PSLAManagerWrapper(final String configFilePath) {
     // download the executable and jars
@@ -25,8 +25,6 @@ public class PSLAManagerWrapper {
     conn.getObject(new GetObjectRequest("perfenforce", "PSLAManager.exe"),
         new File(configFilePath + "/PSLAManager.exe"));
     conn.getObject(new GetObjectRequest("perfenforce", "weka.jar"), new File(configFilePath + "/weka.jar"));
-
-    // install mono
 
   }
 
@@ -37,7 +35,8 @@ public class PSLAManagerWrapper {
   public void generateQueries(final Path configFilePath) {
     try {
       // might need to use mono
-      Process process = new ProcessBuilder(configFilePath + "PSLAManager.exe -f " + configFilePath + "-q").start();
+      Process process =
+          new ProcessBuilder("mono " + configFilePath + "PSLAManager.exe -f " + configFilePath + "-q").start();
     } catch (IOException e) {
       e.printStackTrace();
     }
@@ -46,10 +45,14 @@ public class PSLAManagerWrapper {
   /**
    * 
    */
-  public void generatePSLA() {
-    // TODO Auto-generated method stub
-    // Takes in query file list and stats and returns a PSLA
-    // User will pick PSLA option
+  public void generatePSLA(final Path configFilePath) {
+    try {
+      // might need to use mono
+      Process process =
+          new ProcessBuilder("mono " + configFilePath + "PSLAManager.exe -f " + configFilePath + "-p").start();
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
   }
 
   public int subsumption() {

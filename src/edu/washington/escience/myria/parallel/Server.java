@@ -1032,6 +1032,9 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
    */
   public String executeSQLCommandSingleRowSingleWorker(final String sqlString, final Schema outputSchema,
       final int workerId) throws IOException, DbException {
+
+    LOGGER.warn("SCHEMA : " + outputSchema.toString());
+
     ByteSink byteSink = new ByteSink();
     TupleWriter writer = new CsvTupleWriter();
 
@@ -1058,8 +1061,11 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
 
     // get query response
     byte[] responseBytes = ((ByteArrayOutputStream) byteSink.getOutputStream()).toByteArray();
+    LOGGER.warn("BYTES FROM SERVER: " + responseBytes.length);
     String response = new String(responseBytes, Charset.forName("UTF-8"));
-    return response;
+    String[] pieces = response.split("\r\n");
+    LOGGER.warn("RESPONSE FROM SERVER: " + response);
+    return pieces[1];
   }
 
   /**

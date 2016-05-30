@@ -40,6 +40,7 @@ public class PerfEnforceDriver {
     this.configFilePath = configFilePath;
     configurations = new HashSet<Integer>(Arrays.asList(4, 6, 8, 10, 12));
     factTableMapper = new HashMap<Integer, RelationKey>();
+    pslaManager = new PSLAManagerWrapper(configFilePath);
 
   }
 
@@ -47,10 +48,10 @@ public class PerfEnforceDriver {
 
     PerfEnforceDataPreparation dataPrepare = new PerfEnforceDataPreparation(server);
     List<TableDescriptionEncoding> allTables =
-        PerfEnforceConfigurationParser.getAllTables(configFilePath + "deployment_tables.json");
+        PerfEnforceConfigurationParser.getAllTables(configFilePath + "schemaDefinition.json");
 
     List<TableDescriptionEncoding> dimensionTables =
-        PerfEnforceConfigurationParser.getTablesOfType("dimension", configFilePath + "deployment_tables.json");
+        PerfEnforceConfigurationParser.getTablesOfType("dimension", configFilePath + "schemaDefinition.json");
 
     // ingest all relations
     for (TableDescriptionEncoding currentTable : allTables) {
@@ -87,6 +88,9 @@ public class PerfEnforceDriver {
       Path path = Paths.get(configFilePath + config + "_Workers/");
       try {
         Files.createDirectories(path);
+        Process p =
+            new ProcessBuilder("cp " + configFilePath + "/schemaDefinition.json " + configFilePath + config
+                + "_Workers/").start();
       } catch (IOException e) {
         e.printStackTrace();
       }
@@ -117,13 +121,13 @@ public class PerfEnforceDriver {
       }
       writer.close();
 
-      // pslaManager.generateQueries(path);
+      pslaManager.generateQueries(path);
 
       // generate features for THIS config
-      // dataPrepare.generatePostgresFeatures(path);
+      dataPrepare.generatePostgresFeatures(path);
     }
     // generate PSLA for all configs given all the features
-    pslaManager.generatePSLA();
+    // pslaManager.generatePSLA();
 
   }
 

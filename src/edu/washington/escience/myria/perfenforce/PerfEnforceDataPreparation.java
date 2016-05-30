@@ -211,6 +211,13 @@ public class PerfEnforceDataPreparation {
   }
 
   /*
+   * Get the table count
+   */
+  public long runTableCount(final RelationKey relationKey, final int config) throws DbException {
+    return server.getDatasetStatus(relationKey).getNumTuples() / config;
+  }
+
+  /*
    * For each primary key, determine the rank based on the selectivity and return the result
    */
   public StatsTableEncoding runTableRanking(final RelationKey relationKey, final long tableSize,
@@ -222,7 +229,7 @@ public class PerfEnforceDataPreparation {
     int counter = 1;
     for (int key : keys) {
       keyString += schema.getColumnName(key);
-      Schema.appendColumn(keySchema, schema.getColumnType(key), schema.getColumnName(key));
+      keySchema = Schema.appendColumn(keySchema, schema.getColumnType(key), schema.getColumnName(key));
       if (counter != keys.size()) {
         keyString += ",";
       }
@@ -230,7 +237,7 @@ public class PerfEnforceDataPreparation {
     }
 
     // for each selectivity
-    List<Double> selectivityList = Arrays.asList(new Double[] { .001, .01, .1, 1.0 });
+    List<Double> selectivityList = Arrays.asList(new Double[] { .001, .01, .1 });
 
     // find the table stats
     StatsTableEncoding tableStats = null;
@@ -245,7 +252,6 @@ public class PerfEnforceDataPreparation {
                   keyString, keyString, keyString, tableSize, relationKey
                       .toString(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL), selectivityList.get(i));
       // only run on worker 1
-
       String result = server.executeSQLCommandSingleRowSingleWorker(rankingQuery, keySchema, 1);
       LOGGER.warn("RETURNED RESULT: " + result);
       selectivityKeys.add(result);
@@ -259,26 +265,16 @@ public class PerfEnforceDataPreparation {
   }
 
   /*
-   * Get the table count
+   * Called within a configuration
    */
-  public long runTableCount(final RelationKey relationKey, final int config) throws DbException {
-    return server.getDatasetStatus(relationKey).getNumTuples() / config;
-
-  }
-
   public void generatePostgresFeatures(final Path path) {
-    // run something on postgres and output results to some directly -- possibly the same as the configuration ---
-    // this should first scan all
+    // read the query file in the config -- queries.txt
+    // for each query
+    // run it on Postgres with explain and get the result back (should be 1 row)
 
-    /*
-     * String outputCall = String .format(
-     * "\\o | head -3 %s | tail -1 | sed  -e 's/.*cost=//' -e 's/\\.\\./,/' -e 's/ rows=/,/' -e 's/ width=/,/' -e 's/)//' | cat - >> %s;"
-     * , "", "");
-     * 
-     * try { BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(path + "queries.txt")));
-     * // run the query on worker send output to file(replace file) // read the file first line, parse the output (sed?)
-     * and put in output file } catch (FileNotFoundException e) { e.printStackTrace(); }
-     */
-
+    // with the returned row, parse it using grep?
+    // then add that point to 1 master file. The master feature file should be started before this method is called (and
+    // initialized with the appropriate header)
+    // This method should receive the writer to dump the features
   }
 }

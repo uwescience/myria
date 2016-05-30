@@ -10,22 +10,22 @@ import edu.washington.escience.myria.api.encoding.Required;
  */
 public class StatsTableEncoding {
   @Required
-  String table_name;
+  public String table_name;
   @Required
-  long table_size;
+  public long table_size;
   @Required
-  String selectivity_predicate_1;
+  public String selectivity_predicate_001;
   @Required
-  String selectivity_predicate_10;
+  public String selectivity_predicate_01;
   @Required
-  String selectivity_predicate_100;
+  public String selectivity_predicate_1;
 
-  public StatsTableEncoding(final String table_name, final long table_size, final String selectivity_predicate_1,
-      final String selectivity_predicate_10, final String selectivity_predicate_100) {
+  public StatsTableEncoding(final String table_name, final long table_size, final String selectivity_predicate_001,
+      final String selectivity_predicate_01, final String selectivity_predicate_1) {
     this.table_name = table_name;
     this.table_size = table_size;
+    this.selectivity_predicate_001 = selectivity_predicate_001;
+    this.selectivity_predicate_01 = selectivity_predicate_01;
     this.selectivity_predicate_1 = selectivity_predicate_1;
-    this.selectivity_predicate_1 = selectivity_predicate_10;
-    this.selectivity_predicate_1 = selectivity_predicate_100;
   }
 }
