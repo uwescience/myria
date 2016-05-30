@@ -3,7 +3,9 @@
  */
 package edu.washington.escience.myria.perfenforce;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileReader;
 import java.io.IOException;
 import java.nio.file.Path;
 
@@ -18,18 +20,20 @@ import com.amazonaws.services.s3.model.GetObjectRequest;
 public class PSLAManagerWrapper {
 
   int tierSelected = 4; // hard coded for now, but should allow the user to pick
+  String PSLAManagerPath;
 
-  public PSLAManagerWrapper(final String configFilePath) {
+  public PSLAManagerWrapper(final String configFilePath) throws IOException {
     // download the executable and jars
     AmazonS3 conn = new AmazonS3Client(new DefaultAWSCredentialsProviderChain());
-    conn.getObject(new GetObjectRequest("perfenforce", "PSLAManager.exe"),
-        new File(configFilePath + "/PSLAManager.exe"));
-    conn.getObject(new GetObjectRequest("perfenforce", "Newtonsoft.Json.dll"), new File(configFilePath
-        + "/Newtonsoft.Json.dll"));
-    conn.getObject(new GetObjectRequest("perfenforce", "CommandLine.dll"),
-        new File(configFilePath + "/CommandLine.dll"));
-    conn.getObject(new GetObjectRequest("perfenforce", "weka.jar"), new File(configFilePath + "/weka.jar"));
 
+    // download necessary files for PSLAManager
+    String currentLine = "";
+    BufferedReader br = new BufferedReader(new FileReader(configFilePath + "filesToFetch.txt"));
+    while ((currentLine = br.readLine()) != null) {
+      conn.getObject(new GetObjectRequest("perfenforce", currentLine), new File(configFilePath + "/" + currentLine));
+    }
+
+    PSLAManagerPath = configFilePath + "/PSLAManager/";
   }
 
   /**
@@ -39,7 +43,7 @@ public class PSLAManagerWrapper {
   public void generateQueries(final String configFilePath, final int config) {
     try {
       Runtime.getRuntime().exec(
-          "mono " + configFilePath + "PSLAManager.exe -f " + configFilePath + config + "_Workers/" + " -q");
+          "mono " + PSLAManagerPath + "PSLAManager.exe -f " + configFilePath + config + "_Workers/" + " -q");
     } catch (IOException e) {
       e.printStackTrace();
     }
@@ -50,8 +54,8 @@ public class PSLAManagerWrapper {
    */
   public void generatePSLA(final Path configFilePath) {
     try {
-      Runtime.getRuntime()
-          .exec("mono " + configFilePath + "PSLAManager.exe -f " + configFilePath + "_Workers/" + " -p");
+      Runtime.getRuntime().exec(
+          "mono " + PSLAManagerPath + "PSLAManager.exe -f " + configFilePath + "_Workers/" + " -p");
     } catch (IOException e) {
       e.printStackTrace();
     }

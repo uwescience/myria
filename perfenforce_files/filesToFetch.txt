@@ -1,0 +1,8 @@
+PSLAManager.exe
+Newtonsoft.Json.dll
+CommandLine.dll
+4_Workers/TRAINING.arff
+6_Workers/TRAINING.arff
+8_Workers/TRAINING.arff
+10_Workers/TRAINING.arff
+12_Workers/TRAINING.arff

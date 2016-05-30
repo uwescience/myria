@@ -5,7 +5,6 @@ package edu.washington.escience.myria.perfenforce;
 
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -37,7 +36,7 @@ public class PerfEnforceDriver {
   // holds an instance of the PSLAManagerWrapper
   PSLAManagerWrapper pslaManager;
 
-  public PerfEnforceDriver(final String configFilePath) {
+  public PerfEnforceDriver(final String configFilePath) throws IOException {
     this.configFilePath = configFilePath;
     configurations = new HashSet<Integer>(Arrays.asList(4, 6, 8, 10, 12));
     factTableMapper = new HashMap<Integer, RelationKey>();
@@ -87,9 +86,8 @@ public class PerfEnforceDriver {
     // prepare query generation directories
     for (Integer config : configurations) {
       Path path = Paths.get(configFilePath + config + "_Workers/");
-      try {
-        Files.createDirectories(path);
 
+      try {
         // This should be changed from the PSLAManager side. Shouldn't have to copy the file over
         String copyCmd = "cp " + configFilePath + "/SchemaDefinition.json " + configFilePath + config + "_Workers/";
         Runtime.getRuntime().exec(copyCmd);
