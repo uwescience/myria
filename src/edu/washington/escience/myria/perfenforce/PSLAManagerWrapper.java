@@ -36,11 +36,11 @@ public class PSLAManagerWrapper {
    * @param configFilePath
    * @return
    */
-  public void generateQueries(final Path configFilePath, final int config) {
+  public void generateQueries(final String configFilePath, final int config) {
     try {
       Process process =
           new ProcessBuilder("mono " + configFilePath + "PSLAManager.exe -f " + configFilePath + config + "_Workers/"
-              + "-q").start();
+              + " -q").start();
     } catch (IOException e) {
       e.printStackTrace();
     }
@@ -53,7 +53,7 @@ public class PSLAManagerWrapper {
     try {
       // might need to use mono
       Process process =
-          new ProcessBuilder("mono " + configFilePath + "PSLAManager.exe -f " + configFilePath + "-p").start();
+          new ProcessBuilder("mono " + configFilePath + "PSLAManager.exe -f " + configFilePath + " -p").start();
     } catch (IOException e) {
       e.printStackTrace();
     }
