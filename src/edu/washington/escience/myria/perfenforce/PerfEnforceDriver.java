@@ -48,10 +48,10 @@ public class PerfEnforceDriver {
 
     PerfEnforceDataPreparation dataPrepare = new PerfEnforceDataPreparation(server);
     List<TableDescriptionEncoding> allTables =
-        PerfEnforceConfigurationParser.getAllTables(configFilePath + "schemaDefinition.json");
+        PerfEnforceConfigurationParser.getAllTables(configFilePath + "SchemaDefinition.json");
 
     List<TableDescriptionEncoding> dimensionTables =
-        PerfEnforceConfigurationParser.getTablesOfType("dimension", configFilePath + "schemaDefinition.json");
+        PerfEnforceConfigurationParser.getTablesOfType("dimension", configFilePath + "SchemaDefinition.json");
 
     // ingest all relations
     for (TableDescriptionEncoding currentTable : allTables) {
@@ -88,9 +88,9 @@ public class PerfEnforceDriver {
       Path path = Paths.get(configFilePath + config + "_Workers/");
       try {
         Files.createDirectories(path);
-        Process p =
-            new ProcessBuilder("cp " + configFilePath + "/schemaDefinition.json " + configFilePath + config
-                + "_Workers/").start();
+
+        String copyCmd = "cp " + configFilePath + "/SchemaDefinition.json " + configFilePath + config + "_Workers/";
+        Process process = Runtime.getRuntime().exec(copyCmd);
       } catch (IOException e) {
         e.printStackTrace();
       }
@@ -107,7 +107,7 @@ public class PerfEnforceDriver {
 
       for (TableDescriptionEncoding dimensionTableDesc : dimensionTables) {
         RelationKey dimensionTableKey = dimensionTableDesc.relationKey;
-        long dimensionTableCount = dataPrepare.runTableCount(dimensionTableKey, 1);
+        long dimensionTableCount = dataPrepare.runTableCount(dimensionTableKey, 12);
         StatsTableEncoding dimensionStats =
             dataPrepare.runTableRanking(dimensionTableKey, dimensionTableCount, dimensionTableDesc.keys,
                 dimensionTableDesc.schema);
@@ -121,10 +121,10 @@ public class PerfEnforceDriver {
       }
       writer.close();
 
-      pslaManager.generateQueries(path);
+      pslaManager.generateQueries(configFilePath, config);
 
       // generate features for THIS config
-      dataPrepare.generatePostgresFeatures(path);
+      // dataPrepare.generatePostgresFeatures(path);
     }
     // generate PSLA for all configs given all the features
     // pslaManager.generatePSLA();

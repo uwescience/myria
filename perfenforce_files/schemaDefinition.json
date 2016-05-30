@@ -92,7 +92,8 @@
     "delimiter": "|",
     "keys": [
       0
-    ]
+    ],
+    "corresponding_fact_key":[3]
   },
   {
     "relationKey": {
@@ -131,6 +132,7 @@
     "delimiter": ",",
     "keys": [
       0
-    ]
+    ],
+    "corresponding_fact_key":[2]
   }
 ]

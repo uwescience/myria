@@ -24,6 +24,10 @@ public class PSLAManagerWrapper {
     AmazonS3 conn = new AmazonS3Client(new DefaultAWSCredentialsProviderChain());
     conn.getObject(new GetObjectRequest("perfenforce", "PSLAManager.exe"),
         new File(configFilePath + "/PSLAManager.exe"));
+    conn.getObject(new GetObjectRequest("perfenforce", "Newtonsoft.Json.dll"), new File(configFilePath
+        + "/Newtonsoft.Json.dll"));
+    conn.getObject(new GetObjectRequest("perfenforce", "CommandLine.dll"),
+        new File(configFilePath + "/CommandLine.dll"));
     conn.getObject(new GetObjectRequest("perfenforce", "weka.jar"), new File(configFilePath + "/weka.jar"));
 
   }
@@ -32,11 +36,11 @@ public class PSLAManagerWrapper {
    * @param configFilePath
    * @return
    */
-  public void generateQueries(final Path configFilePath) {
+  public void generateQueries(final Path configFilePath, final int config) {
     try {
-      // might need to use mono
       Process process =
-          new ProcessBuilder("mono " + configFilePath + "PSLAManager.exe -f " + configFilePath + "-q").start();
+          new ProcessBuilder("mono " + configFilePath + "PSLAManager.exe -f " + configFilePath + config + "_Workers/"
+              + "-q").start();
     } catch (IOException e) {
       e.printStackTrace();
     }

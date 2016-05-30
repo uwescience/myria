@@ -27,4 +27,6 @@ public class TableDescriptionEncoding {
   @Required
   public Set<Integer> keys;
 
+  public Set<Integer> corresponding_fact_key;
+
 }
