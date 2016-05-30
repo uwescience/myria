@@ -1051,8 +1051,8 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
 
     String planString = "execute single worker : " + sqlString;
     try {
-      queryManager.submitQuery(planString, planString, planString, masterPlan, workerPlans);
-    } catch (CatalogException | DbException e) {
+      queryManager.submitQuery(planString, planString, planString, masterPlan, workerPlans).get();
+    } catch (CatalogException | DbException | InterruptedException | ExecutionException e) {
       throw new DbException(e);
     }
 

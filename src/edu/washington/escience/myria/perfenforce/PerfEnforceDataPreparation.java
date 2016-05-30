@@ -21,7 +21,6 @@ import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.Schema;
-import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.coordinator.CatalogException;
 import edu.washington.escience.myria.io.DataSource;
 import edu.washington.escience.myria.operator.DbInsert;
@@ -217,11 +216,13 @@ public class PerfEnforceDataPreparation {
   public StatsTableEncoding runTableRanking(final RelationKey relationKey, final long tableSize,
       final Set<Integer> keys, final Schema schema) throws IOException, DbException {
     String keyString = "";
+    Schema keySchema = Schema.EMPTY_SCHEMA;
 
     // handle the more than 1 key scenario (just in case)
     int counter = 1;
     for (int key : keys) {
       keyString += schema.getColumnName(key);
+      Schema.appendColumn(keySchema, schema.getColumnType(key), schema.getColumnName(key));
       if (counter != keys.size()) {
         keyString += ",";
       }
@@ -244,8 +245,9 @@ public class PerfEnforceDataPreparation {
                   keyString, keyString, keyString, tableSize, relationKey
                       .toString(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL), selectivityList.get(i));
       // only run on worker 1
-      String result =
-          server.executeSQLCommandSingleRowSingleWorker(rankingQuery, Schema.ofFields("count", Type.STRING_TYPE), 1);
+
+      String result = server.executeSQLCommandSingleRowSingleWorker(rankingQuery, keySchema, 1);
+      LOGGER.warn("RETURNED RESULT: " + result);
       selectivityKeys.add(result);
     }
 

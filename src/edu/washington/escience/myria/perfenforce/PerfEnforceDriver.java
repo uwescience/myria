@@ -117,10 +117,10 @@ public class PerfEnforceDriver {
       }
       writer.close();
 
-      pslaManager.generateQueries(path);
+      // pslaManager.generateQueries(path);
 
       // generate features for THIS config
-      dataPrepare.generatePostgresFeatures(path);
+      // dataPrepare.generatePostgresFeatures(path);
     }
     // generate PSLA for all configs given all the features
     pslaManager.generatePSLA();
