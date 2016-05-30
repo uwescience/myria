@@ -4,7 +4,6 @@
 package edu.washington.escience.myria.perfenforce;
 
 import java.io.IOException;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -21,6 +20,7 @@ import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.Schema;
+import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.coordinator.CatalogException;
 import edu.washington.escience.myria.io.DataSource;
 import edu.washington.escience.myria.operator.DbInsert;
@@ -273,16 +273,21 @@ public class PerfEnforceDataPreparation {
   }
 
   /*
-   * Called within a configuration
+   * Called within a configuration, calls the query to explain
    */
-  public void generatePostgresFeatures(final Path path) {
-    // read the query file in the config -- queries.txt
-    // for each query
-    // run it on Postgres with explain and get the result back (should be 1 row)
+  public String generatePostgresFeatures(final String query) throws IOException, DbException {
+    String explainQuery = "EXPLAIN " + query;
+    // only run on worker 1
+    String result =
+        server.executeSQLCommandSingleRowSingleWorker(explainQuery, Schema.ofFields("explain", Type.STRING_TYPE), 1);
 
-    // with the returned row, parse it using grep?
-    // then add that point to 1 master file. The master feature file should be started before this method is called (and
-    // initialized with the appropriate header)
-    // This method should receive the writer to dump the features
+    // parsing output
+    // List<String> command =
+    // Arrays.asList(new String[] {
+    // "sed", "-e", "'s/.*cost=//' -e 's/\\.\\./,/' -e 's/ rows=/,/' -e 's/ width=/,/' -e 's/)//", result });
+    // Process p = new ProcessBuilder(command).start();
+
+    LOGGER.warn("RETURNED RESULT: " + result);
+    return result;
   }
 }

@@ -3,6 +3,8 @@
  */
 package edu.washington.escience.myria.perfenforce;
 
+import java.io.BufferedReader;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.file.Path;
@@ -16,6 +18,8 @@ import java.util.List;
 import java.util.Map.Entry;
 import java.util.Set;
 
+import org.slf4j.LoggerFactory;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import edu.washington.escience.myria.DbException;
@@ -27,6 +31,8 @@ import edu.washington.escience.myria.parallel.Server;
  * 
  */
 public class PerfEnforceDriver {
+
+  protected static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(PerfEnforceDriver.class);
 
   String configFilePath;
   static Set<Integer> configurations;
@@ -127,7 +133,19 @@ public class PerfEnforceDriver {
 
       pslaManager.generateQueries(configFilePath, config);
 
-      // generate features for THIS config
+      // read the resulting queries
+      String currentLine = "";
+      PrintWriter featureWriter = new PrintWriter(configFilePath + config + "_Workers/" + "TESTING.arff", "UTF-8");
+      BufferedReader br =
+          new BufferedReader(new FileReader(configFilePath + config + "_Workers/" + "SQLQueries-Generated.txt"));
+      while ((currentLine = br.readLine()) != null) {
+        LOGGER.warn("QUERY TO RUN " + currentLine);
+        String features = dataPrepare.generatePostgresFeatures(currentLine);
+        featureWriter.write(features + "\n");
+      }
+      featureWriter.close();
+      br.close();
+
       // dataPrepare.generatePostgresFeatures(path);
     }
     // generate PSLA for all configs given all the features
