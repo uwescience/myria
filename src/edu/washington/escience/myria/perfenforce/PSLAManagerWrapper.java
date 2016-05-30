@@ -42,9 +42,11 @@ public class PSLAManagerWrapper {
    */
   public void generateQueries(final String configFilePath, final int config) {
     try {
-      Runtime.getRuntime().exec(
-          "mono " + PSLAManagerPath + "PSLAManager.exe -f " + configFilePath + config + "_Workers/" + " -q");
-    } catch (IOException e) {
+      Process p =
+          Runtime.getRuntime().exec(
+              "mono " + PSLAManagerPath + "PSLAManager.exe -f " + configFilePath + config + "_Workers/" + " -q");
+      p.waitFor();
+    } catch (IOException | InterruptedException e) {
       e.printStackTrace();
     }
   }
@@ -54,9 +56,11 @@ public class PSLAManagerWrapper {
    */
   public void generatePSLA(final Path configFilePath) {
     try {
-      Runtime.getRuntime().exec(
-          "mono " + PSLAManagerPath + "PSLAManager.exe -f " + configFilePath + "_Workers/" + " -p");
-    } catch (IOException e) {
+      Process p =
+          Runtime.getRuntime().exec(
+              "mono " + PSLAManagerPath + "PSLAManager.exe -f " + configFilePath + "_Workers/" + " -p");
+      p.waitFor();
+    } catch (IOException | InterruptedException e) {
       e.printStackTrace();
     }
   }
