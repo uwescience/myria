@@ -108,7 +108,7 @@ public class Apply extends UnaryOperator {
         evaluator = new ConstantEvaluator(expr, parameters);
       } else if (expr.isRegisteredUDF()) {
         LOGGER.info("PythonUDF!!");
-        evaluator = new PythonUDFEvaluator(expr, parameters);
+        evaluator = new PythonUDFEvaluator(expr, parameters, getPythonFunctionRegistrar());
       } else {
         evaluator = new GenericEvaluator(expr, parameters);
       }

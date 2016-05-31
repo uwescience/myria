@@ -3,17 +3,22 @@
  */
 package edu.washington.escience.myria.operator;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
+
+import sun.misc.BASE64Decoder;
 
 import com.google.common.collect.ImmutableMap;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
-import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.accessmethod.AccessMethod;
 import edu.washington.escience.myria.accessmethod.ConnectionInfo;
-import edu.washington.escience.myria.api.encoding.FunctionEncoding.FunctionLanguage;
+import edu.washington.escience.myria.expression.evaluate.GenericEvaluator;
+import edu.washington.escience.myria.functions.PythonFunctionRegistrar;
 import edu.washington.escience.myria.storage.TupleBatch;
+
+;
 
 /**
  * 
@@ -27,41 +32,57 @@ public class DbFunction extends RootOperator {
   /** The information for the database connection. */
   private ConnectionInfo connectionInfo;
 
-  private final ByteBuffer binary;
-  private final Schema inputSchema;
-  private final Schema outputSchema;
-  private final FunctionLanguage lang;
+  private final String name;
+  private final String binary;
+
+  private final MyriaConstants.FunctionLanguage lang;
   private final String text;
+  /** logger for this class. */
+  private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(GenericEvaluator.class);
 
   /**
    * @param child the source of tuples to be inserted.
    * @param relationKey the key of the table the tuples should be inserted into.
    * @param connectionInfo the parameters of the database connection.
    */
-  public DbFunction(final Operator child, final String text, final Schema input, final Schema output,
-      final ByteBuffer binary, final FunctionLanguage lang, final ConnectionInfo connectionInfo) {
+  public DbFunction(final Operator child, final String name, final String text,
+      final MyriaConstants.FunctionLanguage lang, final String binary, final ConnectionInfo connectionInfo) {
     super(child);
+    this.name = name;
     this.connectionInfo = connectionInfo;
     this.text = text;
-    outputSchema = output;
-    inputSchema = input;
     this.lang = lang;
     this.binary = binary;
 
   }
 
   @Override
-  protected void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
+  protected void init(final ImmutableMap<String, Object> execEnvVars) throws DbException, IOException {
     /* Retrieve connection information from the environment variables, if not already set */
     if (connectionInfo == null && execEnvVars != null) {
       connectionInfo = (ConnectionInfo) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_DATABASE_CONN_INFO);
     }
 
-    if (lang == FunctionLanguage.POSTGRES) {
+    if (lang == MyriaConstants.FunctionLanguage.POSTGRES) {
+      LOGGER.info("in postgres function register");
       /* Open the database connection */
       accessMethod = AccessMethod.of(connectionInfo.getDbms(), connectionInfo, false);
       /* Add the POSTGRES UDF */
       accessMethod.executeSQLCommand(text);
+    }
+    if (lang == MyriaConstants.FunctionLanguage.PYTHON) {
+      LOGGER.info("in python function register");
+
+      BASE64Decoder decoder = new BASE64Decoder();
+      if (binary != null) {
+        byte[] decodedBytes = decoder.decodeBuffer(binary);
+        ByteBuffer binaryFunction = ByteBuffer.wrap(decodedBytes);
+
+        PythonFunctionRegistrar pyFunc = new PythonFunctionRegistrar(connectionInfo);
+        pyFunc.addUDF(name, binaryFunction);
+      } else {
+        throw new DbException("Cannot register python UDF without binary");
+      }
     }
 
   }

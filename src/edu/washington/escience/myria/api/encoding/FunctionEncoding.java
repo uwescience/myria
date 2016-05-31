@@ -5,6 +5,7 @@ package edu.washington.escience.myria.api.encoding;
 
 import java.util.Set;
 
+import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.Schema;
 
 /**
@@ -16,7 +17,7 @@ public class FunctionEncoding extends MyriaApiEncoding {
   @Required
   public String text;
   @Required
-  public FunctionLanguage lang;
+  public MyriaConstants.FunctionLanguage lang;
   @Required
   public Schema outputSchema;
   @Required
@@ -25,11 +26,4 @@ public class FunctionEncoding extends MyriaApiEncoding {
   public Set<Integer> workers;
   public String binary;
 
-  public enum FunctionLanguage {
-    /** Postgres UDF */
-    POSTGRES,
-    /** Python functions */
-    PYTHON
-
-  };
 }

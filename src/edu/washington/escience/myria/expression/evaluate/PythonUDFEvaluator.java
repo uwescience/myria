@@ -3,8 +3,11 @@
  */
 package edu.washington.escience.myria.expression.evaluate;
 
+import java.nio.ByteBuffer;
+
 import org.codehaus.janino.ExpressionEvaluator;
 
+import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.Column;
 import edu.washington.escience.myria.column.builder.ColumnBuilder;
@@ -13,6 +16,7 @@ import edu.washington.escience.myria.column.builder.WritableColumn;
 import edu.washington.escience.myria.expression.Expression;
 import edu.washington.escience.myria.expression.ExpressionOperator;
 import edu.washington.escience.myria.expression.PyUDFExpression;
+import edu.washington.escience.myria.functions.PythonFunctionRegistrar;
 import edu.washington.escience.myria.operator.Apply;
 import edu.washington.escience.myria.operator.StatefulApply;
 import edu.washington.escience.myria.storage.ReadableTable;
@@ -26,6 +30,7 @@ public class PythonUDFEvaluator extends GenericEvaluator {
 
   /** logger for this class. */
   private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(GenericEvaluator.class);
+  private final PythonFunctionRegistrar pyFunction;
 
   /**
    * Default constructor.
@@ -33,23 +38,37 @@ public class PythonUDFEvaluator extends GenericEvaluator {
    * @param expression the expression for the evaluator
    * @param parameters parameters that are passed to the expression
    */
-  public PythonUDFEvaluator(final Expression expression, final ExpressionOperatorParameter parameters) {
+  public PythonUDFEvaluator(final Expression expression, final ExpressionOperatorParameter parameters,
+      final PythonFunctionRegistrar pyFuncReg) {
     super(expression, parameters);
     // parameters and expression are saved in the super
     LOGGER.info(getExpression().getOutputName());
-    initEvaluator();
-
-    // the parameters should have pickle?
+    pyFunction = pyFuncReg;
+    try {
+      initEvaluator();
+    } catch (DbException e) {
+      // TODO Auto-generated catch block
+      LOGGER.info(e.getMessage());
+    }
 
   }
 
-  private void initEvaluator() {
+  private void initEvaluator() throws DbException {
     ExpressionOperator op = getExpression().getRootExpressionOperator();
     String pyFunc = ((PyUDFExpression) op).getName();
     LOGGER.info(pyFunc);
+    // pyFunction = new RegisterFunction(null);
     // get master catalog
     // retrieve pickled function
-
+    try {
+      ByteBuffer pyPickle = pyFunction.getUDF(pyFunc);
+      LOGGER.info("Got code pickle");
+      int i = pyPickle.array().length;
+      LOGGER.info("pickle length" + i);
+    } catch (Exception e) {
+      LOGGER.info(e.getMessage());
+      throw new DbException(e);
+    }
     // start python worker
 
   }

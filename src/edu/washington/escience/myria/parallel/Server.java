@@ -59,7 +59,6 @@ import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.accessmethod.AccessMethod.IndexRef;
 import edu.washington.escience.myria.api.MyriaJsonMapperProvider;
 import edu.washington.escience.myria.api.encoding.DatasetStatus;
-import edu.washington.escience.myria.api.encoding.FunctionEncoding.FunctionLanguage;
 import edu.washington.escience.myria.api.encoding.QueryEncoding;
 import edu.washington.escience.myria.coordinator.CatalogException;
 import edu.washington.escience.myria.coordinator.ConfigFileException;
@@ -1145,10 +1144,12 @@ public final class Server {
   /**
    * Create a function and register it in the catalog encoding.name, encoding.text, encoding.lang, encoding.workers,
    * encoding.binary,encoding.inputSchema, encoding.outputSchema
+   * 
+   * @throws IOException
    */
-  public long createFunction(final String name, final String text, final FunctionLanguage lang,
+  public long createFunction(final String name, final String text, final MyriaConstants.FunctionLanguage lang,
       final Set<Integer> workers, final String binary, final Schema inputSchema, final Schema outputSchema)
-      throws DbException, InterruptedException {
+      throws DbException, InterruptedException, IOException {
     long queryID = 0;
 
     Set<Integer> actualWorkers = workers;
@@ -1156,11 +1157,11 @@ public final class Server {
       actualWorkers = getWorkers().keySet();
     }
 
-    if (lang == FunctionLanguage.POSTGRES) {
+    // Send the UDF to workers!
 
-      queryID = addFunctiontoDB(actualWorkers, text, inputSchema, outputSchema);
-    }
-    /* Register the UDF to the catalog */
+    queryID = addFunctiontoDB(actualWorkers, name, text, binary, lang);
+
+    /* Register the UDF in the master catalog */
     try {
       LOGGER.info("trying to register UDF");
 
@@ -1174,21 +1175,26 @@ public final class Server {
     return queryID;
   }
 
-  public long addFunctiontoDB(final Set<Integer> workers, final String udfDefinition, final Schema inputSchema,
-      final Schema outputSchema) throws DbException {
+  public long addFunctiontoDB(final Set<Integer> workers, final String udfName, final String udfDefinition,
+      final String binary, final MyriaConstants.FunctionLanguage lang) throws DbException {
 
     long queryID;
     try {
+      LOGGER.info("got inside first try loop");
       Map<Integer, SubQueryPlan> workerPlans = new HashMap<>();
       for (Integer workerId : workers) {
-        workerPlans.put(workerId, new SubQueryPlan(new DbFunction(EmptyRelation.of(Schema.EMPTY_SCHEMA), udfDefinition,
-            inputSchema, outputSchema, null, FunctionLanguage.POSTGRES, null)));
+        LOGGER.info("adding subplan for worker id " + workerId);
+        workerPlans.put(workerId, new SubQueryPlan(new DbFunction(EmptyRelation.of(Schema.EMPTY_SCHEMA), udfName,
+            udfDefinition, lang, binary, null)));
 
       }
+      LOGGER.info("Attempting the submit query");
       ListenableFuture<Query> qf =
           queryManager.submitQuery("create UDF", "create UDF", "create UDF", new SubQueryPlan(new SinkRoot(
               new EOSSource())), workerPlans);
+      LOGGER.info("submit query succeeded");
       try {
+        LOGGER.info("getQueryID?");
         queryID = qf.get().getQueryId();
       } catch (ExecutionException | InterruptedException e) {
         throw new DbException("Error executing query", e.getCause());
@@ -1199,15 +1205,15 @@ public final class Server {
     return queryID;
   }
 
-  public boolean functionExists(final String udf_name) {
+  public boolean functionExists(final String udfName) {
     // check in the catalog if the function exists
     return true;
   }
 
-  public void deleteFunction(final String udf_name) throws DbException {
+  public void deleteFunction(final String udfName) throws DbException {
     // call catalog delete this function
     try {
-      catalog.deleteFunctionFromCatalog(udf_name);
+      catalog.deleteFunctionFromCatalog(udfName);
     } catch (CatalogException e) {
       throw new DbException(e);
     }

@@ -313,6 +313,7 @@ public final class JdbcAccessMethod extends AccessMethod {
       sb.append('?');
     }
     sb.append(");");
+
     return sb.toString();
   }
 

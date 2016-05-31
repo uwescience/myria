@@ -40,6 +40,7 @@ import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
 import com.google.common.primitives.Ints;
 
+import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.MyriaConstants.FTMode;
 import edu.washington.escience.myria.MyriaConstants.ProfilingMode;
 import edu.washington.escience.myria.RelationKey;
@@ -49,7 +50,6 @@ import edu.washington.escience.myria.accessmethod.AccessMethod.IndexRef;
 import edu.washington.escience.myria.accessmethod.SQLiteTupleBatchIterator;
 import edu.washington.escience.myria.api.MyriaJsonMapperProvider;
 import edu.washington.escience.myria.api.encoding.DatasetStatus;
-import edu.washington.escience.myria.api.encoding.FunctionEncoding.FunctionLanguage;
 import edu.washington.escience.myria.api.encoding.QueryEncoding;
 import edu.washington.escience.myria.api.encoding.QueryStatusEncoding;
 import edu.washington.escience.myria.api.encoding.plan.SubPlanEncoding;
@@ -1657,8 +1657,8 @@ public final class MasterCatalog {
    */
 
   public void registerFunction(@Nonnull final String name, @Nonnull final String text,
-      @Nonnull final Schema outputSchema, final Schema inputSchema, final FunctionLanguage lang, final String binary)
-      throws CatalogException {
+      @Nonnull final Schema outputSchema, final Schema inputSchema, final MyriaConstants.FunctionLanguage lang,
+      final String binary) throws CatalogException {
     LOGGER.info("in register UDFs");
     LOGGER.info("name " + name + "\t" + text + "\t" + lang);
     LOGGER.info("outputschema " + outputSchema.toString());
