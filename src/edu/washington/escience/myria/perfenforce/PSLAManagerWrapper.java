@@ -7,7 +7,6 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
-import java.nio.file.Path;
 
 import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
 import com.amazonaws.services.s3.AmazonS3;
@@ -54,11 +53,9 @@ public class PSLAManagerWrapper {
   /**
    * 
    */
-  public void generatePSLA(final Path configFilePath) {
+  public void generatePSLA(final String configFilePath) {
     try {
-      Process p =
-          Runtime.getRuntime().exec(
-              "mono " + PSLAManagerPath + "PSLAManager.exe -f " + configFilePath + "_Workers/" + " -p");
+      Process p = Runtime.getRuntime().exec("mono " + PSLAManagerPath + "PSLAManager.exe -f " + configFilePath + " -p");
       p.waitFor();
     } catch (IOException | InterruptedException e) {
       e.printStackTrace();

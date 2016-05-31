@@ -284,13 +284,6 @@ public class PerfEnforceDataPreparation {
     String result =
         server.executeSQLCommandSingleRowSingleWorker(explainQuery, Schema.ofFields("explain", Type.STRING_TYPE), 1);
 
-    // parsing output
-    // List<String> command =
-    // Arrays.asList(new String[] {
-    // "sed", "-e", "'s/.*cost=//' -e 's/\\.\\./,/' -e 's/ rows=/,/' -e 's/ width=/,/' -e 's/)//", result });
-    // Process p = new ProcessBuilder(command).start();
-
-    LOGGER.warn("RETURNED RESULT: " + result);
     return result;
   }
 }

@@ -6,6 +6,7 @@ package edu.washington.escience.myria.perfenforce;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -63,12 +64,8 @@ public class PerfEnforceDriver {
     for (TableDescriptionEncoding currentTable : allTables) {
       if (currentTable.type.equalsIgnoreCase("fact")) {
         if (factTableMapper.isEmpty()) {
-
           factTableDesc = currentTable;
-          LOGGER.warn("R1 FIRST TIME " + factTableDesc.relationKey.getRelationName());
-
           factTableMapper = dataPrepare.ingestFact(configurations, currentTable);
-          LOGGER.warn("R1 AFTER INGEST " + factTableDesc.relationKey.getRelationName());
         }
       } else {
         if (server.getDatasetStatus(currentTable.relationKey) == null) {
@@ -143,30 +140,58 @@ public class PerfEnforceDriver {
       // read the resulting queries
       String currentLine = "";
       PrintWriter featureWriter = new PrintWriter(configFilePath + config + "_Workers/" + "TESTING.arff", "UTF-8");
+      featureWriter.write("@relation testing \n");
+
+      featureWriter.write("@attribute numberTables numeric \n");
+      featureWriter.write("@attribute postgesEstCostMin numeric \n");
+      featureWriter.write("@attribute postgesEstCostMax numeric \n");
+      featureWriter.write("@attribute postgesEstNumRows numeric \n");
+      featureWriter.write("@attribute postgesEstWidth numeric \n");
+      featureWriter.write("@attribute numberOfWorkers numeric \n");
+      featureWriter.write("@attribute realTime \n");
+
+      featureWriter.write("\n");
+      featureWriter.write("@data \n");
+
       BufferedReader br =
           new BufferedReader(new FileReader(configFilePath + config + "_Workers/" + "SQLQueries-Generated.txt"));
       while ((currentLine = br.readLine()) != null) {
-        LOGGER.warn("QUERY TO RUN " + currentLine);
-
-        LOGGER.warn("R1 " + factTableDesc.relationKey.getRelationName());
-        LOGGER.warn("R2 " + factTableMapper.get(config).getRelationName());
-
         /* intercept the fact table name */
         currentLine =
             currentLine.replace(factTableDesc.relationKey.getRelationName(), factTableMapper.get(config)
                 .getRelationName());
-
-        LOGGER.warn("QUERY TO RUN " + currentLine);
         String features = dataPrepare.generatePostgresFeatures(currentLine);
+        features = features.substring(features.indexOf("cost"));
+        features = features.replace("\"", " ");
+        String[] cmd =
+            {
+                "sh",
+                "-c",
+                "echo \"" + features
+                    + "\" | sed -e 's/.*cost=//' -e 's/\\.\\./,/' -e 's/ rows=/,/' -e 's/ width=/,/' -e 's/)//'" };
+        ProcessBuilder pb = new ProcessBuilder(cmd);
+        Process p = pb.start();
+
+        BufferedReader input = new BufferedReader(new InputStreamReader(p.getInputStream()));
+        features = input.readLine();
+
+        // add the extra features
+        if (currentLine.contains("WHERE")) {
+          String[] tables = currentLine.substring(currentLine.indexOf("FROM"), currentLine.indexOf("WHERE")).split(",");
+          features = tables.length + "," + features;
+        } else {
+          features = "1," + features;
+        }
+
+        features += "," + config + ",0";
+
         featureWriter.write(features + "\n");
       }
       featureWriter.close();
       br.close();
-
-      // dataPrepare.generatePostgresFeatures(path);
     }
     // generate PSLA for all configs given all the features
-    // pslaManager.generatePSLA();
+    pslaManager.generatePSLA(configFilePath);
 
   }
 
