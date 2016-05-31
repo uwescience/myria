@@ -88,6 +88,7 @@ public class PerfEnforceDataPreparation {
       server.createView(maxConfigRelationKey.toString(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL), PerfEnforceUtils
           .createUnionQuery(relationKeysToUnion), rangeMax);
       server.addDatasetToCatalog(maxConfigRelationKey, schema, rangeMax);
+      LOGGER.warn("ADDING KEY: " + maxConfigRelationKey);
       factTableMapper.put(maxConfig, maxConfigRelationKey);
     } catch (DbException | InterruptedException | CatalogException e1) {
       e1.printStackTrace();
@@ -139,6 +140,7 @@ public class PerfEnforceDataPreparation {
         server.createView(currentConfigRelationKey.toString(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL), PerfEnforceUtils
             .createUnionQuery(relationKeysToUnion), currentRange);
         server.addDatasetToCatalog(currentConfigRelationKey, schema, currentRange);
+        LOGGER.warn("ADDING KEY: " + currentConfigRelationKey);
         factTableMapper.put(currentSize, currentConfigRelationKey);
       } catch (InterruptedException | ExecutionException | DbException | CatalogException e) {
         e.printStackTrace();
@@ -277,6 +279,7 @@ public class PerfEnforceDataPreparation {
    */
   public String generatePostgresFeatures(final String query) throws IOException, DbException {
     String explainQuery = "EXPLAIN " + query;
+
     // only run on worker 1
     String result =
         server.executeSQLCommandSingleRowSingleWorker(explainQuery, Schema.ofFields("explain", Type.STRING_TYPE), 1);

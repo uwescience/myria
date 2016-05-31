@@ -2045,8 +2045,9 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
       ExecutionException, DbException, CatalogException {
     perfEnforceDriver = new PerfEnforceDriver(schemaFile);
     perfEnforceDriver.beginDataPreparation(this);
+  }
 
-    // we might need to add the perfenforce driver to the query manager here
-    // queryManager.addPerfEnforceDriver(perfEnforceDriver);
+  public boolean perfEnforceIsEnabled() {
+    return perfEnforceDriver == null;
   }
 }

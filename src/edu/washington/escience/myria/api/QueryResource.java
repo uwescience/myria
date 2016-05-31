@@ -20,6 +20,8 @@ import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.core.UriBuilder;
 import javax.ws.rs.core.UriInfo;
 
+import org.slf4j.LoggerFactory;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.common.base.MoreObjects;
 import com.google.common.base.Preconditions;
@@ -41,6 +43,9 @@ import edu.washington.escience.myria.parallel.SubQueryId;
 @Produces(MyriaApiConstants.JSON_UTF_8)
 @Path("/query")
 public final class QueryResource {
+
+  protected static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(QueryResource.class);
+
   /** The Myria server running on the master. */
   @Context
   private Server server;
@@ -88,6 +93,22 @@ public final class QueryResource {
     /* Start the query, and get its Server-assigned Query ID */
     QueryFuture qf;
     try {
+      if (server.perfEnforceIsEnabled()) {
+        LOGGER.warn("INTERCEPTING QUERY");
+        // intercept query
+
+        // get the sla for the query via subsumption (should be given to PSLAManager who takes the query string, PSLA,
+        // and tier)
+
+        // predict the runtimes (collect the features from postgres -- from which workers?)
+
+        // select the config array with the closest to SLA
+        int closestConfiguration = 4;
+
+        // check if using fact table and replace it with the size -- grab a fragment with the dbqueryscan
+
+        // replace the number of workers to match the configuration
+      }
       qf = server.getQueryManager().submitQuery(query, query.plan.getPlan());
     } catch (MyriaApiException e) {
       /* Passthrough MyriaApiException. */

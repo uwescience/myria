@@ -63,8 +63,12 @@ public class PerfEnforceDriver {
     for (TableDescriptionEncoding currentTable : allTables) {
       if (currentTable.type.equalsIgnoreCase("fact")) {
         if (factTableMapper.isEmpty()) {
-          factTableMapper = dataPrepare.ingestFact(configurations, currentTable);
+
           factTableDesc = currentTable;
+          LOGGER.warn("R1 FIRST TIME " + factTableDesc.relationKey.getRelationName());
+
+          factTableMapper = dataPrepare.ingestFact(configurations, currentTable);
+          LOGGER.warn("R1 AFTER INGEST " + factTableDesc.relationKey.getRelationName());
         }
       } else {
         if (server.getDatasetStatus(currentTable.relationKey) == null) {
@@ -76,7 +80,10 @@ public class PerfEnforceDriver {
     // run statistics on all columns of the fact partitions (UNIONS ONLY!!!)
     for (Entry<Integer, RelationKey> entry : factTableMapper.entrySet()) {
       // This is a yucky workaround to get the partition info (borrowed from the original table)
-      TableDescriptionEncoding temp = factTableDesc;
+      TableDescriptionEncoding temp =
+          new TableDescriptionEncoding(factTableDesc.relationKey, factTableDesc.type, factTableDesc.source,
+              factTableDesc.schema, factTableDesc.delimiter, factTableDesc.keys, factTableDesc.corresponding_fact_key);
+
       temp.relationKey =
           new RelationKey(entry.getValue().getUserName(), entry.getValue().getProgramName(), entry.getValue()
               .getRelationName()
@@ -139,6 +146,16 @@ public class PerfEnforceDriver {
       BufferedReader br =
           new BufferedReader(new FileReader(configFilePath + config + "_Workers/" + "SQLQueries-Generated.txt"));
       while ((currentLine = br.readLine()) != null) {
+        LOGGER.warn("QUERY TO RUN " + currentLine);
+
+        LOGGER.warn("R1 " + factTableDesc.relationKey.getRelationName());
+        LOGGER.warn("R2 " + factTableMapper.get(config).getRelationName());
+
+        /* intercept the fact table name */
+        currentLine =
+            currentLine.replace(factTableDesc.relationKey.getRelationName(), factTableMapper.get(config)
+                .getRelationName());
+
         LOGGER.warn("QUERY TO RUN " + currentLine);
         String features = dataPrepare.generatePostgresFeatures(currentLine);
         featureWriter.write(features + "\n");
