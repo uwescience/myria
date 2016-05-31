@@ -17,6 +17,7 @@ import edu.washington.escience.myria.expression.Expression;
 import edu.washington.escience.myria.expression.ExpressionOperator;
 import edu.washington.escience.myria.expression.PyUDFExpression;
 import edu.washington.escience.myria.functions.PythonFunctionRegistrar;
+import edu.washington.escience.myria.functions.PythonWorker;
 import edu.washington.escience.myria.operator.Apply;
 import edu.washington.escience.myria.operator.StatefulApply;
 import edu.washington.escience.myria.storage.ReadableTable;
@@ -31,6 +32,7 @@ public class PythonUDFEvaluator extends GenericEvaluator {
   /** logger for this class. */
   private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(GenericEvaluator.class);
   private final PythonFunctionRegistrar pyFunction;
+  private PythonWorker pyWorker;
 
   /**
    * Default constructor.
@@ -44,7 +46,10 @@ public class PythonUDFEvaluator extends GenericEvaluator {
     // parameters and expression are saved in the super
     LOGGER.info(getExpression().getOutputName());
     pyFunction = pyFuncReg;
+
     try {
+
+      pyWorker = new PythonWorker();
       initEvaluator();
     } catch (DbException e) {
       // TODO Auto-generated catch block
@@ -65,11 +70,12 @@ public class PythonUDFEvaluator extends GenericEvaluator {
       LOGGER.info("Got code pickle");
       int i = pyPickle.array().length;
       LOGGER.info("pickle length" + i);
+      pyWorker.sendCodePickle(pyPickle, 2);// tuple size is always 2 for binary expression.
+
     } catch (Exception e) {
       LOGGER.info(e.getMessage());
       throw new DbException(e);
     }
-    // start python worker
 
   }
 

@@ -285,8 +285,20 @@ public final class MyriaConstants {
   public static enum FunctionLanguage {
     /** Postgres UDF */
     POSTGRES,
-    /** Python functions */
+    /** Python UDF */
     PYTHON
-
   };
+
+  /**
+   * python executable name
+   */
+  public static final String PYTHONEXEC = "python";
+  /*
+   * Python worker module
+   */
+  public static final String PYTHONWORKER = "MyriaPythonWorker.worker";
+  /**
+   * python module discovery env variable
+   */
+  public static final String PYTHONPATH = "/anaconda/bin";
 }
