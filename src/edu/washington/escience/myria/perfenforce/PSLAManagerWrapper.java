@@ -39,11 +39,9 @@ public class PSLAManagerWrapper {
    * @param configFilePath
    * @return
    */
-  public void generateQueries(final String configFilePath, final int config) {
+  public void generateQueries(final String configFilePath) {
     try {
-      Process p =
-          Runtime.getRuntime().exec(
-              "mono " + PSLAManagerPath + "PSLAManager.exe -f " + configFilePath + config + "_Workers/" + " -q");
+      Process p = Runtime.getRuntime().exec("mono " + PSLAManagerPath + "PSLAManager.exe -f " + configFilePath + " -q");
       p.waitFor();
     } catch (IOException | InterruptedException e) {
       e.printStackTrace();

@@ -63,10 +63,9 @@ public class PerfEnforceDriver {
     // ingest all relations
     for (TableDescriptionEncoding currentTable : allTables) {
       if (currentTable.type.equalsIgnoreCase("fact")) {
-        if (factTableMapper.isEmpty()) {
-          factTableDesc = currentTable;
-          factTableMapper = dataPrepare.ingestFact(configurations, currentTable);
-        }
+        factTableDesc = currentTable;
+        factTableMapper = dataPrepare.ingestFact(configurations, currentTable);
+
       } else {
         if (server.getDatasetStatus(currentTable.relationKey) == null) {
           dataPrepare.ingestDimension(configurations, currentTable);
@@ -93,7 +92,7 @@ public class PerfEnforceDriver {
       dataPrepare.runPostgresStatistics(d);
     }
 
-    // prepare query generation directories
+    // prepare the stats.json on all directories
     for (Integer config : configurations) {
       Path path = Paths.get(configFilePath + config + "_Workers/");
 
@@ -134,9 +133,12 @@ public class PerfEnforceDriver {
         e.printStackTrace();
       }
       writer.close();
+    }
 
-      pslaManager.generateQueries(configFilePath, config);
+    // generate queries
+    pslaManager.generateQueries(configFilePath);
 
+    for (Integer config : configurations) {
       // read the resulting queries
       String currentLine = "";
       PrintWriter featureWriter = new PrintWriter(configFilePath + config + "_Workers/" + "TESTING.arff", "UTF-8");
@@ -148,7 +150,7 @@ public class PerfEnforceDriver {
       featureWriter.write("@attribute postgesEstNumRows numeric \n");
       featureWriter.write("@attribute postgesEstWidth numeric \n");
       featureWriter.write("@attribute numberOfWorkers numeric \n");
-      featureWriter.write("@attribute realTime \n");
+      featureWriter.write("@attribute realTime numeric \n");
 
       featureWriter.write("\n");
       featureWriter.write("@data \n");
@@ -190,6 +192,7 @@ public class PerfEnforceDriver {
       featureWriter.close();
       br.close();
     }
+
     // generate PSLA for all configs given all the features
     pslaManager.generatePSLA(configFilePath);
 

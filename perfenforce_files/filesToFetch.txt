@@ -6,3 +6,4 @@ PSLAManager/CommandLine.dll
 8_Workers/TRAINING.arff
 10_Workers/TRAINING.arff
 12_Workers/TRAINING.arff
+weka.jar

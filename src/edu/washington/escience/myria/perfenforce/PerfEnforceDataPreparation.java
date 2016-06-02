@@ -140,14 +140,13 @@ public class PerfEnforceDataPreparation {
         server.createView(currentConfigRelationKey.toString(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL), PerfEnforceUtils
             .createUnionQuery(relationKeysToUnion), currentRange);
         server.addDatasetToCatalog(currentConfigRelationKey, schema, currentRange);
-        LOGGER.warn("ADDING KEY: " + currentConfigRelationKey);
         factTableMapper.put(currentSize, currentConfigRelationKey);
+        previousRange = currentRange;
+        previousRelationKey = currentConfigRelationKey;
       } catch (InterruptedException | ExecutionException | DbException | CatalogException e) {
         e.printStackTrace();
       }
 
-      previousRange = currentRange;
-      previousRelationKey = currentRelationKeyToUnion;
     }
     return factTableMapper;
   }
@@ -255,7 +254,6 @@ public class PerfEnforceDataPreparation {
                       .toString(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL), selectivityList.get(i));
       // only run on worker 1
       String result = server.executeSQLCommandSingleRowSingleWorker(rankingQuery, keySchema, 1);
-      LOGGER.warn("RETURNED RESULT: " + result);
       selectivityKeys.add(result);
     }
 
