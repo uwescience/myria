@@ -293,7 +293,7 @@ allTests.dependsOn systemtest
 allTests.dependsOn speedtest
 
 /* Make check run system tests. */
-check.dependsOn systemtest
+/* check.dependsOn systemtest */
 
 /* Assemble the Myria jar into `build/libs` */
 jar {
