@@ -120,6 +120,7 @@ import edu.washington.escience.myria.parallel.ipc.IPCMessage;
 import edu.washington.escience.myria.parallel.ipc.InJVMLoopbackChannelSink;
 import edu.washington.escience.myria.parallel.ipc.QueueBasedShortMessageProcessor;
 import edu.washington.escience.myria.perfenforce.PerfEnforceDriver;
+import edu.washington.escience.myria.perfenforce.encoding.InitializeScalingEncoding;
 import edu.washington.escience.myria.proto.ControlProto.ControlMessage;
 import edu.washington.escience.myria.proto.QueryProto.QueryMessage;
 import edu.washington.escience.myria.proto.QueryProto.QueryReport;
@@ -2041,13 +2042,19 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
     return catalog;
   }
 
+  /**
+   * PerfEnforce Calls
+   */
   public void preparePerfEnforce(final String schemaFile) throws JSONException, IOException, InterruptedException,
       ExecutionException, DbException, CatalogException {
-    perfEnforceDriver = new PerfEnforceDriver(schemaFile);
-    perfEnforceDriver.beginDataPreparation(this);
+    perfEnforceDriver.beginDataPreparation(this, schemaFile);
   }
 
-  public boolean perfEnforceIsEnabled() {
-    return perfEnforceDriver == null;
+  public void beginMonitoring(final InitializeScalingEncoding scalingEncoding) {
+    perfEnforceDriver.beginQueryMonitoring(scalingEncoding);
+  }
+
+  public int getClusterSize() {
+    return perfEnforceDriver.perfenforceScaling.getCurrentClusterSize();
   }
 }

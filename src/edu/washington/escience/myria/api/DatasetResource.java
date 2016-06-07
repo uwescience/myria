@@ -5,7 +5,6 @@ import java.io.InputStream;
 import java.net.URI;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.ExecutionException;
 
 import javax.annotation.Nonnull;
 import javax.ws.rs.Consumes;
@@ -30,7 +29,6 @@ import org.glassfish.jersey.media.multipart.ContentDisposition;
 import org.glassfish.jersey.media.multipart.FormDataParam;
 import org.slf4j.LoggerFactory;
 
-import com.amazonaws.util.json.JSONException;
 import com.google.common.base.MoreObjects;
 import com.google.common.base.Preconditions;
 import com.wordnik.swagger.annotations.Api;
@@ -510,27 +508,6 @@ public final class DatasetResource {
 
     /* In the response, tell the client the path to the relation. */
     return Response.created(getCanonicalResourcePath(uriInfo, dataset.relationKey)).build();
-  }
-
-  /**
-   * Current entry point for PerfEnforce
-   * 
-   * @throws IOException
-   * @throws JSONException
-   * @throws CatalogException
-   * @throws ExecutionException
-   * @throws InterruptedException
-   */
-  @POST
-  @Path("/perfenforce_enable")
-  @Consumes(MediaType.MULTIPART_FORM_DATA)
-  public Response enablePerfEnforce(@FormDataParam("filename") final String filename) throws DbException,
-      JSONException, IOException, InterruptedException, ExecutionException, CatalogException {
-
-    server.preparePerfEnforce(filename);
-
-    /* response */
-    return Response.noContent().build();
   }
 
   /**

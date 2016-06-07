@@ -14,6 +14,8 @@ import com.google.common.base.Charsets;
 import com.google.common.io.Files;
 import com.google.gson.Gson;
 
+import edu.washington.escience.myria.perfenforce.encoding.TableDescriptionEncoding;
+
 /**
  * 
  */

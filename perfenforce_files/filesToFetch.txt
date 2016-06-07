@@ -7,3 +7,4 @@ PSLAManager/CommandLine.dll
 10_Workers/TRAINING.arff
 12_Workers/TRAINING.arff
 weka.jar
+tiers.txt

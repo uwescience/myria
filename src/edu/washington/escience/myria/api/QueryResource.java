@@ -93,22 +93,7 @@ public final class QueryResource {
     /* Start the query, and get its Server-assigned Query ID */
     QueryFuture qf;
     try {
-      if (server.perfEnforceIsEnabled()) {
-        LOGGER.warn("INTERCEPTING QUERY");
-        // intercept query
-
-        // get the sla for the query via subsumption (should be given to PSLAManager who takes the query string, PSLA,
-        // and tier)
-
-        // predict the runtimes (collect the features from postgres -- from which workers?)
-
-        // select the config array with the closest to SLA
-        int closestConfiguration = 4;
-
-        // check if using fact table and replace it with the size -- grab a fragment with the dbqueryscan
-
-        // replace the number of workers to match the configuration
-      }
+      // Query Interception should happen here -- should call the query intercept in PerfEnforceResource
       qf = server.getQueryManager().submitQuery(query, query.plan.getPlan());
     } catch (MyriaApiException e) {
       /* Passthrough MyriaApiException. */

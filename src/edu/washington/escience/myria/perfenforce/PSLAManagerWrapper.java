@@ -18,10 +18,12 @@ import com.amazonaws.services.s3.model.GetObjectRequest;
  */
 public class PSLAManagerWrapper {
 
-  int tierSelected = 4; // hard coded for now, but should allow the user to pick
   String PSLAManagerPath;
 
-  public PSLAManagerWrapper(final String configFilePath) throws IOException {
+  public PSLAManagerWrapper() {
+  }
+
+  public void fetchS3Files(final String configFilePath) throws IOException {
     // download the executable and jars
     AmazonS3 conn = new AmazonS3Client(new DefaultAWSCredentialsProviderChain());
 

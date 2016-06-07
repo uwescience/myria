@@ -34,6 +34,8 @@ import edu.washington.escience.myria.operator.network.partition.FixValuePartitio
 import edu.washington.escience.myria.operator.network.partition.RoundRobinPartitionFunction;
 import edu.washington.escience.myria.parallel.ExchangePairID;
 import edu.washington.escience.myria.parallel.Server;
+import edu.washington.escience.myria.perfenforce.encoding.StatsTableEncoding;
+import edu.washington.escience.myria.perfenforce.encoding.TableDescriptionEncoding;
 import edu.washington.escience.myria.util.MyriaUtils;
 
 /**

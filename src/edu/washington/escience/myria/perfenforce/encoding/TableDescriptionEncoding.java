@@ -1,7 +1,7 @@
 /**
  *
  */
-package edu.washington.escience.myria.perfenforce;
+package edu.washington.escience.myria.perfenforce.encoding;
 
 import java.util.Set;
 

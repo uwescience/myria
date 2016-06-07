@@ -26,6 +26,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.parallel.Server;
+import edu.washington.escience.myria.perfenforce.encoding.InitializeScalingEncoding;
+import edu.washington.escience.myria.perfenforce.encoding.StatsTableEncoding;
+import edu.washington.escience.myria.perfenforce.encoding.TableDescriptionEncoding;
 
 /**
  * The PerfEnforce Driver
@@ -35,25 +38,28 @@ public class PerfEnforceDriver {
 
   protected static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(PerfEnforceDriver.class);
 
-  String configFilePath;
   static Set<Integer> configurations;
   HashMap<Integer, RelationKey> factTableMapper;
   TableDescriptionEncoding factTableDesc;
 
   // holds an instance of the PSLAManagerWrapper
   PSLAManagerWrapper pslaManager;
+  public PerfEnforceDataPreparation dataPrepare;
+  public PerfEnforceScalingAlgorithms perfenforceScaling;
 
-  public PerfEnforceDriver(final String configFilePath) throws IOException {
-    this.configFilePath = configFilePath;
+  public PerfEnforceDriver() {
     configurations = new HashSet<Integer>(Arrays.asList(4, 6, 8, 10, 12));
     factTableMapper = new HashMap<Integer, RelationKey>();
-    pslaManager = new PSLAManagerWrapper(configFilePath);
-
+    pslaManager = new PSLAManagerWrapper();
   }
 
-  public void beginDataPreparation(final Server server) throws DbException, IOException {
+  /*
+   * NOTE: move more of this logic to the data preparation class
+   */
+  public void beginDataPreparation(final Server server, final String configFilePath) throws DbException, IOException {
+    pslaManager.fetchS3Files(configFilePath);
 
-    PerfEnforceDataPreparation dataPrepare = new PerfEnforceDataPreparation(server);
+    dataPrepare = new PerfEnforceDataPreparation(server);
     List<TableDescriptionEncoding> allTables =
         PerfEnforceConfigurationParser.getAllTables(configFilePath + "SchemaDefinition.json");
 
@@ -177,7 +183,7 @@ public class PerfEnforceDriver {
         BufferedReader input = new BufferedReader(new InputStreamReader(p.getInputStream()));
         features = input.readLine();
 
-        // add the extra features
+        // add the extra features -- hacky
         if (currentLine.contains("WHERE")) {
           String[] tables = currentLine.substring(currentLine.indexOf("FROM"), currentLine.indexOf("WHERE")).split(",");
           features = tables.length + "," + features;
@@ -198,8 +204,22 @@ public class PerfEnforceDriver {
 
   }
 
-  public void beginQueryMonitoring() {
-    // for each incoming query must ask for subsumption
+  public void beginQueryMonitoring(final InitializeScalingEncoding scalingAlgorithm) {
+    perfenforceScaling = new PerfEnforceScalingAlgorithms(scalingAlgorithm);
+  }
+
+  // collect data from ith line in query-meta-data in the appropriate seq
+  public void postFakeQuery(final int seq) {
+    // read file
+    // create the QueryMetaData
+    // currentQuery =
+  }
+
+  // For real queries
+  // Given a query metadata from the query interception
+  // q should only be given an SLA and id...
+  public void postQuery(final QueryMetaData q) {
+
   }
 
 }
