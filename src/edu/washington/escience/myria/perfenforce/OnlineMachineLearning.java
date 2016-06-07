@@ -29,4 +29,8 @@ public class OnlineMachineLearning implements ScalingAlgorithm {
     return currentClusterSize;
   }
 
+  public void setLR(final int lr) {
+    this.lr = lr;
+  }
+
 }

@@ -30,4 +30,12 @@ public class PIControl implements ScalingAlgorithm {
     return currentClusterSize;
   }
 
+  public void setKP(final int kp) {
+    this.kp = kp;
+  }
+
+  public void setKI(final int ki) {
+    this.ki = ki;
+  }
+
 }

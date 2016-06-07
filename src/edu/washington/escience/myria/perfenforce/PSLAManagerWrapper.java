@@ -8,7 +8,7 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 
-import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
+import com.amazonaws.auth.AnonymousAWSCredentials;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.GetObjectRequest;
@@ -25,7 +25,7 @@ public class PSLAManagerWrapper {
 
   public void fetchS3Files(final String configFilePath) throws IOException {
     // download the executable and jars
-    AmazonS3 conn = new AmazonS3Client(new DefaultAWSCredentialsProviderChain());
+    AmazonS3 conn = new AmazonS3Client(new AnonymousAWSCredentials());
 
     // download necessary files for PSLAManager
     String currentLine = "";

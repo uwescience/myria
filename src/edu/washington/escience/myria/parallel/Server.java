@@ -444,7 +444,7 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
   private final Injector injector;
 
   /* PerfEnforceDriver */
-  private PerfEnforceDriver perfEnforceDriver;
+  private final PerfEnforceDriver perfEnforceDriver;
 
   /**
    * Construct a server object, with configuration stored in the specified catalog file.
@@ -497,6 +497,7 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
 
     aliveWorkers = Sets.newConcurrentHashSet();
     messageQueue = new LinkedBlockingQueue<>();
+    perfEnforceDriver = new PerfEnforceDriver();
   }
 
   /**

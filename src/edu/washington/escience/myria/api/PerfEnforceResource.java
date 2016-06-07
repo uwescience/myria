@@ -28,7 +28,7 @@ import edu.washington.escience.myria.perfenforce.encoding.ScalingAlgorithmEncodi
  */
 
 @Path("/perfenforce")
-public class PerfEnforceResource {
+public final class PerfEnforceResource {
 
   /** The Myria server running on the master. */
   @Context
@@ -38,7 +38,7 @@ public class PerfEnforceResource {
   private UriInfo uriInfo;
 
   /** Logger. */
-  protected static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(DatasetResource.class);
+  protected static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(PerfEnforceResource.class);
 
   @POST
   @Path("/data-preparation")

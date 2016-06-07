@@ -212,13 +212,44 @@ public class PerfEnforceDriver {
 
   // Collect data from ith line in query-meta-data in the appropriate sequence
   public void postFakeQuery(final String path, final String seq, final ScalingAlgorithmEncoding scalingAlgorithmEncoding) {
-    // Up here, we should determine if the scaling algorithm steps first or if we evaluate the query first
-    // If OML, we need to make the prediction based on features -- assume we have the max for the features
 
+    /*
+     * Change parameters based on the scaling algorithm
+     */
+    LOGGER.warn("CHECKING1 " + perfenforceScaling.scalingAlgorithm.toString());
+    if (perfenforceScaling.scalingAlgorithm instanceof ReinforcementLearning) {
+      ReinforcementLearning r = (ReinforcementLearning) perfenforceScaling.scalingAlgorithm;
+      LOGGER.warn("CHECKING " + r.toString());
+      r.setAlpha(scalingAlgorithmEncoding.alpha);
+      r.setBeta(scalingAlgorithmEncoding.beta);
+    } else if (perfenforceScaling.scalingAlgorithm instanceof PIControl) {
+      PIControl p = (PIControl) perfenforceScaling.scalingAlgorithm;
+      p.setKP(scalingAlgorithmEncoding.kp);
+      p.setKI(scalingAlgorithmEncoding.ki);
+    } else if (perfenforceScaling.scalingAlgorithm instanceof OnlineMachineLearning) {
+      OnlineMachineLearning o = (OnlineMachineLearning) perfenforceScaling.scalingAlgorithm;
+      o.setLR(scalingAlgorithmEncoding.lr);
+    }
+
+    if (perfenforceScaling.scalingAlgorithm instanceof ReinforcementLearning
+        || perfenforceScaling.scalingAlgorithm instanceof PIControl) {
+      setupNextFakeQuery(path, seq);
+      perfenforceScaling.step();
+    } else {
+      // Tentative
+      perfenforceScaling.step();
+      setupNextFakeQuery(path, seq);
+    }
+
+  }
+
+  public void setupNextFakeQuery(final String path, final String seq) {
     try {
-      String filename = path + "/query_metadata_seq_" + seq;
+      String filename = path + "query_metadata_seq_" + seq;
       LOGGER.warn("POST FAKE Q FILE: " + filename);
-      BufferedReader seqFile = new BufferedReader(new InputStreamReader(new FileInputStream(filename)));
+      BufferedReader seqFile;
+      seqFile = new BufferedReader(new InputStreamReader(new FileInputStream(filename)));
+
       String line = "";
       int lastQuery = perfenforceScaling.getQueryCounter();
       int counter = 0;
@@ -237,22 +268,9 @@ public class PerfEnforceDriver {
         counter++;
       }
       seqFile.close();
-    } catch (IOException e) {
+    } catch (NumberFormatException | IOException e) {
       e.printStackTrace();
     }
-
-    /*
-     * Change parameters based on the scaling algorithm
-     */
-
-    if (perfenforceScaling.scalingAlgorithm instanceof ReinforcementLearning) {
-      ReinforcementLearning r = (ReinforcementLearning) perfenforceScaling.scalingAlgorithm;
-      r.setAlpha(scalingAlgorithmEncoding.alpha);
-      r.setBeta(scalingAlgorithmEncoding.beta);
-    }
-
-    perfenforceScaling.step();
-
   }
 
   // For real queries
