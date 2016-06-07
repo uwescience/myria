@@ -16,7 +16,6 @@ import org.glassfish.jersey.media.multipart.FormDataParam;
 import org.slf4j.LoggerFactory;
 
 import com.amazonaws.util.json.JSONException;
-import com.wordnik.swagger.annotations.Api;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.coordinator.CatalogException;
@@ -29,7 +28,6 @@ import edu.washington.escience.myria.perfenforce.encoding.ScalingAlgorithmEncodi
  */
 
 @Path("/perfenforce")
-@Api(value = "/perfenforce", description = "Perfenforce Operations")
 public class PerfEnforceResource {
 
   /** The Myria server running on the master. */
@@ -45,10 +43,11 @@ public class PerfEnforceResource {
   @POST
   @Path("/data-preparation")
   @Consumes(MediaType.MULTIPART_FORM_DATA)
-  public Response prepareData(@FormDataParam("pathName") final String filename) throws DbException, JSONException,
+  public Response prepareData(@FormDataParam("pathName") final String pathName) throws DbException, JSONException,
       IOException, InterruptedException, ExecutionException, CatalogException {
 
-    server.preparePerfEnforce(filename);
+    LOGGER.warn("PATH PASSED IN: " + pathName);
+    server.preparePerfEnforce(pathName);
     /* response */
     return Response.noContent().build();
   }
@@ -94,4 +93,10 @@ public class PerfEnforceResource {
   public Response getCurrentQueryIdealSize() throws DbException {
     return Response.ok(server.getCurrentQueryIdealSize()).build();
   }
+
+  @GET
+  public Response isEnabled() {
+    return Response.ok("Testing").build();
+  }
+
 }

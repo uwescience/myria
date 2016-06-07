@@ -2046,9 +2046,9 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
   /**
    * PerfEnforce Calls
    */
-  public void preparePerfEnforce(final String schemaFile) throws JSONException, IOException, InterruptedException,
+  public void preparePerfEnforce(final String pathName) throws JSONException, IOException, InterruptedException,
       ExecutionException, DbException, CatalogException {
-    perfEnforceDriver.beginDataPreparation(this, schemaFile);
+    perfEnforceDriver.beginDataPreparation(this, pathName);
   }
 
   public void beginMonitoring(final InitializeScalingEncoding scalingEncoding) {
@@ -2057,6 +2057,16 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
 
   public void postFakeQuery(final String path, final String seq, final ScalingAlgorithmEncoding scalingAlgorithmEncoding) {
     perfEnforceDriver.postFakeQuery(path, seq, scalingAlgorithmEncoding);
+  }
+
+  // For the real demo, we might want to keep the algorithm fixed based on the initialization
+  public void postRealQuery() {
+    // MOVE THIS TO PERFENFORCE DRIVER
+    // The intercepted query from the rest call can be sent here and modified here
+    // Then the server will either run the query first and then run the method, or the other way around.
+    // If the query runs first (reactive methods) then the query runtime will be sent to the algorithm through the
+    // currentQuery metadata
+    // If the method runs first (proactive)
   }
 
   public int getClusterSize() {

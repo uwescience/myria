@@ -212,6 +212,9 @@ public class PerfEnforceDriver {
 
   // Collect data from ith line in query-meta-data in the appropriate sequence
   public void postFakeQuery(final String path, final String seq, final ScalingAlgorithmEncoding scalingAlgorithmEncoding) {
+    // Up here, we should determine if the scaling algorithm steps first or if we evaluate the query first
+    // If OML, we need to make the prediction based on features -- assume we have the max for the features
+
     try {
       String filename = path + "/query_metadata_seq_" + seq;
       LOGGER.warn("POST FAKE Q FILE: " + filename);
