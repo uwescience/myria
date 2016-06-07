@@ -21,25 +21,21 @@ public class PerfEnforceScalingAlgorithms {
 
   ScalingAlgorithm scalingAlgorithm;
 
-  // Params should go to their respective classes
-  double alpha;
-  double beta;
-
-  double kp;
-  double ki;
-
-  double lr;
-
   public PerfEnforceScalingAlgorithms(final InitializeScalingEncoding scalingEncoding) {
     tier = scalingEncoding.tierSelected;
-    /*
-     * scalingAlgorithm = scalingEncoding.scalingAlgorithm.name;
-     * 
-     * switch (scalingAlgorithm) { case "RL": alpha = scalingEncoding.scalingAlgorithm.alpha; beta =
-     * scalingEncoding.scalingAlgorithm.beta; break; case "PI": kp = scalingEncoding.scalingAlgorithm.kp; ki =
-     * scalingEncoding.scalingAlgorithm.ki; case "OML": lr = scalingEncoding.scalingAlgorithm.lr; break; }
-     */
 
+    // Only because they all share the same encoding
+    switch (scalingEncoding.scalingAlgorithm.name) {
+      case "RL":
+        scalingAlgorithm =
+            new ReinforcementLearning(currentClusterSize, scalingEncoding.scalingAlgorithm.alpha,
+                scalingEncoding.scalingAlgorithm.beta);
+        break;
+      case "PI":
+        break;
+      case "OML":
+        break;
+    }
     // Other params
     configs = Arrays.asList(4, 6, 8, 10, 12);
     ithQuerySequence = 0; // ensures a sequence restart
@@ -50,8 +46,25 @@ public class PerfEnforceScalingAlgorithms {
     return currentClusterSize;
   }
 
-  public int getQueryID() {
+  public int getCurrentQueryIdealSize() {
+    return currentQuery.idealClusterSize;
+  }
+
+  public int getQueryCounter() {
     return ithQuerySequence;
+  }
+
+  public void setCurrentQuery(final QueryMetaData currentQuery) {
+    this.currentQuery = currentQuery;
+  }
+
+  public void incrementQueryCounter() {
+    ithQuerySequence++;
+  }
+
+  public void step() {
+    scalingAlgorithm.step();
+    currentClusterSize = scalingAlgorithm.getCurrentClusterSize();
   }
 
 }

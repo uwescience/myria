@@ -4,6 +4,7 @@
 package edu.washington.escience.myria.perfenforce;
 
 import java.io.BufferedReader;
+import java.io.FileInputStream;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -27,6 +28,7 @@ import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.parallel.Server;
 import edu.washington.escience.myria.perfenforce.encoding.InitializeScalingEncoding;
+import edu.washington.escience.myria.perfenforce.encoding.ScalingAlgorithmEncoding;
 import edu.washington.escience.myria.perfenforce.encoding.StatsTableEncoding;
 import edu.washington.escience.myria.perfenforce.encoding.TableDescriptionEncoding;
 
@@ -208,11 +210,46 @@ public class PerfEnforceDriver {
     perfenforceScaling = new PerfEnforceScalingAlgorithms(scalingAlgorithm);
   }
 
-  // collect data from ith line in query-meta-data in the appropriate seq
-  public void postFakeQuery(final int seq) {
-    // read file
-    // create the QueryMetaData
-    // currentQuery =
+  // Collect data from ith line in query-meta-data in the appropriate sequence
+  public void postFakeQuery(final String path, final String seq, final ScalingAlgorithmEncoding scalingAlgorithmEncoding) {
+    try {
+      String filename = path + "/query_metadata_seq_" + seq;
+      LOGGER.warn("POST FAKE Q FILE: " + filename);
+      BufferedReader seqFile = new BufferedReader(new InputStreamReader(new FileInputStream(filename)));
+      String line = "";
+      int lastQuery = perfenforceScaling.getQueryCounter();
+      int counter = 0;
+      while ((line = seqFile.readLine()) != null) {
+        if (counter == lastQuery + 1) {
+          String[] parts = line.split(",");
+          List<Integer> runtimes =
+              Arrays.asList(Integer.parseInt(parts[0]), Integer.parseInt(parts[1]), Integer.parseInt(parts[2]), Integer
+                  .parseInt(parts[3]), Integer.parseInt(parts[4]));
+          int idealClusterSize = Integer.parseInt(parts[5]);
+          double sla = Double.parseDouble(parts[6]);
+          QueryMetaData q = new QueryMetaData(counter, sla, idealClusterSize, runtimes);
+          LOGGER.warn(q.toString());
+          perfenforceScaling.setCurrentQuery(q);
+        }
+        counter++;
+      }
+      seqFile.close();
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+
+    /*
+     * Change parameters based on the scaling algorithm
+     */
+
+    if (perfenforceScaling.scalingAlgorithm instanceof ReinforcementLearning) {
+      ReinforcementLearning r = (ReinforcementLearning) perfenforceScaling.scalingAlgorithm;
+      r.setAlpha(scalingAlgorithmEncoding.alpha);
+      r.setBeta(scalingAlgorithmEncoding.beta);
+    }
+
+    perfenforceScaling.step();
+
   }
 
   // For real queries

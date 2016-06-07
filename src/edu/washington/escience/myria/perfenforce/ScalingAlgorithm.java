@@ -4,8 +4,11 @@
 package edu.washington.escience.myria.perfenforce;
 
 /**
- * Base class
  */
-public class ScalingAlgorithm {
+public interface ScalingAlgorithm {
+
+  public void step();
+
+  public int getCurrentClusterSize();
 
 }

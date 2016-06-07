@@ -121,6 +121,7 @@ import edu.washington.escience.myria.parallel.ipc.InJVMLoopbackChannelSink;
 import edu.washington.escience.myria.parallel.ipc.QueueBasedShortMessageProcessor;
 import edu.washington.escience.myria.perfenforce.PerfEnforceDriver;
 import edu.washington.escience.myria.perfenforce.encoding.InitializeScalingEncoding;
+import edu.washington.escience.myria.perfenforce.encoding.ScalingAlgorithmEncoding;
 import edu.washington.escience.myria.proto.ControlProto.ControlMessage;
 import edu.washington.escience.myria.proto.QueryProto.QueryMessage;
 import edu.washington.escience.myria.proto.QueryProto.QueryReport;
@@ -2054,7 +2055,15 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
     perfEnforceDriver.beginQueryMonitoring(scalingEncoding);
   }
 
+  public void postFakeQuery(final String path, final String seq, final ScalingAlgorithmEncoding scalingAlgorithmEncoding) {
+    perfEnforceDriver.postFakeQuery(path, seq, scalingAlgorithmEncoding);
+  }
+
   public int getClusterSize() {
     return perfEnforceDriver.perfenforceScaling.getCurrentClusterSize();
+  }
+
+  public int getCurrentQueryIdealSize() {
+    return perfEnforceDriver.perfenforceScaling.getCurrentQueryIdealSize();
   }
 }

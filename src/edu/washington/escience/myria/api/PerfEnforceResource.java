@@ -22,6 +22,7 @@ import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.coordinator.CatalogException;
 import edu.washington.escience.myria.parallel.Server;
 import edu.washington.escience.myria.perfenforce.encoding.InitializeScalingEncoding;
+import edu.washington.escience.myria.perfenforce.encoding.ScalingAlgorithmEncoding;
 
 /**
  * This is the class that handles API calls for PerfEnforce
@@ -44,7 +45,7 @@ public class PerfEnforceResource {
   @POST
   @Path("/data-preparation")
   @Consumes(MediaType.MULTIPART_FORM_DATA)
-  public Response prepareData(@FormDataParam("filename") final String filename) throws DbException, JSONException,
+  public Response prepareData(@FormDataParam("pathName") final String filename) throws DbException, JSONException,
       IOException, InterruptedException, ExecutionException, CatalogException {
 
     server.preparePerfEnforce(filename);
@@ -60,6 +61,7 @@ public class PerfEnforceResource {
   @Consumes(MediaType.APPLICATION_JSON)
   public Response initializeScalingAlgorithm(final InitializeScalingEncoding scalingEncoding) {
 
+    LOGGER.warn("Begin Monitoring....");
     server.beginMonitoring(scalingEncoding);
 
     /* response */
@@ -70,14 +72,12 @@ public class PerfEnforceResource {
    * makes a step, depending on the algorithm chosen
    */
   @POST
-  @Path("/step")
-  @Consumes(MediaType.APPLICATION_JSON)
-  public Response scalingStep() {
-
-    // query calls are sent here
-    // Post the next query fake or (get the next query)
-
-    // then step() on the perfEnforce Scaling Algorithm
+  @Path("/step-fake")
+  @Consumes(MediaType.MULTIPART_FORM_DATA)
+  public Response scalingStepFake(@FormDataParam("pathName") final String path, @FormDataParam("seq") final String seq,
+      @FormDataParam("scaling") final ScalingAlgorithmEncoding scalingAlgorithmEncoding) {
+    LOGGER.warn("Run Fake Query....");
+    server.postFakeQuery(path, seq, scalingAlgorithmEncoding);
 
     /* response */
     return Response.noContent().build();
@@ -87,5 +87,11 @@ public class PerfEnforceResource {
   @Path("/cluster-size")
   public Response getClusterSize() throws DbException {
     return Response.ok(server.getClusterSize()).build();
+  }
+
+  @GET
+  @Path("/current-query-ideal")
+  public Response getCurrentQueryIdealSize() throws DbException {
+    return Response.ok(server.getCurrentQueryIdealSize()).build();
   }
 }
