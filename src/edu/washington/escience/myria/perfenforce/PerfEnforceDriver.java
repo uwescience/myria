@@ -216,10 +216,10 @@ public class PerfEnforceDriver {
     /*
      * Change parameters based on the scaling algorithm
      */
-    LOGGER.warn("CHECKING1 " + perfenforceScaling.scalingAlgorithm.toString());
     if (perfenforceScaling.scalingAlgorithm instanceof ReinforcementLearning) {
       ReinforcementLearning r = (ReinforcementLearning) perfenforceScaling.scalingAlgorithm;
-      LOGGER.warn("CHECKING " + r.toString());
+
+      LOGGER.warn("CHECK ALPHA " + scalingAlgorithmEncoding.alpha);
       r.setAlpha(scalingAlgorithmEncoding.alpha);
       r.setBeta(scalingAlgorithmEncoding.beta);
     } else if (perfenforceScaling.scalingAlgorithm instanceof PIControl) {
