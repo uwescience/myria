@@ -14,6 +14,7 @@ import org.slf4j.LoggerFactory;
 
 import edu.washington.escience.myria.perfenforce.encoding.InitializeScalingEncoding;
 import edu.washington.escience.myria.perfenforce.encoding.ScalingAlgorithmEncoding;
+import edu.washington.escience.myria.perfenforce.encoding.ScalingStatusEncoding;
 
 /**
  * 
@@ -142,6 +143,12 @@ public class PerfEnforceScalingAlgorithms {
       OnlineMachineLearning o = (OnlineMachineLearning) scalingAlgorithm;
       o.setLR(scalingAlgorithmEncoding.lr);
     }
+  }
+
+  /**
+   */
+  public ScalingStatusEncoding getScalingStatus() {
+    return scalingAlgorithm.getScalingStatus();
   }
 
 }

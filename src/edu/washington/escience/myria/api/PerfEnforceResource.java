@@ -7,6 +7,7 @@ import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
@@ -22,6 +23,7 @@ import edu.washington.escience.myria.coordinator.CatalogException;
 import edu.washington.escience.myria.parallel.Server;
 import edu.washington.escience.myria.perfenforce.encoding.InitializeScalingEncoding;
 import edu.washington.escience.myria.perfenforce.encoding.ScalingAlgorithmEncoding;
+import edu.washington.escience.myria.perfenforce.encoding.ScalingStatusEncoding;
 
 /**
  * This is the class that handles API calls for PerfEnforce
@@ -68,7 +70,7 @@ public final class PerfEnforceResource {
   }
 
   /*
-   * makes a step, depending on the algorithm chosen
+   * makes a step, depending on the algorithm initialized
    */
   @POST
   @Path("/step-fake")
@@ -95,8 +97,10 @@ public final class PerfEnforceResource {
   }
 
   @GET
-  public Response isEnabled() {
-    return Response.ok("Testing").build();
+  @Path("/scaling-algorithm-state")
+  @Produces(MediaType.APPLICATION_JSON)
+  public ScalingStatusEncoding getScalingStatus() throws DbException {
+    return server.getScalingStatus();
   }
 
 }

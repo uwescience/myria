@@ -3,9 +3,13 @@
  */
 package edu.washington.escience.myria.perfenforce;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.slf4j.LoggerFactory;
 
 import scala.util.Random;
+import edu.washington.escience.myria.perfenforce.encoding.ScalingStatusEncoding;
 
 /**
  * 
@@ -14,6 +18,7 @@ public class ReinforcementLearning implements ScalingAlgorithm {
 
   int alpha;
   int beta;
+  List<Integer> activeStates;
   int currentClusterSize;
 
   protected static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(ReinforcementLearning.class);
@@ -22,6 +27,15 @@ public class ReinforcementLearning implements ScalingAlgorithm {
     this.alpha = alpha;
     this.beta = beta;
     this.currentClusterSize = currentClusterSize;
+    activeStates = new ArrayList<Integer>();
+  }
+
+  public void setAlpha(final int alpha) {
+    this.alpha = alpha;
+  }
+
+  public void setBeta(final int beta) {
+    this.beta = beta;
   }
 
   /*
@@ -34,19 +48,15 @@ public class ReinforcementLearning implements ScalingAlgorithm {
     currentClusterSize = r.nextInt(8) + 4;
   }
 
-  /*
-   */
   @Override
   public int getCurrentClusterSize() {
     return currentClusterSize;
   }
 
-  public void setAlpha(final int alpha) {
-    this.alpha = alpha;
+  @Override
+  public ScalingStatusEncoding getScalingStatus() {
+    ScalingStatusEncoding statusEncoding = new ScalingStatusEncoding();
+    statusEncoding.RLActiveStates = activeStates;
+    return statusEncoding;
   }
-
-  public void setBeta(final int beta) {
-    this.beta = beta;
-  }
-
 }

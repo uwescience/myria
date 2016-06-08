@@ -122,6 +122,7 @@ import edu.washington.escience.myria.parallel.ipc.QueueBasedShortMessageProcesso
 import edu.washington.escience.myria.perfenforce.PerfEnforceDriver;
 import edu.washington.escience.myria.perfenforce.encoding.InitializeScalingEncoding;
 import edu.washington.escience.myria.perfenforce.encoding.ScalingAlgorithmEncoding;
+import edu.washington.escience.myria.perfenforce.encoding.ScalingStatusEncoding;
 import edu.washington.escience.myria.proto.ControlProto.ControlMessage;
 import edu.washington.escience.myria.proto.QueryProto.QueryMessage;
 import edu.washington.escience.myria.proto.QueryProto.QueryReport;
@@ -2076,5 +2077,9 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
 
   public int getCurrentQueryIdealSize() {
     return perfEnforceDriver.perfenforceScaling.getCurrentQueryIdealSize();
+  }
+
+  public ScalingStatusEncoding getScalingStatus() {
+    return perfEnforceDriver.getScalingStatus();
   }
 }

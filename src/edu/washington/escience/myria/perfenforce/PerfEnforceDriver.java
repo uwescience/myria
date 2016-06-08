@@ -28,6 +28,7 @@ import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.parallel.Server;
 import edu.washington.escience.myria.perfenforce.encoding.InitializeScalingEncoding;
 import edu.washington.escience.myria.perfenforce.encoding.ScalingAlgorithmEncoding;
+import edu.washington.escience.myria.perfenforce.encoding.ScalingStatusEncoding;
 import edu.washington.escience.myria.perfenforce.encoding.StatsTableEncoding;
 import edu.washington.escience.myria.perfenforce.encoding.TableDescriptionEncoding;
 
@@ -233,6 +234,12 @@ public class PerfEnforceDriver {
   // q should only be given an SLA and id...
   public void postQuery(final QueryMetaData q) {
 
+  }
+
+  /**
+   */
+  public ScalingStatusEncoding getScalingStatus() {
+    return perfenforceScaling.getScalingStatus();
   }
 
 }
