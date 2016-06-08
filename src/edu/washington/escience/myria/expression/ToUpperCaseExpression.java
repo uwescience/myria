@@ -32,8 +32,12 @@ public class ToUpperCaseExpression extends UnaryExpression {
   @Override
   public Type getOutputType(final ExpressionOperatorParameter parameters) {
     Type operandType = getOperand().getOutputType(parameters);
-    Preconditions.checkArgument(operandType == Type.STRING_TYPE, "%s cannot handle operand [%s] of Type %s", getClass()
-        .getSimpleName(), getOperand(), operandType);
+    Preconditions.checkArgument(
+        operandType == Type.STRING_TYPE,
+        "%s cannot handle operand [%s] of Type %s",
+        getClass().getSimpleName(),
+        getOperand(),
+        operandType);
     return Type.STRING_TYPE;
   }
 

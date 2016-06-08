@@ -1,13 +1,13 @@
 /*
  * This class is modified from Netty's org.jboss.netty.handler.execution.OrderedMemoryAwareThreadPoolExecutor.
- * 
+ *
  * Copyright 2012 The Netty Project
- * 
+ *
  * The Netty Project licenses this file to you under the Apache License, version 2.0 (the "License"); you may not use
  * this file except in compliance with the License. You may obtain a copy of the License at:
- * 
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
  * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
@@ -33,11 +33,11 @@ import org.jboss.netty.util.internal.ConcurrentIdentityWeakKeyHashMap;
 /**
  * A {@link ThreadPoolExecutor} which makes sure the events from the same {@link id} are executed sequentially.
  * <p>
- * 
+ *
  * <h3>Event execution order</h3>
- * 
+ *
  * For example, let's say there are two executor threads that handle the events from the two channels:
- * 
+ *
  * <pre>
  *           -------------------------------------&gt; Timeline ------------------------------------&gt;
  *
@@ -56,13 +56,13 @@ import org.jboss.netty.util.internal.ConcurrentIdentityWeakKeyHashMap;
  * However, it is not guaranteed that the invocation will be made by the same thread for the same channel. The events
  * from the same channel can be executed by different threads. For example, the Event A2 is executed by the thread Y
  * while the event A1 was executed by the thread X.
- * 
+ *
  * <h3>Using a different key other than {@link id} to maintain event order</h3>
  * <p>
  * {@link OrderedExecutorService} uses a {@link id} as a key that is used for maintaining the event execution order, as
  * explained in the previous section. Alternatively, you can extend it to change its behavior. For example, you can
  * change the key to the remote IP of the peer:
- * 
+ *
  * <pre>
  * public class RemoteAddressBasedOMATPE extends {@link OrderedExecutorService} {
  *
@@ -83,13 +83,13 @@ import org.jboss.netty.util.internal.ConcurrentIdentityWeakKeyHashMap;
  *     }
  * }
  * </pre>
- * 
+ *
  * Please be very careful of memory leak of the child executor map. You must call {@link #removeChildExecutor(Object)}
  * when the life cycle of the key ends (e.g. all connections from the same IP were closed.) Also, please keep in mind
  * that the key can appear again after calling {@link #removeChildExecutor(Object)} (e.g. a new connection could come in
  * from the same old IP after removal.) If in doubt, prune the old unused or stall keys from the child executor map
  * periodically:
- * 
+ *
  * @param <KEY> the type of the key.
  */
 public class OrderedExecutorService<KEY> extends ThreadPoolExecutor {
@@ -101,7 +101,7 @@ public class OrderedExecutorService<KEY> extends ThreadPoolExecutor {
 
   /**
    * The Runnable interface. Only the instances with this interface will be ordered when execute.
-   * 
+   *
    * @param <KEY> the type of the key
    * */
   public interface KeyRunnable<KEY> extends Runnable {
@@ -119,7 +119,7 @@ public class OrderedExecutorService<KEY> extends ThreadPoolExecutor {
 
   /**
    * Creates a new instance.
-   * 
+   *
    * @param corePoolSize the minimum number of active threads
    */
   public OrderedExecutorService(final int corePoolSize) {
@@ -128,7 +128,7 @@ public class OrderedExecutorService<KEY> extends ThreadPoolExecutor {
 
   /**
    * Creates a new instance.
-   * 
+   *
    * @param corePoolSize the minimum number of active threads
    * @param maximumPoolSize the maximum number of active threads
    */
@@ -138,40 +138,59 @@ public class OrderedExecutorService<KEY> extends ThreadPoolExecutor {
 
   /**
    * Creates a new instance.
-   * 
+   *
    * @param corePoolSize the maximum number of active threads
    * @param maximumPoolSize the maximum number of active threads
    * @param keepAliveTime the amount of time for an inactive thread to shut itself down
    * @param unit the {@link TimeUnit} of {@code keepAliveTime}
    */
-  public OrderedExecutorService(final int corePoolSize, final int maximumPoolSize, final long keepAliveTime,
+  public OrderedExecutorService(
+      final int corePoolSize,
+      final int maximumPoolSize,
+      final long keepAliveTime,
       final TimeUnit unit) {
     super(corePoolSize, maximumPoolSize, keepAliveTime, unit, new LinkedBlockingQueue<Runnable>());
   }
 
   /**
    * Creates a new instance.
-   * 
+   *
    * @param corePoolSize the maximum number of active threads
    * @param maximumPoolSize the maximum number of active threads
    * @param keepAliveTime the amount of time for an inactive thread to shut itself down
    * @param unit the {@link TimeUnit} of {@code keepAliveTime}
    * @param threadFactory the {@link ThreadFactory} of this pool
    */
-  public OrderedExecutorService(final int corePoolSize, final int maximumPoolSize, final long keepAliveTime,
-      final TimeUnit unit, final ThreadFactory threadFactory) {
-    super(corePoolSize, maximumPoolSize, keepAliveTime, unit, new LinkedBlockingQueue<Runnable>(), threadFactory);
+  public OrderedExecutorService(
+      final int corePoolSize,
+      final int maximumPoolSize,
+      final long keepAliveTime,
+      final TimeUnit unit,
+      final ThreadFactory threadFactory) {
+    super(
+        corePoolSize,
+        maximumPoolSize,
+        keepAliveTime,
+        unit,
+        new LinkedBlockingQueue<Runnable>(),
+        threadFactory);
   }
 
   /**
    * Creates a new instance.
-   * 
+   *
    * @param corePoolSize the maximum number of active threads
    * @param maximumPoolSize the maximum number of active threads
    * @param threadFactory the {@link ThreadFactory} of this pool
    */
-  public OrderedExecutorService(final int corePoolSize, final int maximumPoolSize, final ThreadFactory threadFactory) {
-    super(corePoolSize, maximumPoolSize, DEFAULT_KEEP_ALIVE, TimeUnit.SECONDS, new LinkedBlockingQueue<Runnable>(),
+  public OrderedExecutorService(
+      final int corePoolSize, final int maximumPoolSize, final ThreadFactory threadFactory) {
+    super(
+        corePoolSize,
+        maximumPoolSize,
+        DEFAULT_KEEP_ALIVE,
+        TimeUnit.SECONDS,
+        new LinkedBlockingQueue<Runnable>(),
         threadFactory);
   }
 
@@ -199,7 +218,7 @@ public class OrderedExecutorService<KEY> extends ThreadPoolExecutor {
 
   /**
    * Executes the specified task concurrently while maintaining the event order.
-   * 
+   *
    * @param task the task.
    */
   @Override
@@ -252,7 +271,8 @@ public class OrderedExecutorService<KEY> extends ThreadPoolExecutor {
     public void execute(final Runnable command) {
       // TODO: What todo if the add return false ?
       if (!tasks.add(command)) {
-        throw new OutOfMemoryError("Too many runnable tasks under a key. Only " + Integer.MAX_VALUE + " can be held.");
+        throw new OutOfMemoryError(
+            "Too many runnable tasks under a key. Only " + Integer.MAX_VALUE + " can be held.");
       }
 
       if (!isRunning.get()) {
@@ -270,7 +290,7 @@ public class OrderedExecutorService<KEY> extends ThreadPoolExecutor {
         acquired = true;
         try {
           Thread thread = Thread.currentThread();
-          for (;;) {
+          for (; ; ) {
             final Runnable task = tasks.poll();
             // if the task is null we should exit the loop
             if (task == null) {

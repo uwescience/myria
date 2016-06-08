@@ -8,7 +8,7 @@ import edu.washington.escience.myria.parallel.ExchangePairID;
 
 /**
  * A JSON-able wrapper for the expected wire message for a new dataset.
- * 
+ *
  */
 public class LocalMultiwayProducerEncoding extends AbstractProducerEncoding<LocalMultiwayProducer> {
 

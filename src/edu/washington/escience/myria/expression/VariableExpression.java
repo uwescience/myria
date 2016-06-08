@@ -15,8 +15,7 @@ public class VariableExpression extends ZeroaryExpression {
   private static final long serialVersionUID = 1L;
 
   /** The index in the input that is referenced. */
-  @JsonProperty
-  private final int columnIdx;
+  @JsonProperty private final int columnIdx;
 
   /**
    * This is not really unused, it's used automagically by Jackson deserialization.
@@ -28,7 +27,7 @@ public class VariableExpression extends ZeroaryExpression {
 
   /**
    * A {@link VariableExpression} that references column <code>columnIdx</code> from the input.
-   * 
+   *
    * @param columnIdx the index in the input.
    */
   public VariableExpression(final int columnIdx) {
@@ -43,8 +42,15 @@ public class VariableExpression extends ZeroaryExpression {
   @Override
   public String getJavaString(final ExpressionOperatorParameter parameters) {
     // We generate a variable access into the tuple buffer.
-    return new StringBuilder(Expression.TB).append(".get").append(getOutputType(parameters).getName()).append(
-        "(").append(columnIdx).append(", ").append(Expression.ROW).append(")").toString();
+    return new StringBuilder(Expression.TB)
+        .append(".get")
+        .append(getOutputType(parameters).getName())
+        .append("(")
+        .append(columnIdx)
+        .append(", ")
+        .append(Expression.ROW)
+        .append(")")
+        .toString();
   }
 
   /**

@@ -10,7 +10,7 @@ import edu.washington.escience.myria.util.MyriaUtils;
 
 /**
  * A field used in {@link Tuple}.
- * 
+ *
  * @param <T> the type.
  */
 public class Field<T extends Comparable<?>> implements WritableColumn, Serializable {

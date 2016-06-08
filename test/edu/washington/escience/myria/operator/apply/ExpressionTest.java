@@ -23,21 +23,22 @@ import edu.washington.escience.myria.expression.evaluate.ExpressionOperatorParam
 public class ExpressionTest {
   /**
    * Given a constant expression, evaluate it and return its value.
-   * 
+   *
    * @param op the expression
    * @return the constant value
    * @throws DbException if there is an error evaluating the expression
    */
   private Object evaluateConstantExpression(final ExpressionOperator op) throws DbException {
     Expression expr = new Expression("op", op);
-    ConstantEvaluator eval = new ConstantEvaluator(expr, new ExpressionOperatorParameter(Schema.EMPTY_SCHEMA));
+    ConstantEvaluator eval =
+        new ConstantEvaluator(expr, new ExpressionOperatorParameter(Schema.EMPTY_SCHEMA));
     return eval.eval();
   }
 
   /**
    * Given a constant expression, try and evaluate it. If successful, return it. If not, unwrap the expression to the
    * root cause and return that.
-   * 
+   *
    * @param op the expression
    * @return the constant value
    * @throws Throwable the root cause of a failed Janino compilation.
@@ -269,7 +270,8 @@ public class ExpressionTest {
 
   @Test(expected = ArithmeticException.class)
   public void testIntDivideWithDoublesOverflow2() throws Throwable {
-    ConstantExpression val1 = new ConstantExpression(Math.pow(2, 62)); /* (Long.MAX_VALUE + 1) >> 1 */
+    ConstantExpression val1 =
+        new ConstantExpression(Math.pow(2, 62)); /* (Long.MAX_VALUE + 1) >> 1 */
     ConstantExpression val2 = new ConstantExpression(0.5);
     ExpressionOperator expr = new IntDivideExpression(val1, val2);
     evaluateConstantAndUnrollException(expr);

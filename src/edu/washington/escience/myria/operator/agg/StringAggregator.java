@@ -23,8 +23,8 @@ public final class StringAggregator extends PrimitiveAggregator {
   /**
    * Aggregate operations applicable for string columns.
    */
-  public static final Set<AggregationOp> AVAILABLE_AGG = ImmutableSet.of(AggregationOp.COUNT, AggregationOp.MAX,
-      AggregationOp.MIN);
+  public static final Set<AggregationOp> AVAILABLE_AGG =
+      ImmutableSet.of(AggregationOp.COUNT, AggregationOp.MAX, AggregationOp.MIN);
 
   /**
    * @param aFieldName aggregate field name for use in output schema.
@@ -68,7 +68,7 @@ public final class StringAggregator extends PrimitiveAggregator {
 
   /**
    * Helper function to add value to this aggregator. Note this does NOT update count.
-   * 
+   *
    * @param value the value to be added
    * @param state the state of the aggregate, which will be mutated.
    */

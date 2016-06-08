@@ -25,7 +25,7 @@ public final class DoWhile extends QueryPlan {
   /**
    * Construct a {@link QueryPlan} that runs the body tasks in sequence, and loops if the singleton boolean relation
    * specified by {@code condition} is {@code true}.
-   * 
+   *
    * @param body the tasks to be run.
    * @param condition the relation to be scanned for the while loop continuation condition. Must be a singleton boolean
    *          relation.
@@ -38,30 +38,38 @@ public final class DoWhile extends QueryPlan {
 
   /**
    * {@inheritdoc}
-   * 
+   *
    * Instantiating a {@link DoWhile} is a somewhat complex operation.
-   * 
+   *
    * 1. Every {@link DoWhile} tracks whether or not the loop has been entered in {@link #hasRun}. For all times but the
    * first, the {@link #condition} is checked and, if {@code false}, the {@link DoWhile} is simply removed from the
    * {@code planQ} and nothing is added. This signifies the loop termination.
-   * 
+   *
    * 2. When we want to execute the loop, we want to do two things: run the body, then gather the value of the
    * termination condition and store it at the {@link Server} in a query global variable. Thus we want to add the
    * sequence of operations {@code body, then [gatherCondition]} to the plan.
-   * 
+   *
    * @param planQ the queue of {@link QueryPlan} tasks
    * @param subQueryQ the queue of {@link SubQuery} tasks
    * @param args the {@link QueryConstruct#ConstructArgs} arguments needed to instantiate a query plan
    */
   @Override
-  public void instantiate(final LinkedList<QueryPlan> planQ, final LinkedList<SubQuery> subQueryQ,
+  public void instantiate(
+      final LinkedList<QueryPlan> planQ,
+      final LinkedList<SubQuery> subQueryQ,
       final ConstructArgs args) {
     QueryPlan checkTask = planQ.peekFirst();
-    Verify.verify(checkTask == this, "this %s should be the first object on the queue, not %s!", this, checkTask);
+    Verify.verify(
+        checkTask == this,
+        "this %s should be the first object on the queue, not %s!",
+        this,
+        checkTask);
     if (hasRun) {
       Boolean b = (Boolean) args.getServer().getQueryGlobal(args.getQueryId(), condition);
-      Preconditions.checkState(b != null,
-          "Query %s: DoWhile Loop has run, but global variable for loop condition (%s) has not been set", condition);
+      Preconditions.checkState(
+          b != null,
+          "Query %s: DoWhile Loop has run, but global variable for loop condition (%s) has not been set",
+          condition);
       if (!b.booleanValue()) {
         planQ.removeFirst();
         return;

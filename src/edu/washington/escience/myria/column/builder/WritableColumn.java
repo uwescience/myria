@@ -5,14 +5,14 @@ import java.nio.BufferOverflowException;
 import org.joda.time.DateTime;
 
 /**
- * 
+ *
  * An interface for column that can be written.
  */
 public interface WritableColumn {
 
   /**
    * Inserts the specified element at end of this column.
-   * 
+   *
    * @param value element to be inserted.
    * @return this column.
    * @throws BufferOverflowException if exceeds buffer up bound.
@@ -21,7 +21,7 @@ public interface WritableColumn {
 
   /**
    * Inserts the specified element at end of this column.
-   * 
+   *
    * @param value element to be inserted.
    * @return this column.
    * @throws BufferOverflowException if exceeds buffer up bound.
@@ -30,7 +30,7 @@ public interface WritableColumn {
 
   /**
    * Inserts the specified element at end of this column.
-   * 
+   *
    * @param value element to be inserted.
    * @return this column.
    * @throws BufferOverflowException if exceeds buffer up bound.
@@ -39,7 +39,7 @@ public interface WritableColumn {
 
   /**
    * Inserts the specified element at end of this column.
-   * 
+   *
    * @param value element to be inserted.
    * @return this column.
    * @throws BufferOverflowException if exceeds buffer up bound.
@@ -48,7 +48,7 @@ public interface WritableColumn {
 
   /**
    * Inserts the specified element at end of this column.
-   * 
+   *
    * @param value element to be inserted.
    * @return this column.
    * @throws BufferOverflowException if exceeds buffer up bound.
@@ -57,7 +57,7 @@ public interface WritableColumn {
 
   /**
    * Inserts the specified element at end of this column.
-   * 
+   *
    * @param value element to be inserted.
    * @return this column.
    * @throws BufferOverflowException if exceeds buffer up bound.
@@ -66,7 +66,7 @@ public interface WritableColumn {
 
   /**
    * Inserts the specified element at end of this column.
-   * 
+   *
    * @param value element to be inserted.
    * @return this column builder.
    * @throws BufferOverflowException if the column is already full
@@ -76,11 +76,10 @@ public interface WritableColumn {
 
   /**
    * Inserts the specified element at end of this column.
-   * 
+   *
    * @param value element to be inserted.
    * @return this column.
    * @throws BufferOverflowException if exceeds buffer up bound.
    */
   WritableColumn appendString(final String value) throws BufferOverflowException;
-
 }

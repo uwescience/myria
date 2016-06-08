@@ -23,7 +23,7 @@ import edu.washington.escience.myria.util.IPCUtils;
 
 /**
  * Container class for a batch of tuples. The goal is to amortize memory management overhead.
- * 
+ *
  */
 @ThreadSafe
 public class TupleBatch implements ReadableTable, Serializable {
@@ -42,7 +42,7 @@ public class TupleBatch implements ReadableTable, Serializable {
 
   /**
    * EOI TB constructor.
-   * 
+   *
    * @param schema schema of the tuples in this batch.
    * @param isEoi whether this TupleBatch is an EOI TupleBatch.
    * */
@@ -62,24 +62,26 @@ public class TupleBatch implements ReadableTable, Serializable {
    * @return a shallow copy of the specified TupleBatch with the new column names.
    */
   public TupleBatch rename(final List<String> columnNames) {
-    Schema newSchema = Schema.of(schema.getColumnTypes(), Objects.requireNonNull(columnNames, "columnNames"));
+    Schema newSchema =
+        Schema.of(schema.getColumnTypes(), Objects.requireNonNull(columnNames, "columnNames"));
     return new TupleBatch(newSchema, columns, numTuples, isEOI);
   }
 
   /**
    * Standard immutable TupleBatch constructor. All fields must be populated before creation and cannot be changed.
-   * 
+   *
    * @param schema schema of the tuples in this batch. Must match columns.
    * @param columns contains the column-stored data. Must match schema.
    * @param numTuples the number of tuples in this TupleBatch.
    */
-  public TupleBatch(final Schema schema, final List<? extends Column<?>> columns, final int numTuples) {
+  public TupleBatch(
+      final Schema schema, final List<? extends Column<?>> columns, final int numTuples) {
     this(schema, columns, numTuples, false);
   }
 
   /**
    * Constructor that gets the number of tuples from the columns.
-   * 
+   *
    * @param schema schema of the tuples in this batch. Must match columns.
    * @param columns contains the column-stored data. Must match schema.
    */
@@ -89,23 +91,30 @@ public class TupleBatch implements ReadableTable, Serializable {
 
   /**
    * Construct a TupleBatch from the specified components.
-   * 
+   *
    * @param schema schema of the tuples in this batch. Must match columns.
    * @param columns schema of the tuples in this batch. Must match columns.
    * @param numTuples the number of tuples in this batch. Must match columns.
    * @param isEOI whether this is an EOI TupleBatch.
    */
-  public TupleBatch(final Schema schema, final List<? extends Column<?>> columns, final int numTuples,
+  public TupleBatch(
+      final Schema schema,
+      final List<? extends Column<?>> columns,
+      final int numTuples,
       final boolean isEOI) {
     this.schema = Objects.requireNonNull(schema, "schema");
     this.columns = ImmutableList.copyOf(Objects.requireNonNull(columns, "columns"));
-    Preconditions.checkArgument(columns.size() == schema.numColumns(),
+    Preconditions.checkArgument(
+        columns.size() == schema.numColumns(),
         "Number of columns in data must equal the number of fields in schema");
     for (int i = 0; i < columns.size(); i++) {
       Column<?> column = columns.get(i);
-      Preconditions.checkArgument(numTuples == column.size(),
-              "Incorrect size for column %s. Expected %s tuples, but found %s tuples.",
-              i, numTuples, column.size());
+      Preconditions.checkArgument(
+          numTuples == column.size(),
+          "Incorrect size for column %s. Expected %s tuples, but found %s tuples.",
+          i,
+          numTuples,
+          column.size());
     }
     this.numTuples = numTuples;
     this.isEOI = isEOI;
@@ -113,7 +122,7 @@ public class TupleBatch implements ReadableTable, Serializable {
 
   /**
    * put the tuple batch into TBB by smashing it into cells and putting them one by one.
-   * 
+   *
    * @param tbb the TBB buffer.
    * */
   public final void compactInto(final TupleBatchBuffer tbb) {
@@ -134,13 +143,16 @@ public class TupleBatch implements ReadableTable, Serializable {
    * Return a new TupleBatch that contains only the filtered rows of the current dataset. Note that if some of the
    * tuples in this batch are invalid, we will have to map the indices in the specified filter to the "real" indices in
    * the tuple.
-   * 
+   *
    * @param filter the rows to be retained.
    * @return a TupleBatch that contains only the filtered rows of the current dataset.
    */
   public final TupleBatch filter(final BitSet filter) {
-    Preconditions.checkArgument(filter.length() <= numTuples(),
-        "Error: trying to filter a TupleBatch of length %s with a filter of length %s", numTuples(), filter.length());
+    Preconditions.checkArgument(
+        filter.length() <= numTuples(),
+        "Error: trying to filter a TupleBatch of length %s with a filter of length %s",
+        numTuples(),
+        filter.length());
     int newNumTuples = filter.cardinality();
 
     /* Shortcut: the filter is full, so all current tuples are retained. Just return this. */
@@ -157,14 +169,17 @@ public class TupleBatch implements ReadableTable, Serializable {
 
   /**
    * Return a new TupleBatch that contains only first <code>prefix</code> rows of this batch.
-   * 
+   *
    * @param prefix the number of rows in the prefix to be retained.
    * @return a TupleBatch that contains only the filtered rows of the current dataset.
    */
-  @SuppressWarnings({ "rawtypes", "unchecked" })
+  @SuppressWarnings({"rawtypes", "unchecked"})
   public final TupleBatch prefix(final int prefix) {
-    Preconditions.checkArgument(prefix <= numTuples(),
-        "Error: cannot take a prefix of length %s from a batch of length %s", prefix, numTuples());
+    Preconditions.checkArgument(
+        prefix <= numTuples(),
+        "Error: cannot take a prefix of length %s from a batch of length %s",
+        prefix,
+        numTuples());
     ImmutableList.Builder<Column<?>> newColumns = ImmutableList.builder();
     for (Column<?> column : columns) {
       newColumns.add(new PrefixColumn(column, prefix));
@@ -230,7 +245,7 @@ public class TupleBatch implements ReadableTable, Serializable {
 
   /**
    * Partition this TB using the partition function. The method is implemented by shallow copy of TupleBatches.
-   * 
+   *
    * @return an array of TBs. The length of the array is the same as the number of partitions. If no tuple presents in a
    *         partition, say the i'th partition, the i'th element in the result array is null.
    * @param pf the partition function.
@@ -264,9 +279,9 @@ public class TupleBatch implements ReadableTable, Serializable {
 
   /**
    * Creates a new TupleBatch with only the indicated columns.
-   * 
+   *
    * Internal implementation of a (non-duplicate-eliminating) PROJECT statement.
-   * 
+   *
    * @param remainingColumns zero-indexed array of columns to retain.
    * @param resultSchema computing a schema every time is usually not necessary
    * @return a projected TupleBatch.
@@ -324,7 +339,7 @@ public class TupleBatch implements ReadableTable, Serializable {
 
   /**
    * Create an EOI TupleBatch.
-   * 
+   *
    * @param schema schema.
    * @return EOI TB for the schema.
    * */
@@ -342,16 +357,20 @@ public class TupleBatch implements ReadableTable, Serializable {
   /**
    * Construct a new TupleBatch that equals the current batch with the specified column appended. The number of valid
    * tuples in this batch must be the same as the size of the other batch. If this batch is not dense, then
-   * 
+   *
    * @param columnName the name of the column to be added.
    * @param column the column to be added.
    * @return a new TupleBatch containing the tuples of this column plus the tuples of the other.
    */
   public TupleBatch appendColumn(final String columnName, final Column<?> column) {
-    Preconditions.checkArgument(numTuples() == column.size(), "Cannot append column of size %s to batch of size %s",
-        column.size(), numTuples());
+    Preconditions.checkArgument(
+        numTuples() == column.size(),
+        "Cannot append column of size %s to batch of size %s",
+        column.size(),
+        numTuples());
     Schema newSchema = Schema.appendColumn(schema, column.getType(), columnName);
-    List<Column<?>> newColumns = ImmutableList.<Column<?>> builder().addAll(columns).add(column).build();
+    List<Column<?>> newColumns =
+        ImmutableList.<Column<?>>builder().addAll(columns).add(column).build();
     return new TupleBatch(newSchema, newColumns, numTuples, isEOI);
   }
 

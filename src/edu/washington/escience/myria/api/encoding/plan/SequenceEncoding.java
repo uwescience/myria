@@ -12,8 +12,7 @@ import edu.washington.escience.myria.parallel.QueryPlan;
 import edu.washington.escience.myria.parallel.Sequence;
 
 public class SequenceEncoding extends SubPlanEncoding {
-  @Required
-  public List<SubPlanEncoding> plans;
+  @Required public List<SubPlanEncoding> plans;
 
   @Override
   public QueryPlan getPlan() {
@@ -43,5 +42,4 @@ public class SequenceEncoding extends SubPlanEncoding {
     }
     return ret.build();
   }
-
 }

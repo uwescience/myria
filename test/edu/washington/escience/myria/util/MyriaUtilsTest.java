@@ -13,7 +13,7 @@ import org.joda.time.DateTime;
 import org.junit.Test;
 
 /**
- * 
+ *
  */
 public class MyriaUtilsTest {
 
@@ -46,10 +46,10 @@ public class MyriaUtilsTest {
     assertInvalidObject(new Double[] {});
     assertInvalidObject(new Float[] {});
     assertInvalidObject(new Integer[] {});
-    assertInvalidObject(new Integer[] { 3 });
+    assertInvalidObject(new Integer[] {3});
     assertInvalidObject(new Long[] {});
-    assertInvalidObject(new Long[] { 3L });
-    assertInvalidObject(new String[] { "hi", "mom" });
+    assertInvalidObject(new Long[] {3L});
+    assertInvalidObject(new String[] {"hi", "mom"});
     assertInvalidObject(new DateTime[] {});
     /* Random other objects that seem related. */
     assertInvalidObject(BigInteger.ZERO);

@@ -2,7 +2,6 @@ package edu.washington.escience.myria.storage;
 
 import edu.washington.escience.myria.Type;
 
-
 /**
  * An interface for an object holding a single column of tuples.
  */
@@ -14,9 +13,8 @@ public interface ColumnInterface {
 
   /**
    * Returns the number of elements in this column.
-   * 
+   *
    * @return the number of elements in this column.
    */
   int size();
-
 }

@@ -13,25 +13,21 @@ import edu.washington.escience.myria.util.MyriaUtils;
 
 /**
  * Producer part of JSON Encoding for HyperCube Join.
- * 
+ *
  */
 public class HyperShuffleProducerEncoding extends AbstractProducerEncoding<GenericShuffleProducer> {
 
-  @Required
-  public int[] hashedColumns;
-  @Required
-  public int[] mappedHCDimensions;
-  @Required
-  public int[] hyperCubeDimensions;
-  @Required
-  public int[][] cellPartition;
+  @Required public int[] hashedColumns;
+  @Required public int[] mappedHCDimensions;
+  @Required public int[] hyperCubeDimensions;
+  @Required public int[][] cellPartition;
 
   @Override
   public GenericShuffleProducer construct(ConstructArgs args) throws MyriaApiException {
 
     /*
      * Validate whether number of workers matches cube dimensions.
-     * 
+     *
      * has to validate here because until now the workers has been set.
      */
     int numCells = 1;
@@ -46,10 +42,15 @@ public class HyperShuffleProducerEncoding extends AbstractProducerEncoding<Gener
 
     /* constructing a MFMDHashPartitionFunction. */
     MFMDHashPartitionFunction pf =
-        new MFMDHashPartitionFunction(cellPartition.length, hyperCubeDimensions, hashedColumns, mappedHCDimensions);
+        new MFMDHashPartitionFunction(
+            cellPartition.length, hyperCubeDimensions, hashedColumns, mappedHCDimensions);
 
-    return new GenericShuffleProducer(null, MyriaUtils.getSingleElement(getRealOperatorIds()), cellPartition,
-        MyriaUtils.integerSetToIntArray(args.getServer().getRandomWorkers(numCells)), pf);
+    return new GenericShuffleProducer(
+        null,
+        MyriaUtils.getSingleElement(getRealOperatorIds()),
+        cellPartition,
+        MyriaUtils.integerSetToIntArray(args.getServer().getRandomWorkers(numCells)),
+        pf);
   }
 
   @Override
@@ -61,5 +62,4 @@ public class HyperShuffleProducerEncoding extends AbstractProducerEncoding<Gener
       }
     }
   }
-
 }

@@ -16,13 +16,14 @@ import edu.washington.escience.myria.Schema;
  */
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type")
 @JsonSubTypes({
-    @Type(value = CountAllAggregatorFactory.class, name = "CountAll"),
-    @Type(value = SingleColumnAggregatorFactory.class, name = "SingleColumn"),
-    @Type(value = UserDefinedAggregatorFactory.class, name = "UserDefined") })
+  @Type(value = CountAllAggregatorFactory.class, name = "CountAll"),
+  @Type(value = SingleColumnAggregatorFactory.class, name = "SingleColumn"),
+  @Type(value = UserDefinedAggregatorFactory.class, name = "UserDefined")
+})
 public interface AggregatorFactory extends Serializable {
   /**
    * Create a new aggregator for tuples of the specified schema.
-   * 
+   *
    * @param inputSchema the schema that incoming tuples will take.
    * @return a new aggregator for tuples of the specified schema.
    * @throws DbException if there is an error creating the aggregator.

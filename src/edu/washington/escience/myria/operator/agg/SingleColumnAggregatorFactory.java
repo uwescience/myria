@@ -18,20 +18,19 @@ public class SingleColumnAggregatorFactory implements AggregatorFactory {
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
   /** Which column of the input to aggregate over. */
-  @JsonProperty
-  private final int column;
+  @JsonProperty private final int column;
   /** Which aggregate options are requested. See {@link PrimitiveAggregator}. */
-  @JsonProperty
-  private final AggregationOp[] aggOps;
+  @JsonProperty private final AggregationOp[] aggOps;
 
   /**
    * A wrapper for the {@link PrimitiveAggregator} implementations like {@link IntegerAggregator}.
-   * 
+   *
    * @param column which column of the input to aggregate over.
    * @param aggOps which aggregate operations are requested. See {@link PrimitiveAggregator}.
    */
   @JsonCreator
-  public SingleColumnAggregatorFactory(@JsonProperty(value = "column", required = true) final Integer column,
+  public SingleColumnAggregatorFactory(
+      @JsonProperty(value = "column", required = true) final Integer column,
       @JsonProperty(value = "aggOps", required = true) final AggregationOp... aggOps) {
     this.column = Objects.requireNonNull(column, "column").intValue();
     this.aggOps = Objects.requireNonNull(aggOps, "aggOps");

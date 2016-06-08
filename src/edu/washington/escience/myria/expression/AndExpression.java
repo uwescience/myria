@@ -14,12 +14,11 @@ public class AndExpression extends BinaryExpression {
    * This is not really unused, it's used automagically by Jackson deserialization.
    */
   @SuppressWarnings("unused")
-  private AndExpression() {
-  }
+  private AndExpression() {}
 
   /**
    * True if left and right are true.
-   * 
+   *
    * @param left the left operand.
    * @param right the right operand.
    */

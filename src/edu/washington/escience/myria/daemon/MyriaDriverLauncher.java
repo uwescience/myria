@@ -67,8 +67,10 @@ public final class MyriaDriverLauncher {
   }
 
   private final REEF reef;
+
   @GuardedBy("this")
   private Optional<RunningJob> driver = Optional.empty();
+
   @GuardedBy("this")
   private LauncherStatus status = LauncherStatus.INIT;
 
@@ -79,7 +81,7 @@ public final class MyriaDriverLauncher {
 
   private final static Configuration getRuntimeConf(final String runtimeClassName)
       throws ClassNotFoundException, IllegalArgumentException, IllegalAccessException,
-      NoSuchFieldException, SecurityException {
+          NoSuchFieldException, SecurityException {
     final Class<?> runtimeClass = Class.forName(runtimeClassName);
     ConfigurationModule cm = (ConfigurationModule) runtimeClass.getField("CONF").get(null);
     return cm.build();
@@ -91,23 +93,26 @@ public final class MyriaDriverLauncher {
         .set(ClientConfiguration.ON_JOB_MESSAGE, JobMessageHandler.class)
         .set(ClientConfiguration.ON_JOB_COMPLETED, CompletedJobHandler.class)
         .set(ClientConfiguration.ON_JOB_FAILED, FailedJobHandler.class)
-        .set(ClientConfiguration.ON_RUNTIME_ERROR, RuntimeErrorHandler.class).build();
+        .set(ClientConfiguration.ON_RUNTIME_ERROR, RuntimeErrorHandler.class)
+        .build();
   }
 
   /**
    * @return The Driver configuration.
    * @throws IOException
    */
-  private final static Configuration getDriverConf(final String[] libPaths, final String[] filePaths)
-      throws IOException {
+  private final static Configuration getDriverConf(
+      final String[] libPaths, final String[] filePaths) throws IOException {
     ConfigurationModule driverConf =
         DriverConfiguration.CONF
             .set(DriverConfiguration.DRIVER_IDENTIFIER, "MyriaDriver")
             .set(DriverConfiguration.ON_DRIVER_STARTED, MyriaDriver.StartHandler.class)
             .set(DriverConfiguration.ON_DRIVER_STOP, MyriaDriver.StopHandler.class)
-            .set(DriverConfiguration.ON_EVALUATOR_ALLOCATED,
+            .set(
+                DriverConfiguration.ON_EVALUATOR_ALLOCATED,
                 MyriaDriver.EvaluatorAllocatedHandler.class)
-            .set(DriverConfiguration.ON_EVALUATOR_COMPLETED,
+            .set(
+                DriverConfiguration.ON_EVALUATOR_COMPLETED,
                 MyriaDriver.CompletedEvaluatorHandler.class)
             .set(DriverConfiguration.ON_EVALUATOR_FAILED, MyriaDriver.EvaluatorFailureHandler.class)
             .set(DriverConfiguration.ON_CONTEXT_ACTIVE, MyriaDriver.ActiveContextHandler.class)
@@ -136,8 +141,8 @@ public final class MyriaDriverLauncher {
    * @param configPath path to directory of containing configuration files
    * @return Configuration object.
    */
-  private static Configuration getMyriaGlobalConf(final String configPath) throws IOException,
-      BindException, ConfigFileException {
+  private static Configuration getMyriaGlobalConf(final String configPath)
+      throws IOException, BindException, ConfigFileException {
     final String configFile = FilenameUtils.concat(configPath, MyriaConstants.DEPLOYMENT_CONF_FILE);
     return MyriaConfigurationParser.loadConfiguration(configFile);
   }
@@ -163,7 +168,7 @@ public final class MyriaDriverLauncher {
 
   /**
    * Launch the Myria driver.
-   * 
+   *
    * @param runtimeConf The runtime configuration (e.g. Local, YARN, etc)
    * @param args Command line arguments.
    * @throws InjectionException
@@ -176,14 +181,15 @@ public final class MyriaDriverLauncher {
    * @throws IllegalArgumentException
    * @throws ClassNotFoundException
    */
-  public static LauncherStatus run(final String[] args) throws InjectionException, IOException,
-      ParseException, ConfigFileException, ClassNotFoundException, IllegalArgumentException,
-      IllegalAccessException, NoSuchFieldException, SecurityException {
+  public static LauncherStatus run(final String[] args)
+      throws InjectionException, IOException, ParseException, ConfigFileException,
+          ClassNotFoundException, IllegalArgumentException, IllegalAccessException,
+          NoSuchFieldException, SecurityException {
     final Tang tang = Tang.Factory.getTang();
     @SuppressWarnings("unchecked")
     final Configuration commandLineConf =
-        CommandLine.parseToConfiguration(args, RuntimeClassName.class, ConfigPath.class,
-            JavaLibPath.class, NativeLibPath.class);
+        CommandLine.parseToConfiguration(
+            args, RuntimeClassName.class, ConfigPath.class, JavaLibPath.class, NativeLibPath.class);
     final Injector commandLineInjector = tang.newInjector(commandLineConf);
     final String runtimeClassName = commandLineInjector.getNamedInstance(RuntimeClassName.class);
     final String configPath = commandLineInjector.getNamedInstance(ConfigPath.class);
@@ -193,14 +199,16 @@ public final class MyriaDriverLauncher {
     final String serializedGlobalConf = new AvroConfigurationSerializer().toString(globalConf);
     final Configuration globalConfWrapper =
         tang.newConfigurationBuilder()
-            .bindNamedParameter(SerializedGlobalConf.class, serializedGlobalConf).build();
+            .bindNamedParameter(SerializedGlobalConf.class, serializedGlobalConf)
+            .build();
     final Configuration driverConf =
         Configurations.merge(
             getDriverConf(new String[] {javaLibPath}, new String[] {nativeLibPath}),
             globalConfWrapper);
 
     return tang.newInjector(getRuntimeConf(runtimeClassName), getClientConf())
-        .getInstance(MyriaDriverLauncher.class).run(driverConf);
+        .getInstance(MyriaDriverLauncher.class)
+        .run(driverConf);
   }
 
   private LauncherStatus run(final Configuration driverConf) {
@@ -227,8 +235,7 @@ public final class MyriaDriverLauncher {
       }
 
       return status;
-    }
-    finally {
+    } finally {
       reef.close();
     }
   }
@@ -246,40 +253,37 @@ public final class MyriaDriverLauncher {
   /**
    * Command line parameter: runtime configuration class to use (defaults to local runtime).
    */
-  @NamedParameter(doc = "Fully qualified name of runtime configuration class",
-      short_name = "runtimeClass",
-      default_value = "org.apache.reef.runtime.local.client.LocalRuntimeConfiguration")
-  public static final class RuntimeClassName implements Name<String> {
-  }
+  @NamedParameter(
+    doc = "Fully qualified name of runtime configuration class",
+    short_name = "runtimeClass",
+    default_value = "org.apache.reef.runtime.local.client.LocalRuntimeConfiguration"
+  )
+  public static final class RuntimeClassName implements Name<String> {}
 
   /**
    * Command line parameter: directory containing configuration file on driver launch host.
    */
   @NamedParameter(doc = "local configuration file directory", short_name = "configPath")
-  public static final class ConfigPath implements Name<String> {
-  }
+  public static final class ConfigPath implements Name<String> {}
 
   /**
    * Command line parameter: directory containing JAR/class files on driver launch host.
    */
   @NamedParameter(doc = "local JAR/class file directory", short_name = "javaLibPath")
-  public static final class JavaLibPath implements Name<String> {
-  }
+  public static final class JavaLibPath implements Name<String> {}
 
   /**
    * Command line parameter: directory containing native shared libraries on driver launch host.
    */
   @NamedParameter(doc = "local native shared library directory", short_name = "nativeLibPath")
-  public static final class NativeLibPath implements Name<String> {
-  }
+  public static final class NativeLibPath implements Name<String> {}
 
   /**
    * Serialized Myria global configuration (which itself contains serialized configuration for each
    * worker).
    */
   @NamedParameter(doc = "serialized Myria global configuration")
-  public static final class SerializedGlobalConf implements Name<String> {
-  }
+  public static final class SerializedGlobalConf implements Name<String> {}
 
   final class JobMessageHandler implements EventHandler<JobMessage> {
     @Override

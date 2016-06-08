@@ -39,21 +39,24 @@ public final class Schema implements Serializable {
 
   /**
    * Validate a potential column name for use in a Schema. Valid names are given by {@link #VALID_NAME_REGEX}.
-   * 
+   *
    * @param name the candidate column name.
    * @return the supplied name, if it is valid.
    * @throws IllegalArgumentException if the name does not match the regex {@link #VALID_NAME_REGEX}.
    */
   private static String checkName(final String name) {
     Objects.requireNonNull(name, "name");
-    Preconditions.checkArgument(VALID_NAME_PATTERN.matcher(name).matches(),
-        "supplied column name %s does not match the valid name regex %s", name, VALID_NAME_REGEX);
+    Preconditions.checkArgument(
+        VALID_NAME_PATTERN.matcher(name).matches(),
+        "supplied column name %s does not match the valid name regex %s",
+        name,
+        VALID_NAME_REGEX);
     return name;
   }
 
   /**
    * Converts a JDBC ResultSetMetaData object into a Schema.
-   * 
+   *
    * @param rsmd the input ResultSetMetaData.
    * @return the output Schema.
    * @throws SQLException if JDBC throws a SQLException.
@@ -97,7 +100,8 @@ public final class Schema implements Serializable {
           columnTypes.add(Type.DATETIME_TYPE);
           break;
         default:
-          throw new UnsupportedOperationException("JDBC type (java.SQL.Types) of " + type + " is not supported");
+          throw new UnsupportedOperationException(
+              "JDBC type (java.SQL.Types) of " + type + " is not supported");
       }
       // Name
       columnNames.add(rsmd.getColumnName(i + 1));
@@ -108,7 +112,7 @@ public final class Schema implements Serializable {
 
   /**
    * Converts a SQLiteStatement object into a Schema.
-   * 
+   *
    * @param statement the input SQLiteStatement (must have been stepped).
    * @return the output Schema.
    * @throws SQLiteException if SQLite throws an exception.
@@ -144,7 +148,8 @@ public final class Schema implements Serializable {
           columnTypes.add(Type.DOUBLE_TYPE);
           break;
         default:
-          throw new UnsupportedOperationException("SQLite type (SQLiteConstants) " + type + " is not supported");
+          throw new UnsupportedOperationException(
+              "SQLite type (SQLiteConstants) " + type + " is not supported");
       }
       // Name
       columnNames.add(statement.getColumnName(i));
@@ -155,15 +160,17 @@ public final class Schema implements Serializable {
 
   /**
    * Create a new Schema using an existing Schema and a new column.
-   * 
+   *
    * @param schema the existing schema.
    * @param type the type of the new column.
    * @param name the name of the new column.
    * @return the new Schema.
    */
   public static Schema appendColumn(final Schema schema, final Type type, final String name) {
-    List<Type> types = ImmutableList.<Type> builder().addAll(schema.getColumnTypes()).add(type).build();
-    List<String> names = ImmutableList.<String> builder().addAll(schema.getColumnNames()).add(name).build();
+    List<Type> types =
+        ImmutableList.<Type>builder().addAll(schema.getColumnTypes()).add(type).build();
+    List<String> names =
+        ImmutableList.<String>builder().addAll(schema.getColumnNames()).add(name).build();
     return new Schema(types, names);
   }
 
@@ -173,7 +180,7 @@ public final class Schema implements Serializable {
    * Note that if there are duplicate column names from the two merging schemas, the duplicate columns from the first
    * schema will be automatically renamed by adding a suffix "_1", and the duplicate columns from the second schema will
    * be automatically renamed by adding a suffix "_2".
-   * 
+   *
    * @param first The Schema with the first columns of the new Schema.
    * @param second The Schema with the last columns of the Schema.
    * @return the new Schema.
@@ -203,13 +210,14 @@ public final class Schema implements Serializable {
 
   /**
    * Static factory method.
-   * 
+   *
    * @param types the types of columns in this Schema. It must contain at least one entry.
    * @param names the names of the columns. Note that names may be null.
    * @return a Schema representing the specified column types and names.
    */
   @JsonCreator
-  public static Schema of(@JsonProperty(value = "columnTypes", required = true) final List<Type> types,
+  public static Schema of(
+      @JsonProperty(value = "columnTypes", required = true) final List<Type> types,
       @JsonProperty("columnNames") final List<String> names) {
     if (names == null) {
       return new Schema(types);
@@ -218,26 +226,25 @@ public final class Schema implements Serializable {
   }
 
   /** The types of the columns in this relation. */
-  @JsonProperty
-  private final List<Type> columnTypes;
+  @JsonProperty private final List<Type> columnTypes;
 
   /** The names of the columns in this relation. */
-  @JsonProperty
-  private final List<String> columnNames;
+  @JsonProperty private final List<String> columnNames;
 
   /**
    * Helper function to build a Schema from builders.
-   * 
+   *
    * @param types the types of the columns in this Schema.
    * @param names the names of the columns in this Schema.
    */
-  public Schema(final ImmutableList.Builder<Type> types, final ImmutableList.Builder<String> names) {
+  public Schema(
+      final ImmutableList.Builder<Type> types, final ImmutableList.Builder<String> names) {
     this(types.build(), names.build());
   }
 
   /**
    * Helper function to generate the list of column names given a {@link Type} array.
-   * 
+   *
    * @param types the types of the columns
    * @return the list of column names given a {@link Type} array. Every column is named <code>colI</code> where
    *         <code>I</code> counts from <code>0</code> to <code>types.size()</code>.
@@ -253,7 +260,7 @@ public final class Schema implements Serializable {
 
   /**
    * Create a Schema given an array of column types. Column names will be col0, col1, ....
-   * 
+   *
    * @param types the types of the columns.
    */
   public Schema(final List<Type> types) {
@@ -262,7 +269,7 @@ public final class Schema implements Serializable {
 
   /**
    * Create a new Schema with typeAr.length columns with columns of the specified types, with associated named columns.
-   * 
+   *
    * @param columnTypes array specifying the number of and types of columns in this Schema. It must contain at least one
    *          entry.
    * @param columnNames array specifying the names of the columns.
@@ -271,7 +278,8 @@ public final class Schema implements Serializable {
     Objects.requireNonNull(columnTypes, "columnTypes");
     Objects.requireNonNull(columnNames, "columnNames");
     if (columnTypes.size() != columnNames.size()) {
-      throw new IllegalArgumentException("Invalid Schema: must have the same number of column types and column");
+      throw new IllegalArgumentException(
+          "Invalid Schema: must have the same number of column types and column");
     }
     MyriaUtils.checkHasNoNulls(columnTypes, "columnTypes may not contain null elements");
     MyriaUtils.checkHasNoNulls(columnNames, "columnNames may not contain null elements");
@@ -289,7 +297,7 @@ public final class Schema implements Serializable {
   /**
    * Compares the specified object with this Schema for equality. Two Schemas are considered equal if they have the same
    * size, column types, and column names.
-   * 
+   *
    * @param o the Object to be compared with.
    * @return true if schema is equal to this Schema.
    */
@@ -302,14 +310,15 @@ public final class Schema implements Serializable {
       return false;
     }
     final Schema other = (Schema) o;
-    return (this == o) || columnTypes.equals(other.columnTypes) && columnNames.equals(other.columnNames);
+    return (this == o)
+        || columnTypes.equals(other.columnTypes) && columnNames.equals(other.columnNames);
   }
 
   /**
    * Return true if the two schema are "compatible": they have the same size and column types; column names are ignored.
-   * 
+   *
    * @param s2 the Schema object to compare
-   * 
+   *
    * @return true if the schemas are compatible
    */
   public boolean compatible(final Schema s2) {
@@ -318,7 +327,7 @@ public final class Schema implements Serializable {
 
   /**
    * Find the index of the column with a given name.
-   * 
+   *
    * @param name name of the column.
    * @return the index of the column that is first to have the given name.
    * @throws NoSuchElementException if no column with a matching name is found.
@@ -333,7 +342,7 @@ public final class Schema implements Serializable {
 
   /**
    * Return a subset of the current schema.
-   * 
+   *
    * @param index indices to be selected.
    * @return the subschema.
    */
@@ -350,7 +359,7 @@ public final class Schema implements Serializable {
 
   /**
    * Gets the (possibly null) column name of the ith column of this Schema.
-   * 
+   *
    * @param index index of the column name to return. It must be a valid index.
    * @return the name of the ith column
    * @throws IndexOutOfBoundsException if index is negative or not less than numColumns.
@@ -361,7 +370,7 @@ public final class Schema implements Serializable {
 
   /**
    * Returns a list containing the names of the columns in this Schema.
-   * 
+   *
    * @return a list containing the names of the columns in this Schema.
    */
   public List<String> getColumnNames() {
@@ -370,7 +379,7 @@ public final class Schema implements Serializable {
 
   /**
    * Gets the type of the ith column of this Schema.
-   * 
+   *
    * @param index index of the column to get the type of. It must be a valid index.
    * @return the type of the ith column
    * @throws IndexOutOfBoundsException if index is negative or not less than numColumns.
@@ -381,7 +390,7 @@ public final class Schema implements Serializable {
 
   /**
    * Returns an immutable list containing the types of the columns in this Schema.
-   * 
+   *
    * @return an immutable list containing the types of the columns in this Schema.
    */
   public List<Type> getColumnTypes() {
@@ -390,7 +399,7 @@ public final class Schema implements Serializable {
 
   @Override
   public int hashCode() {
-    return Arrays.hashCode(new Object[] { columnNames, columnTypes });
+    return Arrays.hashCode(new Object[] {columnNames, columnTypes});
   }
 
   /**
@@ -403,7 +412,7 @@ public final class Schema implements Serializable {
   /**
    * Returns a String describing this descriptor. It should be of the form
    * "columnType[0](columnName[0]), ..., columnType[M](columnName[M])", although the exact format does not matter.
-   * 
+   *
    * @return String describing this descriptor.
    */
   @Override
@@ -421,13 +430,14 @@ public final class Schema implements Serializable {
   /**
    * The empty schema.
    */
-  public static final Schema EMPTY_SCHEMA = Schema.of(Arrays.asList(new Type[] {}), Arrays.asList(new String[] {}));
+  public static final Schema EMPTY_SCHEMA =
+      Schema.of(Arrays.asList(new Type[] {}), Arrays.asList(new String[] {}));
 
   /**
    * Construct a Schema from a list of {@link Type} and {@link String} objects. The types and names may be interleaved
    * in any order; ordering within types and within names is preserved. If there are no {@link String} objects given,
    * then the {@link #Schema(List)} constructor is used.
-   * 
+   *
    * @param fields any number of {@link Type} or {@link String} objects.
    * @return the {@link Schema} containing these objects.
    */
@@ -441,8 +451,13 @@ public final class Schema implements Serializable {
       } else if (o instanceof String) {
         namesB.add((String) o);
       } else {
-        throw new IllegalArgumentException("fields must be either " + Type.class.getCanonicalName() + " or "
-            + String.class.getCanonicalName() + ", not " + o.getClass().getCanonicalName());
+        throw new IllegalArgumentException(
+            "fields must be either "
+                + Type.class.getCanonicalName()
+                + " or "
+                + String.class.getCanonicalName()
+                + ", not "
+                + o.getClass().getCanonicalName());
       }
     }
     List<Type> types = typesB.build();

@@ -10,10 +10,10 @@ import edu.washington.escience.myria.util.MyriaArrayUtils;
 
 /**
  * The producer part of the Shuffle Exchange operator.
- * 
+ *
  * ShuffleProducer distributes tuples to the workers according to some partition function (provided as a
  * PartitionFunction object during the ShuffleProducer's instantiation).
- * 
+ *
  */
 public class LocalShuffleProducer extends GenericShuffleProducer {
 
@@ -25,9 +25,15 @@ public class LocalShuffleProducer extends GenericShuffleProducer {
    * @param operatorIDs destination operators the data goes
    * @param pf the partition function
    * */
-  public LocalShuffleProducer(final Operator child, final ExchangePairID[] operatorIDs, final PartitionFunction pf) {
-    super(child, operatorIDs, MyriaArrayUtils.create2DVerticalIndex(pf.numPartition()),
-        new int[] { IPCConnectionPool.SELF_IPC_ID }, pf, false);
+  public LocalShuffleProducer(
+      final Operator child, final ExchangePairID[] operatorIDs, final PartitionFunction pf) {
+    super(
+        child,
+        operatorIDs,
+        MyriaArrayUtils.create2DVerticalIndex(pf.numPartition()),
+        new int[] {IPCConnectionPool.SELF_IPC_ID},
+        pf,
+        false);
     Preconditions.checkArgument(operatorIDs.length == pf.numPartition());
   }
 }

@@ -55,7 +55,7 @@ public final class KeepAndSortOnMinValue extends StreamingState {
   private final int[] valueColIndices;
 
   /**
-   * 
+   *
    * @param keyColIndices column indices of the key
    * @param valueColIndices column indices of the value
    */
@@ -73,62 +73,68 @@ public final class KeepAndSortOnMinValue extends StreamingState {
 
   /**
    * Check if a tuple in uniqueTuples should be replaced by a given tuple
-   * 
+   *
    * @param index the row index of the tuple in uniqueTuples
    * @param columns the columns of the given tuple
    * @param row the row index of the given tuple
    * @return true if should be replaced by
    * */
-  private boolean shouldReplace(final int index, final List<? extends Column<?>> columns, final int row) {
+  private boolean shouldReplace(
+      final int index, final List<? extends Column<?>> columns, final int row) {
     for (int valueColIndex : valueColIndices) {
       Column<?> column = columns.get(valueColIndex);
       switch (column.getType()) {
-        case INT_TYPE: {
-          int t1 = column.getInt(row);
-          int t2 = uniqueTuples.getInt(valueColIndex, index);
-          if (t1 < t2) {
-            return true;
+        case INT_TYPE:
+          {
+            int t1 = column.getInt(row);
+            int t2 = uniqueTuples.getInt(valueColIndex, index);
+            if (t1 < t2) {
+              return true;
+            }
+            if (t1 > t2) {
+              return false;
+            }
+            break;
           }
-          if (t1 > t2) {
-            return false;
+        case LONG_TYPE:
+          {
+            long t1 = column.getLong(row);
+            long t2 = uniqueTuples.getLong(valueColIndex, index);
+            if (t1 < t2) {
+              return true;
+            }
+            if (t1 > t2) {
+              return false;
+            }
+            break;
           }
-          break;
-        }
-        case LONG_TYPE: {
-          long t1 = column.getLong(row);
-          long t2 = uniqueTuples.getLong(valueColIndex, index);
-          if (t1 < t2) {
-            return true;
+        case FLOAT_TYPE:
+          {
+            float t1 = column.getFloat(row);
+            float t2 = uniqueTuples.getFloat(valueColIndex, index);
+            if (t1 < t2) {
+              return true;
+            }
+            if (t1 > t2) {
+              return false;
+            }
+            break;
           }
-          if (t1 > t2) {
-            return false;
+        case DOUBLE_TYPE:
+          {
+            double t1 = column.getDouble(row);
+            double t2 = uniqueTuples.getDouble(valueColIndex, index);
+            if (t1 < t2) {
+              return true;
+            }
+            if (t1 > t2) {
+              return false;
+            }
+            break;
           }
-          break;
-        }
-        case FLOAT_TYPE: {
-          float t1 = column.getFloat(row);
-          float t2 = uniqueTuples.getFloat(valueColIndex, index);
-          if (t1 < t2) {
-            return true;
-          }
-          if (t1 > t2) {
-            return false;
-          }
-          break;
-        }
-        case DOUBLE_TYPE: {
-          double t1 = column.getDouble(row);
-          double t2 = uniqueTuples.getDouble(valueColIndex, index);
-          if (t1 < t2) {
-            return true;
-          }
-          if (t1 > t2) {
-            return false;
-          }
-          break;
-        }
         default:
-          throw new IllegalStateException("type " + column.getType() + " is not supported in KeepMinValue.replace()");
+          throw new IllegalStateException(
+              "type " + column.getType() + " is not supported in KeepMinValue.replace()");
       }
     }
     return false;
@@ -136,7 +142,7 @@ public final class KeepAndSortOnMinValue extends StreamingState {
 
   /**
    * Do duplicate elimination for tb.
-   * 
+   *
    * @param tb the TupleBatch for performing DupElim.
    * @return the duplicate eliminated TB.
    * */
@@ -230,7 +236,8 @@ public final class KeepAndSortOnMinValue extends StreamingState {
 
     @Override
     public void value(final int destRow) {
-      if (TupleUtils.tupleEquals(inputTB, keyColIndices, sourceRow, uniqueTuples, keyColIndices, destRow)) {
+      if (TupleUtils.tupleEquals(
+          inputTB, keyColIndices, sourceRow, uniqueTuples, keyColIndices, destRow)) {
         unique = false;
         if (shouldReplace(destRow, inputTB.getDataColumns(), sourceRow)) {
           for (int i = 0; i < uniqueTuples.numColumns(); ++i) {
@@ -247,7 +254,7 @@ public final class KeepAndSortOnMinValue extends StreamingState {
 
   /**
    * sort the given TukpleBuffer on a column.
-   * 
+   *
    * @param tuples tuples
    * @param col column index
    */
@@ -257,13 +264,14 @@ public final class KeepAndSortOnMinValue extends StreamingState {
 
   /**
    * quick sort on column col, tuple with smaller values are put in the front.
-   * 
+   *
    * @param tuples tuples
    * @param col the column index
    * @param low lower bound
    * @param high upper bound
    */
-  private void quicksort(final MutableTupleBuffer tuples, final int[] col, final int low, final int high) {
+  private void quicksort(
+      final MutableTupleBuffer tuples, final int[] col, final int low, final int high) {
     int i = low, j = high;
     int pivot = low + (high - low) / 2;
 
@@ -299,61 +307,66 @@ public final class KeepAndSortOnMinValue extends StreamingState {
 
   /**
    * compare a value in a column with pivot.
-   * 
+   *
    * @param tuples tuples
    * @param columns the column indices
    * @param row row index to compare with
    * @param pivot the index of the pivot value
    * @return if the value is smaller than (-1), equal to (0) or bigger than (1) pivot
    */
-  public int compare(final MutableTupleBuffer tuples, final int[] columns, final int row, final int pivot) {
+  public int compare(
+      final MutableTupleBuffer tuples, final int[] columns, final int row, final int pivot) {
     for (int column : columns) {
       Type t = getSchema().getColumnType(column);
       switch (t) {
-        case LONG_TYPE: {
-          long t1 = tuples.getLong(column, row);
-          long t2 = tuples.getLong(column, pivot);
-          if (t1 < t2) {
-            return -1;
+        case LONG_TYPE:
+          {
+            long t1 = tuples.getLong(column, row);
+            long t2 = tuples.getLong(column, pivot);
+            if (t1 < t2) {
+              return -1;
+            }
+            if (t1 > t2) {
+              return 1;
+            }
+            break;
           }
-          if (t1 > t2) {
-            return 1;
+        case INT_TYPE:
+          {
+            int t1 = tuples.getInt(column, row);
+            int t2 = tuples.getInt(column, pivot);
+            if (t1 < t2) {
+              return -1;
+            }
+            if (t1 > t2) {
+              return 1;
+            }
+            break;
           }
-          break;
-        }
-        case INT_TYPE: {
-          int t1 = tuples.getInt(column, row);
-          int t2 = tuples.getInt(column, pivot);
-          if (t1 < t2) {
-            return -1;
+        case FLOAT_TYPE:
+          {
+            float t1 = tuples.getFloat(column, row);
+            float t2 = tuples.getFloat(column, pivot);
+            if (t1 < t2) {
+              return -1;
+            }
+            if (t1 > t2) {
+              return 1;
+            }
+            break;
           }
-          if (t1 > t2) {
-            return 1;
+        case DOUBLE_TYPE:
+          {
+            double t1 = tuples.getDouble(column, row);
+            double t2 = tuples.getDouble(column, pivot);
+            if (t1 < t2) {
+              return -1;
+            }
+            if (t1 > t2) {
+              return 1;
+            }
+            break;
           }
-          break;
-        }
-        case FLOAT_TYPE: {
-          float t1 = tuples.getFloat(column, row);
-          float t2 = tuples.getFloat(column, pivot);
-          if (t1 < t2) {
-            return -1;
-          }
-          if (t1 > t2) {
-            return 1;
-          }
-          break;
-        }
-        case DOUBLE_TYPE: {
-          double t1 = tuples.getDouble(column, row);
-          double t2 = tuples.getDouble(column, pivot);
-          if (t1 < t2) {
-            return -1;
-          }
-          if (t1 > t2) {
-            return 1;
-          }
-          break;
-        }
         default:
           throw new IllegalStateException("type " + t + " is not supported");
       }

@@ -22,21 +22,22 @@ public class CastTest {
 
   /**
    * Given a cast expression, evaluate it and return its value.
-   * 
+   *
    * @param op the expression
    * @return the constant value
    * @throws DbException if there is an error evaluating the expression
    */
   private Object evaluateCastExpression(ExpressionOperator op, Type type) throws DbException {
     Expression expr = new Expression("op", new CastExpression(op, new TypeExpression(type)));
-    ConstantEvaluator eval = new ConstantEvaluator(expr, new ExpressionOperatorParameter(Schema.EMPTY_SCHEMA));
+    ConstantEvaluator eval =
+        new ConstantEvaluator(expr, new ExpressionOperatorParameter(Schema.EMPTY_SCHEMA));
     return eval.eval();
   }
 
   /**
    * Given a cast expression, try and evaluate it. If successful, return it. If not, unwrap the expression to the root
    * cause and return that.
-   * 
+   *
    * @param op the expression
    * @return the constant value
    * @throws Throwable the root cause of a failed Janino compilation.
@@ -357,13 +358,15 @@ public class CastTest {
 
   @Test(expected = IllegalArgumentException.class)
   public void unsupportedCast() throws IllegalArgumentException {
-    ExpressionOperator cast = new CastExpression(new ConstantExpression(12), new TypeExpression(Type.DATETIME_TYPE));
+    ExpressionOperator cast =
+        new CastExpression(new ConstantExpression(12), new TypeExpression(Type.DATETIME_TYPE));
     cast.getOutputType(new ExpressionOperatorParameter());
   }
 
   @Test
   public void supportedNoopCast() throws IllegalArgumentException {
-    ExpressionOperator cast = new CastExpression(new ConstantExpression(12L), new TypeExpression(Type.LONG_TYPE));
+    ExpressionOperator cast =
+        new CastExpression(new ConstantExpression(12L), new TypeExpression(Type.LONG_TYPE));
     assertEquals(Type.LONG_TYPE, cast.getOutputType(new ExpressionOperatorParameter()));
   }
 
@@ -409,5 +412,4 @@ public class CastTest {
     Object ans = evaluateCastAndUnrollException(val1, Type.STRING_TYPE);
     assertEquals("abc123", ans);
   }
-
 }

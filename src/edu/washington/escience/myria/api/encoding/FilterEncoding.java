@@ -6,8 +6,7 @@ import edu.washington.escience.myria.operator.Filter;
 
 public class FilterEncoding extends UnaryOperatorEncoding<Filter> {
 
-  @Required
-  public Expression argPredicate;
+  @Required public Expression argPredicate;
 
   @Override
   public Filter construct(ConstructArgs args) {

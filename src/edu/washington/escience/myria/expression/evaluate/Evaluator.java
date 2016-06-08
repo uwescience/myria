@@ -37,11 +37,13 @@ public abstract class Evaluator {
     this.expression = Preconditions.checkNotNull(expression, "expression");
     this.parameters = Preconditions.checkNotNull(parameters, "parameters");
     if (getExpression().hasOperator(VariableExpression.class)) {
-      Preconditions.checkNotNull(parameters.getSchema(), "ExpressionOperatorParameter input schema");
+      Preconditions.checkNotNull(
+          parameters.getSchema(), "ExpressionOperatorParameter input schema");
     }
     needsState = getExpression().hasOperator(StateExpression.class);
     if (needsState) {
-      Preconditions.checkNotNull(parameters.getStateSchema(), "ExpressionOperatorParameter state schema");
+      Preconditions.checkNotNull(
+          parameters.getStateSchema(), "ExpressionOperatorParameter state schema");
     }
   }
 
@@ -82,11 +84,10 @@ public abstract class Evaluator {
 
   /**
    * Compiles the {@link #javaExpression}.
-   * 
+   *
    * @throws DbException compilation failed
    */
-  public void compile() throws DbException {
-  }
+  public void compile() throws DbException {}
 
   /**
    * @return the Java form of this expression, including appending to the result.
@@ -113,7 +114,7 @@ public abstract class Evaluator {
   /**
    * An expression does not have to be compiled when it only renames or copies a column. This is an optimization to
    * avoid evaluating the expression and avoid autoboxing values.
-   * 
+   *
    * @return true if the expression does not have to be compiled.
    */
   public boolean needsCompiling() {

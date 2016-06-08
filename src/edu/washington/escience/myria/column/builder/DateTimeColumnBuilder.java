@@ -22,7 +22,7 @@ import edu.washington.escience.myria.util.MyriaUtils;
 
 /**
  * A column of Date values.
- * 
+ *
  */
 public final class DateTimeColumnBuilder extends ColumnBuilder<DateTime> {
 
@@ -47,7 +47,7 @@ public final class DateTimeColumnBuilder extends ColumnBuilder<DateTime> {
 
   /**
    * copy.
-   * 
+   *
    * @param numDates the actual num strings in the data
    * @param data the underlying data
    * */
@@ -58,14 +58,16 @@ public final class DateTimeColumnBuilder extends ColumnBuilder<DateTime> {
 
   /**
    * Constructs a DateColumn by deserializing the given ColumnMessage.
-   * 
+   *
    * @param message a ColumnMessage containing the contents of this column.
    * @param numTuples num tuples in the column message
    * @return the built column
    */
   public static DateTimeColumn buildFromProtobuf(final ColumnMessage message, final int numTuples) {
-    Preconditions.checkArgument(message.getType().ordinal() == ColumnMessage.Type.DATETIME_VALUE,
-        "Trying to construct DateColumn from non-DATE ColumnMessage %s", message.getType());
+    Preconditions.checkArgument(
+        message.getType().ordinal() == ColumnMessage.Type.DATETIME_VALUE,
+        "Trying to construct DateColumn from non-DATE ColumnMessage %s",
+        message.getType());
     Preconditions.checkArgument(message.hasDateColumn(), "ColumnMessage is missing DateColumn");
     final DateTimeColumnMessage dateColumn = message.getDateColumn();
     DateTime[] newData = new DateTime[numTuples];
@@ -78,7 +80,8 @@ public final class DateTimeColumnBuilder extends ColumnBuilder<DateTime> {
 
   @Override
   public DateTimeColumnBuilder appendDateTime(final DateTime value) throws BufferOverflowException {
-    Preconditions.checkState(!built, "No further changes are allowed after the builder has built the column.");
+    Preconditions.checkState(
+        !built, "No further changes are allowed after the builder has built the column.");
     Objects.requireNonNull(value, "value");
     if (numDates >= TupleBatch.BATCH_SIZE) {
       throw new BufferOverflowException();
@@ -93,16 +96,18 @@ public final class DateTimeColumnBuilder extends ColumnBuilder<DateTime> {
   }
 
   @Override
-  public DateTimeColumnBuilder appendFromJdbc(final ResultSet resultSet, final int jdbcIndex) throws SQLException,
-      BufferOverflowException {
-    Preconditions.checkState(!built, "No further changes are allowed after the builder has built the column.");
+  public DateTimeColumnBuilder appendFromJdbc(final ResultSet resultSet, final int jdbcIndex)
+      throws SQLException, BufferOverflowException {
+    Preconditions.checkState(
+        !built, "No further changes are allowed after the builder has built the column.");
     return appendDateTime(new DateTime(resultSet.getTimestamp(jdbcIndex).getTime()));
   }
 
   @Override
   public DateTimeColumnBuilder appendFromSQLite(final SQLiteStatement statement, final int index)
       throws SQLiteException, BufferOverflowException {
-    Preconditions.checkState(!built, "No further changes are allowed after the builder has built the column.");
+    Preconditions.checkState(
+        !built, "No further changes are allowed after the builder has built the column.");
 
     return appendDateTime(new DateTime(statement.columnLong(index)));
   }
@@ -125,8 +130,10 @@ public final class DateTimeColumnBuilder extends ColumnBuilder<DateTime> {
   }
 
   @Override
-  public void replaceDateTime(final DateTime value, final int row) throws IndexOutOfBoundsException {
-    Preconditions.checkState(!built, "No further changes are allowed after the builder has built the column.");
+  public void replaceDateTime(final DateTime value, final int row)
+      throws IndexOutOfBoundsException {
+    Preconditions.checkState(
+        !built, "No further changes are allowed after the builder has built the column.");
     Preconditions.checkElementIndex(row, numDates);
     Preconditions.checkNotNull(value);
     data[row] = value;
@@ -134,7 +141,8 @@ public final class DateTimeColumnBuilder extends ColumnBuilder<DateTime> {
 
   @Override
   public DateTimeColumnBuilder expand(final int size) throws BufferOverflowException {
-    Preconditions.checkState(!built, "No further changes are allowed after the builder has built the column.");
+    Preconditions.checkState(
+        !built, "No further changes are allowed after the builder has built the column.");
     Preconditions.checkArgument(size >= 0);
     if (numDates + size > data.length) {
       throw new BufferOverflowException();
@@ -145,7 +153,8 @@ public final class DateTimeColumnBuilder extends ColumnBuilder<DateTime> {
 
   @Override
   public DateTimeColumnBuilder expandAll() {
-    Preconditions.checkState(!built, "No further changes are allowed after the builder has built the column.");
+    Preconditions.checkState(
+        !built, "No further changes are allowed after the builder has built the column.");
     numDates = data.length;
     return this;
   }
@@ -164,7 +173,8 @@ public final class DateTimeColumnBuilder extends ColumnBuilder<DateTime> {
   @Deprecated
   @Override
   public DateTimeColumnBuilder appendObject(final Object value) throws BufferOverflowException {
-    Preconditions.checkState(!built, "No further changes are allowed after the builder has built the column.");
+    Preconditions.checkState(
+        !built, "No further changes are allowed after the builder has built the column.");
     return appendDateTime((DateTime) MyriaUtils.ensureObjectIsValidType(value));
   }
 
@@ -174,5 +184,4 @@ public final class DateTimeColumnBuilder extends ColumnBuilder<DateTime> {
     System.arraycopy(data, 0, newData, 0, numDates);
     return new DateTimeColumnBuilder(newData, numDates);
   }
-
 }

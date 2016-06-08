@@ -13,7 +13,7 @@ import edu.washington.escience.myria.util.concurrent.ReentrantSpinLock;
 /**
  * A simple InputBuffer implementation using bag semantic. The number of data held in this InputBuffer can be as large
  * as {@link Integer.MAX_VALUE}.
- * 
+ *
  * @param <PAYLOAD> the type of application defined data the input buffer is going to hold.
  * */
 public class SimpleBagInputBuffer<PAYLOAD> extends BagInputBufferAdapter<PAYLOAD> {
@@ -31,23 +31,23 @@ public class SimpleBagInputBuffer<PAYLOAD> extends BagInputBufferAdapter<PAYLOAD
   /**
    * the buffer empty event.
    * */
-  private final IPCEvent newInputEvent = new IPCEvent() {
+  private final IPCEvent newInputEvent =
+      new IPCEvent() {
 
-    @Override
-    public Object getAttachment() {
-      return SimpleBagInputBuffer.this;
-    }
+        @Override
+        public Object getAttachment() {
+          return SimpleBagInputBuffer.this;
+        }
 
-    @Override
-    public EventType getType() {
-      return NEW_INPUT_DATA;
-    }
-
-  };
+        @Override
+        public EventType getType() {
+          return NEW_INPUT_DATA;
+        }
+      };
 
   /**
    * Fire a new input event. All the new arrival event listeners will be notified.
-   * 
+   *
    * New input event listeners are executed by trigger threads.
    * */
   protected final void fireNewInput() {
@@ -82,14 +82,15 @@ public class SimpleBagInputBuffer<PAYLOAD> extends BagInputBufferAdapter<PAYLOAD
    * @param owner the owner IPC pool.
    * @param remoteChannelIDs from which channels, the data will input.
    * */
-  public SimpleBagInputBuffer(final IPCConnectionPool owner, final ImmutableSet<StreamIOChannelID> remoteChannelIDs) {
+  public SimpleBagInputBuffer(
+      final IPCConnectionPool owner, final ImmutableSet<StreamIOChannelID> remoteChannelIDs) {
     super(owner, remoteChannelIDs);
     newArrivalListeners = new ConcurrentLinkedQueue<IPCEventListener>();
   }
 
   /**
    * {@inheritDoc}.
-   * 
+   *
    * Only new data events is supported
    * */
   @Override
@@ -98,5 +99,4 @@ public class SimpleBagInputBuffer<PAYLOAD> extends BagInputBufferAdapter<PAYLOAD
       newArrivalListeners.add(l);
     }
   }
-
 }

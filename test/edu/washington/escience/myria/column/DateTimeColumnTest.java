@@ -18,10 +18,14 @@ public class DateTimeColumnTest {
   @Test
   public void testProto() {
     final DateTimeColumnBuilder original = new DateTimeColumnBuilder();
-    original.appendDateTime(DateTimeUtils.parse("2000-02-03")).appendDateTime(DateTimeUtils.parse("2000-02-03")).appendDateTime(
-        DateTimeUtils.parse("2000-02-03 12:35:24")).appendDateTime(DateTimeUtils.parse("2010-03-04 05:06:07"));
+    original
+        .appendDateTime(DateTimeUtils.parse("2000-02-03"))
+        .appendDateTime(DateTimeUtils.parse("2000-02-03"))
+        .appendDateTime(DateTimeUtils.parse("2000-02-03 12:35:24"))
+        .appendDateTime(DateTimeUtils.parse("2010-03-04 05:06:07"));
     final ColumnMessage serialized = original.build().serializeToProto();
-    final DateTimeColumn deserialized = DateTimeColumnBuilder.buildFromProtobuf(serialized, original.size());
+    final DateTimeColumn deserialized =
+        DateTimeColumnBuilder.buildFromProtobuf(serialized, original.size());
     assertTrue(original.build().toString().equals(deserialized.toString()));
   }
 
@@ -43,5 +47,4 @@ public class DateTimeColumnTest {
     builder.appendDateTime(new DateTime());
     builder.build();
   }
-
 }

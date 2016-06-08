@@ -1,5 +1,5 @@
 /**
- * 
+ *
  */
 package edu.washington.escience.myria.accessmethod;
 
@@ -18,13 +18,13 @@ import edu.washington.escience.myria.api.MyriaJsonMapperProvider;
 
 /**
  * @author valmeida
- * 
+ *
  */
 public abstract class ConnectionInfo {
 
   /**
    * Creates a connection info.
-   * 
+   *
    * @param dbms the DBMS
    * @param jsonConnInfo the connection info packed into a JSON string
    * @return the connection info
@@ -49,7 +49,7 @@ public abstract class ConnectionInfo {
 
   /**
    * Returns a JSON string representation of the connection info.
-   * 
+   *
    * @return the JSON representation
    */
   public String toJson() {
@@ -64,7 +64,7 @@ public abstract class ConnectionInfo {
   /**
    * Constructs a database connection information from the input and returns its JSON string
    * representation.
-   * 
+   *
    * @param dbms the database system.
    * @param hostName the host name.
    * @param dirName the working directory.
@@ -74,9 +74,14 @@ public abstract class ConnectionInfo {
    * @param databasePort the port the database is using; pass null to use default port
    * @return the JSON string representation of the connection information.
    */
-  public static String toJson(@Nonnull final String dbms, final String hostName,
-      final String dirName, final int workerId, final String databaseName,
-      final String databasePassword, final Integer databasePort) {
+  public static String toJson(
+      @Nonnull final String dbms,
+      final String hostName,
+      final String dirName,
+      final int workerId,
+      final String databaseName,
+      final String databasePassword,
+      final Integer databasePort) {
     String result = "";
     String host;
     String user;
@@ -141,5 +146,4 @@ public abstract class ConnectionInfo {
    *         MyriaConstants.STORAGE_SYSTEM_MONETDB.
    */
   public abstract String getDbms();
-
 }

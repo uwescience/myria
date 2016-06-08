@@ -8,7 +8,7 @@ import edu.washington.escience.myria.Type;
 
 /**
  * Provides the abstraction of a full Column filtered to an indicated set of rows.
- * 
+ *
  * @param <T> the type of the inner Column.
  */
 class FilteredColumn<T extends Comparable<?>> extends Column<T> {
@@ -24,7 +24,7 @@ class FilteredColumn<T extends Comparable<?>> extends Column<T> {
 
   /**
    * Creates a filtered version of the indicated rows in the specified inner column.
-   * 
+   *
    * @param inner the {@link Column} to be filtered.
    * @param indices the rows of the inner Column to be kept.
    */
@@ -36,7 +36,7 @@ class FilteredColumn<T extends Comparable<?>> extends Column<T> {
 
   /**
    * Creates a filtered version of the indicated rows in the specified inner column.
-   * 
+   *
    * @param inner the {@link Column} to be filtered.
    * @param filter a BitSet indicating the rows of the inner Column to be kept.
    */
@@ -54,7 +54,7 @@ class FilteredColumn<T extends Comparable<?>> extends Column<T> {
 
   /**
    * Helper function to convert external row number into internal row number.
-   * 
+   *
    * @param row the external row number
    * @return the row number in the inner, filtered column.
    */

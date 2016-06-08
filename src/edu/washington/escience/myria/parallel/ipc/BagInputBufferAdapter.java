@@ -26,8 +26,8 @@ import edu.washington.escience.myria.util.concurrent.ClosableReentrantLock;
  *
  * @param <PAYLOAD> the type of application defined data the input buffer is going to hold.
  * */
-public abstract class BagInputBufferAdapter<PAYLOAD> extends AttachmentableAdapter implements
-    StreamInputBuffer<PAYLOAD> {
+public abstract class BagInputBufferAdapter<PAYLOAD> extends AttachmentableAdapter
+    implements StreamInputBuffer<PAYLOAD> {
 
   /**
    * logger.
@@ -115,7 +115,8 @@ public abstract class BagInputBufferAdapter<PAYLOAD> extends AttachmentableAdapt
    * @param owner the owner IPC pool.
    * @param remoteChannelIDs from which channels, the data will input.
    * */
-  public BagInputBufferAdapter(final IPCConnectionPool owner, final ImmutableSet<StreamIOChannelID> remoteChannelIDs) {
+  public BagInputBufferAdapter(
+      final IPCConnectionPool owner, final ImmutableSet<StreamIOChannelID> remoteChannelIDs) {
     storage = new LinkedBlockingQueue<IPCMessage.StreamData<PAYLOAD>>();
     ImmutableMap.Builder<StreamIOChannelID, InputChannelState> b = ImmutableMap.builder();
     for (StreamIOChannelID ecID : remoteChannelIDs) {
@@ -135,17 +136,14 @@ public abstract class BagInputBufferAdapter<PAYLOAD> extends AttachmentableAdapt
    * @param processor {@link #start(Object)}
    * @throws IllegalStateException if the {@link #start(Object)} operation should not be done.
    * */
-  protected void preStart(final Object processor) throws IllegalStateException {
-  }
+  protected void preStart(final Object processor) throws IllegalStateException {}
 
   /**
    * Called after {@link #start(Object)} operations are conducted.
    *
    * @param processor {@link #start(Object)}
    * */
-  protected void postStart(final Object processor) {
-
-  }
+  protected void postStart(final Object processor) {}
 
   @Override
   public final void start(final Object processor) {
@@ -163,15 +161,13 @@ public abstract class BagInputBufferAdapter<PAYLOAD> extends AttachmentableAdapt
    *
    * @throws IllegalStateException if the {@link #stop()} operation should not be done.
    * */
-  protected void preStop() throws IllegalStateException {
-  }
+  protected void preStop() throws IllegalStateException {}
 
   /**
    * Called after {@link #stop()} operations are conducted.
    *
    * */
-  protected void postStop() {
-  }
+  protected void postStop() {}
 
   @Override
   public final void stop() {
@@ -200,14 +196,12 @@ public abstract class BagInputBufferAdapter<PAYLOAD> extends AttachmentableAdapt
    *
    * @throws IllegalStateException if the {@link #clear()} operation should not be done.
    * */
-  protected void preClear() throws IllegalStateException {
-  }
+  protected void preClear() throws IllegalStateException {}
 
   /**
    * Called after {@link #clear()} is executed.
    * */
-  protected void postClear() {
-  }
+  protected void postClear() {}
 
   @Override
   public final void clear() {
@@ -250,8 +244,13 @@ public abstract class BagInputBufferAdapter<PAYLOAD> extends AttachmentableAdapt
   private boolean checkNotEOS(final InputChannelState ics, final IPCMessage.StreamData<PAYLOAD> e) {
     if (ics.eos.get()) {
       if (LOGGER.isDebugEnabled()) {
-        LOGGER.debug("Message received from an already EOS channele from remote " + e.getRemoteID() + " streamID "
-            + e.getStreamID() + " " + ics.inputChannel);
+        LOGGER.debug(
+            "Message received from an already EOS channele from remote "
+                + e.getRemoteID()
+                + " streamID "
+                + e.getStreamID()
+                + " "
+                + ics.inputChannel);
       }
       /* temp solution, better to check if it's from a recover worker */
       return false;
@@ -267,8 +266,7 @@ public abstract class BagInputBufferAdapter<PAYLOAD> extends AttachmentableAdapt
    *           {@link #offer(edu.washington.escience.myria.parallel.ipc.IPCMessage.StreamData)} operation should not be
    *           done.
    * */
-  protected void preOffer(final IPCMessage.StreamData<PAYLOAD> msg) throws IllegalStateException {
-  }
+  protected void preOffer(final IPCMessage.StreamData<PAYLOAD> msg) throws IllegalStateException {}
 
   /**
    * Called after {@link #offer(StreamData)} operations are conducted.
@@ -276,8 +274,7 @@ public abstract class BagInputBufferAdapter<PAYLOAD> extends AttachmentableAdapt
    * @param msg {@link #offer(StreamData)}
    * @param isSucceed if the offer operation succeeds
    * */
-  protected void postOffer(final IPCMessage.StreamData<PAYLOAD> msg, final boolean isSucceed) {
-  }
+  protected void postOffer(final IPCMessage.StreamData<PAYLOAD> msg, final boolean isSucceed) {}
 
   @Override
   public final boolean offer(final IPCMessage.StreamData<PAYLOAD> msg) {
@@ -334,16 +331,14 @@ public abstract class BagInputBufferAdapter<PAYLOAD> extends AttachmentableAdapt
    *
    * @throws IllegalStateException if the {@link #take()} operation should not be done.
    * */
-  protected void preTake() throws IllegalStateException {
-  }
+  protected void preTake() throws IllegalStateException {}
 
   /**
    * Called after {@link #take()} operations are conducted.
    *
    * @param msg the result of {@link #take()}.
    * */
-  protected void postTake(final IPCMessage.StreamData<PAYLOAD> msg) {
-  }
+  protected void postTake(final IPCMessage.StreamData<PAYLOAD> msg) {}
 
   @Override
   public final IPCMessage.StreamData<PAYLOAD> take() throws InterruptedException {
@@ -382,8 +377,8 @@ public abstract class BagInputBufferAdapter<PAYLOAD> extends AttachmentableAdapt
    * @param unit param of {@link #poll(long, TimeUnit)}
    * @throws IllegalStateException if the {@link #poll(long, TimeUnit)} operation should not be done.
    * */
-  protected void preTimeoutPoll(final long time, final TimeUnit unit) throws IllegalStateException {
-  }
+  protected void preTimeoutPoll(final long time, final TimeUnit unit)
+      throws IllegalStateException {}
 
   /**
    * Called after {@link #poll(long, TimeUnit)} operations are conducted.
@@ -392,11 +387,12 @@ public abstract class BagInputBufferAdapter<PAYLOAD> extends AttachmentableAdapt
    * @param unit param of {@link #poll(long, TimeUnit)}
    * @param msg the result of {@link #poll(long, TimeUnit)}.
    * */
-  protected void postTimeoutPoll(final long time, final TimeUnit unit, final IPCMessage.StreamData<PAYLOAD> msg) {
-  }
+  protected void postTimeoutPoll(
+      final long time, final TimeUnit unit, final IPCMessage.StreamData<PAYLOAD> msg) {}
 
   @Override
-  public final IPCMessage.StreamData<PAYLOAD> poll(final long time, final TimeUnit unit) throws InterruptedException {
+  public final IPCMessage.StreamData<PAYLOAD> poll(final long time, final TimeUnit unit)
+      throws InterruptedException {
     checkAttached();
 
     if (isEOS() && isEmpty()) {
@@ -430,16 +426,14 @@ public abstract class BagInputBufferAdapter<PAYLOAD> extends AttachmentableAdapt
    *
    * @throws IllegalStateException if the {@link #poll()} operation should not be done.
    * */
-  protected void prePoll() throws IllegalStateException {
-  }
+  protected void prePoll() throws IllegalStateException {}
 
   /**
    * Called after {@link #poll()} operations are conducted.
    *
    * @param msg the result of {@link #poll()}.
    * */
-  protected void postPoll(final IPCMessage.StreamData<PAYLOAD> msg) {
-  }
+  protected void postPoll(final IPCMessage.StreamData<PAYLOAD> msg) {}
 
   @Override
   public final IPCMessage.StreamData<PAYLOAD> poll() {
@@ -478,7 +472,8 @@ public abstract class BagInputBufferAdapter<PAYLOAD> extends AttachmentableAdapt
   }
 
   @Override
-  public final StreamInputChannel<PAYLOAD> getInputChannel(final StreamIOChannelID sourceChannelID) {
+  public final StreamInputChannel<PAYLOAD> getInputChannel(
+      final StreamIOChannelID sourceChannelID) {
     return inputChannels.get(sourceChannelID).inputChannel;
   }
 
@@ -496,5 +491,4 @@ public abstract class BagInputBufferAdapter<PAYLOAD> extends AttachmentableAdapt
   public final Object getProcessor() {
     return processor.get();
   }
-
 }

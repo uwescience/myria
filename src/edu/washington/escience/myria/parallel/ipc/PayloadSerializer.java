@@ -18,7 +18,7 @@ public interface PayloadSerializer {
 
   /**
    * De-serialize payload.
-   * 
+   *
    * @param buffer serialized buffer.
    * @param processor if the channel from which the message is received is a stream input channel, the processor of the
    *          input buffer is provided. Or null, if it's not a stream message.
@@ -29,5 +29,4 @@ public interface PayloadSerializer {
    * @return Deserialized payload object.
    * */
   Object deSerialize(ChannelBuffer buffer, Object processor, Object attachment) throws IOException;
-
 }

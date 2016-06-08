@@ -22,9 +22,9 @@ import edu.washington.escience.myria.storage.TupleUtils;
 import edu.washington.escience.myria.util.HashUtils;
 
 /**
- * 
+ *
  * Counting join which will only build hash table of the right child.
- * 
+ *
  */
 public class RightHashCountingJoin extends BinaryOperator {
   /**
@@ -93,7 +93,7 @@ public class RightHashCountingJoin extends BinaryOperator {
      * */
     private IntArrayList occuredTimesOnJoinAgainstChild;
     /**
-     * 
+     *
      * */
     private int[] inputCmpColumns;
 
@@ -117,7 +117,7 @@ public class RightHashCountingJoin extends BinaryOperator {
 
   /**
    * Note: If this operator is ready for EOS, this function will return true since EOS is a special EOI.
-   * 
+   *
    * @return whether this operator is ready to set itself EOI
    */
   private boolean isEOIReady() {
@@ -130,21 +130,24 @@ public class RightHashCountingJoin extends BinaryOperator {
   /**
    * Construct an EquiJoin operator. It returns all columns from both children when the corresponding columns in
    * compareIndx1 and compareIndx2 match.
-   * 
+   *
    * @param left the left child.
    * @param right the right child.
    * @param compareIndx1 the columns of the left child to be compared with the right. Order matters.
    * @param compareIndx2 the columns of the right child to be compared with the left. Order matters.
    * @throw IllegalArgumentException if there are duplicated column names from the children.
    */
-  public RightHashCountingJoin(final Operator left, final Operator right, final int[] compareIndx1,
+  public RightHashCountingJoin(
+      final Operator left,
+      final Operator right,
+      final int[] compareIndx1,
       final int[] compareIndx2) {
     this("count", left, right, compareIndx1, compareIndx2);
   }
 
   /**
    * Construct a {@link RightHashCountingJoin} operator with output column name specified.
-   * 
+   *
    * @param outputColumnName the name of the column of the output table.
    * @param left the left child.
    * @param right the right child.
@@ -153,8 +156,12 @@ public class RightHashCountingJoin extends BinaryOperator {
    * @throw IllegalArgumentException if there are duplicated column names in <tt>outputSchema</tt>, or if
    *        <tt>outputSchema</tt> does not have the correct number of columns and column types.
    */
-  public RightHashCountingJoin(final String outputColumnName, final Operator left, final Operator right,
-      final int[] compareIndx1, final int[] compareIndx2) {
+  public RightHashCountingJoin(
+      final String outputColumnName,
+      final Operator left,
+      final Operator right,
+      final int[] compareIndx1,
+      final int[] compareIndx2) {
     super(left, right);
     leftCompareIndx = compareIndx1;
     rightCompareIndx = compareIndx2;
@@ -259,20 +266,21 @@ public class RightHashCountingJoin extends BinaryOperator {
 
   /**
    * Process tuples from right child: build up hash tables.
-   * 
+   *
    * @param tb the incoming TupleBatch.
    */
   protected void processRightChildTB(final TupleBatch tb) {
     for (int row = 0; row < tb.numTuples(); ++row) {
       final int cntHashCode = HashUtils.hashSubRow(tb, rightCompareIndx, row);
       // only build hash table on two sides if none of the children is EOS
-      updateHashTableAndOccureTimes(tb, row, cntHashCode, hashTable, hashTableIndices, rightCompareIndx, occurredTimes);
+      updateHashTableAndOccureTimes(
+          tb, row, cntHashCode, hashTable, hashTableIndices, rightCompareIndx, occurredTimes);
     }
   }
 
   /**
    * Process tuples from the left child: do the actual count join.
-   * 
+   *
    * @param tb the incoming TupleBatch for processing join.
    */
   protected void processLeftChildTB(final TupleBatch tb) {
@@ -304,9 +312,14 @@ public class RightHashCountingJoin extends BinaryOperator {
    * @param compareColumns compareColumns of input tuple
    * @param occuredTimes occuredTimes array to be updated
    * */
-  private void updateHashTableAndOccureTimes(final TupleBatch tb, final int row, final int hashCode,
-      final MutableTupleBuffer hashTable, final IntObjectHashMap<IntArrayList> hashTableIndices,
-      final int[] compareColumns, final IntArrayList occuredTimes) {
+  private void updateHashTableAndOccureTimes(
+      final TupleBatch tb,
+      final int row,
+      final int hashCode,
+      final MutableTupleBuffer hashTable,
+      final IntObjectHashMap<IntArrayList> hashTableIndices,
+      final int[] compareColumns,
+      final IntArrayList occuredTimes) {
 
     /* get the index of the tuple's hash code corresponding to */
     final int nextIndex = hashTable.numTuples();
@@ -339,7 +352,6 @@ public class RightHashCountingJoin extends BinaryOperator {
       }
       occuredTimes.add(1);
     }
-
   }
 
   @Override

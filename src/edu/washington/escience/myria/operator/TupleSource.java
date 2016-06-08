@@ -14,8 +14,8 @@ import edu.washington.escience.myria.storage.TupleBatchBuffer;
 
 /**
  * This class creates a LeafOperator from a batch of tuples. Useful for testing.
- * 
- * 
+ *
+ *
  */
 public final class TupleSource extends LeafOperator {
 
@@ -33,7 +33,7 @@ public final class TupleSource extends LeafOperator {
 
   /**
    * Constructs a TupleSource operator that will serve the tuples in the given TupleBatchBuffer.
-   * 
+   *
    * @param data the tuples that this operator will serve.
    */
   public TupleSource(final TupleBatchBuffer data) {
@@ -44,17 +44,16 @@ public final class TupleSource extends LeafOperator {
   /**
    * Constructs a TupleSource operator that will serve the tuples in the given List<TupleBatch>. Data must contain at
    * least one TupleBatch.
-   * 
+   *
    * @param data the tuples that this operator will serve.
    */
-
   public TupleSource(final List<TupleBatch> data) {
     this(data, null);
   }
 
   /**
    * Constructs a TupleSource operator that will serve the tuples in the given TupleBatch.
-   * 
+   *
    * @param data the tuples that this operator will serve. May not be null.
    */
   public TupleSource(final TupleBatch data) {
@@ -63,19 +62,21 @@ public final class TupleSource extends LeafOperator {
 
   /**
    * Constructs a TupleSource operator that will serve the tuples in the given List<TupleBatch>.
-   * 
+   *
    * @param data the tuples that this operator will serve.
    * @param schema the schema of the tuples.
    */
   public TupleSource(final List<TupleBatch> data, final Schema schema) {
     this.data = Objects.requireNonNull(data);
     if (data.size() == 0) {
-      this.schema = Objects.requireNonNull(schema, "either data.get(0) must be non-null, or schema must be supplied");
+      this.schema =
+          Objects.requireNonNull(
+              schema, "either data.get(0) must be non-null, or schema must be supplied");
     } else {
       this.schema = data.get(0).getSchema();
       if (schema != null) {
-        Preconditions.checkArgument(this.schema.equals(schema),
-            "supplied schema does not match the schema in data.get(0)");
+        Preconditions.checkArgument(
+            this.schema.equals(schema), "supplied schema does not match the schema in data.get(0)");
       }
     }
   }

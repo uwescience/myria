@@ -15,8 +15,11 @@ public final class IPCConfigurations {
    * @param theMaster the master
    * @throws ConfigFileException
    */
-  public static ClientBootstrap createMasterIPCClientBootstrap(final int connectTimeoutMillis,
-      final int sendBufferSize, final int receiveBufferSize, final int writeBufferLowWaterMark,
+  public static ClientBootstrap createMasterIPCClientBootstrap(
+      final int connectTimeoutMillis,
+      final int sendBufferSize,
+      final int receiveBufferSize,
+      final int writeBufferLowWaterMark,
       final int writeBufferHighWaterMark) {
 
     final ClientBootstrap bootstrap = new ClientBootstrap();
@@ -39,8 +42,11 @@ public final class IPCConfigurations {
    * @param worker the owner worker
    * @throws ConfigFileException
    */
-  public static ClientBootstrap createWorkerIPCClientBootstrap(final int connectTimeoutMillis,
-      final int sendBufferSize, final int receiveBufferSize, final int writeBufferLowWaterMark,
+  public static ClientBootstrap createWorkerIPCClientBootstrap(
+      final int connectTimeoutMillis,
+      final int sendBufferSize,
+      final int receiveBufferSize,
+      final int writeBufferLowWaterMark,
       final int writeBufferHighWaterMark) {
 
     final ClientBootstrap bootstrap = new ClientBootstrap();
@@ -64,8 +70,11 @@ public final class IPCConfigurations {
    * @throws ConfigFileException
    * @throws NumberFormatException
    */
-  public static ServerBootstrap createMasterIPCServerBootstrap(final int connectTimeoutMillis,
-      final int sendBufferSize, final int receiveBufferSize, final int writeBufferLowWaterMark,
+  public static ServerBootstrap createMasterIPCServerBootstrap(
+      final int connectTimeoutMillis,
+      final int sendBufferSize,
+      final int receiveBufferSize,
+      final int writeBufferLowWaterMark,
       final int writeBufferHighWaterMark) {
 
     final ServerBootstrap bootstrap = new ServerBootstrap();
@@ -91,8 +100,11 @@ public final class IPCConfigurations {
    * @throws ConfigFileException
    * @throws NumberFormatException
    */
-  public static ServerBootstrap createWorkerIPCServerBootstrap(final int connectTimeoutMillis,
-      final int sendBufferSize, final int receiveBufferSize, final int writeBufferLowWaterMark,
+  public static ServerBootstrap createWorkerIPCServerBootstrap(
+      final int connectTimeoutMillis,
+      final int sendBufferSize,
+      final int receiveBufferSize,
+      final int writeBufferLowWaterMark,
       final int writeBufferHighWaterMark) {
 
     final ServerBootstrap bootstrap = new ServerBootstrap();
@@ -114,5 +126,4 @@ public final class IPCConfigurations {
 
   /** Prevent construction of utility class. */
   private IPCConfigurations() {}
-
 }

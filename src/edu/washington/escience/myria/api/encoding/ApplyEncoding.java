@@ -8,8 +8,7 @@ import edu.washington.escience.myria.operator.Apply;
 
 public class ApplyEncoding extends UnaryOperatorEncoding<Apply> {
 
-  @Required
-  public List<Expression> emitExpressions;
+  @Required public List<Expression> emitExpressions;
 
   @Override
   public Apply construct(ConstructArgs args) {

@@ -33,8 +33,7 @@ public class UriSource implements DataSource, Serializable {
   private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(UriSource.class);
 
   /** The Uniform Resource Indicator (URI) of the data source. */
-  @JsonProperty
-  private final String uri;
+  @JsonProperty private final String uri;
 
   /**
    * Construct a source of data from the specified URI. The URI may be: a path on the local file system; an HDFS link; a
@@ -55,8 +54,8 @@ public class UriSource implements DataSource, Serializable {
     URI parsedUri = URI.create(uri);
 
     return (parsedUri.getScheme().equals("http") || parsedUri.getScheme().equals("https"))
-      ? parsedUri.toURL().openConnection().getInputStream()
-      : getHadoopFileSystemInputStream(parsedUri);
+        ? parsedUri.toURL().openConnection().getInputStream()
+        : getHadoopFileSystemInputStream(parsedUri);
   }
 
   /**

@@ -7,13 +7,13 @@ import edu.washington.escience.myria.storage.TupleBatch;
 
 /**
  * A root operator that simply count the number of results and drop them.
- * 
+ *
  * This RootOperator is a reasonable RootOperator for master plans which are not aiming at importing data into workers.
  * */
 public class SinkRoot extends RootOperator {
 
   /**
-   * 
+   *
    */
   private static final long serialVersionUID = 1L;
 
@@ -62,12 +62,10 @@ public class SinkRoot extends RootOperator {
   }
 
   @Override
-  protected void childEOS() throws DbException {
-  }
+  protected void childEOS() throws DbException {}
 
   @Override
-  protected void childEOI() throws DbException {
-  }
+  protected void childEOI() throws DbException {}
 
   @Override
   protected final void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
@@ -75,13 +73,12 @@ public class SinkRoot extends RootOperator {
   }
 
   @Override
-  protected void cleanup() throws DbException {
-  }
+  protected void cleanup() throws DbException {}
 
   /**
    * Set the limit of the number of tuples this operator will absorb. If limit <= 0, all tuples will be read. Note that
    * this is only accurate to the nearest TupleBatch over limit.
-   * 
+   *
    * @param limit the number of tuples this operator will absorb. If limit <= 0, all tuples will be read. Note that this
    *          is only accurate to the nearest TupleBatch over limit.
    */

@@ -75,8 +75,7 @@ public class CastExpression extends BinaryExpression {
    * This is not really unused, it's used automagically by Jackson deserialization.
    */
   @SuppressWarnings("unused")
-  private CastExpression() {
-  }
+  private CastExpression() {}
 
   /**
    * @param left what to cast.
@@ -84,16 +83,21 @@ public class CastExpression extends BinaryExpression {
    */
   public CastExpression(final ExpressionOperator left, final ExpressionOperator right) {
     super(left, right);
-    Preconditions.checkArgument(right instanceof TypeExpression || right instanceof TypeOfExpression,
-        "The right child of a cast operator must be a Type or a TypeOf, not a %s", right.getClass().getSimpleName());
+    Preconditions.checkArgument(
+        right instanceof TypeExpression || right instanceof TypeOfExpression,
+        "The right child of a cast operator must be a Type or a TypeOf, not a %s",
+        right.getClass().getSimpleName());
   }
 
   @Override
   public Type getOutputType(final ExpressionOperatorParameter parameters) {
     final Type castFrom = getLeft().getOutputType(parameters);
     final Type castTo = getRight().getOutputType(parameters);
-    Preconditions.checkArgument((castFrom == castTo) || getCastType(castFrom, castTo) != CastType.UNSUPPORTED,
-        "Cast from %s to %s is not supported.", castFrom, castTo);
+    Preconditions.checkArgument(
+        (castFrom == castTo) || getCastType(castFrom, castTo) != CastType.UNSUPPORTED,
+        "Cast from %s to %s is not supported.",
+        castFrom,
+        castTo);
     return castTo;
   }
 
@@ -105,7 +109,7 @@ public class CastExpression extends BinaryExpression {
   private CastType getCastType(final Type castFrom, final Type castTo) {
 
     switch (castFrom + "|" + castTo) {
-    /* any type to string. */
+        /* any type to string. */
       case "INT_TYPE|STRING_TYPE":
       case "FLOAT_TYPE|STRING_TYPE":
       case "DOUBLE_TYPE|STRING_TYPE":
@@ -152,14 +156,20 @@ public class CastExpression extends BinaryExpression {
 
   /**
    * Returns the string for a primitive cast: '((' + targetType + ')' + left + ')'.
-   * 
+   *
    * @param targetType string of the type to be casted to.
    * @param parameters parameters that are needed to determine the output type.
    * @return string that used for numeric type cast.
    */
-  private String getPrimitiveTypeCastString(final String targetType, final ExpressionOperatorParameter parameters) {
-    return new StringBuilder().append("((").append(targetType).append(")(").append(getLeft().getJavaString(parameters))
-        .append("))").toString();
+  private String getPrimitiveTypeCastString(
+      final String targetType, final ExpressionOperatorParameter parameters) {
+    return new StringBuilder()
+        .append("((")
+        .append(targetType)
+        .append(")(")
+        .append(getLeft().getJavaString(parameters))
+        .append("))")
+        .toString();
   }
 
   @Override
@@ -174,20 +184,26 @@ public class CastExpression extends BinaryExpression {
 
     switch (getCastType(castFrom, castTo)) {
       case LONG_TO_INT:
-        return getLeftFunctionCallString("com.google.common.primitives.Ints.checkedCast", parameters);
+        return getLeftFunctionCallString(
+            "com.google.common.primitives.Ints.checkedCast", parameters);
       case FLOATS_TO_INT:
-        return getLeftFunctionCallWithParameterString("com.google.common.math.DoubleMath.roundToInt", parameters,
+        return getLeftFunctionCallWithParameterString(
+            "com.google.common.math.DoubleMath.roundToInt",
+            parameters,
             "java.math.RoundingMode.DOWN");
       case INT_OR_LONG_TO_FLOAT:
         return getPrimitiveTypeCastString("float", parameters);
       case DOUBLE_TO_FLOAT:
-        return getLeftFunctionCallString("edu.washington.escience.myria.util.MathUtils.castDoubleToFloat", parameters);
+        return getLeftFunctionCallString(
+            "edu.washington.escience.myria.util.MathUtils.castDoubleToFloat", parameters);
       case NUM_TO_DOUBLE:
         return getPrimitiveTypeCastString("double", parameters);
       case INT_TO_LONG:
         return getPrimitiveTypeCastString("long", parameters);
       case FLOATS_TO_LONG:
-        return getLeftFunctionCallWithParameterString("com.google.common.math.DoubleMath.roundToLong", parameters,
+        return getLeftFunctionCallWithParameterString(
+            "com.google.common.math.DoubleMath.roundToLong",
+            parameters,
             "java.math.RoundingMode.DOWN");
       case TO_STR:
         return getLeftFunctionCallString("String.valueOf", parameters);

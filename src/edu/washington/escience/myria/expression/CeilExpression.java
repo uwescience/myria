@@ -20,7 +20,7 @@ public class CeilExpression extends UnaryExpression {
 
   /**
    * Take the {@link Math.ceil} of the operand.
-   * 
+   *
    * @param operand the operand.
    */
   public CeilExpression(final ExpressionOperator operand) {

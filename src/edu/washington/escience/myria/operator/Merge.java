@@ -31,14 +31,14 @@ public final class Merge extends NAryOperator {
 
   /**
    * Contains a tuple batch for each child.
-   * 
+   *
    * Contains null if there is no batch.
    */
   private transient ArrayList<TupleBatch> childBatches = new ArrayList<TupleBatch>();
 
   /**
    * Index that points to the current location in the tupleBuffer of all children.
-   * 
+   *
    * -1 indicates an invalid pointer.
    */
   private transient ArrayList<Integer> childRowIndexes = new ArrayList<Integer>();
@@ -67,7 +67,9 @@ public final class Merge extends NAryOperator {
       Preconditions.checkArgument(leftTb.numTuples() > leftPointer);
       Preconditions.checkArgument(rightTb.numTuples() > rightPointer);
       for (int columnIndex = 0; columnIndex < sortedColumns.length; columnIndex++) {
-        int compared = TupleUtils.cellCompare(leftTb, columnIndex, leftPointer, rightTb, columnIndex, rightPointer);
+        int compared =
+            TupleUtils.cellCompare(
+                leftTb, columnIndex, leftPointer, rightTb, columnIndex, rightPointer);
         if (compared != 0) {
           if (ascending[columnIndex]) {
             return compared;
@@ -84,7 +86,7 @@ public final class Merge extends NAryOperator {
    * @param children the children to be merged.
    * @param sortedColumns the indexes of columns that tuples are ordered by in the input
    * @param ascending true for each column that is ordered ascending
-   * 
+   *
    * */
   public Merge(final Operator[] children, final int[] sortedColumns, final boolean[] ascending) {
     super(children);
@@ -217,7 +219,7 @@ public final class Merge extends NAryOperator {
 
   /**
    * Define how the tuples are sorted in the input and how they should be sorted in the output.
-   * 
+   *
    * @param sortedColumns the indexes of columns that tuples are ordered by in the input
    * @param ascending true for each column that is ordered ascending
    */

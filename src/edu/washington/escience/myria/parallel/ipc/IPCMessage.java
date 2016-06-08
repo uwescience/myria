@@ -15,7 +15,12 @@ public interface IPCMessage {
    * */
   enum Header {
     /***/
-    EOS, BOS, CONNECT, DISCONNECT, PING, DATA
+    EOS,
+    BOS,
+    CONNECT,
+    DISCONNECT,
+    PING,
+    DATA
   }
 
   /**
@@ -26,41 +31,42 @@ public interface IPCMessage {
     /**
      * EOS.
      * */
-    static final Meta EOS = new Meta() {
+    static final Meta EOS =
+        new Meta() {
 
-      private final ChannelBuffer serializeValue = ChannelBuffers.wrappedBuffer(new byte[] { (byte) Header.EOS
-          .ordinal() });
+          private final ChannelBuffer serializeValue =
+              ChannelBuffers.wrappedBuffer(new byte[] {(byte) Header.EOS.ordinal()});
 
-      @Override
-      public ChannelBuffer serialize() {
-        return serializeValue;
-      }
+          @Override
+          public ChannelBuffer serialize() {
+            return serializeValue;
+          }
 
-      @Override
-      public String toString() {
-        return "IPCMessage.Meta.EOS";
-      }
-
-    };
+          @Override
+          public String toString() {
+            return "IPCMessage.Meta.EOS";
+          }
+        };
 
     /**
      * DISCONNECT.
      * */
-    static final Meta DISCONNECT = new Meta() {
+    static final Meta DISCONNECT =
+        new Meta() {
 
-      private final ChannelBuffer serializeValue = ChannelBuffers.wrappedBuffer(new byte[] { (byte) Header.DISCONNECT
-          .ordinal() });
+          private final ChannelBuffer serializeValue =
+              ChannelBuffers.wrappedBuffer(new byte[] {(byte) Header.DISCONNECT.ordinal()});
 
-      @Override
-      public ChannelBuffer serialize() {
-        return serializeValue;
-      }
+          @Override
+          public ChannelBuffer serialize() {
+            return serializeValue;
+          }
 
-      @Override
-      public String toString() {
-        return "IPCMessage.Meta.DISCONNECT";
-      }
-    };
+          @Override
+          public String toString() {
+            return "IPCMessage.Meta.DISCONNECT";
+          }
+        };
 
     /**
      * BOS.
@@ -110,7 +116,6 @@ public interface IPCMessage {
       public String toString() {
         return "IPCMessage.Meta.BOS(" + streamID + ")";
       }
-
     }
 
     /**
@@ -161,32 +166,31 @@ public interface IPCMessage {
       public String toString() {
         return "IPCMessage.Meta.CONNECT(" + remoteID + ")";
       }
-
     }
 
     /**
      * PING.
      * */
-    static final Meta PING = new Meta() {
+    static final Meta PING =
+        new Meta() {
 
-      private final ChannelBuffer serializeValue = ChannelBuffers.wrappedBuffer(new byte[] { (byte) Header.PING
-          .ordinal() });
+          private final ChannelBuffer serializeValue =
+              ChannelBuffers.wrappedBuffer(new byte[] {(byte) Header.PING.ordinal()});
 
-      @Override
-      public ChannelBuffer serialize() {
-        return serializeValue;
-      }
+          @Override
+          public ChannelBuffer serialize() {
+            return serializeValue;
+          }
 
-      @Override
-      public String toString() {
-        return "IPCMessage.Meta.PING";
-      }
-
-    };
+          @Override
+          public String toString() {
+            return "IPCMessage.Meta.PING";
+          }
+        };
 
     /**
      * Serialize the message.
-     * 
+     *
      * @return serialize result.
      * */
     public abstract ChannelBuffer serialize();
@@ -211,12 +215,11 @@ public interface IPCMessage {
         return null;
       }
     }
-
   }
 
   /**
    * Unit of IPC transmission.
-   * 
+   *
    * @param <PAYLOAD> the type of payload. Currently, this PAYLOAD could only be: TransportMessage.QUERY,
    *          TransportMessage.CONTROL.
    * */
@@ -257,8 +260,8 @@ public interface IPCMessage {
     /**
      * serialize head.
      * */
-    static final ChannelBuffer SERIALIZE_HEAD = ChannelBuffers
-        .wrappedBuffer(new byte[] { (byte) Header.DATA.ordinal() });
+    static final ChannelBuffer SERIALIZE_HEAD =
+        ChannelBuffers.wrappedBuffer(new byte[] {(byte) Header.DATA.ordinal()});
 
     /**
      * @param sourceRemote the source remote id.
@@ -283,7 +286,7 @@ public interface IPCMessage {
 
   /**
    * Unit of IPC Stream.
-   * 
+   *
    * @param <PAYLOAD> the type of payload. Currently, this PAYLOAD could only be TupleBatch.
    * */
   public final class StreamData<PAYLOAD> extends Data<PAYLOAD> {
@@ -337,8 +340,8 @@ public interface IPCMessage {
      * @return the wrapped StreamData message.
      * */
     @SuppressWarnings("unchecked")
-    public static <PAYLOAD> StreamData<PAYLOAD> wrap(final int sourceRemote, final long streamID,
-        final Object maybePayload) {
+    public static <PAYLOAD> StreamData<PAYLOAD> wrap(
+        final int sourceRemote, final long streamID, final Object maybePayload) {
       if (maybePayload instanceof StreamData) {
         return (StreamData<PAYLOAD>) maybePayload;
       } else {
@@ -348,9 +351,11 @@ public interface IPCMessage {
 
     @Override
     public String toString() {
-      return String.format("IPCMessage.StreamData(from:%1$d,stream:%2$d,payload:%3$s)", getRemoteID(), streamID,
+      return String.format(
+          "IPCMessage.StreamData(from:%1$d,stream:%2$d,payload:%3$s)",
+          getRemoteID(),
+          streamID,
           getPayload());
     }
   }
-
 }

@@ -35,10 +35,13 @@ public class StatefulApplyTest {
       tbb.putString(0, "Foo" + i);
     }
 
-    Expression initializer = new Expression("counter", new ConstantExpression(Type.LONG_TYPE, "-1"));
+    Expression initializer =
+        new Expression("counter", new ConstantExpression(Type.LONG_TYPE, "-1"));
     Expression expression = new Expression("index", new StateExpression(0));
     Expression increment =
-        new Expression(new PlusExpression(new StateExpression(0), new ConstantExpression(Type.LONG_TYPE, "1")));
+        new Expression(
+            new PlusExpression(
+                new StateExpression(0), new ConstantExpression(Type.LONG_TYPE, "1")));
 
     ImmutableList.Builder<Expression> Initializers = ImmutableList.builder();
     Initializers.add(initializer);
@@ -50,7 +53,8 @@ public class StatefulApplyTest {
     Updaters.add(increment);
 
     StatefulApply apply =
-        new StatefulApply(new TupleSource(tbb), Expressions.build(), Initializers.build(), Updaters.build());
+        new StatefulApply(
+            new TupleSource(tbb), Expressions.build(), Initializers.build(), Updaters.build());
 
     apply.open(TestEnvVars.get());
     TupleBatch result;
@@ -80,13 +84,19 @@ public class StatefulApplyTest {
       tbb.putLong(0, i + 1);
     }
 
-    Expression initializeCounter = new Expression("counter", new ConstantExpression(Type.LONG_TYPE, "0"));
+    Expression initializeCounter =
+        new Expression("counter", new ConstantExpression(Type.LONG_TYPE, "0"));
     Expression initializeSum = new Expression("sum", new ConstantExpression(Type.LONG_TYPE, "0"));
     Expression updateCounter =
-        new Expression(new PlusExpression(new StateExpression(0), new ConstantExpression(Type.LONG_TYPE, "1")));
-    Expression updateSum = new Expression(new PlusExpression(new StateExpression(1), new VariableExpression(0)));
+        new Expression(
+            new PlusExpression(
+                new StateExpression(0), new ConstantExpression(Type.LONG_TYPE, "1")));
+    Expression updateSum =
+        new Expression(new PlusExpression(new StateExpression(1), new VariableExpression(0)));
 
-    Expression avg = new Expression("average", new IntDivideExpression(new StateExpression(1), new StateExpression(0)));
+    Expression avg =
+        new Expression(
+            "average", new IntDivideExpression(new StateExpression(1), new StateExpression(0)));
 
     ImmutableList.Builder<Expression> Initializers = ImmutableList.builder();
     Initializers.add(initializeCounter);
@@ -101,7 +111,8 @@ public class StatefulApplyTest {
     Expressions.add(new Expression("number", new VariableExpression(0)));
 
     StatefulApply apply =
-        new StatefulApply(new TupleSource(tbb), Expressions.build(), Initializers.build(), Updaters.build());
+        new StatefulApply(
+            new TupleSource(tbb), Expressions.build(), Initializers.build(), Updaters.build());
 
     apply.open(TestEnvVars.get());
     TupleBatch result;
@@ -132,10 +143,14 @@ public class StatefulApplyTest {
     Expression emitExpression = new Expression("x", new StateExpression(0));
     Expression initExpression = new Expression("cntr", new ConstantExpression(0));
     Expression updateExpression =
-        new Expression("cntr", new PlusExpression(new StateExpression(0), new ConstantExpression(1)));
+        new Expression(
+            "cntr", new PlusExpression(new StateExpression(0), new ConstantExpression(1)));
     StatefulApply apply =
-        new StatefulApply(singleton, ImmutableList.of(emitExpression), ImmutableList.of(initExpression), ImmutableList
-            .of(updateExpression));
+        new StatefulApply(
+            singleton,
+            ImmutableList.of(emitExpression),
+            ImmutableList.of(initExpression),
+            ImmutableList.of(updateExpression));
 
     apply.open(TestEnvVars.get());
     assertEquals("x", apply.getSchema().getColumnName(0));
@@ -166,7 +181,10 @@ public class StatefulApplyTest {
     Expression initExpression = new Expression("old", new ConstantExpression(-1));
     Expression updateExpression = new Expression("old", new VariableExpression(0));
     StatefulApply apply =
-        new StatefulApply(new TupleSource(tbb), ImmutableList.of(emitExpression), ImmutableList.of(initExpression),
+        new StatefulApply(
+            new TupleSource(tbb),
+            ImmutableList.of(emitExpression),
+            ImmutableList.of(initExpression),
             ImmutableList.of(updateExpression));
 
     apply.open(TestEnvVars.get());
@@ -185,5 +203,4 @@ public class StatefulApplyTest {
     apply.close();
     assertEquals(2, old);
   }
-
 }

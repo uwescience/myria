@@ -9,7 +9,7 @@ import edu.washington.escience.myria.column.DateTimeColumn;
 
 /**
  * A mutable column of Date values.
- * 
+ *
  */
 public final class DateTimeMutableColumn extends MutableColumn<DateTime> {
   /** Required for Java serialization. */
@@ -21,7 +21,7 @@ public final class DateTimeMutableColumn extends MutableColumn<DateTime> {
 
   /**
    * Constructs a new column.
-   * 
+   *
    * @param data the data
    * @param numData number of tuples.
    * */

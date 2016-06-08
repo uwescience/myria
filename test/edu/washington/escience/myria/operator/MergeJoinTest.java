@@ -25,12 +25,13 @@ public class MergeJoinTest {
   @Test
   public void testMergeJoin() throws DbException {
     final Schema leftSchema =
-        new Schema(ImmutableList.of(Type.LONG_TYPE, Type.STRING_TYPE), ImmutableList.of("id", "name"));
+        new Schema(
+            ImmutableList.of(Type.LONG_TYPE, Type.STRING_TYPE), ImmutableList.of("id", "name"));
     TupleBatchBuffer leftTbb = new TupleBatchBuffer(leftSchema);
 
     {
-      long[] ids = new long[] { 0, 2, 2, 2, 3, 5, 6, 8, 8, 10 };
-      String[] names = new String[] { "a", "b", "c", "d", "e", "f", "g", "h", "i", "j" };
+      long[] ids = new long[] {0, 2, 2, 2, 3, 5, 6, 8, 8, 10};
+      String[] names = new String[] {"a", "b", "c", "d", "e", "f", "g", "h", "i", "j"};
 
       for (int i = 0; i < ids.length; i++) {
         leftTbb.putLong(0, ids[i]);
@@ -39,13 +40,14 @@ public class MergeJoinTest {
     }
 
     final Schema rightSchema =
-        new Schema(ImmutableList.of(Type.LONG_TYPE, Type.STRING_TYPE), ImmutableList.of("id2", "name2"));
+        new Schema(
+            ImmutableList.of(Type.LONG_TYPE, Type.STRING_TYPE), ImmutableList.of("id2", "name2"));
 
     TupleBatchBuffer rightTbb = new TupleBatchBuffer(rightSchema);
 
     {
-      long[] ids = new long[] { 1, 2, 2, 4, 8, 8, 10 };
-      String[] names = new String[] { "a", "b", "c", "d", "e", "f", "g" };
+      long[] ids = new long[] {1, 2, 2, 4, 8, 8, 10};
+      String[] names = new String[] {"a", "b", "c", "d", "e", "f", "g"};
 
       for (int i = 0; i < ids.length; i++) {
         rightTbb.putLong(0, ids[i]);
@@ -58,7 +60,7 @@ public class MergeJoinTest {
     children[1] = new TupleSource(rightTbb);
 
     BinaryOperator join =
-        new MergeJoin(children[0], children[1], new int[] { 0 }, new int[] { 0 }, new boolean[] { true });
+        new MergeJoin(children[0], children[1], new int[] {0}, new int[] {0}, new boolean[] {true});
     join.open(null);
     TupleBatch tb;
     final ArrayList<TupleBatch> batches = new ArrayList<TupleBatch>();
@@ -76,7 +78,9 @@ public class MergeJoinTest {
 
   @Test
   public void testMergeJoinCross() throws DbException {
-    final Schema schema = new Schema(ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE), ImmutableList.of("id", "value"));
+    final Schema schema =
+        new Schema(
+            ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE), ImmutableList.of("id", "value"));
     TupleBatchBuffer[] randomTuples = new TupleBatchBuffer[2];
     randomTuples[0] = new TupleBatchBuffer(schema);
     randomTuples[1] = new TupleBatchBuffer(schema);
@@ -97,7 +101,13 @@ public class MergeJoinTest {
     children[1] = new TupleSource(randomTuples[1]);
 
     BinaryOperator join =
-        new MergeJoin(sb.build(), children[0], children[1], new int[] { 0 }, new int[] { 0 }, new boolean[] { true });
+        new MergeJoin(
+            sb.build(),
+            children[0],
+            children[1],
+            new int[] {0},
+            new int[] {0},
+            new boolean[] {true});
     join.open(null);
     TupleBatch tb = null;
     int count = 0;
@@ -141,7 +151,13 @@ public class MergeJoinTest {
     children[1] = new TupleSource(randomTuples[1]);
 
     BinaryOperator join =
-        new MergeJoin(sb.build(), children[0], children[1], new int[] { 0 }, new int[] { 0 }, new boolean[] { true });
+        new MergeJoin(
+            sb.build(),
+            children[0],
+            children[1],
+            new int[] {0},
+            new int[] {0},
+            new boolean[] {true});
     join.open(null);
     TupleBatch tb;
     final ArrayList<Entry<Long, String>> entries = new ArrayList<Entry<Long, String>>();
@@ -169,12 +185,13 @@ public class MergeJoinTest {
   @Test
   public void testMergeJoinOnMultipleKeys() throws DbException {
     final Schema leftSchema =
-        new Schema(ImmutableList.of(Type.LONG_TYPE, Type.STRING_TYPE), ImmutableList.of("id", "name"));
+        new Schema(
+            ImmutableList.of(Type.LONG_TYPE, Type.STRING_TYPE), ImmutableList.of("id", "name"));
     TupleBatchBuffer leftTbb = new TupleBatchBuffer(leftSchema);
 
     {
-      long[] ids = new long[] { 0, 2, 2, 2, 3, 5, 6, 8, 8, 10 };
-      String[] names = new String[] { "c", "c", "c", "b", "b", "b", "b", "a", "a", "a" };
+      long[] ids = new long[] {0, 2, 2, 2, 3, 5, 6, 8, 8, 10};
+      String[] names = new String[] {"c", "c", "c", "b", "b", "b", "b", "a", "a", "a"};
 
       for (int i = 0; i < ids.length; i++) {
         leftTbb.putLong(0, ids[i]);
@@ -183,13 +200,14 @@ public class MergeJoinTest {
     }
 
     final Schema rightSchema =
-        new Schema(ImmutableList.of(Type.LONG_TYPE, Type.STRING_TYPE), ImmutableList.of("id2", "name2"));
+        new Schema(
+            ImmutableList.of(Type.LONG_TYPE, Type.STRING_TYPE), ImmutableList.of("id2", "name2"));
 
     TupleBatchBuffer rightTbb = new TupleBatchBuffer(rightSchema);
 
     {
-      long[] ids = new long[] { 1, 2, 2, 4, 8, 8, 10, 11 };
-      String[] names = new String[] { "d", "d", "c", "c", "a", "a", "a", "a" };
+      long[] ids = new long[] {1, 2, 2, 4, 8, 8, 10, 11};
+      String[] names = new String[] {"d", "d", "c", "c", "a", "a", "a", "a"};
 
       for (int i = 0; i < ids.length; i++) {
         rightTbb.putLong(0, ids[i]);
@@ -202,7 +220,12 @@ public class MergeJoinTest {
     children[1] = new TupleSource(rightTbb);
 
     BinaryOperator join =
-        new MergeJoin(children[0], children[1], new int[] { 0, 1 }, new int[] { 0, 1 }, new boolean[] { true, false });
+        new MergeJoin(
+            children[0],
+            children[1],
+            new int[] {0, 1},
+            new int[] {0, 1},
+            new boolean[] {true, false});
     join.open(null);
     TupleBatch tb;
     final ArrayList<TupleBatch> batches = new ArrayList<TupleBatch>();
@@ -221,12 +244,13 @@ public class MergeJoinTest {
   @Test
   public void testOrderByAndMergeJoin() throws DbException {
     final Schema leftSchema =
-        new Schema(ImmutableList.of(Type.LONG_TYPE, Type.STRING_TYPE), ImmutableList.of("id", "name"));
+        new Schema(
+            ImmutableList.of(Type.LONG_TYPE, Type.STRING_TYPE), ImmutableList.of("id", "name"));
     TupleBatchBuffer leftTbb = new TupleBatchBuffer(leftSchema);
 
     {
-      long[] ids = new long[] { 2, 3, 5, 6, 8, 8, 10, 0, 2, 2 };
-      String[] names = new String[] { "d", "e", "f", "g", "h", "i", "j", "a", "b", "c" };
+      long[] ids = new long[] {2, 3, 5, 6, 8, 8, 10, 0, 2, 2};
+      String[] names = new String[] {"d", "e", "f", "g", "h", "i", "j", "a", "b", "c"};
 
       for (int i = 0; i < ids.length; i++) {
         leftTbb.putLong(0, ids[i]);
@@ -235,13 +259,14 @@ public class MergeJoinTest {
     }
 
     final Schema rightSchema =
-        new Schema(ImmutableList.of(Type.LONG_TYPE, Type.STRING_TYPE), ImmutableList.of("id2", "name2"));
+        new Schema(
+            ImmutableList.of(Type.LONG_TYPE, Type.STRING_TYPE), ImmutableList.of("id2", "name2"));
 
     TupleBatchBuffer rightTbb = new TupleBatchBuffer(rightSchema);
 
     {
-      long[] ids = new long[] { 1, 2, 2, 4, 8, 8, 10 };
-      String[] names = new String[] { "a", "b", "c", "d", "e", "f", "g" };
+      long[] ids = new long[] {1, 2, 2, 4, 8, 8, 10};
+      String[] names = new String[] {"a", "b", "c", "d", "e", "f", "g"};
 
       for (int i = 0; i < ids.length; i++) {
         rightTbb.putLong(0, ids[i]);
@@ -253,10 +278,11 @@ public class MergeJoinTest {
     children[0] = new TupleSource(leftTbb);
     children[1] = new TupleSource(rightTbb);
 
-    InMemoryOrderBy sort0 = new InMemoryOrderBy(children[0], new int[] { 0 }, new boolean[] { false });
-    InMemoryOrderBy sort1 = new InMemoryOrderBy(children[1], new int[] { 0 }, new boolean[] { false });
+    InMemoryOrderBy sort0 = new InMemoryOrderBy(children[0], new int[] {0}, new boolean[] {false});
+    InMemoryOrderBy sort1 = new InMemoryOrderBy(children[1], new int[] {0}, new boolean[] {false});
 
-    BinaryOperator join = new MergeJoin(sort0, sort1, new int[] { 0 }, new int[] { 0 }, new boolean[] { false });
+    BinaryOperator join =
+        new MergeJoin(sort0, sort1, new int[] {0}, new int[] {0}, new boolean[] {false});
     join.open(null);
     TupleBatch tb;
     final ArrayList<TupleBatch> batches = new ArrayList<TupleBatch>();

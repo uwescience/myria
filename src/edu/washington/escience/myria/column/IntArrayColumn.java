@@ -4,12 +4,12 @@ import com.google.common.base.Preconditions;
 
 /**
  * A column of Int values.
- * 
- * 
+ *
+ *
  */
 public final class IntArrayColumn extends IntColumn {
   /**
-   * 
+   *
    */
   private static final long serialVersionUID = 1L;
   /** Internal representation of the column data. */
@@ -19,7 +19,7 @@ public final class IntArrayColumn extends IntColumn {
 
   /**
    * Constructs a new column.
-   * 
+   *
    * @param data the data
    * @param numData number of tuples.
    * */

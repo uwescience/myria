@@ -53,7 +53,7 @@ public class Tuple implements Cloneable, AppendableTable, ReadableTable, Seriali
 
   /**
    * Returns a value and checks arguments.
-   * 
+   *
    * @param column the column index.
    * @param row the row index.
    * @return the value at the desired position.
@@ -131,7 +131,7 @@ public class Tuple implements Cloneable, AppendableTable, ReadableTable, Seriali
 
   /**
    * Set value.
-   * 
+   *
    * @param columnIdx the column index
    * @param value the value to set
    */
@@ -141,7 +141,8 @@ public class Tuple implements Cloneable, AppendableTable, ReadableTable, Seriali
 
   @Override
   public ReadableColumn asColumn(final int column) {
-    return new ReadableSubColumn(this, Preconditions.checkElementIndex(column, schema.numColumns()));
+    return new ReadableSubColumn(
+        this, Preconditions.checkElementIndex(column, schema.numColumns()));
   }
 
   @Override

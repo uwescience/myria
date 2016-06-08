@@ -10,8 +10,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
  * Holds the info for a JDBC Connection.
- * 
- * 
+ *
+ *
  */
 public final class JdbcInfo extends ConnectionInfo implements Serializable {
   /** Required for Java serialization. */
@@ -21,27 +21,21 @@ public final class JdbcInfo extends ConnectionInfo implements Serializable {
   /** The key under which password is stored in the Properties file. */
   public static final String JDBC_PROP_PASSWORD_KEY = "password";
   /** The classname of the JDBC driver. */
-  @JsonProperty
-  private final String driverClass;
+  @JsonProperty private final String driverClass;
   /** The DBMS, e.g., "mysql". */
-  @JsonProperty
-  private final String dbms;
+  @JsonProperty private final String dbms;
   /** The hostname/IP. */
-  @JsonProperty
-  private final String host;
+  @JsonProperty private final String host;
   /** The port. */
-  @JsonProperty
-  private final int port;
+  @JsonProperty private final int port;
   /** The database to connect to. */
-  @JsonProperty
-  private final String database;
+  @JsonProperty private final String database;
   /** Any additional properties the connection may need. */
-  @JsonProperty
-  private final Properties properties;
+  @JsonProperty private final Properties properties;
 
   /**
    * Creates a new JdbcInfo object.
-   * 
+   *
    * @param driverClass the classname of the JDBC driver.
    * @param dbms the DBMS, e.g., "mysql".
    * @param host the hostname/IP.
@@ -51,14 +45,20 @@ public final class JdbcInfo extends ConnectionInfo implements Serializable {
    * @param password the password.
    * @return a new JdbcInfo containing this information.
    */
-  public static JdbcInfo of(final String driverClass, final String dbms, final String host, final int port,
-      final String database, final String username, final String password) {
+  public static JdbcInfo of(
+      final String driverClass,
+      final String dbms,
+      final String host,
+      final int port,
+      final String database,
+      final String username,
+      final String password) {
     return new JdbcInfo(driverClass, dbms, host, port, database, username, password, null);
   }
 
   /**
    * Creates a new JdbcInfo object.
-   * 
+   *
    * @param driverClass the classname of the JDBC driver.
    * @param dbms the DBMS, e.g., "mysql".
    * @param host the hostname/IP.
@@ -70,17 +70,21 @@ public final class JdbcInfo extends ConnectionInfo implements Serializable {
    * @return a new JdbcInfo containing this information.
    */
   @JsonCreator
-  public static JdbcInfo of(@JsonProperty("driverClass") final String driverClass,
-      @JsonProperty("dbms") final String dbms, @JsonProperty("host") final String host,
-      @JsonProperty("port") final int port, @JsonProperty("database") final String database,
-      @JsonProperty("username") final String username, @JsonProperty("password") final String password,
+  public static JdbcInfo of(
+      @JsonProperty("driverClass") final String driverClass,
+      @JsonProperty("dbms") final String dbms,
+      @JsonProperty("host") final String host,
+      @JsonProperty("port") final int port,
+      @JsonProperty("database") final String database,
+      @JsonProperty("username") final String username,
+      @JsonProperty("password") final String password,
       @JsonProperty("properties") final Properties properties) {
     return new JdbcInfo(driverClass, dbms, host, port, database, username, password, properties);
   }
 
   /**
    * Creates a new JdbcInfo object.
-   * 
+   *
    * @param driverClass the classname of the JDBC driver.
    * @param dbms the DBMS, e.g., "mysql".
    * @param host the hostname/IP.
@@ -90,8 +94,15 @@ public final class JdbcInfo extends ConnectionInfo implements Serializable {
    * @param password the password.
    * @param properties extra properties for the JDBC connection.
    */
-  private JdbcInfo(final String driverClass, final String dbms, final String host, final int port,
-      final String database, final String username, final String password, final Properties properties) {
+  private JdbcInfo(
+      final String driverClass,
+      final String dbms,
+      final String host,
+      final int port,
+      final String database,
+      final String username,
+      final String password,
+      final Properties properties) {
     this.driverClass = Objects.requireNonNull(driverClass);
     this.dbms = Objects.requireNonNull(dbms);
     this.host = Objects.requireNonNull(host);

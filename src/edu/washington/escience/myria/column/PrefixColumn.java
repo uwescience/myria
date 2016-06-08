@@ -10,7 +10,7 @@ import edu.washington.escience.myria.Type;
 
 /**
  * Provides the abstraction of a full Column that is a prefix of an existing column.
- * 
+ *
  * @param <T> the type of the inner Column.
  */
 public class PrefixColumn<T extends Comparable<?>> extends Column<T> {
@@ -24,14 +24,17 @@ public class PrefixColumn<T extends Comparable<?>> extends Column<T> {
 
   /**
    * Creates a prefix of rows in the specified inner column.
-   * 
+   *
    * @param inner the {@link Column} to be prefixed.
    * @param length the number of rows of the inner Column to be retained.
    */
   public PrefixColumn(@Nonnull final Column<T> inner, final int length) {
     this.inner = inner;
-    Preconditions.checkArgument(length <= inner.size(),
-        "Error: cannot take a prefix of length %s from a batch of length %s", length, inner.size());
+    Preconditions.checkArgument(
+        length <= inner.size(),
+        "Error: cannot take a prefix of length %s from a batch of length %s",
+        length,
+        inner.size());
     numRows = length;
   }
 

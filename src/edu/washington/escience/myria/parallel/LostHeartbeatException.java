@@ -6,15 +6,14 @@ package edu.washington.escience.myria.parallel;
 public class LostHeartbeatException extends InterruptedException {
 
   /**
-   * 
+   *
    */
   private static final long serialVersionUID = 1L;
 
   /**
    * Default constructor.
    * */
-  public LostHeartbeatException() {
-  }
+  public LostHeartbeatException() {}
 
   /**
    * @param s the message describing the detail of this Exception.
@@ -22,5 +21,4 @@ public class LostHeartbeatException extends InterruptedException {
   public LostHeartbeatException(final String s) {
     super(s);
   }
-
 }

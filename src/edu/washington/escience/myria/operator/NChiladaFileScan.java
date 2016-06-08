@@ -33,9 +33,9 @@ import edu.washington.escience.myria.storage.TupleBatchBuffer;
 /**
  * Parse NChilada file formats. See <a
  * href="http://librarian.phys.washington.edu/astro/index.php/Research:NChilada_File_Format">NChilada wiki</a>
- * 
+ *
  * @author leelee
- * 
+ *
  */
 public class NChiladaFileScan extends LeafOperator {
 
@@ -114,19 +114,74 @@ public class NChiladaFileScan extends LeafOperator {
   private static final String GAS_DIR = "/gas";
 
   /** The column types for NChilada schema. */
-  private static final List<Type> NCHILADA_COLUMN_TYPES = ImmutableList.of(Type.INT_TYPE, Type.INT_TYPE,
-      Type.FLOAT_TYPE, Type.FLOAT_TYPE, Type.FLOAT_TYPE, Type.FLOAT_TYPE, Type.FLOAT_TYPE, Type.FLOAT_TYPE,
-      Type.FLOAT_TYPE, Type.FLOAT_TYPE, Type.FLOAT_TYPE, Type.FLOAT_TYPE, Type.FLOAT_TYPE, Type.FLOAT_TYPE,
-      Type.FLOAT_TYPE, Type.FLOAT_TYPE, Type.FLOAT_TYPE, Type.FLOAT_TYPE, Type.FLOAT_TYPE, Type.FLOAT_TYPE,
-      Type.FLOAT_TYPE, Type.FLOAT_TYPE, Type.FLOAT_TYPE, Type.FLOAT_TYPE, Type.FLOAT_TYPE, Type.FLOAT_TYPE,
-      Type.FLOAT_TYPE, Type.FLOAT_TYPE, Type.INT_TYPE, Type.STRING_TYPE);
+  private static final List<Type> NCHILADA_COLUMN_TYPES =
+      ImmutableList.of(
+          Type.INT_TYPE,
+          Type.INT_TYPE,
+          Type.FLOAT_TYPE,
+          Type.FLOAT_TYPE,
+          Type.FLOAT_TYPE,
+          Type.FLOAT_TYPE,
+          Type.FLOAT_TYPE,
+          Type.FLOAT_TYPE,
+          Type.FLOAT_TYPE,
+          Type.FLOAT_TYPE,
+          Type.FLOAT_TYPE,
+          Type.FLOAT_TYPE,
+          Type.FLOAT_TYPE,
+          Type.FLOAT_TYPE,
+          Type.FLOAT_TYPE,
+          Type.FLOAT_TYPE,
+          Type.FLOAT_TYPE,
+          Type.FLOAT_TYPE,
+          Type.FLOAT_TYPE,
+          Type.FLOAT_TYPE,
+          Type.FLOAT_TYPE,
+          Type.FLOAT_TYPE,
+          Type.FLOAT_TYPE,
+          Type.FLOAT_TYPE,
+          Type.FLOAT_TYPE,
+          Type.FLOAT_TYPE,
+          Type.FLOAT_TYPE,
+          Type.FLOAT_TYPE,
+          Type.INT_TYPE,
+          Type.STRING_TYPE);
   /** The column names for NChilada schema. */
-  private static final List<String> NCHILADA_COLUMN_NAMES = ImmutableList.of(IORD, IGASORD, ESN_RATE, FE_MASS_FRAC,
-      FE_MASS_FRACDOT, GAS_DENSITY, H_I, HE_I, HE_I_I, METALSDOT, OX_MASS_FRAC, OX_MASS_FRACDOT, COOLONTIME, DEN, MASS,
-      METALS, POS_X, POS_Y, POS_Z, POT, SMOOTHLENGTH, SOFT, VEL_X, VEL_Y, VEL_Z, MASSFORM, TFORM, TEMPERATURE, "grp",
-      "type");
+  private static final List<String> NCHILADA_COLUMN_NAMES =
+      ImmutableList.of(
+          IORD,
+          IGASORD,
+          ESN_RATE,
+          FE_MASS_FRAC,
+          FE_MASS_FRACDOT,
+          GAS_DENSITY,
+          H_I,
+          HE_I,
+          HE_I_I,
+          METALSDOT,
+          OX_MASS_FRAC,
+          OX_MASS_FRACDOT,
+          COOLONTIME,
+          DEN,
+          MASS,
+          METALS,
+          POS_X,
+          POS_Y,
+          POS_Z,
+          POT,
+          SMOOTHLENGTH,
+          SOFT,
+          VEL_X,
+          VEL_Y,
+          VEL_Z,
+          MASSFORM,
+          TFORM,
+          TEMPERATURE,
+          "grp",
+          "type");
   /** Schema for all NChilada files. */
-  private static final Schema NCHILADA_SCHEMA = new Schema(NCHILADA_COLUMN_TYPES, NCHILADA_COLUMN_NAMES);
+  private static final Schema NCHILADA_SCHEMA =
+      new Schema(NCHILADA_COLUMN_TYPES, NCHILADA_COLUMN_NAMES);
 
   /** The magic number that indicates the file format is NChilada. */
   private static final int NCHILADA_FORMAT = 1062053;
@@ -167,12 +222,14 @@ public class NChiladaFileScan extends LeafOperator {
    */
   private enum ParticleType {
     /** There are three types of particles. */
-    DARK, GAS, STAR
+    DARK,
+    GAS,
+    STAR
   }
 
   /**
    * Construct a new NChiladaFileScanObject.
-   * 
+   *
    * @param particleDirectoryPath The full path of the directory that contains gas, star, dark directories.
    * @param groupFilePath The full path of the file that contains groupNumber in the order of gas, dark, star.
    */
@@ -185,7 +242,7 @@ public class NChiladaFileScan extends LeafOperator {
 
   /**
    * Construct a new NChiladaFileScanObject. This constructor is only meant to be called from test.
-   * 
+   *
    * @param groupInputStream The InputStream object for group.
    * @param gasAttributeFilesToDataInput A mapping from gas attribute file names to their respective DataInput object.
    * @param starAttributeFilesToDataInput A mapping from star attribute file names to their respective DataInput object.
@@ -193,7 +250,8 @@ public class NChiladaFileScan extends LeafOperator {
    */
   @SuppressWarnings("unused")
   // used via reflection in the tests
-  private NChiladaFileScan(final InputStream groupInputStream,
+  private NChiladaFileScan(
+      final InputStream groupInputStream,
       final Map<String, DataInput> gasAttributeFilesToDataInput,
       final Map<String, DataInput> starAttributeFilesToDataInput,
       final Map<String, DataInput> darkAttributeFilesToDataInput) {
@@ -217,7 +275,7 @@ public class NChiladaFileScan extends LeafOperator {
 
   /**
    * Create InputStream object for the given group file path.
-   * 
+   *
    * @param groupFilePath The file path to create InputStream object.
    * @return the group InputStream object.
    * @throws DbException The DbException.
@@ -237,7 +295,7 @@ public class NChiladaFileScan extends LeafOperator {
 
   /**
    * Create DataInput object for every files in the directory.
-   * 
+   *
    * @param path The directory path.
    * @return a mapping from filename to DataInput object.
    * @throws DbException The DbException.
@@ -280,11 +338,12 @@ public class NChiladaFileScan extends LeafOperator {
     if (starAttributeFilesToDataInput == null) {
       starAttributeFilesToDataInput = getFilesToDataInput(particleDirectoryPath + STAR_DIR);
     }
-    Preconditions
-        .checkArgument(darkAttributeFilesToDataInput != null, "darkAttributeFilesToDataInput has not been set");
-    Preconditions
-        .checkArgument(starAttributeFilesToDataInput != null, "starAttributeFilesToDataInput has not been set");
-    Preconditions.checkArgument(gasAttributeFilesToDataInput != null, "gasAttributeFilesToDataInput has not been set");
+    Preconditions.checkArgument(
+        darkAttributeFilesToDataInput != null, "darkAttributeFilesToDataInput has not been set");
+    Preconditions.checkArgument(
+        starAttributeFilesToDataInput != null, "starAttributeFilesToDataInput has not been set");
+    Preconditions.checkArgument(
+        gasAttributeFilesToDataInput != null, "gasAttributeFilesToDataInput has not been set");
     buffer = new TupleBatchBuffer(getSchema());
     initBasedOnParticleType(ParticleType.GAS);
     initBasedOnParticleType(ParticleType.DARK);
@@ -292,20 +351,24 @@ public class NChiladaFileScan extends LeafOperator {
     if (groupInputStream == null) {
       groupInputStream = getGroupFileStream(groupFilePath);
     }
-    Preconditions.checkArgument(groupInputStream != null, "FileScan group input stream has not been set.");
+    Preconditions.checkArgument(
+        groupInputStream != null, "FileScan group input stream has not been set.");
     groupScanner = new Scanner(new BufferedReader(new InputStreamReader(groupInputStream)));
     int numGroup = groupScanner.nextInt();
     int numTot = numGas + numDark + numStar;
     if (numGroup != numTot) {
-      throw new DbException("Number of group is different from the number of particles. numGroup: " + numGroup
-          + " num particles: " + numTot);
+      throw new DbException(
+          "Number of group is different from the number of particles. numGroup: "
+              + numGroup
+              + " num particles: "
+              + numTot);
     }
     lineNumber = 0;
   }
 
   /**
    * Initialize fileNamesToDataInput and number of particles based on the given type of particles.
-   * 
+   *
    * @param pType The type of the particles.
    * @throws DbException The DbException.
    */
@@ -333,8 +396,9 @@ public class NChiladaFileScan extends LeafOperator {
       for (String fileName : fileNameToDataInput.keySet()) {
         DataInput dataInputStream = fileNameToDataInput.get(fileName);
         // Read header of the file. (magic, time, iHighWord, nbodies, ndim, code)
-        Preconditions.checkArgument(dataInputStream.readInt() == NCHILADA_FORMAT, fileName
-            + " is not in NChilada format."); // Read and verify magic.
+        Preconditions.checkArgument(
+            dataInputStream.readInt() == NCHILADA_FORMAT,
+            fileName + " is not in NChilada format."); // Read and verify magic.
         // Time.
         dataInputStream.readDouble();
         // IHighWord.
@@ -344,8 +408,9 @@ public class NChiladaFileScan extends LeafOperator {
         // Ndim;
         int ndim = dataInputStream.readInt();
         if (fileName.equals(POS_FILE_NAME) || fileName.equals(VEL_FILE_NAME)) {
-          Preconditions.checkArgument(ndim == VEL_POS_DIM, fileName + "should have " + VEL_POS_DIM + " instead of "
-              + ndim + ".");
+          Preconditions.checkArgument(
+              ndim == VEL_POS_DIM,
+              fileName + "should have " + VEL_POS_DIM + " instead of " + ndim + ".");
         }
         if (numRows == -1) {
           numRows = nbodies;
@@ -364,13 +429,20 @@ public class NChiladaFileScan extends LeafOperator {
               throw new DbException("Invalide pType: " + pType);
           }
         } else {
-          Preconditions.checkArgument(numRows == nbodies, "The files do not have the same number of rows. numRows: "
-              + numRows + " nbodies: " + nbodies + " fileName: " + fileName);
+          Preconditions.checkArgument(
+              numRows == nbodies,
+              "The files do not have the same number of rows. numRows: "
+                  + numRows
+                  + " nbodies: "
+                  + nbodies
+                  + " fileName: "
+                  + fileName);
         }
         // Code.
         int code = dataInputStream.readInt();
-        Preconditions.checkArgument(code == FLOAT_CODE || code == INT_CODE, "This code format: " + code
-            + " is not being expected.");
+        Preconditions.checkArgument(
+            code == FLOAT_CODE || code == INT_CODE,
+            "This code format: " + code + " is not being expected.");
 
         // After the header, there is the maximum and minimum value in the file, both in the same data type as the rest
         // of the file.
@@ -399,7 +471,7 @@ public class NChiladaFileScan extends LeafOperator {
    * pot , vel, HeII, iord, mass, OxMassFrac, soft, OxMassFracdot, gas smoothlength, FeMassFracdot, ESNRate, Metalsdot,
    * GasDensity, metals, temperature, FeMassFrac, coolontime. Attributes of dark particle: den, pos, pot, vel, iord,
    * mass, soft, smoothlength.
-   * 
+   *
    * @param pType The particle type.
    * @throws DbException The DbException.
    */
@@ -433,12 +505,18 @@ public class NChiladaFileScan extends LeafOperator {
         Type type = NCHILADA_COLUMN_TYPES.get(i);
         try {
           if (type.equals(Type.FLOAT_TYPE)) {
-            if (columnNames.equals(POS_X) || columnNames.equals(POS_Y) || columnNames.equals(POS_Z)) {
+            if (columnNames.equals(POS_X)
+                || columnNames.equals(POS_Y)
+                || columnNames.equals(POS_Z)) {
               dataInputStream = fileNameToDataInput.get(POS_FILE_NAME);
-              Preconditions.checkArgument(dataInputStream != null, "Cannot find dataInputStream for " + POS_FILE_NAME);
-            } else if (columnNames.equals(VEL_X) || columnNames.equals(VEL_Y) || columnNames.equals(VEL_Z)) {
+              Preconditions.checkArgument(
+                  dataInputStream != null, "Cannot find dataInputStream for " + POS_FILE_NAME);
+            } else if (columnNames.equals(VEL_X)
+                || columnNames.equals(VEL_Y)
+                || columnNames.equals(VEL_Z)) {
               dataInputStream = fileNameToDataInput.get(VEL_FILE_NAME);
-              Preconditions.checkArgument(dataInputStream != null, "Cannot find dataInputStream for " + VEL_FILE_NAME);
+              Preconditions.checkArgument(
+                  dataInputStream != null, "Cannot find dataInputStream for " + VEL_FILE_NAME);
             }
             if (dataInputStream != null) {
               buffer.putFloat(column++, dataInputStream.readFloat());
@@ -460,7 +538,8 @@ public class NChiladaFileScan extends LeafOperator {
       buffer.putString(column++, pType.toString().toLowerCase());
       final String groupRest = groupScanner.nextLine().trim();
       if (groupRest.length() > 0) {
-        throw new DbException("groupFile: Unexpected output at the end of line " + lineNumber + ": " + groupRest);
+        throw new DbException(
+            "groupFile: Unexpected output at the end of line " + lineNumber + ": " + groupRest);
       }
       numRows--;
     }

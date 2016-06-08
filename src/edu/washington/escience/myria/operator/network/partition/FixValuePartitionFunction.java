@@ -5,9 +5,9 @@ import javax.annotation.Nonnull;
 import edu.washington.escience.myria.storage.TupleBatch;
 
 /**
- * 
+ *
  * return a fixed integer.
- * 
+ *
  */
 public final class FixValuePartitionFunction extends PartitionFunction {
 
@@ -21,7 +21,7 @@ public final class FixValuePartitionFunction extends PartitionFunction {
 
   /**
    * @param value the fix value this partition function returns.
-   * 
+   *
    * */
   public FixValuePartitionFunction(final int value) {
     super(1);
@@ -36,5 +36,4 @@ public final class FixValuePartitionFunction extends PartitionFunction {
     }
     return result;
   }
-
 }

@@ -37,7 +37,7 @@ public class ConstantValueColumn extends Column<Comparable<?>> {
   /**
    * Instantiate a new ConstantValueColumn that returns the specified values of the specified time and has the specified
    * number of rows.
-   * 
+   *
    * @param value the value of all rows in this column.
    * @param type the type of the value.
    * @param size the number of rows.

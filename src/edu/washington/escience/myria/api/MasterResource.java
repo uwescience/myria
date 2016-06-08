@@ -9,14 +9,14 @@ import edu.washington.escience.myria.api.encoding.VersionEncoding;
 
 /**
  * This is the class that handles API calls that return workers.
- * 
+ *
  * @author jwang
  */
 @Path("/server")
 public final class MasterResource {
   /**
    * Get the version information of Myria at build time.
-   * 
+   *
    * @return a {@link VersionEncoding}.
    */
   @GET

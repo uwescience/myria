@@ -6,13 +6,15 @@ import edu.washington.escience.myria.util.MyriaUtils;
 
 /**
  * A JSON-able wrapper for the expected wire message for a new dataset.
- * 
+ *
  */
 public class ShuffleConsumerEncoding extends AbstractConsumerEncoding<GenericShuffleConsumer> {
 
   @Override
   public GenericShuffleConsumer construct(ConstructArgs args) {
-    return new GenericShuffleConsumer(null, MyriaUtils.getSingleElement(getRealOperatorIds()), MyriaUtils
-        .integerSetToIntArray(getRealWorkerIds()));
+    return new GenericShuffleConsumer(
+        null,
+        MyriaUtils.getSingleElement(getRealOperatorIds()),
+        MyriaUtils.integerSetToIntArray(getRealWorkerIds()));
   }
 }

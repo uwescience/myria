@@ -17,10 +17,10 @@ import edu.washington.escience.myria.util.HashUtils;
 
 /**
  * Implementation of set difference. Duplicates are not preserved.
- * 
+ *
  * This implementation is similar to RightHashJoin: read the right relation into a hash table; probe the left relation's
  * tuples with this hash table; eliminate duplicates by adding the left relation to the hash table.
- * 
+ *
  * @author whitaker
  */
 public final class Difference extends BinaryOperator {
@@ -40,7 +40,7 @@ public final class Difference extends BinaryOperator {
 
   /**
    * Instantiate a set difference operator: left EXCEPT right.
-   * 
+   *
    * @param left the operator being subtracted from.
    * @param right the operator to be subtracted.
    */
@@ -50,10 +50,10 @@ public final class Difference extends BinaryOperator {
 
   /**
    * Mark a particular tuple as seen.
-   * 
+   *
    * @param batch A tuple batch
    * @param rowNum The index of the tuple among the valid tuples in batch.
-   * 
+   *
    * @return true if this is the first time this tuple has been encountered.
    */
   private boolean markAsSeen(final TupleBatch batch, final int rowNum) {
@@ -86,7 +86,7 @@ public final class Difference extends BinaryOperator {
 
   /**
    * Process a batch of tuples that are removed from the final result.
-   * 
+   *
    * @param batch A tuple batch
    */
   private void processRightChildTB(final TupleBatch batch) {
@@ -98,9 +98,9 @@ public final class Difference extends BinaryOperator {
 
   /**
    * Process a batch of tuples that are subtracted from to produce the final result.
-   * 
+   *
    * @param batch A tuple batch.
-   * 
+   *
    * @return A filtered batch of tuples.
    */
   private TupleBatch processLeftChildTB(final TupleBatch batch) {

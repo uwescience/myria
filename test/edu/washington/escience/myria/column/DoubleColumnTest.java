@@ -17,7 +17,8 @@ public class DoubleColumnTest {
     final DoubleColumnBuilder original = new DoubleColumnBuilder();
     original.appendDouble(1).appendDouble(2).appendDouble(5).appendDouble(11);
     final ColumnMessage serialized = original.build().serializeToProto();
-    final DoubleColumn deserialized = DoubleColumnBuilder.buildFromProtobuf(serialized, original.size());
+    final DoubleColumn deserialized =
+        DoubleColumnBuilder.buildFromProtobuf(serialized, original.size());
     assertTrue(original.build().toString().equals(deserialized.toString()));
   }
 
@@ -39,5 +40,4 @@ public class DoubleColumnTest {
     builder.appendDouble(0.0);
     builder.build();
   }
-
 }

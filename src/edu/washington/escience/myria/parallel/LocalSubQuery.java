@@ -31,7 +31,7 @@ public abstract class LocalSubQuery implements Comparable<LocalSubQuery> {
 
   /**
    * get the ftMode.
-   * 
+   *
    * @return the ft mode.
    */
   public final FTMode getFTMode() {
@@ -45,12 +45,15 @@ public abstract class LocalSubQuery implements Comparable<LocalSubQuery> {
 
   /**
    * Instantiate a new {@link LocalSubQuery} with the specified fault tolerance and profiling modes.
-   * 
+   *
    * @param subQueryId the id of this subquery.
    * @param ftMode the fault-tolerance mode of this subquery.
    * @param profilingMode the profiling mode of this subquery.
    */
-  public LocalSubQuery(final SubQueryId subQueryId, final FTMode ftMode, @Nonnull final Set<ProfilingMode> profilingMode) {
+  public LocalSubQuery(
+      final SubQueryId subQueryId,
+      final FTMode ftMode,
+      @Nonnull final Set<ProfilingMode> profilingMode) {
     this.subQueryId = subQueryId;
     this.ftMode = ftMode;
     this.profilingMode = profilingMode;
@@ -121,7 +124,7 @@ public abstract class LocalSubQuery implements Comparable<LocalSubQuery> {
 
   /**
    * enable/disable output channels of the root(producer) of the {@link LocalFragment}.
-   * 
+   *
    * @param workerId the worker that changed its status.
    * @param enable enable/disable all the channels that belong to the worker.
    */
@@ -151,7 +154,7 @@ public abstract class LocalSubQuery implements Comparable<LocalSubQuery> {
 
   /**
    * Returns the local fragments of this subquery.
-   * 
+   *
    * @return the local fragments of this subquery.
    */
   abstract Set<LocalFragment> getFragments();

@@ -1,7 +1,7 @@
 package edu.washington.escience.myria.coordinator;
 
 /**
- * 
+ *
  */
 public class ConfigFileException extends Exception {
 
@@ -14,5 +14,4 @@ public class ConfigFileException extends Exception {
   public ConfigFileException(final Throwable cause) {
     super(cause);
   }
-
 }

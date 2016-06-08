@@ -5,8 +5,7 @@ import edu.washington.escience.myria.operator.SetGlobal;
 
 public class SetGlobalEncoding extends UnaryOperatorEncoding<SetGlobal> {
 
-  @Required
-  public String key;
+  @Required public String key;
 
   @Override
   public SetGlobal construct(ConstructArgs args) {

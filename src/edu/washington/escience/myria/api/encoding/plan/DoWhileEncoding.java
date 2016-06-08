@@ -12,10 +12,8 @@ import edu.washington.escience.myria.parallel.DoWhile;
 import edu.washington.escience.myria.parallel.QueryPlan;
 
 public class DoWhileEncoding extends SubPlanEncoding {
-  @Required
-  public List<SubPlanEncoding> body;
-  @Required
-  public String condition;
+  @Required public List<SubPlanEncoding> body;
+  @Required public String condition;
 
   @Override
   public QueryPlan getPlan() {
@@ -45,5 +43,4 @@ public class DoWhileEncoding extends SubPlanEncoding {
     }
     return ret.build();
   }
-
 }

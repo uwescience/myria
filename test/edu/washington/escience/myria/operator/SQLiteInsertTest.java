@@ -36,7 +36,7 @@ public class SQLiteInsertTest {
 
   /**
    * Setup what we need for the tests in this file.
-   * 
+   *
    * @throws Exception if setUp fails.
    */
   @BeforeClass
@@ -69,7 +69,8 @@ public class SQLiteInsertTest {
     final RelationKey tuplesKey = RelationKey.of("test", "test", "my_tuples");
 
     final TupleSource source = new TupleSource(data);
-    final DbInsert insert = new DbInsert(source, tuplesKey, SQLiteInfo.of(tempFile.getAbsolutePath()));
+    final DbInsert insert =
+        new DbInsert(source, tuplesKey, SQLiteInfo.of(tempFile.getAbsolutePath()));
     insert.open(null);
     while (!insert.eos()) {
       insert.nextReady();
@@ -79,8 +80,10 @@ public class SQLiteInsertTest {
     final SQLiteConnection sqliteConnection = new SQLiteConnection(tempFile);
     sqliteConnection.open(false);
     final SQLiteStatement statement =
-        sqliteConnection.prepare("SELECT COUNT(*) FROM " + tuplesKey.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE)
-            + ";");
+        sqliteConnection.prepare(
+            "SELECT COUNT(*) FROM "
+                + tuplesKey.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE)
+                + ";");
     assertTrue(statement.step());
     final int inserted = statement.columnInt(0);
     assertEquals(NUM_TUPLES, inserted);
@@ -89,12 +92,11 @@ public class SQLiteInsertTest {
 
   /**
    * Cleanup what we created.
-   * 
+   *
    * @throws Exception if setUp fails.
    */
   @AfterClass
   public static void cleanUp() throws Exception {
     FSUtils.blockingDeleteDirectory(tempDir.toString());
   }
-
 }

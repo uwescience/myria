@@ -10,13 +10,12 @@ public class LeapFrogJoinEncoding extends NaryOperatorEncoding<LeapFrogJoin> {
 
   public List<String> argColumnNames;
   public boolean[] indexOnFirst;
-  @Required
-  public int[][][] joinFieldMapping;
-  @Required
-  public int[][] outputFieldMapping;
+  @Required public int[][][] joinFieldMapping;
+  @Required public int[][] outputFieldMapping;
 
   @Override
   public LeapFrogJoin construct(ConstructArgs args) throws MyriaApiException {
-    return new LeapFrogJoin(null, joinFieldMapping, outputFieldMapping, argColumnNames, indexOnFirst);
+    return new LeapFrogJoin(
+        null, joinFieldMapping, outputFieldMapping, argColumnNames, indexOnFirst);
   }
 }

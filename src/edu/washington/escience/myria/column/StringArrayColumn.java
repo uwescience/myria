@@ -4,8 +4,8 @@ import com.google.common.base.Preconditions;
 
 /**
  * A column of String values.
- * 
- * 
+ *
+ *
  */
 public final class StringArrayColumn extends StringColumn {
   /** Required for Java serialization. */
@@ -17,7 +17,7 @@ public final class StringArrayColumn extends StringColumn {
 
   /**
    * Constructs a new column.
-   * 
+   *
    * @param data the data
    * @param numStrings number of tuples.
    * */
@@ -28,7 +28,7 @@ public final class StringArrayColumn extends StringColumn {
 
   /**
    * Returns the element at the specified row in this column.
-   * 
+   *
    * @param row row of element to return.
    * @return the element at the specified row in this column.
    */

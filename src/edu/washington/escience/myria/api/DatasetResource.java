@@ -61,7 +61,7 @@ import edu.washington.escience.myria.storage.TupleBatch;
 
 /**
  * This is the class that handles API calls to create or fetch datasets.
- * 
+ *
  */
 @Consumes(MediaType.APPLICATION_JSON)
 @Produces(MyriaApiConstants.JSON_UTF_8)
@@ -69,11 +69,9 @@ import edu.washington.escience.myria.storage.TupleBatch;
 @Api(value = "/dataset", description = "Operations on datasets")
 public final class DatasetResource {
   /** The Myria server running on the master. */
-  @Context
-  private Server server;
+  @Context private Server server;
   /** Information about the URL of the request. */
-  @Context
-  private UriInfo uriInfo;
+  @Context private UriInfo uriInfo;
 
   /** Logger. */
   protected static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(DatasetResource.class);
@@ -87,12 +85,23 @@ public final class DatasetResource {
    */
   @GET
   @ApiOperation(value = "get information about a dataset", response = DatasetStatus.class)
-  @ApiResponses(value = { @ApiResponse(code = HttpStatus.SC_NOT_FOUND, message = "Dataset not found", response = String.class) })
+  @ApiResponses(
+    value = {
+      @ApiResponse(
+        code = HttpStatus.SC_NOT_FOUND,
+        message = "Dataset not found",
+        response = String.class
+      )
+    }
+  )
   @Path("/user-{userName}/program-{programName}/relation-{relationName}")
-  public Response getDataset(@PathParam("userName") final String userName,
-      @PathParam("programName") final String programName, @PathParam("relationName") final String relationName)
+  public Response getDataset(
+      @PathParam("userName") final String userName,
+      @PathParam("programName") final String programName,
+      @PathParam("relationName") final String relationName)
       throws DbException {
-    DatasetStatus status = server.getDatasetStatus(RelationKey.of(userName, programName, relationName));
+    DatasetStatus status =
+        server.getDatasetStatus(RelationKey.of(userName, programName, relationName));
     if (status == null) {
       /* Not found, throw a 404 (Not Found) */
       throw new MyriaApiException(Status.NOT_FOUND, "That dataset was not found");
@@ -117,7 +126,7 @@ public final class DatasetResource {
 
   /**
    * Helper function to parse a format string, with default value "csv".
-   * 
+   *
    * @param format the format string, with default value "csv".
    * @return the cleaned-up format string.
    */
@@ -153,11 +162,14 @@ public final class DatasetResource {
    * @throws CatalogException
    */
   @GET
-  @Produces({ MediaType.APPLICATION_OCTET_STREAM, MyriaApiConstants.JSON_UTF_8 })
+  @Produces({MediaType.APPLICATION_OCTET_STREAM, MyriaApiConstants.JSON_UTF_8})
   @Path("/user-{userName}/program-{programName}/relation-{relationName}/data")
-  public Response getDatasetData(@PathParam("userName") final String userName,
-      @PathParam("programName") final String programName, @PathParam("relationName") final String relationName,
-      @QueryParam("format") final String format) throws DbException, IOException {
+  public Response getDatasetData(
+      @PathParam("userName") final String userName,
+      @PathParam("programName") final String programName,
+      @PathParam("relationName") final String relationName,
+      @QueryParam("format") final String format)
+      throws DbException, IOException {
 
     /* Start building the response. */
     ResponseBuilder response = Response.ok();
@@ -186,10 +198,13 @@ public final class DatasetResource {
       } else if (validFormat.equals("tsv")) {
         writer = new CsvTupleWriter('\t');
       } else {
-        throw new IllegalStateException("format should have been validated by now, and yet we got here");
+        throw new IllegalStateException(
+            "format should have been validated by now, and yet we got here");
       }
       ContentDisposition contentDisposition =
-          ContentDisposition.type("attachment").fileName(relationKey.toString() + '.' + validFormat).build();
+          ContentDisposition.type("attachment")
+              .fileName(relationKey.toString() + '.' + validFormat)
+              .build();
 
       response.header("Content-Disposition", contentDisposition);
       response.type(MediaType.APPLICATION_OCTET_STREAM);
@@ -199,7 +214,8 @@ public final class DatasetResource {
       writer = new JsonTupleWriter();
     } else {
       /* Should not be possible to get here. */
-      throw new IllegalStateException("format should have been validated by now, and yet we got here");
+      throw new IllegalStateException(
+          "format should have been validated by now, and yet we got here");
     }
 
     /* Start streaming tuples into the TupleWriter, and through the pipes to the PipedStreamingOutput. */
@@ -217,9 +233,10 @@ public final class DatasetResource {
    * @throws IOException
    */
   @GET
-  @Produces({ MediaType.APPLICATION_OCTET_STREAM, MyriaApiConstants.JSON_UTF_8 })
+  @Produces({MediaType.APPLICATION_OCTET_STREAM, MyriaApiConstants.JSON_UTF_8})
   @Path("/download_test")
-  public Response getQueryData(@QueryParam("num_tb") final int numTB, @QueryParam("format") final String format)
+  public Response getQueryData(
+      @QueryParam("num_tb") final int numTB, @QueryParam("format") final String format)
       throws DbException, IOException {
     /* Start building the response. */
     ResponseBuilder response = Response.ok();
@@ -245,7 +262,8 @@ public final class DatasetResource {
       } else if (validFormat.equals("tsv")) {
         writer = new CsvTupleWriter('\t');
       } else {
-        throw new IllegalStateException("format should have been validated by now, and yet we got here");
+        throw new IllegalStateException(
+            "format should have been validated by now, and yet we got here");
       }
       ContentDisposition contentDisposition =
           ContentDisposition.type("attachment").fileName("test" + '.' + validFormat).build();
@@ -258,7 +276,8 @@ public final class DatasetResource {
       writer = new JsonTupleWriter();
     } else {
       /* Should not be possible to get here. */
-      throw new IllegalStateException("format should have been validated by now, and yet we got here");
+      throw new IllegalStateException(
+          "format should have been validated by now, and yet we got here");
     }
 
     /* Start streaming tuples into the TupleWriter, and through the pipes to the PipedStreamingOutput. */
@@ -270,7 +289,7 @@ public final class DatasetResource {
 
   /**
    * Replace a dataset with new contents.
-   * 
+   *
    * @param is InputStream containing the data set * @param userName the user who owns the target relation.
    * @param userName the user who owns the target relation.
    * @param programName the program to which the target relation belongs.
@@ -282,9 +301,13 @@ public final class DatasetResource {
   @PUT
   @Consumes(MediaType.APPLICATION_OCTET_STREAM)
   @Path("/user-{userName}/program-{programName}/relation-{relationName}/data")
-  public Response replaceDataset(final InputStream is, @PathParam("userName") final String userName,
-      @PathParam("programName") final String programName, @PathParam("relationName") final String relationName,
-      @QueryParam("format") final String format) throws DbException {
+  public Response replaceDataset(
+      final InputStream is,
+      @PathParam("userName") final String userName,
+      @PathParam("programName") final String programName,
+      @PathParam("relationName") final String relationName,
+      @QueryParam("format") final String format)
+      throws DbException {
     RelationKey relationKey = RelationKey.of(userName, programName, relationName);
     Schema schema;
     try {
@@ -295,7 +318,8 @@ public final class DatasetResource {
 
     if (schema == null) {
       /* Not found, throw a 404 (Not Found) */
-      throw new MyriaApiException(Status.NOT_FOUND, "The dataset was not found: " + relationKey.toString());
+      throw new MyriaApiException(
+          Status.NOT_FOUND, "The dataset was not found: " + relationKey.toString());
     }
 
     String validFormat = validateFormat(format);
@@ -328,10 +352,13 @@ public final class DatasetResource {
    */
   @DELETE
   @Path("/user-{userName}/program-{programName}/relation-{relationName}/")
-  public Response deleteDataset(@PathParam("userName") final String userName,
-      @PathParam("programName") final String programName, @PathParam("relationName") final String relationName)
+  public Response deleteDataset(
+      @PathParam("userName") final String userName,
+      @PathParam("programName") final String programName,
+      @PathParam("relationName") final String relationName)
       throws DbException {
-    DatasetStatus status = server.getDatasetStatus(RelationKey.of(userName, programName, relationName));
+    DatasetStatus status =
+        server.getDatasetStatus(RelationKey.of(userName, programName, relationName));
     if (status == null) {
       /* Dataset not found, throw a 404 (Not Found) */
       throw new MyriaApiException(Status.NOT_FOUND, "That dataset was not found");
@@ -355,11 +382,14 @@ public final class DatasetResource {
    */
   @POST
   @Path("/user-{userName}/program-{programName}/relation-{relationName}/persist/")
-  public Response persistDataset(@PathParam("userName") final String userName,
-      @PathParam("programName") final String programName, @PathParam("relationName") final String relationName)
+  public Response persistDataset(
+      @PathParam("userName") final String userName,
+      @PathParam("programName") final String programName,
+      @PathParam("relationName") final String relationName)
       throws DbException {
 
-    DatasetStatus status = server.getDatasetStatus(RelationKey.of(userName, programName, relationName));
+    DatasetStatus status =
+        server.getDatasetStatus(RelationKey.of(userName, programName, relationName));
     RelationKey relationKey = status.getRelationKey();
     long queryId;
 
@@ -386,14 +416,25 @@ public final class DatasetResource {
 
     URI datasetUri = getCanonicalResourcePath(uriInfo, dataset.relationKey);
     ResponseBuilder builder = Response.created(datasetUri);
-    return doIngest(dataset.relationKey, new FileScan(dataset.source, dataset.schema, dataset.delimiter, dataset.quote,
-        dataset.escape, dataset.numberOfSkippedLines), dataset.workers, dataset.indexes, dataset.overwrite, builder,
+    return doIngest(
+        dataset.relationKey,
+        new FileScan(
+            dataset.source,
+            dataset.schema,
+            dataset.delimiter,
+            dataset.quote,
+            dataset.escape,
+            dataset.numberOfSkippedLines),
+        dataset.workers,
+        dataset.indexes,
+        dataset.overwrite,
+        builder,
         dataset.partitionFunction);
   }
 
   /**
    * An endpoint for creating new datasets with streaming data.
-   * 
+   *
    * @param relationKey the name of the dataset to be ingested.
    * @param schema the {@link Schema} of the data.
    * @param binary optional: if <code>true</code>, indicates that supplied data should be interpreted as a packed binary
@@ -411,11 +452,16 @@ public final class DatasetResource {
    */
   @POST
   @Consumes(MediaType.MULTIPART_FORM_DATA)
-  public Response newDatasetMultipart(@FormDataParam("relationKey") final RelationKey relationKey,
-      @FormDataParam("schema") final Schema schema, @FormDataParam("delimiter") final Character delimiter,
-      @FormDataParam("binary") final Boolean binary, @FormDataParam("isLittleEndian") final Boolean isLittleEndian,
-      @FormDataParam("overwrite") final Boolean overwrite, @FormDataParam("data") final InputStream data,
-      @FormDataParam("partitionFunction") final PartitionFunction partitionFunction) throws DbException {
+  public Response newDatasetMultipart(
+      @FormDataParam("relationKey") final RelationKey relationKey,
+      @FormDataParam("schema") final Schema schema,
+      @FormDataParam("delimiter") final Character delimiter,
+      @FormDataParam("binary") final Boolean binary,
+      @FormDataParam("isLittleEndian") final Boolean isLittleEndian,
+      @FormDataParam("overwrite") final Boolean overwrite,
+      @FormDataParam("data") final InputStream data,
+      @FormDataParam("partitionFunction") final PartitionFunction partitionFunction)
+      throws DbException {
 
     Preconditions.checkArgument(relationKey != null, "Missing required field relationKey.");
     Preconditions.checkArgument(schema != null, "Missing required field schama.");
@@ -423,7 +469,9 @@ public final class DatasetResource {
 
     Operator scan;
     if (MoreObjects.firstNonNull(binary, false)) {
-      scan = new BinaryFileScan(schema, new InputStreamSource(data), MoreObjects.firstNonNull(isLittleEndian, false));
+      scan =
+          new BinaryFileScan(
+              schema, new InputStreamSource(data), MoreObjects.firstNonNull(isLittleEndian, false));
     } else {
       scan = new FileScan(new InputStreamSource(data), schema, delimiter);
     }
@@ -432,13 +480,19 @@ public final class DatasetResource {
     URI datasetUri = getCanonicalResourcePath(uriInfo, relationKey);
     ResponseBuilder builder = Response.created(datasetUri);
 
-    return doIngest(relationKey, scan, null, null, overwrite, builder, MoreObjects.firstNonNull(partitionFunction,
-        new RoundRobinPartitionFunction(null)));
+    return doIngest(
+        relationKey,
+        scan,
+        null,
+        null,
+        overwrite,
+        builder,
+        MoreObjects.firstNonNull(partitionFunction, new RoundRobinPartitionFunction(null)));
   }
 
   /**
    * Ingest a dataset; replace any previous version.
-   * 
+   *
    * @param relationKey the destination relation for the data
    * @param source the source of tuples to be loaded
    * @param workers the workers on which the data will be stored
@@ -449,20 +503,29 @@ public final class DatasetResource {
    * @return the created dataset resource
    * @throws DbException on any error
    */
-  private Response doIngest(final RelationKey relationKey, final Operator source, final Set<Integer> workers,
-      final List<List<IndexRef>> indexes, final Boolean overwrite, final ResponseBuilder builder,
-      @Nonnull final PartitionFunction pf) throws DbException {
+  private Response doIngest(
+      final RelationKey relationKey,
+      final Operator source,
+      final Set<Integer> workers,
+      final List<List<IndexRef>> indexes,
+      final Boolean overwrite,
+      final ResponseBuilder builder,
+      @Nonnull final PartitionFunction pf)
+      throws DbException {
 
     /* Validate the workers that will ingest this dataset. */
     if (server.getAliveWorkers().size() == 0) {
-      throw new MyriaApiException(Status.SERVICE_UNAVAILABLE, "There are no alive workers to receive this dataset.");
+      throw new MyriaApiException(
+          Status.SERVICE_UNAVAILABLE, "There are no alive workers to receive this dataset.");
     }
     if (workers != null) {
       if (workers.size() == 0) {
-        throw new MyriaApiException(Status.BAD_REQUEST, "User-specified workers (optional) cannot be null.");
+        throw new MyriaApiException(
+            Status.BAD_REQUEST, "User-specified workers (optional) cannot be null.");
       }
       if (!server.getAliveWorkers().containsAll(workers)) {
-        throw new MyriaApiException(Status.SERVICE_UNAVAILABLE, "Not all requested workers are alive");
+        throw new MyriaApiException(
+            Status.SERVICE_UNAVAILABLE, "Not all requested workers are alive");
       }
     }
     Set<Integer> actualWorkers = MoreObjects.firstNonNull(workers, server.getAliveWorkers());
@@ -500,11 +563,13 @@ public final class DatasetResource {
   @POST
   @Path("/importDataset")
   @Consumes(MediaType.APPLICATION_JSON)
-  public Response importDataset(final DatasetEncoding dataset, @Context final UriInfo uriInfo) throws DbException {
+  public Response importDataset(final DatasetEncoding dataset, @Context final UriInfo uriInfo)
+      throws DbException {
 
     /* If we already have a dataset by this name, tell the user there's a conflict. */
     try {
-      if (!MoreObjects.firstNonNull(dataset.overwrite, Boolean.FALSE) && server.getSchema(dataset.relationKey) != null) {
+      if (!MoreObjects.firstNonNull(dataset.overwrite, Boolean.FALSE)
+          && server.getSchema(dataset.relationKey) != null) {
         /* Found, throw a 409 (Conflict) */
         throw new MyriaApiException(Status.CONFLICT, "That dataset already exists.");
       }
@@ -514,7 +579,8 @@ public final class DatasetResource {
 
     /* For import, force the user to supply the workers. */
     if (dataset.workers == null) {
-      throw new MyriaApiException(Status.BAD_REQUEST,
+      throw new MyriaApiException(
+          Status.BAD_REQUEST,
           "When importing, you need to specify which workers have the dataset.");
     }
 
@@ -526,7 +592,6 @@ public final class DatasetResource {
 
     /* In the response, tell the client the path to the relation. */
     return Response.created(getCanonicalResourcePath(uriInfo, dataset.relationKey)).build();
-
   }
 
   /**
@@ -538,13 +603,21 @@ public final class DatasetResource {
   @POST
   @Path("/tipsy")
   @Consumes(MediaType.APPLICATION_JSON)
-  public Response newTipsyDataset(final TipsyDatasetEncoding dataset, @Context final UriInfo uriInfo)
-      throws DbException {
+  public Response newTipsyDataset(
+      final TipsyDatasetEncoding dataset, @Context final UriInfo uriInfo) throws DbException {
     dataset.validate();
 
-    ResponseBuilder builder = Response.created(getCanonicalResourcePath(uriInfo, dataset.relationKey));
-    Operator tipsyScan = new TipsyFileScan(dataset.tipsyFilename, dataset.iorderFilename, dataset.grpFilename);
-    return doIngest(dataset.relationKey, tipsyScan, dataset.workers, dataset.indexes, false, builder,
+    ResponseBuilder builder =
+        Response.created(getCanonicalResourcePath(uriInfo, dataset.relationKey));
+    Operator tipsyScan =
+        new TipsyFileScan(dataset.tipsyFilename, dataset.iorderFilename, dataset.grpFilename);
+    return doIngest(
+        dataset.relationKey,
+        tipsyScan,
+        dataset.workers,
+        dataset.indexes,
+        false,
+        builder,
         dataset.partitionFunction);
   }
 
@@ -554,7 +627,8 @@ public final class DatasetResource {
    * @throws DbException if there is an error accessing the Catalog.
    */
   @GET
-  public List<DatasetStatus> getDatasets(@QueryParam("queryId") final Integer queryId) throws DbException {
+  public List<DatasetStatus> getDatasets(@QueryParam("queryId") final Integer queryId)
+      throws DbException {
     List<DatasetStatus> datasets;
     if (queryId != null) {
       datasets = server.getDatasetsForQuery(queryId);
@@ -574,7 +648,8 @@ public final class DatasetResource {
    */
   @GET
   @Path("/user-{userName}")
-  public List<DatasetStatus> getDatasetsForUser(@PathParam("userName") final String userName) throws DbException {
+  public List<DatasetStatus> getDatasetsForUser(@PathParam("userName") final String userName)
+      throws DbException {
     List<DatasetStatus> datasets = server.getDatasetsForUser(userName);
     for (DatasetStatus status : datasets) {
       status.setUri(getCanonicalResourcePath(uriInfo, status.getRelationKey()));
@@ -590,8 +665,10 @@ public final class DatasetResource {
    */
   @GET
   @Path("/user-{userName}/program-{programName}")
-  public List<DatasetStatus> getDatasetsForUser(@PathParam("userName") final String userName,
-      @PathParam("programName") final String programName) throws DbException {
+  public List<DatasetStatus> getDatasetsForUser(
+      @PathParam("userName") final String userName,
+      @PathParam("programName") final String programName)
+      throws DbException {
     List<DatasetStatus> datasets = server.getDatasetsForProgram(userName, programName);
     for (DatasetStatus status : datasets) {
       status.setUri(getCanonicalResourcePath(uriInfo, status.getRelationKey()));
@@ -629,8 +706,11 @@ public final class DatasetResource {
    * @param relationKey the key of the relation.
    * @return a builder for the canonical URL for this API.
    */
-  public static UriBuilder getCanonicalResourcePathBuilder(final UriInfo uriInfo, final RelationKey relationKey) {
-    return getCanonicalResourcePathBuilder(uriInfo).path("user-" + relationKey.getUserName()).path(
-        "program-" + relationKey.getProgramName()).path("relation-" + relationKey.getRelationName());
+  public static UriBuilder getCanonicalResourcePathBuilder(
+      final UriInfo uriInfo, final RelationKey relationKey) {
+    return getCanonicalResourcePathBuilder(uriInfo)
+        .path("user-" + relationKey.getUserName())
+        .path("program-" + relationKey.getProgramName())
+        .path("relation-" + relationKey.getRelationName());
   }
 }

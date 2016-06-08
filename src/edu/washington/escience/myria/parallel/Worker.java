@@ -85,25 +85,25 @@ import edu.washington.escience.myria.util.concurrent.ThreadAffinityFixedRoundRob
 /**
  * Workers do the real query execution. A query received by the server will be pre-processed and
  * then dispatched to the workers.
- * 
+ *
  * To execute a query on a worker, 4 steps are proceeded:
- * 
+ *
  * 1) A worker receive an Operator instance as its execution plan. The worker then stores the plan
  * and does some pre-processing, e.g. initializes the data structures which are needed during the
  * execution of the plan.
- * 
+ *
  * 2) Each worker sends back to the server a message (it's id) to notify the server that the query
  * plan has been successfully received. And then each worker waits for the server to send the
  * "start" message.
- * 
+ *
  * 3) Each worker executes its query plan after "start" is received.
- * 
+ *
  * 4) After the query plan finishes, each worker removes the query plan and related data structures,
  * and then waits for next query plan
- * 
+ *
  */
 /**
- * 
+ *
  */
 @Unit
 public final class Worker implements Task, TaskMessageSource {
@@ -140,7 +140,8 @@ public final class Worker implements Task, TaskMessageSource {
     public void run() {
       try {
 
-        TERMINATE_MESSAGE_PROCESSING: while (true) {
+        TERMINATE_MESSAGE_PROCESSING:
+        while (true) {
           if (Thread.currentThread().isInterrupted()) {
             Thread.currentThread().interrupt();
             break TERMINATE_MESSAGE_PROCESSING;
@@ -245,7 +246,6 @@ public final class Worker implements Task, TaskMessageSource {
             default:
               break;
           }
-
         }
       } catch (Throwable ee) {
         if (LOGGER.isErrorEnabled()) {
@@ -253,7 +253,6 @@ public final class Worker implements Task, TaskMessageSource {
         }
       }
     }
-
   }
 
   private final Queue<TaskMessage> pendingDriverMessages = new ConcurrentLinkedQueue<>();
@@ -269,9 +268,9 @@ public final class Worker implements Task, TaskMessageSource {
 
   /*
    * (non-Javadoc)
-   * 
+   *
    * @see org.apache.reef.task.TaskMessageSource#getMessage()
-   * 
+   *
    * To be used to instruct the driver to launch or abort workers.
    */
   @Override
@@ -303,47 +302,53 @@ public final class Worker implements Task, TaskMessageSource {
       workerLock.lock();
       try {
         switch (controlM.getType()) {
-          case REMOVE_WORKER: {
-            if (LOGGER.isInfoEnabled()) {
-              LOGGER.info("received REMOVE_WORKER for worker " + workerId);
-            }
-            connectionPool.removeRemote(workerId).addListener(new ChannelGroupFutureListener() {
-              @Override
-              public void operationComplete(final ChannelGroupFuture future) {
-                if (future.isCompleteSuccess()) {
-                  LOGGER.info("removed connection for remote worker {} from connection pool",
-                      workerId);
-                } else {
-                  LOGGER.info(
-                      "failed to remove connection for remote worker {} from connection pool",
-                      workerId);
+          case REMOVE_WORKER:
+            {
+              if (LOGGER.isInfoEnabled()) {
+                LOGGER.info("received REMOVE_WORKER for worker " + workerId);
+              }
+              connectionPool
+                  .removeRemote(workerId)
+                  .addListener(
+                      new ChannelGroupFutureListener() {
+                        @Override
+                        public void operationComplete(final ChannelGroupFuture future) {
+                          if (future.isCompleteSuccess()) {
+                            LOGGER.info(
+                                "removed connection for remote worker {} from connection pool",
+                                workerId);
+                          } else {
+                            LOGGER.info(
+                                "failed to remove connection for remote worker {} from connection pool",
+                                workerId);
+                          }
+                        }
+                      });
+              for (WorkerSubQuery wqp : executingSubQueries.values()) {
+                if (wqp.getFTMode().equals(FTMode.ABANDON)) {
+                  wqp.getMissingWorkers().add(workerId);
+                  wqp.updateProducerChannels(workerId, false);
+                  wqp.triggerFragmentEosEoiChecks();
+                } else if (wqp.getFTMode().equals(FTMode.REJOIN)) {
+                  wqp.getMissingWorkers().add(workerId);
                 }
               }
-            });
-            for (WorkerSubQuery wqp : executingSubQueries.values()) {
-              if (wqp.getFTMode().equals(FTMode.ABANDON)) {
-                wqp.getMissingWorkers().add(workerId);
-                wqp.updateProducerChannels(workerId, false);
-                wqp.triggerFragmentEosEoiChecks();
-              } else if (wqp.getFTMode().equals(FTMode.REJOIN)) {
-                wqp.getMissingWorkers().add(workerId);
-              }
+              enqueueDriverMessage(IPCUtils.removeWorkerAckTM(workerId));
             }
-            enqueueDriverMessage(IPCUtils.removeWorkerAckTM(workerId));
-          }
             break;
-          case ADD_WORKER: {
-            if (LOGGER.isInfoEnabled()) {
-              LOGGER.info("received ADD_WORKER " + workerId);
+          case ADD_WORKER:
+            {
+              if (LOGGER.isInfoEnabled()) {
+                LOGGER.info("received ADD_WORKER " + workerId);
+              }
+              connectionPool.putRemote(
+                  workerId, SocketInfo.fromProtobuf(controlM.getRemoteAddress()));
+              enqueueDriverMessage(IPCUtils.addWorkerAckTM(workerId));
             }
-            connectionPool
-                .putRemote(workerId, SocketInfo.fromProtobuf(controlM.getRemoteAddress()));
-            enqueueDriverMessage(IPCUtils.addWorkerAckTM(workerId));
-          }
             break;
           default:
-            throw new IllegalStateException("Unexpected driver control message type: "
-                + controlM.getType());
+            throw new IllegalStateException(
+                "Unexpected driver control message type: " + controlM.getType());
         }
       } finally {
         workerLock.unlock();
@@ -508,7 +513,9 @@ public final class Worker implements Task, TaskMessageSource {
    * @throws ConfigFileException if there's any config file parsing error.
    */
   @Inject
-  public Worker(final Injector injector, @Parameter(WorkerId.class) final int workerID,
+  public Worker(
+      final Injector injector,
+      @Parameter(WorkerId.class) final int workerID,
       @Parameter(WorkerHost.class) final String workerHost,
       @Parameter(WorkerPort.class) final int workerPort,
       @Parameter(MasterHost.class) final String masterHost,
@@ -525,7 +532,8 @@ public final class Worker implements Task, TaskMessageSource {
       @Parameter(FlowControlWriteBufferHighMarkBytes.class) final int writeBufferHighWaterMark,
       @Parameter(OperatorInputBufferCapacity.class) final int inputBufferCapacity,
       @Parameter(OperatorInputBufferRecoverTrigger.class) final int inputBufferRecoverTrigger,
-      @Parameter(WorkerConf.class) final Set<String> workerConfs) throws Exception {
+      @Parameter(WorkerConf.class) final Set<String> workerConfs)
+      throws Exception {
 
     this.injector = injector;
     myID = workerID;
@@ -542,29 +550,42 @@ public final class Worker implements Task, TaskMessageSource {
 
     workerAddRemoveLock = Striped.lock(workerConfs.size());
     connectionPool =
-        new IPCConnectionPool(myID, computingUnits,
-            IPCConfigurations.createWorkerIPCServerBootstrap(connectTimeoutMillis, sendBufferSize,
-                receiveBufferSize, writeBufferLowWaterMark, writeBufferHighWaterMark),
-            IPCConfigurations.createWorkerIPCClientBootstrap(connectTimeoutMillis, sendBufferSize,
-                receiveBufferSize, writeBufferLowWaterMark, writeBufferHighWaterMark),
-            new TransportMessageSerializer(), new WorkerShortMessageProcessor(this),
-            inputBufferCapacity, inputBufferRecoverTrigger);
+        new IPCConnectionPool(
+            myID,
+            computingUnits,
+            IPCConfigurations.createWorkerIPCServerBootstrap(
+                connectTimeoutMillis,
+                sendBufferSize,
+                receiveBufferSize,
+                writeBufferLowWaterMark,
+                writeBufferHighWaterMark),
+            IPCConfigurations.createWorkerIPCClientBootstrap(
+                connectTimeoutMillis,
+                sendBufferSize,
+                receiveBufferSize,
+                writeBufferLowWaterMark,
+                writeBufferHighWaterMark),
+            new TransportMessageSerializer(),
+            new WorkerShortMessageProcessor(this),
+            inputBufferCapacity,
+            inputBufferRecoverTrigger);
 
     execEnvVars.put(MyriaConstants.EXEC_ENV_VAR_DATABASE_SYSTEM, databaseSystem);
     execEnvVars.put(MyriaConstants.EXEC_ENV_VAR_NODE_ID, getID());
     execEnvVars.put(MyriaConstants.EXEC_ENV_VAR_EXECUTION_MODE, getQueryExecutionMode());
     LOGGER.info("Worker: Database system " + databaseSystem);
     String jsonConnInfo =
-        ConnectionInfo.toJson(databaseSystem, workerHost, workingDirectory, workerID, dbName,
-            dbPassword, dbPort);
+        ConnectionInfo.toJson(
+            databaseSystem, workerHost, workingDirectory, workerID, dbName, dbPassword, dbPort);
     LOGGER.info("Worker: Connection info " + jsonConnInfo);
-    execEnvVars.put(MyriaConstants.EXEC_ENV_VAR_DATABASE_CONN_INFO,
+    execEnvVars.put(
+        MyriaConstants.EXEC_ENV_VAR_DATABASE_CONN_INFO,
         ConnectionInfo.of(databaseSystem, jsonConnInfo));
   }
 
-  private Map<Integer, SocketInfo> getComputingUnits(final String masterHost,
-      final Integer masterPort, final Set<String> serializedWorkerConfs) throws BindException,
-      IOException, InjectionException {
+  private Map<Integer, SocketInfo> getComputingUnits(
+      final String masterHost, final Integer masterPort, final Set<String> serializedWorkerConfs)
+      throws BindException, IOException, InjectionException {
     final Map<Integer, SocketInfo> computingUnits = new HashMap<Integer, SocketInfo>();
     computingUnits.put(MyriaConstants.MASTER_ID, new SocketInfo(masterHost, masterPort));
     final ConfigurationSerializer serializer = new AvroConfigurationSerializer();
@@ -583,7 +604,7 @@ public final class Worker implements Task, TaskMessageSource {
 
   /**
    * It does the initialization and preparation for the execution of the subquery.
-   * 
+   *
    * @param subQuery the received query.
    * @throws DbException if any error occurs.
    */
@@ -593,61 +614,70 @@ public final class Worker implements Task, TaskMessageSource {
 
     activeQueries.put(subQueryId.getQueryId(), subQueryId);
     executingSubQueries.put(subQueryId, subQuery);
-    subQuery.getExecutionFuture().addListener(new LocalSubQueryFutureListener() {
+    subQuery
+        .getExecutionFuture()
+        .addListener(
+            new LocalSubQueryFutureListener() {
 
-      @Override
-      public void operationComplete(final LocalSubQueryFuture future) {
-        finishTask(subQueryId);
+              @Override
+              public void operationComplete(final LocalSubQueryFuture future) {
+                finishTask(subQueryId);
 
-        if (future.isSuccess()) {
+                if (future.isSuccess()) {
 
-          sendMessageToMaster(
-              IPCUtils.queryCompleteTM(subQueryId, subQuery.getExecutionStatistics())).addListener(
-              new ChannelFutureListener() {
+                  sendMessageToMaster(
+                          IPCUtils.queryCompleteTM(subQueryId, subQuery.getExecutionStatistics()))
+                      .addListener(
+                          new ChannelFutureListener() {
 
-                @Override
-                public void operationComplete(final ChannelFuture future) throws Exception {
-                  if (future.isSuccess()) {
-                    if (LOGGER.isDebugEnabled()) {
-                      LOGGER.debug("The query complete message is sent to the master for sure ");
+                            @Override
+                            public void operationComplete(final ChannelFuture future)
+                                throws Exception {
+                              if (future.isSuccess()) {
+                                if (LOGGER.isDebugEnabled()) {
+                                  LOGGER.debug(
+                                      "The query complete message is sent to the master for sure ");
+                                }
+                              }
+                            }
+                          });
+                  LOGGER.info("My part of query {} finished", subQuery);
+                } else {
+                  LOGGER.error("Query failed because of exception: ", future.getCause());
+
+                  TransportMessage tm = null;
+                  try {
+                    tm =
+                        IPCUtils.queryFailureTM(
+                            subQueryId, future.getCause(), subQuery.getExecutionStatistics());
+                  } catch (IOException e) {
+                    if (LOGGER.isErrorEnabled()) {
+                      LOGGER.error("Unknown query failure TM creation error", e);
                     }
+                    tm = IPCUtils.simpleQueryFailureTM(subQueryId);
                   }
-                }
-
-              });
-          LOGGER.info("My part of query {} finished", subQuery);
-        } else {
-          LOGGER.error("Query failed because of exception: ", future.getCause());
-
-          TransportMessage tm = null;
-          try {
-            tm =
-                IPCUtils.queryFailureTM(subQueryId, future.getCause(),
-                    subQuery.getExecutionStatistics());
-          } catch (IOException e) {
-            if (LOGGER.isErrorEnabled()) {
-              LOGGER.error("Unknown query failure TM creation error", e);
-            }
-            tm = IPCUtils.simpleQueryFailureTM(subQueryId);
-          }
-          sendMessageToMaster(tm).addListener(new ChannelFutureListener() {
-            @Override
-            public void operationComplete(final ChannelFuture future) throws Exception {
-              if (future.isSuccess()) {
-                if (LOGGER.isDebugEnabled()) {
-                  LOGGER.debug("The query complete message is sent to the master for sure ");
+                  sendMessageToMaster(tm)
+                      .addListener(
+                          new ChannelFutureListener() {
+                            @Override
+                            public void operationComplete(final ChannelFuture future)
+                                throws Exception {
+                              if (future.isSuccess()) {
+                                if (LOGGER.isDebugEnabled()) {
+                                  LOGGER.debug(
+                                      "The query complete message is sent to the master for sure ");
+                                }
+                              }
+                            }
+                          });
                 }
               }
-            }
-          });
-        }
-      }
-    });
+            });
   }
 
   /**
    * Finish the subquery by removing it from the data structures.
-   * 
+   *
    * @param subQueryId the id of the subquery to finish.
    */
   private void finishTask(final SubQueryId subQueryId) {
@@ -665,7 +695,7 @@ public final class Worker implements Task, TaskMessageSource {
 
   /**
    * This method should be called whenever the system is going to shutdown.
-   * 
+   *
    */
   void shutdown() {
     LOGGER.info("Shutdown requested. Please wait when cleaning up...");
@@ -703,7 +733,7 @@ public final class Worker implements Task, TaskMessageSource {
 
   /**
    * Start the worker service.
-   * 
+   *
    * @throws Exception if any error meets.
    */
   public void start() throws Exception {
@@ -718,13 +748,13 @@ public final class Worker implements Task, TaskMessageSource {
     // "Pipeline executor"));
 
     ChannelFactory clientChannelFactory =
-        new NioClientSocketChannelFactory(bossExecutor, workerExecutor, Runtime.getRuntime()
-            .availableProcessors() * 2 + 1);
+        new NioClientSocketChannelFactory(
+            bossExecutor, workerExecutor, Runtime.getRuntime().availableProcessors() * 2 + 1);
 
     // Start server with Nb of active threads = 2*NB CPU + 1 as maximum.
     ChannelFactory serverChannelFactory =
-        new NioServerSocketChannelFactory(bossExecutor, workerExecutor, Runtime.getRuntime()
-            .availableProcessors() * 2 + 1);
+        new NioServerSocketChannelFactory(
+            bossExecutor, workerExecutor, Runtime.getRuntime().availableProcessors() * 2 + 1);
 
     ChannelPipelineFactory serverPipelineFactory =
         new IPCPipelineFactories.WorkerServerPipelineFactory(connectionPool, getPipelineExecutor());
@@ -733,17 +763,22 @@ public final class Worker implements Task, TaskMessageSource {
     ChannelPipelineFactory workerInJVMPipelineFactory =
         new IPCPipelineFactories.WorkerInJVMPipelineFactory(connectionPool);
 
-    connectionPool.start(serverChannelFactory, serverPipelineFactory, clientChannelFactory,
-        clientPipelineFactory, workerInJVMPipelineFactory, new InJVMLoopbackChannelSink());
+    connectionPool.start(
+        serverChannelFactory,
+        serverPipelineFactory,
+        clientChannelFactory,
+        clientPipelineFactory,
+        workerInJVMPipelineFactory,
+        new InJVMLoopbackChannelSink());
 
     if (getQueryExecutionMode() == QueryExecutionMode.NON_BLOCKING) {
       int numCPU = Runtime.getRuntime().availableProcessors();
       queryExecutor =
-      // new ThreadPoolExecutor(numCPU, numCPU, 0L, TimeUnit.MILLISECONDS, new
-      // LinkedBlockingQueue<Runnable>(),
-      // new RenamingThreadFactory("Nonblocking query executor"));
-          new ThreadAffinityFixedRoundRobinExecutionPool(numCPU, new RenamingThreadFactory(
-              "Nonblocking query executor"));
+          // new ThreadPoolExecutor(numCPU, numCPU, 0L, TimeUnit.MILLISECONDS, new
+          // LinkedBlockingQueue<Runnable>(),
+          // new RenamingThreadFactory("Nonblocking query executor"));
+          new ThreadAffinityFixedRoundRobinExecutionPool(
+              numCPU, new RenamingThreadFactory("Nonblocking query executor"));
     } else {
       // blocking query execution
       queryExecutor =

@@ -45,9 +45,14 @@ public class TransportMessageSerializer implements PayloadSerializer {
         return ChannelBuffers.wrappedBuffer(IPCUtils.EOI.toByteArray());
       }
     } else {
-      throw new IllegalArgumentException(MyriaConstants.SYSTEM_NAME + " IPC only supports "
-          + TransportMessage.class.getSimpleName() + " and " + TupleBatch.class.getSimpleName()
-          + ", but received a message of type: " + m.getClass().getCanonicalName());
+      throw new IllegalArgumentException(
+          MyriaConstants.SYSTEM_NAME
+              + " IPC only supports "
+              + TransportMessage.class.getSimpleName()
+              + " and "
+              + TupleBatch.class.getSimpleName()
+              + ", but received a message of type: "
+              + m.getClass().getCanonicalName());
     }
   }
 
@@ -75,8 +80,8 @@ public class TransportMessageSerializer implements PayloadSerializer {
   }
 
   @Override
-  public final Object deSerialize(final ChannelBuffer buffer, final Object processor, final Object att)
-      throws IOException {
+  public final Object deSerialize(
+      final ChannelBuffer buffer, final Object processor, final Object att) throws IOException {
     TransportMessage tm = deSerializeTransportMessage(buffer);
     return tm;
   }

@@ -10,14 +10,14 @@ import edu.washington.escience.myria.proto.DataProto.ColumnMessage;
 
 /**
  * A column of a batch of tuples.
- * 
- * 
+ *
+ *
  */
 public final class ColumnFactory {
 
   /**
    * Allocate a ColumnBuilder for the specified Myria type.
-   * 
+   *
    * @param type the Myria type of the returned Builder.
    * @return a ColumnBuilder for the specified Myria type.
    */
@@ -43,7 +43,7 @@ public final class ColumnFactory {
 
   /**
    * Allocates an array of Columns to match the given Schema.
-   * 
+   *
    * @param schema the Schema
    * @return the list of Columns
    */
@@ -53,7 +53,7 @@ public final class ColumnFactory {
 
   /**
    * Allocates an array of Columns to match the given Type array.
-   * 
+   *
    * @param columnTypes the Types of the columns
    * @return the allocated Columns
    */
@@ -67,12 +67,13 @@ public final class ColumnFactory {
 
   /**
    * Deserializes a ColumnMessage into the appropriate Column.
-   * 
+   *
    * @param message the ColumnMessage to be deserialized.
    * @param numTuples num tuples in the column message
    * @return a Column of the appropriate type and contents.
    */
-  public static Column<?> columnFromColumnMessage(final ColumnMessage message, final int numTuples) {
+  public static Column<?> columnFromColumnMessage(
+      final ColumnMessage message, final int numTuples) {
     switch (message.getType()) {
       case BOOLEAN:
         return BooleanColumnBuilder.buildFromProtobuf(message, numTuples);

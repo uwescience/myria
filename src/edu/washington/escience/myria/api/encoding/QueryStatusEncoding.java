@@ -14,8 +14,7 @@ import edu.washington.escience.myria.api.encoding.plan.SubPlanEncoding;
  */
 public class QueryStatusEncoding {
   /** An empty default constructor. */
-  public QueryStatusEncoding() {
-  }
+  public QueryStatusEncoding() {}
 
   /** Constructor. */
   public QueryStatusEncoding(final long queryId) {
@@ -24,7 +23,7 @@ public class QueryStatusEncoding {
 
   /**
    * Factory for a newly submitted query.
-   * 
+   *
    * @param rawQuery the raw query submitted to the system.
    * @param logicalRa the logical plan of the query.
    * @param plan the physical execution plan.
@@ -76,11 +75,17 @@ public class QueryStatusEncoding {
 
   /** The current status of the query. */
   public static enum Status {
-    ACCEPTED, RUNNING, SUCCESS, KILLING, KILLED, ERROR, UNKNOWN;
+    ACCEPTED,
+    RUNNING,
+    SUCCESS,
+    KILLING,
+    KILLED,
+    ERROR,
+    UNKNOWN;
 
     /**
      * Return {@code true} if a query with the given status is ongoing, i.e., it can be killed or completed.
-     * 
+     *
      * @param s a status variable
      * @return {@code true} if a query with the given status is ongoing.
      */
@@ -90,7 +95,7 @@ public class QueryStatusEncoding {
 
     /**
      * Return {@code true} if a query with the given status is completely finished and the status will not change.
-     * 
+     *
      * @param s a status variable
      * @return {@code true} if a query with the given status is completely finished and the status will not change.
      */

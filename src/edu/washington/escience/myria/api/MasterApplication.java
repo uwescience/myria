@@ -29,13 +29,13 @@ import edu.washington.escience.myria.parallel.Server;
 
 /**
  * This object simply configures which resources can be requested via the REST server.
- * 
+ *
  */
 public final class MasterApplication extends ResourceConfig {
 
   /**
    * Instantiate the main application running on the Myria master.
-   * 
+   *
    * @param adminPassword the password for administrator access.
    */
   public MasterApplication(final Server server, final String adminPassword) {
@@ -56,13 +56,14 @@ public final class MasterApplication extends ResourceConfig {
     register(MultiPartFeature.class);
 
     /* Register the singleton binder. */
-    register(new AbstractBinder() {
-      @Override
-      protected void configure() {
-        /* Singletons binding. */
-        bind(server).to(Server.class);
-      }
-    });
+    register(
+        new AbstractBinder() {
+          @Override
+          protected void configure() {
+            /* Singletons binding. */
+            bind(server).to(Server.class);
+          }
+        });
 
     /* Enable GZIP compression/decompression */
     register(EncodingFilter.class);
@@ -91,16 +92,16 @@ public final class MasterApplication extends ResourceConfig {
    * This is a container response filter. It will run on all responses leaving the server and add
    * the CORS filters saying that these API calls should be allowed from any website. This is a
    * mechanism increasingly supported by modern browsers instead of, e.g., JSONP.
-   * 
+   *
    * For more information, visit http://www.w3.org/TR/cors/ and http://enable-cors.org/
-   * 
+   *
    * TODO revisit the security of this model
-   * 
+   *
    */
   private class CrossOriginResponseFilter implements ContainerResponseFilter {
     @Override
-    public void filter(final ContainerRequestContext request,
-        final ContainerResponseContext response) {
+    public void filter(
+        final ContainerRequestContext request, final ContainerResponseContext response) {
       response.getHeaders().add("Access-Control-Allow-Origin", "*");
       response.getHeaders().add("Access-Control-Allow-Methods", "GET, POST, DELETE, PUT");
       response.getHeaders().add("Access-Control-Allow-Headers", "Content-Type");
@@ -113,8 +114,7 @@ public final class MasterApplication extends ResourceConfig {
    */
   @NameBinding
   @Retention(RetentionPolicy.RUNTIME)
-  public @interface ADMIN {
-  }
+  public @interface ADMIN {}
 
   /**
    * Check the admin authentication information.
@@ -122,8 +122,7 @@ public final class MasterApplication extends ResourceConfig {
   @ADMIN
   private class AdminAuthFilter implements ContainerRequestFilter {
     /** the server. */
-    @Context
-    private Server server;
+    @Context private Server server;
     private final String adminPassword;
 
     public AdminAuthFilter(final String adminPassword) {
@@ -135,14 +134,17 @@ public final class MasterApplication extends ResourceConfig {
       String authentication = request.getHeaderString(ContainerRequest.AUTHORIZATION);
       if (authentication == null || !authentication.startsWith("Basic ")) {
         /* No valid basic auth information. Return 401 to let the browser pop up a dialog. */
-        throw new WebApplicationException(Response.status(Status.UNAUTHORIZED)
-            .header("WWW-Authenticate", "Basic realm=\"Myria admin credentials\"")
-            .entity("No basic authentication information provided.").build());
+        throw new WebApplicationException(
+            Response.status(Status.UNAUTHORIZED)
+                .header("WWW-Authenticate", "Basic realm=\"Myria admin credentials\"")
+                .entity("No basic authentication information provided.")
+                .build());
       }
       authentication = authentication.substring("Basic ".length());
       String[] values = new String(Base64.decodeAsString(authentication)).split(":");
       if (values.length != 2) {
-        throw new MyriaApiException(Status.BAD_REQUEST,
+        throw new MyriaApiException(
+            Status.BAD_REQUEST,
             "Bad format. Usage: a string \"username:password\" encoded in Base64");
       }
       String username = values[0];
@@ -156,14 +158,14 @@ public final class MasterApplication extends ResourceConfig {
         /* Otherwise, pass! */
       } else {
         /* Otherwise it's a normal user so FORBIDDEN */
-        throw new MyriaApiException(Status.FORBIDDEN,
-            "Please provide admin authentication information.");
+        throw new MyriaApiException(
+            Status.FORBIDDEN, "Please provide admin authentication information.");
       }
     }
 
     /**
      * Check if the given user is an admin.
-     * 
+     *
      * @param username the user name.
      * @return if the given user is an admin.
      */

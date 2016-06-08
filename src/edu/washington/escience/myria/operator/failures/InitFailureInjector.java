@@ -21,7 +21,7 @@ public class InitFailureInjector extends UnaryOperator {
   }
 
   /**
-   * 
+   *
    */
   private static final long serialVersionUID = 1L;
 
@@ -31,8 +31,7 @@ public class InitFailureInjector extends UnaryOperator {
   }
 
   @Override
-  protected final void cleanup() throws DbException {
-  }
+  protected final void cleanup() throws DbException {}
 
   @Override
   protected final TupleBatch fetchNextReady() throws DbException {
@@ -47,5 +46,4 @@ public class InitFailureInjector extends UnaryOperator {
     }
     return child.getSchema();
   }
-
 }

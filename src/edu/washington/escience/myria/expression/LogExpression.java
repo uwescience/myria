@@ -20,7 +20,7 @@ public class LogExpression extends UnaryExpression {
 
   /**
    * Take the natural logarithm (base e) of the operand.
-   * 
+   *
    * @param operand the operand.
    */
   public LogExpression(final ExpressionOperator operand) {

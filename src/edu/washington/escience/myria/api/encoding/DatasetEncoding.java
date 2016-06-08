@@ -11,13 +11,10 @@ import edu.washington.escience.myria.operator.network.partition.PartitionFunctio
 import edu.washington.escience.myria.operator.network.partition.RoundRobinPartitionFunction;
 
 public class DatasetEncoding extends MyriaApiEncoding {
-  @Required
-  public RelationKey relationKey;
-  @Required
-  public Schema schema;
+  @Required public RelationKey relationKey;
+  @Required public Schema schema;
   public Set<Integer> workers;
-  @Required
-  public DataSource source;
+  @Required public DataSource source;
   public Character delimiter;
   public Character escape;
   public Integer numberOfSkippedLines;

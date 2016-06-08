@@ -7,16 +7,13 @@ import edu.washington.escience.myria.operator.SampledDbInsertTemp;
 
 /**
  * Encoding for SampledDbInsertTemp oeprator.
- * 
+ *
  */
 public class SampledDbInsertTempEncoding extends UnaryOperatorEncoding<SampledDbInsertTemp> {
 
-  @Required
-  public Integer sampleSize;
-  @Required
-  public String sampleTable;
-  @Required
-  public String countTable;
+  @Required public Integer sampleSize;
+  @Required public String sampleTable;
+  @Required public String countTable;
 
   /** Used to make results deterministic. Null if no specified value. */
   public Long randomSeed;
@@ -29,8 +26,12 @@ public class SampledDbInsertTempEncoding extends UnaryOperatorEncoding<SampledDb
 
   @Override
   public SampledDbInsertTemp construct(ConstructArgs args) {
-    return new SampledDbInsertTemp(null, sampleSize, RelationKey.ofTemp(
-        args.getQueryId(), sampleTable), RelationKey.ofTemp(args.getQueryId(),
-        countTable), connectionInfo, randomSeed);
+    return new SampledDbInsertTemp(
+        null,
+        sampleSize,
+        RelationKey.ofTemp(args.getQueryId(), sampleTable),
+        RelationKey.ofTemp(args.getQueryId(), countTable),
+        connectionInfo,
+        randomSeed);
   }
 }

@@ -50,7 +50,7 @@ public final class DupElimRefOnly extends UnaryOperator {
 
     /**
      * compare the equality of a column of two tuples.
-     * 
+     *
      * @return true if equal.
      * @param another another source data TB.
      * @param colIndx columnIndex to compare
@@ -73,7 +73,8 @@ public final class DupElimRefOnly extends UnaryOperator {
         case STRING_TYPE:
           return tb.getString(colIndx, rowIndx1).equals(another.tb.getString(colIndx, rowIndx2));
         case DATETIME_TYPE:
-          return tb.getDateTime(colIndx, rowIndx1).equals(another.tb.getDateTime(colIndx, rowIndx2));
+          return tb.getDateTime(colIndx, rowIndx1)
+              .equals(another.tb.getDateTime(colIndx, rowIndx2));
       }
       return false;
     }
@@ -120,12 +121,11 @@ public final class DupElimRefOnly extends UnaryOperator {
   }
 
   @Override
-  protected void cleanup() throws DbException {
-  }
+  protected void cleanup() throws DbException {}
 
   /**
    * Do duplicate elimination for the tb.
-   * 
+   *
    * @param tb the TB.
    * @return a new TB with duplicates removed.
    * */

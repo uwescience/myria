@@ -28,7 +28,8 @@ import edu.washington.escience.myria.util.TestEnvVars;
 
 public class UserDefinedAggregatorTest {
 
-  private final ObjectReader reader = MyriaJsonMapperProvider.getReader().withType(AggregatorFactory.class);
+  private final ObjectReader reader =
+      MyriaJsonMapperProvider.getReader().withType(AggregatorFactory.class);
   private final ObjectWriter writer = MyriaJsonMapperProvider.getWriter();
   private final int NUM_TUPLES = 2 * TupleBatch.BATCH_SIZE;
   private final int NUM_TUPLES_20K = 2 * 10000;
@@ -36,7 +37,7 @@ public class UserDefinedAggregatorTest {
   /**
    * Tests a re-implementation of the Count aggregate using a user-defined aggregate. Also tests serialization and
    * deserialization.
-   * 
+   *
    * @throws Exception if something goes wrong.
    */
   @Test
@@ -49,7 +50,8 @@ public class UserDefinedAggregatorTest {
 
     Expression initializer = new Expression("counter", new ConstantExpression(0L));
     Expression increment =
-        new Expression("counter", new PlusExpression(new StateExpression(0), new ConstantExpression(1L)));
+        new Expression(
+            "counter", new PlusExpression(new StateExpression(0), new ConstantExpression(1L)));
     Expression emitter = new Expression("index", new StateExpression(0));
 
     ImmutableList.Builder<Expression> Initializers = ImmutableList.builder();
@@ -86,7 +88,7 @@ public class UserDefinedAggregatorTest {
   /**
    * Tests a re-implementation of the Count aggregate using a user-defined aggregate that also implements a constant
    * value column. Also tests serialization and deserialization.
-   * 
+   *
    * @throws Exception if something goes wrong.
    */
   @Test
@@ -99,7 +101,8 @@ public class UserDefinedAggregatorTest {
 
     Expression initializer = new Expression("counter", new ConstantExpression(0L));
     Expression increment =
-        new Expression("counter", new PlusExpression(new StateExpression(0), new ConstantExpression(1L)));
+        new Expression(
+            "counter", new PlusExpression(new StateExpression(0), new ConstantExpression(1L)));
     Expression emitter = new Expression("index", new StateExpression(0));
     Expression constEmitter = new Expression("const", new ConstantExpression(5L));
 
@@ -138,7 +141,7 @@ public class UserDefinedAggregatorTest {
 
   /**
    * Tests an arg-max-like aggregate function. Also tests serialization and deserialization.
-   * 
+   *
    * @throws Exception if something goes wrong.
    */
   @Test
@@ -156,14 +159,23 @@ public class UserDefinedAggregatorTest {
 
     ImmutableList.Builder<Expression> Updaters = ImmutableList.builder();
     // State.$0 counts the index of the current row.
-    Updaters.add(new Expression("counter", new PlusExpression(new StateExpression(0), new ConstantExpression(1L))));
-    ExpressionOperator newRowIsBigger = new GreaterThanExpression(new VariableExpression(0), new StateExpression(2));
+    Updaters.add(
+        new Expression(
+            "counter", new PlusExpression(new StateExpression(0), new ConstantExpression(1L))));
+    ExpressionOperator newRowIsBigger =
+        new GreaterThanExpression(new VariableExpression(0), new StateExpression(2));
     // State.$1 tracks the index of the biggest row.
-    Updaters.add(new Expression("maxrow", new ConditionalExpression(newRowIsBigger, new StateExpression(0),
-        new StateExpression(1))));
+    Updaters.add(
+        new Expression(
+            "maxrow",
+            new ConditionalExpression(
+                newRowIsBigger, new StateExpression(0), new StateExpression(1))));
     // State.$2 tracks the value of the biggest row.
-    Updaters.add(new Expression("maxval", new ConditionalExpression(newRowIsBigger, new VariableExpression(0),
-        new StateExpression(2))));
+    Updaters.add(
+        new Expression(
+            "maxval",
+            new ConditionalExpression(
+                newRowIsBigger, new VariableExpression(0), new StateExpression(2))));
 
     ImmutableList.Builder<Expression> Emitters = ImmutableList.builder();
     Emitters.add(new Expression("indexOfMax", new StateExpression(1)));

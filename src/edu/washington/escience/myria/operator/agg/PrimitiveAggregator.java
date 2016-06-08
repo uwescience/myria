@@ -57,7 +57,7 @@ public abstract class PrimitiveAggregator implements Aggregator, Serializable {
   /**
    * Aggregate operations. A set of all valid aggregation operations, i.e. those in {@link LongAggregator#AVAILABLE_AGG}
    * .
-   * 
+   *
    * Note that we use a {@link LinkedHashSet} to ensure that the iteration order is consistent!
    */
   protected final LinkedHashSet<AggregationOp> aggOps;
@@ -69,7 +69,7 @@ public abstract class PrimitiveAggregator implements Aggregator, Serializable {
 
   /**
    * Instantiate a PrimitiveAggregator that computes the specified aggregates.
-   * 
+   *
    * @param fieldName the name of the field being aggregated, for naming output columns.
    * @param aggOps the set of aggregate operations to be computed.
    */
@@ -80,8 +80,8 @@ public abstract class PrimitiveAggregator implements Aggregator, Serializable {
     this.aggOps = new LinkedHashSet<>(Arrays.asList(aggOps));
 
     if (!getAvailableAgg().containsAll(this.aggOps)) {
-      throw new IllegalArgumentException("Unsupported aggregation(s): "
-          + Sets.difference(this.aggOps, getAvailableAgg()));
+      throw new IllegalArgumentException(
+          "Unsupported aggregation(s): " + Sets.difference(this.aggOps, getAvailableAgg()));
     }
 
     if (aggOps.length == 0) {
@@ -130,14 +130,14 @@ public abstract class PrimitiveAggregator implements Aggregator, Serializable {
 
   /**
    * Returns the Type of the SUM aggregate.
-   * 
+   *
    * @return the Type of the SUM aggregate.
    */
   protected abstract Type getSumType();
 
   /**
    * Returns the set of aggregation operations that are supported by this aggregator.
-   * 
+   *
    * @return the set of aggregation operations that are supported by this aggregator.
    */
   protected abstract Set<AggregationOp> getAvailableAgg();

@@ -75,8 +75,11 @@ public final class FlowControlBagInputBuffer<PAYLOAD> extends BagInputBufferAdap
    * @param softCapacity soft upper bound of the buffer size.
    *
    * */
-  public FlowControlBagInputBuffer(final IPCConnectionPool owner,
-      final ImmutableSet<StreamIOChannelID> remoteChannelIDs, final int softCapacity, final int recoverEventTrigger) {
+  public FlowControlBagInputBuffer(
+      final IPCConnectionPool owner,
+      final ImmutableSet<StreamIOChannelID> remoteChannelIDs,
+      final int softCapacity,
+      final int recoverEventTrigger) {
     super(owner, remoteChannelIDs);
     bufferEmptyListeners = new ConcurrentLinkedQueue<IPCEventListener>();
     bufferFullListeners = new ConcurrentLinkedQueue<IPCEventListener>();
@@ -162,24 +165,30 @@ public final class FlowControlBagInputBuffer<PAYLOAD> extends BagInputBufferAdap
       throw new IllegalStateException("Already attached to a processor: " + processor);
     }
 
-    addListener(INPUT_BUFFER_FULL, new IPCEventListener() {
-      @Override
-      public void triggered(final IPCEvent e) {
-        pauseRead();
-      }
-    });
-    addListener(INPUT_BUFFER_RECOVER, new IPCEventListener() {
-      @Override
-      public void triggered(final IPCEvent e) {
-        resumeRead();
-      }
-    });
-    addListener(INPUT_BUFFER_EMPTY, new IPCEventListener() {
-      @Override
-      public void triggered(final IPCEvent e) {
-        resumeRead();
-      }
-    });
+    addListener(
+        INPUT_BUFFER_FULL,
+        new IPCEventListener() {
+          @Override
+          public void triggered(final IPCEvent e) {
+            pauseRead();
+          }
+        });
+    addListener(
+        INPUT_BUFFER_RECOVER,
+        new IPCEventListener() {
+          @Override
+          public void triggered(final IPCEvent e) {
+            resumeRead();
+          }
+        });
+    addListener(
+        INPUT_BUFFER_EMPTY,
+        new IPCEventListener() {
+          @Override
+          public void triggered(final IPCEvent e) {
+            resumeRead();
+          }
+        });
   }
 
   /**
@@ -241,7 +250,8 @@ public final class FlowControlBagInputBuffer<PAYLOAD> extends BagInputBufferAdap
   }
 
   @Override
-  protected void postTimeoutPoll(final long time, final TimeUnit unit, final IPCMessage.StreamData<PAYLOAD> m) {
+  protected void postTimeoutPoll(
+      final long time, final TimeUnit unit, final IPCMessage.StreamData<PAYLOAD> m) {
     if (m != null) {
       checkOutputBufferStateEvents();
     }
@@ -277,68 +287,70 @@ public final class FlowControlBagInputBuffer<PAYLOAD> extends BagInputBufferAdap
   /**
    * the buffer empty event.
    * */
-  private final IPCEvent bufferEmptyEvent = new IPCEvent() {
+  private final IPCEvent bufferEmptyEvent =
+      new IPCEvent() {
 
-    @Override
-    public Object getAttachment() {
-      return FlowControlBagInputBuffer.this;
-    }
+        @Override
+        public Object getAttachment() {
+          return FlowControlBagInputBuffer.this;
+        }
 
-    @Override
-    public EventType getType() {
-      return INPUT_BUFFER_EMPTY;
-    }
-
-  };
+        @Override
+        public EventType getType() {
+          return INPUT_BUFFER_EMPTY;
+        }
+      };
 
   /**
    * the buffer empty event.
    * */
-  private final IPCEvent newInputEvent = new IPCEvent() {
+  private final IPCEvent newInputEvent =
+      new IPCEvent() {
 
-    @Override
-    public Object getAttachment() {
-      return FlowControlBagInputBuffer.this;
-    }
+        @Override
+        public Object getAttachment() {
+          return FlowControlBagInputBuffer.this;
+        }
 
-    @Override
-    public EventType getType() {
-      return NEW_INPUT_DATA;
-    }
-
-  };
+        @Override
+        public EventType getType() {
+          return NEW_INPUT_DATA;
+        }
+      };
 
   /**
    * the buffer full event.
    * */
-  private final IPCEvent bufferFullEvent = new IPCEvent() {
+  private final IPCEvent bufferFullEvent =
+      new IPCEvent() {
 
-    @Override
-    public Object getAttachment() {
-      return FlowControlBagInputBuffer.this;
-    }
+        @Override
+        public Object getAttachment() {
+          return FlowControlBagInputBuffer.this;
+        }
 
-    @Override
-    public EventType getType() {
-      return INPUT_BUFFER_FULL;
-    }
-  };
+        @Override
+        public EventType getType() {
+          return INPUT_BUFFER_FULL;
+        }
+      };
 
   /**
    * the buffer recover event.
    * */
-  private final IPCEvent bufferRecoverEvent = new IPCEvent() {
+  private final IPCEvent bufferRecoverEvent =
+      new IPCEvent() {
 
-    @Override
-    public Object getAttachment() {
-      return FlowControlBagInputBuffer.this;
-    }
+        @Override
+        public Object getAttachment() {
+          return FlowControlBagInputBuffer.this;
+        }
 
-    @Override
-    public EventType getType() {
-      return INPUT_BUFFER_RECOVER;
-    }
-  };
+        @Override
+        public EventType getType() {
+          return INPUT_BUFFER_RECOVER;
+        }
+      };
 
   /**
    * Fire a buffer empty event. All the buffer empty event listeners will be notified.
@@ -423,5 +435,4 @@ public final class FlowControlBagInputBuffer<PAYLOAD> extends BagInputBufferAdap
       throw new IllegalArgumentException("Unsupported event type: " + t);
     }
   }
-
 }

@@ -21,7 +21,7 @@ public class CrossWithSingleton extends BinaryOperator {
 
   /**
    * Instantiate a new operator to cross all tuples in the left child with the singleton tuple from the right child.
-   * 
+   *
    * @param left the left child, which may have any number of tuples.
    * @param right the right child, which may only have one tuple.
    */
@@ -44,15 +44,20 @@ public class CrossWithSingleton extends BinaryOperator {
         }
         return null;
       }
-      Preconditions.checkState(rightTuple == null,
-          "Expecting a singleton right child, but received a batch with %s additional tuples", tb.numTuples());
-      Preconditions.checkState(tb.numTuples() == 1,
-          "Expecting a singleton right child, instead received a batch with %s tuples", tb.numTuples());
+      Preconditions.checkState(
+          rightTuple == null,
+          "Expecting a singleton right child, but received a batch with %s additional tuples",
+          tb.numTuples());
+      Preconditions.checkState(
+          tb.numTuples() == 1,
+          "Expecting a singleton right child, instead received a batch with %s tuples",
+          tb.numTuples());
       rightTuple = tb;
     }
 
     /* Verify that the right child did produce a tuple. */
-    Preconditions.checkState(rightTuple != null,
+    Preconditions.checkState(
+        rightTuple != null,
         "Expecting a singleton right child, but right child is EOS and no tuples received.");
 
     Operator left = getLeft();
@@ -92,5 +97,4 @@ public class CrossWithSingleton extends BinaryOperator {
 
     return Schema.merge(leftSchema, rightSchema);
   }
-
 }

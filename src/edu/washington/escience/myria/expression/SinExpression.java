@@ -20,7 +20,7 @@ public class SinExpression extends UnaryExpression {
 
   /**
    * Take the {@link Math.sin} of the operand.
-   * 
+   *
    * @param operand the operand.
    */
   public SinExpression(final ExpressionOperator operand) {

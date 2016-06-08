@@ -19,7 +19,8 @@ public class FloatColumnTest {
     original.appendFloat(1.0f).appendFloat(2.0f).appendFloat(5.0f).appendFloat(11.0f);
     FloatColumn column = original.build();
     final ColumnMessage serialized = column.serializeToProto();
-    final FloatColumn deserialized = FloatColumnBuilder.buildFromProtobuf(serialized, original.size());
+    final FloatColumn deserialized =
+        FloatColumnBuilder.buildFromProtobuf(serialized, original.size());
     assertEquals(column.getObject(0), deserialized.getObject(0));
     assertEquals(column.getObject(1), deserialized.getObject(1));
     assertEquals(column.getObject(2), deserialized.getObject(2));
@@ -44,5 +45,4 @@ public class FloatColumnTest {
     builder.appendFloat(0.0f);
     builder.build();
   }
-
 }

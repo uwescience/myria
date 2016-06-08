@@ -10,7 +10,7 @@ import edu.washington.escience.myria.util.ImmutableBitSet;
 
 /**
  * A mutable column of Boolean values.
- * 
+ *
  */
 public class BooleanMutableColumn extends MutableColumn<Boolean> {
   /** Required for Java serialization. */

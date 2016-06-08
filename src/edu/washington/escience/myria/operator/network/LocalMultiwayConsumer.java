@@ -8,12 +8,12 @@ import edu.washington.escience.myria.parallel.ExchangePairID;
 
 /**
  * The consumer part of the Collect Exchange operator.
- * 
+ *
  * A Collect operator collects tuples from all the workers. There is a collect producer on each worker, and a collect
  * consumer on the server and a master worker if a master worker is needed.
- * 
+ *
  * The consumer passively collects Tuples from all the paired LocalMultiwayProducers
- * 
+ *
  */
 public final class LocalMultiwayConsumer extends Consumer {
 
@@ -25,7 +25,7 @@ public final class LocalMultiwayConsumer extends Consumer {
 
   /**
    * If there's no child operator, a Schema is needed.
-   * 
+   *
    * @param schema the input/output data schema
    * @param operatorID my operatorID
    */
@@ -33,5 +33,4 @@ public final class LocalMultiwayConsumer extends Consumer {
     super(schema, operatorID);
     LOGGER.trace("created multiway consumer for ExchangePairID=" + operatorID);
   }
-
 }

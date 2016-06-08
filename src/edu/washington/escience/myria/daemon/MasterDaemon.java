@@ -18,14 +18,14 @@ import edu.washington.escience.myria.tools.MyriaGlobalConfigurationModule;
 /**
  * This is the class for the main daemon for Myria. It manages all the various services, including
  * the API server and the Myria server.
- * 
- * 
+ *
+ *
  */
 public final class MasterDaemon implements Task, EventHandler<CloseEvent> {
 
   /** The logger for this class. */
-  private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory
-      .getLogger(MasterDaemon.class);
+  private static final org.slf4j.Logger LOGGER =
+      org.slf4j.LoggerFactory.getLogger(MasterDaemon.class);
 
   private final CountDownLatch terminated = new CountDownLatch(1);
 
@@ -64,7 +64,7 @@ public final class MasterDaemon implements Task, EventHandler<CloseEvent> {
 
   /**
    * Instantiates a MasterDaemon object. Includes the API server and the Myria server.
-   * 
+   *
    * @param configFilePath the dir where the config file resides.
    * @param apiPort api server port.
    * @throws Exception if there are issues loading the Catalog or instantiating the servers.
@@ -76,7 +76,8 @@ public final class MasterDaemon implements Task, EventHandler<CloseEvent> {
       final @Parameter(MyriaGlobalConfigurationModule.RestApiPort.class) int apiPort,
       final @Parameter(MyriaGlobalConfigurationModule.UseSsl.class) boolean useSsl,
       final @Parameter(MyriaGlobalConfigurationModule.SslKeystorePath.class) String keystorePath,
-      final @Parameter(MyriaGlobalConfigurationModule.SslKeystorePassword.class) String keystorePassword,
+      final @Parameter(MyriaGlobalConfigurationModule.SslKeystorePassword.class) String
+          keystorePassword,
       final @Parameter(MyriaGlobalConfigurationModule.ApiAdminPassword.class) String adminPassword)
       throws Exception {
     this.server = server;
@@ -94,7 +95,7 @@ public final class MasterDaemon implements Task, EventHandler<CloseEvent> {
 
   /**
    * Start the Daemon. Namely, start the API server and the Myria Server.
-   * 
+   *
    * @throws Exception if there is an issue starting either server.
    */
   public void start() throws Exception {
@@ -106,7 +107,7 @@ public final class MasterDaemon implements Task, EventHandler<CloseEvent> {
 
   /**
    * Stop the Daemon. Namely, stop the API server and the Myria Server.
-   * 
+   *
    * @throws Exception if there is an issue stopping either server.
    */
   public void stop() throws Exception {
@@ -120,5 +121,4 @@ public final class MasterDaemon implements Task, EventHandler<CloseEvent> {
   public Server getClusterMaster() {
     return server;
   }
-
 }

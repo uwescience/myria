@@ -24,7 +24,7 @@ public final class EclipseClasspathReader {
 
   /**
    * entry point.
-   * 
+   *
    * @param args commandline args.
    * @throws IOException if file system error occurs.
    * */
@@ -75,7 +75,8 @@ public final class EclipseClasspathReader {
    * @return [0] is the classpath and [1] is the lib path.
    * @throws IOException if any IO errors.
    * */
-  public static String[] readEclipseClasspath(final File eclipseClasspathXMLFile) throws IOException {
+  public static String[] readEclipseClasspath(final File eclipseClasspathXMLFile)
+      throws IOException {
 
     final DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
     DocumentBuilder dBuilder;
@@ -138,14 +139,17 @@ public final class EclipseClasspathReader {
       final Node node = attributeList.item(i);
 
       if (node.getNodeType() == Node.ELEMENT_NODE
-          && ("org.eclipse.jdt.launching.CLASSPATH_ATTR_LIBRARY_PATH_ENTRY".equals(((Element) node)
-              .getAttribute("name")))) {
+          && ("org.eclipse.jdt.launching.CLASSPATH_ATTR_LIBRARY_PATH_ENTRY"
+              .equals(((Element) node).getAttribute("name")))) {
         String value = ((Element) node).getAttribute("value");
 
         if (value != null) {
           // remove the project name
           File f = new File(projectRoot, value);
-          while (value != null && value.length() > 0 && !f.exists() && value.indexOf(File.separator) >= 0) {
+          while (value != null
+              && value.length() > 0
+              && !f.exists()
+              && value.indexOf(File.separator) >= 0) {
             value = value.substring(value.indexOf(File.separator) + 1);
             f = new File(projectRoot, value);
           }
@@ -155,10 +159,9 @@ public final class EclipseClasspathReader {
         }
       }
     }
-    return new String[] { classpathSB.toString(), libPathSB.toString() };
+    return new String[] {classpathSB.toString(), libPathSB.toString()};
   }
 
   /** Prevent construction of this class. */
-  private EclipseClasspathReader() {
-  }
+  private EclipseClasspathReader() {}
 }

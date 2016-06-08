@@ -21,7 +21,7 @@ public final class FSUtils {
 
   /**
    * Delete the pathToDirectory. Return only if the directory is actually get deleted on the disk.
-   * 
+   *
    * @param pathToDirectory the directory to be deleted.
    */
   public static void blockingDeleteDirectory(final String pathToDirectory) {
@@ -43,7 +43,6 @@ public final class FSUtils {
         }
       }
     }
-
   }
 
   /**
@@ -52,7 +51,8 @@ public final class FSUtils {
    * @param override if to override if the dest exists.
    * @throws IOException if any error occurs.
    */
-  public static void copyFileFolder(final File source, final File dest, final boolean override) throws IOException {
+  public static void copyFileFolder(final File source, final File dest, final boolean override)
+      throws IOException {
     if (dest.exists()) {
       if (!override) {
         return;
@@ -111,7 +111,7 @@ public final class FSUtils {
 
   /**
    * Write the content to the file.
-   * 
+   *
    * @param f the file.
    * @param content the content.
    * @throws IOException if any error occurs.
@@ -124,7 +124,7 @@ public final class FSUtils {
 
   /**
    * Reset the file length of a file.
-   * 
+   *
    * @param f the file.
    * @param desired the file length desired.
    * @throws IOException if any error occurs.
@@ -146,7 +146,7 @@ public final class FSUtils {
 
   /**
    * Check whether the specified filepath is a file and is readable.
-   * 
+   *
    * @param filepath the path to the file.
    * @throws FileNotFoundException if the specified filepath does not exist or is not a file.
    */
@@ -166,6 +166,5 @@ public final class FSUtils {
   /**
    * util classes are not instantiable.
    * */
-  private FSUtils() {
-  }
+  private FSUtils() {}
 }

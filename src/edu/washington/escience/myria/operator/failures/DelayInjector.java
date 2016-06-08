@@ -41,24 +41,23 @@ public class DelayInjector extends UnaryOperator {
    * @param child the child.
    * @param onetime if delay only at the first time of fetchNextReady.
    * */
-  public DelayInjector(final long delay, final TimeUnit unit, final Operator child, final boolean onetime) {
+  public DelayInjector(
+      final long delay, final TimeUnit unit, final Operator child, final boolean onetime) {
     super(child);
     this.onetime = onetime;
     delayInMS = unit.toMillis(delay);
   }
 
   /**
-   * 
+   *
    */
   private static final long serialVersionUID = 1L;
 
   @Override
-  protected final void init(final ImmutableMap<String, Object> initProperties) throws DbException {
-  }
+  protected final void init(final ImmutableMap<String, Object> initProperties) throws DbException {}
 
   @Override
-  protected final void cleanup() throws DbException {
-  }
+  protected final void cleanup() throws DbException {}
 
   @Override
   protected final TupleBatch fetchNextReady() throws DbException {
@@ -82,5 +81,4 @@ public class DelayInjector extends UnaryOperator {
     }
     return child.getSchema();
   }
-
 }

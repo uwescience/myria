@@ -19,7 +19,7 @@ import edu.washington.escience.myria.util.MyriaUtils;
 
 /**
  * A column of Float values.
- * 
+ *
  */
 public final class FloatColumnBuilder extends ColumnBuilder<Float> {
   /** View of the column data as floats. */
@@ -37,7 +37,7 @@ public final class FloatColumnBuilder extends ColumnBuilder<Float> {
 
   /**
    * copy.
-   * 
+   *
    * @param data the underlying data
    * */
   private FloatColumnBuilder(final FloatBuffer data) {
@@ -46,14 +46,15 @@ public final class FloatColumnBuilder extends ColumnBuilder<Float> {
 
   /**
    * Constructs a FloatColumn by deserializing the given ColumnMessage.
-   * 
+   *
    * @param message a ColumnMessage containing the contents of this column.
    * @param numTuples num tuples in the column message
    * @return the built column
    */
   public static FloatColumn buildFromProtobuf(final ColumnMessage message, final int numTuples) {
     if (message.getType().ordinal() != ColumnMessage.Type.FLOAT_VALUE) {
-      throw new IllegalArgumentException("Trying to construct FloatColumn from non-FLOAT ColumnMessage");
+      throw new IllegalArgumentException(
+          "Trying to construct FloatColumn from non-FLOAT ColumnMessage");
     }
     if (!message.hasFloatColumn()) {
       throw new IllegalArgumentException("ColumnMessage has type FLOAT but no FloatColumn");
@@ -73,7 +74,8 @@ public final class FloatColumnBuilder extends ColumnBuilder<Float> {
 
   @Override
   public FloatColumnBuilder appendFloat(final float value) throws BufferOverflowException {
-    Preconditions.checkArgument(!built, "No further changes are allowed after the builder has built the column.");
+    Preconditions.checkArgument(
+        !built, "No further changes are allowed after the builder has built the column.");
     data.put(value);
     return this;
   }
@@ -81,21 +83,24 @@ public final class FloatColumnBuilder extends ColumnBuilder<Float> {
   @Deprecated
   @Override
   public FloatColumnBuilder appendObject(final Object value) throws BufferOverflowException {
-    Preconditions.checkArgument(!built, "No further changes are allowed after the builder has built the column.");
+    Preconditions.checkArgument(
+        !built, "No further changes are allowed after the builder has built the column.");
     return appendFloat((Float) MyriaUtils.ensureObjectIsValidType(value));
   }
 
   @Override
-  public FloatColumnBuilder appendFromJdbc(final ResultSet resultSet, final int jdbcIndex) throws SQLException,
-      BufferOverflowException {
-    Preconditions.checkArgument(!built, "No further changes are allowed after the builder has built the column.");
+  public FloatColumnBuilder appendFromJdbc(final ResultSet resultSet, final int jdbcIndex)
+      throws SQLException, BufferOverflowException {
+    Preconditions.checkArgument(
+        !built, "No further changes are allowed after the builder has built the column.");
     return appendFloat(resultSet.getFloat(jdbcIndex));
   }
 
   @Override
-  public FloatColumnBuilder appendFromSQLite(final SQLiteStatement statement, final int index) throws SQLiteException,
-      BufferOverflowException {
-    Preconditions.checkArgument(!built, "No further changes are allowed after the builder has built the column.");
+  public FloatColumnBuilder appendFromSQLite(final SQLiteStatement statement, final int index)
+      throws SQLiteException, BufferOverflowException {
+    Preconditions.checkArgument(
+        !built, "No further changes are allowed after the builder has built the column.");
     return appendFloat((float) statement.columnDouble(index));
   }
 
@@ -118,14 +123,16 @@ public final class FloatColumnBuilder extends ColumnBuilder<Float> {
 
   @Override
   public void replaceFloat(final float value, final int row) throws IndexOutOfBoundsException {
-    Preconditions.checkArgument(!built, "No further changes are allowed after the builder has built the column.");
+    Preconditions.checkArgument(
+        !built, "No further changes are allowed after the builder has built the column.");
     Preconditions.checkElementIndex(row, data.position());
     data.put(row, value);
   }
 
   @Override
   public FloatColumnBuilder expand(final int size) {
-    Preconditions.checkArgument(!built, "No further changes are allowed after the builder has built the column.");
+    Preconditions.checkArgument(
+        !built, "No further changes are allowed after the builder has built the column.");
     Preconditions.checkArgument(size >= 0);
     data.position(data.position() + size);
     return this;
@@ -133,7 +140,8 @@ public final class FloatColumnBuilder extends ColumnBuilder<Float> {
 
   @Override
   public FloatColumnBuilder expandAll() {
-    Preconditions.checkArgument(!built, "No further changes are allowed after the builder has built the column.");
+    Preconditions.checkArgument(
+        !built, "No further changes are allowed after the builder has built the column.");
     data.position(data.capacity());
     return this;
   }
@@ -153,6 +161,7 @@ public final class FloatColumnBuilder extends ColumnBuilder<Float> {
   public FloatColumnBuilder forkNewBuilder() {
     float[] arr = new float[data.array().length];
     System.arraycopy(data.array(), 0, arr, 0, data.position());
-    return new FloatColumnBuilder((FloatBuffer) FloatBuffer.wrap(arr).position(data.position()).limit(data.limit()));
+    return new FloatColumnBuilder(
+        (FloatBuffer) FloatBuffer.wrap(arr).position(data.position()).limit(data.limit()));
   }
 }

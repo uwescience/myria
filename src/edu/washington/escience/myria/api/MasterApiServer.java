@@ -21,8 +21,8 @@ import edu.washington.escience.myria.tools.MyriaGlobalConfigurationModule;
 
 /**
  * The main class for the Myria API server.
- * 
- * 
+ *
+ *
  */
 public final class MasterApiServer {
 
@@ -34,7 +34,7 @@ public final class MasterApiServer {
 
   /**
    * Constructor for the Master API Server.
-   * 
+   *
    * @param server the Myria server that will handle API requests.
    * @param daemon the Myria master daemon.
    * @param port the port the Myria API server will listen on.
@@ -46,7 +46,8 @@ public final class MasterApiServer {
       final @Parameter(MyriaGlobalConfigurationModule.RestApiPort.class) int apiPort,
       final @Parameter(MyriaGlobalConfigurationModule.UseSsl.class) boolean useSSL,
       final @Parameter(MyriaGlobalConfigurationModule.SslKeystorePath.class) String keystorePath,
-      final @Parameter(MyriaGlobalConfigurationModule.SslKeystorePassword.class) String keystorePassword,
+      final @Parameter(MyriaGlobalConfigurationModule.SslKeystorePassword.class) String
+          keystorePassword,
       final @Parameter(MyriaGlobalConfigurationModule.ApiAdminPassword.class) String adminPassword)
       throws IOException {
     URI baseUri = UriBuilder.fromUri("http://0.0.0.0/").port(apiPort).build();
@@ -63,7 +64,10 @@ public final class MasterApiServer {
             "SSL keystore configuration did not validate. Missing or incorrect path to keystore? Wrong password?");
       }
       webServer =
-          GrizzlyHttpServerFactory.createHttpServer(baseUri, masterApplication, true,
+          GrizzlyHttpServerFactory.createHttpServer(
+              baseUri,
+              masterApplication,
+              true,
               new SSLEngineConfigurator(sslCon, false, false, false));
     } else {
       LOGGER.info("Not enabling SSL");
@@ -73,7 +77,7 @@ public final class MasterApiServer {
 
   /**
    * Starts the master Restlet API server.
-   * 
+   *
    * @throws Exception if there is an error starting the server.
    */
   public void start() throws Exception {
@@ -84,7 +88,7 @@ public final class MasterApiServer {
 
   /**
    * Stops the master Restlet API server.
-   * 
+   *
    * @throws Exception if there is an error stopping the server.
    */
   public void stop() throws Exception {

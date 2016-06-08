@@ -8,7 +8,7 @@ import edu.washington.escience.myria.column.StringColumn;
 
 /**
  * A mutable column of String values.
- * 
+ *
  */
 public final class StringMutableColumn extends MutableColumn<String> {
   /** Required for Java serialization. */
@@ -20,7 +20,7 @@ public final class StringMutableColumn extends MutableColumn<String> {
 
   /**
    * Constructs a new column.
-   * 
+   *
    * @param data the data
    * @param numStrings number of tuples.
    * */

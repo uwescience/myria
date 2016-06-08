@@ -31,7 +31,7 @@ public class MultiFieldHashPartitionFunctionTest {
   @Test
   public void testMultiFieldPartitionFunction() {
     MultiFieldHashPartitionFunction multiFieldPartitionFunction =
-        new MultiFieldHashPartitionFunction(NUM_PARTITIONS, new int[] { 0, 1 });
+        new MultiFieldHashPartitionFunction(NUM_PARTITIONS, new int[] {0, 1});
     int numGroups = rand.nextInt(10) + 1;
     int tuplesPerGroup = rand.nextInt(10) + 1;
     TupleSource source = generateTupleBatchSource(numGroups, tuplesPerGroup);
@@ -57,7 +57,9 @@ public class MultiFieldHashPartitionFunctionTest {
    */
   private TupleSource generateTupleBatchSource(int numGroups, int tuplesPerGroup) {
     final Schema schema =
-        new Schema(ImmutableList.of(Type.INT_TYPE, Type.INT_TYPE, Type.INT_TYPE), ImmutableList.of("a", "b", "c"));
+        new Schema(
+            ImmutableList.of(Type.INT_TYPE, Type.INT_TYPE, Type.INT_TYPE),
+            ImmutableList.of("a", "b", "c"));
     TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
     for (int i = 0; i < numGroups; i++) {
       for (int j = 0; j < tuplesPerGroup; j++) {
@@ -68,5 +70,4 @@ public class MultiFieldHashPartitionFunctionTest {
     }
     return new TupleSource(tbb);
   }
-
 }

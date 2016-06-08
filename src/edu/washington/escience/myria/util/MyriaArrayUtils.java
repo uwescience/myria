@@ -12,7 +12,7 @@ import com.google.common.primitives.Ints;
 
 /**
  * Array related utility functions.
- * 
+ *
  */
 public final class MyriaArrayUtils extends org.apache.commons.lang3.ArrayUtils {
 
@@ -22,12 +22,11 @@ public final class MyriaArrayUtils extends org.apache.commons.lang3.ArrayUtils {
   /**
    * Utility classes should not be instantiated.
    */
-  private MyriaArrayUtils() {
-  }
+  private MyriaArrayUtils() {}
 
   /**
    * Fill object array.
-   * 
+   *
    * @return the filled array.
    * @param arr the array to fill
    * @param e the element to fill.
@@ -39,7 +38,7 @@ public final class MyriaArrayUtils extends org.apache.commons.lang3.ArrayUtils {
 
   /**
    * Fill int array.
-   * 
+   *
    * @return the filled array.
    * @param arr the array to fill
    * @param e the element to fill.
@@ -51,7 +50,7 @@ public final class MyriaArrayUtils extends org.apache.commons.lang3.ArrayUtils {
 
   /**
    * Flatten a 2D array into a 1D array.
-   * 
+   *
    * @param arr input 2D array
    * @return the flattened 1D array ()
    */
@@ -75,7 +74,7 @@ public final class MyriaArrayUtils extends org.apache.commons.lang3.ArrayUtils {
 
   /**
    * Flatten a 2D array into a 1D array then sort it.
-   * 
+   *
    * @param arr input 2D array
    * @return the flattened and sorted array
    */
@@ -92,7 +91,7 @@ public final class MyriaArrayUtils extends org.apache.commons.lang3.ArrayUtils {
   public static int[][] create2DVerticalIndex(final int length) {
     int[][] result = new int[length][];
     for (int i = 0; i < length; i++) {
-      result[i] = new int[] { i };
+      result[i] = new int[] {i};
     }
     return result;
   }
@@ -111,14 +110,14 @@ public final class MyriaArrayUtils extends org.apache.commons.lang3.ArrayUtils {
 
   /**
    * convert a 1D array into a 2D array.
-   * 
+   *
    * @param arr input 1D array.
    * @return 2D array returned.
    * */
   public static int[][] get2DArray(final int[] arr) {
     int[][] result = new int[arr.length][];
     for (int i = 0; i < arr.length; i++) {
-      result[i] = new int[] { arr[i] };
+      result[i] = new int[] {arr[i]};
     }
     return result;
   }
@@ -136,14 +135,15 @@ public final class MyriaArrayUtils extends org.apache.commons.lang3.ArrayUtils {
     }
     ImmutableSet<E> r = builder.build();
     if (r.size() != maybeSetArray.length) {
-      throw new IllegalArgumentException("The array " + Arrays.toString(maybeSetArray) + " is not a set");
+      throw new IllegalArgumentException(
+          "The array " + Arrays.toString(maybeSetArray) + " is not a set");
     }
     return r;
   }
 
   /**
    * Check if an array of int is a set. If not, log a warning.
-   * 
+   *
    * @param maybeSetArray data array
    * @return the array itself
    * */
@@ -158,7 +158,7 @@ public final class MyriaArrayUtils extends org.apache.commons.lang3.ArrayUtils {
 
   /**
    * Check if an array of int is a set.
-   * 
+   *
    * @param maybeSetArray data array
    * @return the array it self
    * @throws IllegalArgumentException if the data array is not a set.
@@ -166,14 +166,15 @@ public final class MyriaArrayUtils extends org.apache.commons.lang3.ArrayUtils {
   public static int[] checkSet(final int[] maybeSetArray) {
     Set<Integer> tmp = Sets.newHashSet(Ints.asList(maybeSetArray));
     if (maybeSetArray.length != tmp.size()) {
-      throw new IllegalArgumentException("The array " + Arrays.toString(maybeSetArray) + " is not a set");
+      throw new IllegalArgumentException(
+          "The array " + Arrays.toString(maybeSetArray) + " is not a set");
     }
     return maybeSetArray;
   }
 
   /**
    * Check if an array of int is a list of valid indices of another data array .
-   * 
+   *
    * @param arrayOfIndices indices array
    * @param size the size of another array, i.e. the data array
    * @return the arrayOfIndices it self
@@ -185,5 +186,4 @@ public final class MyriaArrayUtils extends org.apache.commons.lang3.ArrayUtils {
     }
     return arrayOfIndices;
   }
-
 }

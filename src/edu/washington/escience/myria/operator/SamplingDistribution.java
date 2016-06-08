@@ -27,9 +27,16 @@ public class SamplingDistribution extends UnaryOperator {
   private static final long serialVersionUID = 1L;
 
   /** The output schema. */
-  private static final Schema SCHEMA = Schema.ofFields("WorkerID",
-      Type.INT_TYPE, "StreamSize", Type.INT_TYPE, "SampleSize", Type.INT_TYPE,
-      "SampleType", Type.STRING_TYPE);
+  private static final Schema SCHEMA =
+      Schema.ofFields(
+          "WorkerID",
+          Type.INT_TYPE,
+          "StreamSize",
+          Type.INT_TYPE,
+          "SampleSize",
+          Type.INT_TYPE,
+          "SampleType",
+          Type.STRING_TYPE);
 
   /** Total number of tuples to sample. */
   private int sampleSize = 0;
@@ -52,8 +59,7 @@ public class SamplingDistribution extends UnaryOperator {
   /** Total number of tuples across all workers. */
   int totalTupleCount = 0;
 
-  private SamplingDistribution(Operator child, SamplingType sampleType,
-      Long randomSeed) {
+  private SamplingDistribution(Operator child, SamplingType sampleType, Long randomSeed) {
     super(child);
     this.sampleType = sampleType;
     rand = new Random();
@@ -75,11 +81,10 @@ public class SamplingDistribution extends UnaryOperator {
    * @param randomSeed
    *          value to seed the random generator with. null if no specified seed
    */
-  public SamplingDistribution(Operator child, int sampleSize,
-      SamplingType sampleType, Long randomSeed) {
+  public SamplingDistribution(
+      Operator child, int sampleSize, SamplingType sampleType, Long randomSeed) {
     this(child, sampleType, randomSeed);
-    Preconditions.checkArgument(sampleSize >= 0,
-        "Sample Size must be >= 0: %s", sampleSize);
+    Preconditions.checkArgument(sampleSize >= 0, "Sample Size must be >= 0: %s", sampleSize);
     this.sampleSize = sampleSize;
   }
 
@@ -97,14 +102,15 @@ public class SamplingDistribution extends UnaryOperator {
    * @param randomSeed
    *          value to seed the random generator with. null if no specified seed
    */
-  public SamplingDistribution(Operator child, float samplePercentage,
-      SamplingType sampleType, Long randomSeed) {
+  public SamplingDistribution(
+      Operator child, float samplePercentage, SamplingType sampleType, Long randomSeed) {
     this(child, sampleType, randomSeed);
     this.isPercentageSample = true;
     this.samplePercentage = samplePercentage;
-    Preconditions.checkArgument(samplePercentage >= 0
-        && samplePercentage <= 100,
-        "Sample Percentage must be >= 0 && <= 100: %s", samplePercentage);
+    Preconditions.checkArgument(
+        samplePercentage >= 0 && samplePercentage <= 100,
+        "Sample Percentage must be >= 0 && <= 100: %s",
+        samplePercentage);
   }
 
   @Override
@@ -126,8 +132,10 @@ public class SamplingDistribution extends UnaryOperator {
     if (isPercentageSample) {
       sampleSize = Math.round(totalTupleCount * (samplePercentage / 100));
     }
-    Preconditions.checkState(sampleSize >= 0 && sampleSize <= totalTupleCount,
-        "Cannot extract %s samples from a population of size %s", sampleSize,
+    Preconditions.checkState(
+        sampleSize >= 0 && sampleSize <= totalTupleCount,
+        "Cannot extract %s samples from a population of size %s",
+        sampleSize,
         totalTupleCount);
 
     // Generate a sampling distribution across the workers.
@@ -177,8 +185,7 @@ public class SamplingDistribution extends UnaryOperator {
         throw new DbException("WorkerID must be of type INT or LONG");
       }
       Preconditions.checkState(workerID > 0, "WorkerID must be > 0");
-      Preconditions.checkState(!workerInfo.containsKey(workerID),
-          "Duplicate WorkerIDs");
+      Preconditions.checkState(!workerInfo.containsKey(workerID), "Duplicate WorkerIDs");
 
       int tupleCount;
       if (col1Type == Type.INT_TYPE) {
@@ -188,8 +195,8 @@ public class SamplingDistribution extends UnaryOperator {
       } else {
         throw new DbException("TupleCount must be of type INT or LONG");
       }
-      Preconditions.checkState(tupleCount >= 0,
-          "Worker cannot have a negative TupleCount: %s", tupleCount);
+      Preconditions.checkState(
+          tupleCount >= 0, "Worker cannot have a negative TupleCount: %s", tupleCount);
 
       int actualTupleCount = tupleCount;
       if (hasActualTupleCount) {
@@ -200,7 +207,8 @@ public class SamplingDistribution extends UnaryOperator {
         } else {
           throw new DbException("ActualTupleCount must be of type INT or LONG");
         }
-        Preconditions.checkState(tupleCount >= 0,
+        Preconditions.checkState(
+            tupleCount >= 0,
             "Worker cannot have a negative ActualTupleCount: %d",
             actualTupleCount);
       }
@@ -222,8 +230,7 @@ public class SamplingDistribution extends UnaryOperator {
    *          total # of samples to distribute across the workers.
    */
   private void withReplacementDistribution(
-      SortedMap<Integer, WorkerInfo> workerInfo, int totalTupleCount,
-      int sampleSize) {
+      SortedMap<Integer, WorkerInfo> workerInfo, int totalTupleCount, int sampleSize) {
     for (int i = 0; i < sampleSize; i++) {
       int sampleTupleIdx = rand.nextInt(totalTupleCount);
       // Assign this tuple to the workerID that holds this sampleTupleIdx.
@@ -250,8 +257,7 @@ public class SamplingDistribution extends UnaryOperator {
    *          total # of samples to distribute across the workers.
    */
   private void withoutReplacementDistribution(
-      SortedMap<Integer, WorkerInfo> workerInfo, int totalTupleCount,
-      int sampleSize) {
+      SortedMap<Integer, WorkerInfo> workerInfo, int totalTupleCount, int sampleSize) {
     SortedMap<Integer, Integer> logicalTupleCounts = new TreeMap<>();
     for (Map.Entry<Integer, WorkerInfo> wInfo : workerInfo.entrySet()) {
       logicalTupleCounts.put(wInfo.getKey(), wInfo.getValue().tupleCount);
@@ -325,5 +331,4 @@ public class SamplingDistribution extends UnaryOperator {
       this.actualTupleCount = actualTupleCount;
     }
   }
-
 }

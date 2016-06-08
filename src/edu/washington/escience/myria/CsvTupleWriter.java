@@ -16,9 +16,9 @@ import edu.washington.escience.myria.storage.ReadableTable;
  * {@link CSVPrinter} to do the underlying serialization. The fields to be output may contain special characters such as
  * newlines, because fields may be quoted (using double quotes '"'). Double quotation marks inside of fields are escaped
  * using the CSV-standard trick of replacing '"' with '""'.
- * 
+ *
  * CSV files should be compatible with Microsoft Excel.
- * 
+ *
  */
 public class CsvTupleWriter implements TupleWriter {
 

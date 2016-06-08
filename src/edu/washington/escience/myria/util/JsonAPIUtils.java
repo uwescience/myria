@@ -18,8 +18,7 @@ public final class JsonAPIUtils {
   /**
    * Util class allows no instance.
    * */
-  private JsonAPIUtils() {
-  }
+  private JsonAPIUtils() {}
 
   /**
    * @param masterHostname master hostname
@@ -28,8 +27,8 @@ public final class JsonAPIUtils {
    * @return a HTTPURLConnection instance of retrieving responses.
    * @throws IOException if IO errors
    * */
-  public static HttpURLConnection submitQuery(final String masterHostname, final int apiPort, final File queryFile)
-      throws IOException {
+  public static HttpURLConnection submitQuery(
+      final String masterHostname, final int apiPort, final File queryFile) throws IOException {
     return submitQuery(masterHostname, apiPort, FileUtils.readFileToString(queryFile));
   }
 
@@ -40,8 +39,8 @@ public final class JsonAPIUtils {
    * @return a HTTPURLConnection instance of retrieving responses.
    * @throws IOException if IO errors
    * */
-  public static HttpURLConnection submitQuery(final String masterHostname, final int apiPort, final String queryString)
-      throws IOException {
+  public static HttpURLConnection submitQuery(
+      final String masterHostname, final int apiPort, final String queryString) throws IOException {
     String type = "application/json";
     URL u = new URL("http://" + masterHostname + ":" + apiPort + "/query");
     HttpURLConnection conn = (HttpURLConnection) u.openConnection();
@@ -60,7 +59,7 @@ public final class JsonAPIUtils {
 
   /**
    * Construct a URL for get/put of a dataset.
-   * 
+   *
    * @param host master hostname
    * @param port master port
    * @param user user parameter of the dataset
@@ -70,27 +69,46 @@ public final class JsonAPIUtils {
    * @return a URL for the dataset
    * @throws IOException if an error occurs
    */
-  private static URL getDatasetUrl(final String host, final int port, final String user, final String program,
-      final String relation, final String format) throws IOException {
-    return new URL(String.format("http://%s:%d/dataset/user-%s/program-%s/relation-%s/data?format=%s", host, port,
-        user, program, relation, format));
+  private static URL getDatasetUrl(
+      final String host,
+      final int port,
+      final String user,
+      final String program,
+      final String relation,
+      final String format)
+      throws IOException {
+    return new URL(
+        String.format(
+            "http://%s:%d/dataset/user-%s/program-%s/relation-%s/data?format=%s",
+            host,
+            port,
+            user,
+            program,
+            relation,
+            format));
   }
 
   /**
    * Download a dataset.
-   * 
+   *
    * @param host master hostname
    * @param port master port
    * @param user user parameter of the dataset
    * @param program program parameter of the dataset
    * @param relation relation parameter of the dataset
    * @param format the format of the relation ("json", "csv", "tsv")
-   * 
+   *
    * @return dataset encoded in the requested format
    * @throws IOException if an error occurs
    */
-  public static String download(final String host, final int port, final String user, final String program,
-      final String relation, final String format) throws IOException {
+  public static String download(
+      final String host,
+      final int port,
+      final String user,
+      final String program,
+      final String relation,
+      final String format)
+      throws IOException {
     URL url = getDatasetUrl(host, port, user, program, relation, format);
     HttpURLConnection conn = (HttpURLConnection) url.openConnection();
     conn.setDoOutput(true);
@@ -110,7 +128,7 @@ public final class JsonAPIUtils {
 
   /**
    * Replace the contents of a dataset.
-   * 
+   *
    * @param host master hostname
    * @param port master port
    * @param user user parameter of the dataset
@@ -118,11 +136,18 @@ public final class JsonAPIUtils {
    * @param relation relation parameter of the dataset
    * @param dataset the dataset to upload
    * @param format the format of the relation ("json", "csv", "tsv")
-   * 
+   *
    * @throws IOException if an error occurs
    */
-  public static void replace(final String host, final int port, final String user, final String program,
-      final String relation, final String dataset, final String format) throws IOException {
+  public static void replace(
+      final String host,
+      final int port,
+      final String user,
+      final String program,
+      final String relation,
+      final String dataset,
+      final String format)
+      throws IOException {
     URL url = getDatasetUrl(host, port, user, program, relation, format);
     HttpURLConnection conn = (HttpURLConnection) url.openConnection();
     conn.setDoOutput(true);
@@ -149,8 +174,8 @@ public final class JsonAPIUtils {
    * @return a HTTPURLConnection instance of retrieving responses.
    * @throws IOException if IO errors
    * */
-  public static HttpURLConnection ingestData(final String masterHostname, final int apiPort, final File queryFile)
-      throws IOException {
+  public static HttpURLConnection ingestData(
+      final String masterHostname, final int apiPort, final File queryFile) throws IOException {
     return ingestData(masterHostname, apiPort, FileUtils.readFileToString(queryFile));
   }
 
@@ -161,8 +186,8 @@ public final class JsonAPIUtils {
    * @return a HTTPURLConnection instance of retrieving responses.
    * @throws IOException if IO errors
    * */
-  public static HttpURLConnection ingestData(final String masterHostname, final int apiPort, final String queryString)
-      throws IOException {
+  public static HttpURLConnection ingestData(
+      final String masterHostname, final int apiPort, final String queryString) throws IOException {
 
     String type = "application/json";
     URL u = new URL("http://" + masterHostname + ":" + apiPort + "/dataset");
@@ -189,12 +214,23 @@ public final class JsonAPIUtils {
    * @return a HTTPURLConnection instance of retrieving responses.
    * @throws IOException if IO errors
    * */
-  public static HttpURLConnection deleteDataset(final String masterHostname, final int apiPort, final String user,
-      final String program, final String relation) throws IOException {
+  public static HttpURLConnection deleteDataset(
+      final String masterHostname,
+      final int apiPort,
+      final String user,
+      final String program,
+      final String relation)
+      throws IOException {
     String type = "application/json";
     URL u =
-        new URL(String.format("http://%s:%d/dataset/user-%s/program-%s/relation-%s/", masterHostname, apiPort, user,
-            program, relation));
+        new URL(
+            String.format(
+                "http://%s:%d/dataset/user-%s/program-%s/relation-%s/",
+                masterHostname,
+                apiPort,
+                user,
+                program,
+                relation));
     HttpURLConnection conn = (HttpURLConnection) u.openConnection();
     conn.setRequestMethod("DELETE");
     conn.setRequestProperty("Content-Type", type);

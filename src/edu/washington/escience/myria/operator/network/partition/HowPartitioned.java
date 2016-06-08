@@ -17,11 +17,9 @@ import com.google.common.primitives.Ints;
 public class HowPartitioned {
 
   /** The partition function which was used to partition the dataset. Null means unknown. */
-  @JsonProperty
-  private PartitionFunction pf = null;
+  @JsonProperty private PartitionFunction pf = null;
   /** The sequence of workers that the dataset is partitioned on. Null means unknown. */
-  @JsonProperty
-  private ImmutableSet<Integer> workers = null;
+  @JsonProperty private ImmutableSet<Integer> workers = null;
 
   /**
    * @param pf the partition function.
@@ -36,13 +34,14 @@ public class HowPartitioned {
 
   /**
    * Static function to create a HowPartitioned object.
-   * 
+   *
    * @param pf the partition function.
    * @param workers the sequence of workers. *
    * @return a new HowPartitioned reference to the specified relation.
    */
   @JsonCreator
-  public static HowPartitioned of(@JsonProperty("pf") final PartitionFunction pf,
+  public static HowPartitioned of(
+      @JsonProperty("pf") final PartitionFunction pf,
       @JsonProperty("workers") final int[] workers) {
     return new HowPartitioned(pf, workers);
   }

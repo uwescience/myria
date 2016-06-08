@@ -22,12 +22,14 @@ public class DifferenceTest {
   @Before
   public void setUp() throws Exception {
     final Schema schema =
-        new Schema(ImmutableList.of(Type.LONG_TYPE, Type.STRING_TYPE), ImmutableList.of("id", "name"));
+        new Schema(
+            ImmutableList.of(Type.LONG_TYPE, Type.STRING_TYPE), ImmutableList.of("id", "name"));
     leftTbb = new TupleBatchBuffer(schema);
 
     {
-      long[] ids = new long[] { 0, 2, 2, 3, 4, 5, 6, 8, 8, 8, 8, 10, 10, 10 };
-      String[] names = new String[] { "c", "c", "c", "b", "b", "b", "b", "a", "a", "a", "a", "a", "a", "a" };
+      long[] ids = new long[] {0, 2, 2, 3, 4, 5, 6, 8, 8, 8, 8, 10, 10, 10};
+      String[] names =
+          new String[] {"c", "c", "c", "b", "b", "b", "b", "a", "a", "a", "a", "a", "a", "a"};
 
       for (int i = 0; i < ids.length; i++) {
         leftTbb.putLong(0, ids[i]);
@@ -37,15 +39,14 @@ public class DifferenceTest {
 
     rightTbb = new TupleBatchBuffer(schema);
     {
-      long[] ids = new long[] { 2, 10, 2, 9 };
-      String[] names = new String[] { "c", "a", "c", "k" };
+      long[] ids = new long[] {2, 10, 2, 9};
+      String[] names = new String[] {"c", "a", "c", "k"};
 
       for (int i = 0; i < ids.length; i++) {
         rightTbb.putLong(0, ids[i]);
         rightTbb.putString(1, names[i]);
       }
     }
-
   }
 
   @Test
@@ -60,8 +61,8 @@ public class DifferenceTest {
     TupleBatchBuffer expected = new TupleBatchBuffer(diff.getSchema());
 
     {
-      long[] ids = new long[] { 0, 3, 4, 5, 6, 8 };
-      String[] names = new String[] { "c", "b", "b", "b", "b", "a" };
+      long[] ids = new long[] {0, 3, 4, 5, 6, 8};
+      String[] names = new String[] {"c", "b", "b", "b", "b", "a"};
 
       for (int i = 0; i < ids.length; i++) {
         expected.putLong(0, ids[i]);
@@ -85,10 +86,14 @@ public class DifferenceTest {
 
   @Test(expected = DbException.class)
   public void incompatibleSchemas() throws DbException {
-    final Schema s1 = new Schema(ImmutableList.of(Type.LONG_TYPE, Type.STRING_TYPE), ImmutableList.of("id", "name"));
+    final Schema s1 =
+        new Schema(
+            ImmutableList.of(Type.LONG_TYPE, Type.STRING_TYPE), ImmutableList.of("id", "name"));
     Operator left = EmptyRelation.of(s1);
 
-    final Schema s2 = new Schema(ImmutableList.of(Type.INT_TYPE, Type.STRING_TYPE), ImmutableList.of("id", "name"));
+    final Schema s2 =
+        new Schema(
+            ImmutableList.of(Type.INT_TYPE, Type.STRING_TYPE), ImmutableList.of("id", "name"));
     Operator right = EmptyRelation.of(s2);
 
     BinaryOperator diff = new Difference(left, right);

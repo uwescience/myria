@@ -28,7 +28,8 @@ public class BooleanEvaluator extends Evaluator {
    * @param expression the expression for the evaluator
    * @param parameters parameters that are passed to the expression
    */
-  public BooleanEvaluator(final Expression expression, final ExpressionOperatorParameter parameters) {
+  public BooleanEvaluator(
+      final Expression expression, final ExpressionOperatorParameter parameters) {
     super(expression, parameters);
     Preconditions.checkArgument(getOutputType().equals(Type.BOOLEAN_TYPE));
   }
@@ -41,13 +42,17 @@ public class BooleanEvaluator extends Evaluator {
   @Override
   public void compile() throws DbException {
     try {
-      IExpressionEvaluator se = CompilerFactoryFactory.getDefaultCompilerFactory().newExpressionEvaluator();
+      IExpressionEvaluator se =
+          CompilerFactoryFactory.getDefaultCompilerFactory().newExpressionEvaluator();
 
       se.setDefaultImports(MyriaConstants.DEFAULT_JANINO_IMPORTS);
 
       evaluator =
-          (BooleanEvalInterface) se.createFastEvaluator(getJavaExpressionWithAppend(), BooleanEvalInterface.class, new String[] {
-              Expression.TB, Expression.ROW });
+          (BooleanEvalInterface)
+              se.createFastEvaluator(
+                  getJavaExpressionWithAppend(),
+                  BooleanEvalInterface.class,
+                  new String[] {Expression.TB, Expression.ROW});
     } catch (Exception e) {
       throw new DbException("Error when compiling expression " + this, e);
     }
@@ -62,8 +67,8 @@ public class BooleanEvaluator extends Evaluator {
    * @throws InvocationTargetException exception thrown from janino
    */
   public boolean eval(final TupleBatch tb, final int rowId) throws InvocationTargetException {
-    Preconditions.checkArgument(evaluator != null,
-        "Call compile first or copy the data if it is the same in the input.");
+    Preconditions.checkArgument(
+        evaluator != null, "Call compile first or copy the data if it is the same in the input.");
     return evaluator.evaluate(tb, rowId);
   }
 }

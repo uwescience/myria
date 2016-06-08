@@ -14,11 +14,11 @@ import edu.washington.escience.myria.DbException;
 /**
  * The {@link ExecutionFuture} implementation that is Callable and Runnable. The state of the future is set
  * automatically by the execution of this task.
- * 
+ *
  * @param <T> The return type.
  */
-public class ExecutableExecutionFuture<T> extends OperationFutureBase<T> implements ExecutionFuture<T>, Callable<T>,
-    Runnable {
+public class ExecutableExecutionFuture<T> extends OperationFutureBase<T>
+    implements ExecutionFuture<T>, Callable<T>, Runnable {
 
   /**
    * The {@link Callable} who caused the creation of this future.
@@ -37,9 +37,9 @@ public class ExecutableExecutionFuture<T> extends OperationFutureBase<T> impleme
 
   /**
    * Creates a new instance.
-   * 
+   *
    * @param callable the {@link Callable} who caused the creation of this future.
-   * 
+   *
    * @param cancellable {@code true} if and only if this future can be canceled
    */
   public ExecutableExecutionFuture(final Callable<T> callable, final boolean cancellable) {
@@ -50,9 +50,9 @@ public class ExecutableExecutionFuture<T> extends OperationFutureBase<T> impleme
 
   /**
    * Creates a new instance.
-   * 
+   *
    * @param runnable the {@link Runnable} who caused the creation of this future.
-   * 
+   *
    * @param cancellable {@code true} if and only if this future can be canceled
    */
   public ExecutableExecutionFuture(final Runnable runnable, final boolean cancellable) {
@@ -147,8 +147,8 @@ public class ExecutableExecutionFuture<T> extends OperationFutureBase<T> impleme
   }
 
   @Override
-  public T get(final long timeout, final TimeUnit unit) throws InterruptedException, ExecutionException,
-      TimeoutException {
+  public T get(final long timeout, final TimeUnit unit)
+      throws InterruptedException, ExecutionException, TimeoutException {
     this.await(timeout, unit);
     if (isDone()) {
       this.checkFailure();
@@ -180,7 +180,8 @@ public class ExecutableExecutionFuture<T> extends OperationFutureBase<T> impleme
       if (isDone()) {
         return getResult();
       } else {
-        throw new RejectedExecutionException("Another thread (" + this.executingThread + ") is executing this task");
+        throw new RejectedExecutionException(
+            "Another thread (" + this.executingThread + ") is executing this task");
       }
     }
     this.executingThread = Thread.currentThread();

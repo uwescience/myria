@@ -7,11 +7,11 @@ import edu.washington.escience.myria.column.Column;
 
 /**
  * The extended TupleBatch which holds extra meta information for a batch of tuples received from other workers.
- * 
+ *
  */
 public class ExchangeTupleBatch extends TupleBatch {
   /**
-   * 
+   *
    */
   private static final long serialVersionUID = -2482302493089301646L;
 
@@ -33,7 +33,7 @@ public class ExchangeTupleBatch extends TupleBatch {
   /**
    * Broken-out copy constructor. Shallow copy of the schema, column list, and the number of tuples; deep copy of the
    * valid tuples since that's what we mutate.
-   * 
+   *
    * @param schema schema of the tuples in this batch. Must match columns.
    * @param columns contains the column-stored data. Must match schema.
    * @param numTuples the number of tuples in this TupleBatch.
@@ -42,8 +42,14 @@ public class ExchangeTupleBatch extends TupleBatch {
    * @param sourceWorkerID which worker the TB from
    * @param isEOI is EOI TB
    */
-  private ExchangeTupleBatch(final Schema schema, final ImmutableList<? extends Column<?>> columns,
-      final int numTuples, final long startingTupleSeqNum, final long lsn, final int sourceWorkerID, final boolean isEOI) {
+  private ExchangeTupleBatch(
+      final Schema schema,
+      final ImmutableList<? extends Column<?>> columns,
+      final int numTuples,
+      final long startingTupleSeqNum,
+      final long lsn,
+      final int sourceWorkerID,
+      final boolean isEOI) {
     /** For a private copy constructor, no data checks are needed. Checks are only needed in the public constructor. */
     super(schema, columns, numTuples, isEOI);
     startingSeqNum = startingTupleSeqNum;
@@ -53,7 +59,7 @@ public class ExchangeTupleBatch extends TupleBatch {
 
   /**
    * wrap a TB in ExchangeTupleBatch.
-   * 
+   *
    * @param data the TB data.
    * @param sourceWorkerID which worker the TB from
    * @return a wrapped ETB
@@ -62,7 +68,13 @@ public class ExchangeTupleBatch extends TupleBatch {
     if (data instanceof ExchangeTupleBatch) {
       return (ExchangeTupleBatch) data;
     } else {
-      return new ExchangeTupleBatch(data.getSchema(), data.getDataColumns(), data.numTuples(), -1, -1, sourceWorkerID,
+      return new ExchangeTupleBatch(
+          data.getSchema(),
+          data.getDataColumns(),
+          data.numTuples(),
+          -1,
+          -1,
+          sourceWorkerID,
           data.isEOI());
     }
   }
@@ -87,5 +99,4 @@ public class ExchangeTupleBatch extends TupleBatch {
   public final int getSourceWorkerID() {
     return sourceWorkerID;
   }
-
 }

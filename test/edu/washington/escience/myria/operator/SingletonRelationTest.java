@@ -25,5 +25,4 @@ public class SingletonRelationTest {
     singleton.close();
     assertEquals(1, count);
   }
-
 }

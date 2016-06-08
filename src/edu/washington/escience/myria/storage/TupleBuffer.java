@@ -47,7 +47,7 @@ public class TupleBuffer implements ReadableTable, AppendableTable {
 
   /**
    * Constructs an empty TupleBuffer to hold tuples matching the specified Schema.
-   * 
+   *
    * @param schema specified the columns of the emitted TupleBatch objects.
    */
   public TupleBuffer(final Schema schema) {
@@ -65,11 +65,14 @@ public class TupleBuffer implements ReadableTable, AppendableTable {
 
   /**
    * Makes a batch of any tuples in the buffer and appends it to the internal list.
-   * 
+   *
    */
   private void finishBatch() {
-    Preconditions.checkState(currentBatchSize == TupleBatch.BATCH_SIZE,
-        "cannot finish a batch with %s < %s rows ready", currentBatchSize, TupleBatch.BATCH_SIZE);
+    Preconditions.checkState(
+        currentBatchSize == TupleBatch.BATCH_SIZE,
+        "cannot finish a batch with %s < %s rows ready",
+        currentBatchSize,
+        TupleBatch.BATCH_SIZE);
     finishBatchEvenIfSmall();
     currentBatch = ColumnFactory.allocateColumns(schema);
   }
@@ -78,7 +81,9 @@ public class TupleBuffer implements ReadableTable, AppendableTable {
    * Actually finish the batch. Does not ensure that the batch is full, and thus can only be used when finalizing.
    */
   private void finishBatchEvenIfSmall() {
-    Preconditions.checkState(numColumnsReady == 0, "cannot finish a batch with with %s != 0 columns ready",
+    Preconditions.checkState(
+        numColumnsReady == 0,
+        "cannot finish a batch with with %s != 0 columns ready",
         numColumnsReady);
     Preconditions.checkState(!finalized, "cannot force finish a batch once finalized");
     if (currentBatchSize == 0) {
@@ -255,18 +260,19 @@ public class TupleBuffer implements ReadableTable, AppendableTable {
 
   /**
    * Helper function: checks whether the specified column can be inserted into.
-   * 
+   *
    * @param column the column in which the value should be put.
    */
   private void checkPutIndex(final int column) {
     Preconditions.checkState(!finalized, "cannot append to a TupleBuffer once finalized");
     Preconditions.checkElementIndex(column, numColumns);
-    Preconditions.checkState(!columnsReady.get(column), "need to fill up one row before starting new one");
+    Preconditions.checkState(
+        !columnsReady.get(column), "need to fill up one row before starting new one");
   }
 
   /**
    * Helper function to update the internal state after a value has been inserted into the specified column.
-   * 
+   *
    * @param column the column in which the value was put.
    */
   private void columnPut(final int column) {

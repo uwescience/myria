@@ -20,7 +20,7 @@ public class SqrtExpression extends UnaryExpression {
 
   /**
    * Take the square root of the operand.
-   * 
+   *
    * @param operand the operand.
    */
   public SqrtExpression(final ExpressionOperator operand) {

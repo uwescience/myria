@@ -50,7 +50,7 @@ public final class DupElim extends StreamingState {
 
   /**
    * Do duplicate elimination for tb.
-   * 
+   *
    * @param tb the TupleBatch for performing DupElim.
    * @return the duplicate eliminated TB.
    * */
