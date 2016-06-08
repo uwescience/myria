@@ -49,28 +49,8 @@ sourceSets {
     java.srcDir 'test'
     output.classesDir = 'build/test'
   }
-  /* Code for systemtests */
-  systemtest {
-    java.srcDir 'systemtest'
-    output.classesDir = 'build/systemtest'
-  }
-  /* Code for speedtests */
-  speedtest {
-    java.srcDir 'speedtest'
-    output.classesDir = 'build/speedtest'
-  }
-  /* Code for testsuites */
-  testsuites {
-    java.srcDir 'testsuites'
-    output.classesDir = 'build/testsuites'
-  }
 }
 
-
-/* Compile, but don't run the speed tests when building the project. */
-check.dependsOn speedtestClasses
-check.dependsOn systemtestClasses
-check.dependsOn testsuitesClasses
 /* Build the Eclipse .classpath file first, because if Gradle's build fails
  * we'll want to use Eclipse to debug it. */
 test.dependsOn eclipseClasspath
@@ -179,21 +159,6 @@ dependencies {
   testCompile "junit:junit:4.12"
   testCompile "org.assertj:assertj-core:1.7.1"
   testCompile "com.carrotsearch:junit-benchmarks:0.7.2"
-
-  systemtestCompile sourceSets.main.output
-  systemtestCompile configurations.testCompile
-  systemtestCompile sourceSets.test.output
-  systemtestRuntime configurations.testRuntime
-
-  speedtestCompile sourceSets.main.output
-  speedtestCompile configurations.systemtestCompile
-  speedtestCompile sourceSets.systemtest.output
-  speedtestRuntime configurations.systemtestRuntime
-
-  testsuitesCompile sourceSets.main.output
-  testsuitesCompile configurations.systemtestCompile
-  testsuitesCompile sourceSets.systemtest.output
-  testsuitesRuntime configurations.systemtestRuntime
 }
 
 /* Tell Java to emit all compiler warnings. */
@@ -209,20 +174,6 @@ tasks.withType(Test) {
   // set heap size for the test JVM(s)
   minHeapSize = "512m"
   maxHeapSize = "2048m"
-}
-
-/* Tell gradle where additional tests & testsuites should look for classes. */
-task systemtest(type: Test) {
-  testClassesDir = sourceSets.systemtest.output.classesDir
-  classpath = sourceSets.systemtest.runtimeClasspath
-}
-task speedtest(type: Test) {
-  testClassesDir = sourceSets.speedtest.output.classesDir
-  classpath = sourceSets.speedtest.runtimeClasspath
-}
-task testsuites(type: Test) {
-  testClassesDir = sourceSets.testsuites.output.classesDir
-  classpath = sourceSets.testsuites.runtimeClasspath
 }
 
 /* The eclipseClasspath task will build a local Eclipse .classpath file. */
@@ -253,9 +204,6 @@ eclipse.classpath {
       cp.entries.findAll { it instanceof SourceFolder && it.path.startsWith("protobuf") }*.output = "build/main"
       cp.entries.findAll { it instanceof SourceFolder && it.path.startsWith("third-party-src") }*.output = "build/main"
       cp.entries.findAll { it instanceof SourceFolder && it.path.startsWith("test") }*.output = "build/test"
-      cp.entries.findAll { it instanceof SourceFolder && it.path.startsWith("systemtest") }*.output = "build/systemtest"
-      cp.entries.findAll { it instanceof SourceFolder && it.path.startsWith("speedtest") }*.output = "build/speedtest"
-      cp.entries.findAll { it instanceof SourceFolder && it.path.startsWith("testsuites") }*.output = "build/testsuites"
     }
 
   }
@@ -282,18 +230,9 @@ task symlinkMetricsJar << {
 tasks.symlinkMetricsJar.dependsOn copyToLib
 tasks.jar.dependsOn symlinkMetricsJar
 
-/* Make sure test runs before any other type of tests */
-systemtest.dependsOn test
-speedtest.dependsOn test
-
 /* allTests just runs all tests */
 task allTests
 allTests.dependsOn test
-allTests.dependsOn systemtest
-allTests.dependsOn speedtest
-
-/* Make check run system tests. */
-/* check.dependsOn systemtest */
 
 /* Assemble the Myria jar into `build/libs` */
 jar {
@@ -317,7 +256,7 @@ shadowJar {
 
 /* Coveralls */
 jacocoTestReport {
-  executionData(test, systemtest)
+  executionData(test)
   reports {
     xml.enabled = true // coveralls plugin depends on xml format report
     html.enabled = true
