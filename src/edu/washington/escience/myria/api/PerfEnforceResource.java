@@ -21,7 +21,7 @@ import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.coordinator.CatalogException;
 import edu.washington.escience.myria.parallel.Server;
 import edu.washington.escience.myria.perfenforce.encoding.InitializeScalingEncoding;
-import edu.washington.escience.myria.perfenforce.encoding.StepScalingEncoding;
+import edu.washington.escience.myria.perfenforce.encoding.ScalingAlgorithmEncoding;
 
 /**
  * This is the class that handles API calls for PerfEnforce
@@ -73,10 +73,10 @@ public final class PerfEnforceResource {
   @POST
   @Path("/step-fake")
   @Consumes(MediaType.APPLICATION_JSON)
-  public Response scalingStepFake(final StepScalingEncoding scalingAlgorithmEncoding) {
+  public Response scalingStepFake(final ScalingAlgorithmEncoding scalingAlgorithmEncoding) {
+
     LOGGER.warn("Run Fake Query....");
-    server.postFakeQuery(scalingAlgorithmEncoding.pathName, scalingAlgorithmEncoding.querySequence,
-        scalingAlgorithmEncoding.scalingAlgorithm);
+    server.postFakeQuery(scalingAlgorithmEncoding);
 
     /* response */
     return Response.noContent().build();

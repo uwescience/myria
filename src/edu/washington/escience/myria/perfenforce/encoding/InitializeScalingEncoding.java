@@ -10,7 +10,9 @@ import edu.washington.escience.myria.api.encoding.Required;
  */
 public class InitializeScalingEncoding {
   @Required
-  public int tierSelected;
+  public int tier;
+  @Required
+  public String path;
   @Required
   public ScalingAlgorithmEncoding scalingAlgorithm;
 }
