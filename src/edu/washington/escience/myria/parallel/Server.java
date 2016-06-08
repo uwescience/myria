@@ -1,7 +1,6 @@
 package edu.washington.escience.myria.parallel;
 
 import java.io.ByteArrayInputStream;
-import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -13,25 +12,41 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Queue;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import java.util.concurrent.locks.Lock;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import javax.inject.Inject;
 
-import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang.text.StrSubstitutor;
+import org.apache.reef.tang.Configuration;
+import org.apache.reef.tang.Injector;
+import org.apache.reef.tang.Tang;
+import org.apache.reef.tang.annotations.Parameter;
+import org.apache.reef.tang.exceptions.BindException;
+import org.apache.reef.tang.exceptions.InjectionException;
+import org.apache.reef.tang.formats.AvroConfigurationSerializer;
+import org.apache.reef.tang.formats.ConfigurationSerializer;
+import org.apache.reef.task.TaskMessage;
+import org.apache.reef.task.TaskMessageSource;
+import org.apache.reef.task.events.DriverMessage;
+import org.apache.reef.util.Optional;
+import org.apache.reef.wake.EventHandler;
 import org.jboss.netty.channel.ChannelFactory;
 import org.jboss.netty.channel.ChannelPipelineFactory;
+import org.jboss.netty.channel.group.ChannelGroupFuture;
+import org.jboss.netty.channel.group.ChannelGroupFutureListener;
 import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
 import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
 import org.jboss.netty.handler.execution.OrderedMemoryAwareThreadPoolExecutor;
@@ -46,11 +61,12 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.Striped;
+import com.google.protobuf.InvalidProtocolBufferException;
 
 import edu.washington.escience.myria.CsvTupleWriter;
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
-import edu.washington.escience.myria.MyriaSystemConfigKeys;
 import edu.washington.escience.myria.PostgresBinaryTupleWriter;
 import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.Schema;
@@ -61,7 +77,6 @@ import edu.washington.escience.myria.api.MyriaJsonMapperProvider;
 import edu.washington.escience.myria.api.encoding.DatasetStatus;
 import edu.washington.escience.myria.api.encoding.QueryEncoding;
 import edu.washington.escience.myria.coordinator.CatalogException;
-import edu.washington.escience.myria.coordinator.ConfigFileException;
 import edu.washington.escience.myria.coordinator.MasterCatalog;
 import edu.washington.escience.myria.expression.Expression;
 import edu.washington.escience.myria.expression.MinusExpression;
@@ -102,8 +117,20 @@ import edu.washington.escience.myria.proto.TransportProto.TransportMessage;
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
 import edu.washington.escience.myria.storage.TupleBuffer;
-import edu.washington.escience.myria.tools.MyriaConfiguration;
-import edu.washington.escience.myria.util.DeploymentUtils;
+import edu.washington.escience.myria.tools.MyriaGlobalConfigurationModule.DefaultInstancePath;
+import edu.washington.escience.myria.tools.MyriaGlobalConfigurationModule.FlowControlWriteBufferHighMarkBytes;
+import edu.washington.escience.myria.tools.MyriaGlobalConfigurationModule.FlowControlWriteBufferLowMarkBytes;
+import edu.washington.escience.myria.tools.MyriaGlobalConfigurationModule.MasterHost;
+import edu.washington.escience.myria.tools.MyriaGlobalConfigurationModule.MasterRpcPort;
+import edu.washington.escience.myria.tools.MyriaGlobalConfigurationModule.OperatorInputBufferCapacity;
+import edu.washington.escience.myria.tools.MyriaGlobalConfigurationModule.OperatorInputBufferRecoverTrigger;
+import edu.washington.escience.myria.tools.MyriaGlobalConfigurationModule.PersistUri;
+import edu.washington.escience.myria.tools.MyriaGlobalConfigurationModule.StorageDbms;
+import edu.washington.escience.myria.tools.MyriaGlobalConfigurationModule.TcpConnectionTimeoutMillis;
+import edu.washington.escience.myria.tools.MyriaGlobalConfigurationModule.TcpReceiveBufferSizeBytes;
+import edu.washington.escience.myria.tools.MyriaGlobalConfigurationModule.TcpSendBufferSizeBytes;
+import edu.washington.escience.myria.tools.MyriaGlobalConfigurationModule.WorkerConf;
+import edu.washington.escience.myria.tools.MyriaWorkerConfigurationModule;
 import edu.washington.escience.myria.util.IPCUtils;
 import edu.washington.escience.myria.util.MyriaUtils;
 import edu.washington.escience.myria.util.concurrent.ErrorLoggingTimerTask;
@@ -112,7 +139,7 @@ import edu.washington.escience.myria.util.concurrent.RenamingThreadFactory;
 /**
  * The master entrance.
  */
-public final class Server {
+public final class Server implements TaskMessageSource, EventHandler<DriverMessage> {
 
   /**
    * Master message processor.
@@ -146,21 +173,9 @@ public final class Server {
                 case RESOURCE_STATS:
                   queryManager.updateResourceStats(senderID, controlM);
                   break;
-                case WORKER_HEARTBEAT:
-                  LOGGER.trace("getting heartbeat from worker {}", senderID);
-                  updateHeartbeat(senderID);
-                  break;
-                case REMOVE_WORKER_ACK:
-                  int workerID = controlM.getWorkerId();
-                  removeWorkerAckReceived.get(workerID).add(senderID);
-                  break;
-                case ADD_WORKER_ACK:
-                  workerID = controlM.getWorkerId();
-                  addWorkerAckReceived.get(workerID).add(senderID);
-                  queryManager.workerRestarted(workerID, addWorkerAckReceived.get(workerID));
-                  break;
                 default:
                   LOGGER.error("Unexpected control message received at master: {}", controlM);
+                  break;
               }
               break;
             case QUERY:
@@ -216,6 +231,101 @@ public final class Server {
     }
   }
 
+  private final Queue<TaskMessage> pendingDriverMessages = new ConcurrentLinkedQueue<>();
+
+  private Optional<TaskMessage> dequeueDriverMessage() {
+    return Optional.ofNullable(pendingDriverMessages.poll());
+  }
+
+  private void enqueueDriverMessage(@Nonnull final TransportMessage msg) {
+    final TaskMessage driverMsg =
+        TaskMessage.from(MyriaConstants.MASTER_ID + "", msg.toByteArray());
+    pendingDriverMessages.add(driverMsg);
+  }
+
+  /*
+   * (non-Javadoc)
+   *
+   * @see org.apache.reef.task.TaskMessageSource#getMessage()
+   *
+   * To be used to instruct the driver to launch or abort workers.
+   */
+  @Override
+  public Optional<TaskMessage> getMessage() {
+    // TODO: determine which messages should be sent to the driver
+    return dequeueDriverMessage();
+  }
+
+  private Striped<Lock> workerAddRemoveLock;
+
+  /**
+   * REEF event handler for driver messages indicating worker failure.
+   */
+  @Override
+  public void onNext(final DriverMessage driverMessage) {
+    LOGGER.info("Driver message received");
+    TransportMessage m;
+    try {
+      m = TransportMessage.parseFrom(driverMessage.get().get());
+    } catch (InvalidProtocolBufferException e) {
+      LOGGER.warn("Could not parse TransportMessage from driver message", e);
+      return;
+    }
+    final ControlMessage controlM = m.getControlMessage();
+    LOGGER.info("Control message received: {}", controlM);
+    // We received a failed worker message from the driver.
+    final int workerId = controlM.getWorkerId();
+    Lock workerLock = workerAddRemoveLock.get(workerId);
+    workerLock.lock();
+    try {
+      switch (controlM.getType()) {
+        case REMOVE_WORKER:
+          {
+            LOGGER.info(
+                "Driver reported worker {} as dead, removing from alive workers.", workerId);
+            aliveWorkers.remove(workerId);
+            queryManager.workerDied(workerId);
+            connectionPool
+                .removeRemote(workerId)
+                .addListener(
+                    new ChannelGroupFutureListener() {
+                      @Override
+                      public void operationComplete(final ChannelGroupFuture future) {
+                        if (future.isCompleteSuccess()) {
+                          LOGGER.info(
+                              "removed connection for remote worker {} from connection pool",
+                              workerId);
+                        } else {
+                          LOGGER.info(
+                              "failed to remove connection for remote worker {} from connection pool",
+                              workerId);
+                        }
+                      }
+                    });
+            enqueueDriverMessage(IPCUtils.removeWorkerAckTM(workerId));
+          }
+          break;
+        case ADD_WORKER:
+          {
+            Preconditions.checkState(!aliveWorkers.contains(workerId));
+            LOGGER.info("Driver wants to add worker {} to alive workers.", workerId);
+            connectionPool.putRemote(
+                workerId, SocketInfo.fromProtobuf(controlM.getRemoteAddress()));
+            queryManager.workerRestarted(
+                workerId, ImmutableSet.copyOf(controlM.getAckedWorkerIdsList()));
+            aliveWorkers.add(workerId);
+            enqueueDriverMessage(IPCUtils.addWorkerAckTM(workerId));
+          }
+          break;
+        default:
+          throw new IllegalStateException(
+              "Unexpected driver control message type: " + controlM.getType());
+      }
+    } finally {
+      workerLock.unlock();
+    }
+  }
+
   /** The usage message for this server. */
   static final String USAGE = "Usage: Server catalogFile [-explain] [-f queryFile]";
 
@@ -225,10 +335,10 @@ public final class Server {
   /**
    * Initial worker list.
    */
-  private final ConcurrentHashMap<Integer, SocketInfo> workers;
+  private ImmutableMap<Integer, SocketInfo> workers = null;
 
   /** Manages the queries executing in this instance of Myria. */
-  private final QueryManager queryManager;
+  private QueryManager queryManager = null;
 
   /**
    * @return the query manager.
@@ -240,17 +350,7 @@ public final class Server {
   /**
    * Current alive worker set.
    */
-  private final ConcurrentHashMap<Integer, Long> aliveWorkers;
-
-  /**
-   * Scheduled new workers, when a scheduled worker sends the first heartbeat, it'll be removed from this set.
-   */
-  private final ConcurrentHashMap<Integer, SocketInfo> scheduledWorkers;
-
-  /**
-   * The time when new workers were scheduled.
-   */
-  private final ConcurrentHashMap<Integer, Long> scheduledWorkersTime;
+  private final Set<Integer> aliveWorkers;
 
   /**
    * Execution environment variables for operators.
@@ -267,7 +367,7 @@ public final class Server {
   /**
    * The IPC Connection Pool.
    */
-  private final IPCConnectionPool connectionPool;
+  private IPCConnectionPool connectionPool;
 
   /**
    * {@link ExecutorService} for message processing.
@@ -275,7 +375,7 @@ public final class Server {
   private volatile ExecutorService messageProcessingExecutor;
 
   /** The Catalog stores the metadata about the Myria instance. */
-  private final MasterCatalog catalog;
+  private MasterCatalog catalog;
 
   /**
    * The {@link OrderedMemoryAwareThreadPoolExecutor} who gets messages from {@link workerExecutor} and further process
@@ -287,6 +387,11 @@ public final class Server {
    * The {@link ExecutorService} who executes the master-side subqueries.
    */
   private volatile ExecutorService serverQueryExecutor;
+
+  /**
+   * Absolute path of the directory containing the master catalog files
+   */
+  private final String catalogPath;
 
   /**
    * The URI to persist relations
@@ -304,99 +409,6 @@ public final class Server {
    * max number of seconds for elegant cleanup.
    */
   public static final int NUM_SECONDS_FOR_ELEGANT_CLEANUP = 10;
-
-  /** for each worker id, record the set of workers which REMOVE_WORKER_ACK have been received. */
-  private final Map<Integer, Set<Integer>> removeWorkerAckReceived;
-  /** for each worker id, record the set of workers which ADD_WORKER_ACK have been received. */
-  private final Map<Integer, Set<Integer>> addWorkerAckReceived;
-
-  /**
-   * Entry point for the Master.
-   *
-   * @param args the command line arguments.
-   * @throws IOException if there's any error in reading catalog file.
-   */
-  public static void main(final String[] args) throws IOException {
-    try {
-
-      Logger.getLogger("com.almworks.sqlite4java").setLevel(Level.SEVERE);
-      Logger.getLogger("com.almworks.sqlite4java.Internal").setLevel(Level.SEVERE);
-
-      if (args.length < 1) {
-        LOGGER.error(USAGE);
-        System.exit(-1);
-      }
-
-      final String configFile = FilenameUtils.concat(args[0], MyriaConstants.DEPLOYMENT_CONF_FILE);
-      final Server server = new Server(configFile);
-
-      if (LOGGER.isInfoEnabled()) {
-        LOGGER.info("Workers are: ");
-        for (final Entry<Integer, SocketInfo> w : server.workers.entrySet()) {
-          LOGGER.info(w.getKey() + ":  " + w.getValue().getHost() + ":" + w.getValue().getPort());
-        }
-      }
-
-      Runtime.getRuntime()
-          .addShutdownHook(
-              new Thread("Master shutdown hook cleaner") {
-                @Override
-                public void run() {
-                  final Thread cleaner =
-                      new Thread("Shutdown hook cleaner") {
-                        @Override
-                        public void run() {
-                          server.cleanup();
-                        }
-                      };
-
-                  final Thread countDown =
-                      new Thread("Shutdown hook countdown") {
-                        @Override
-                        public void run() {
-                          LOGGER.info(
-                              "Wait for {} seconds for graceful cleaning-up.",
-                              Server.NUM_SECONDS_FOR_ELEGANT_CLEANUP);
-                          int i;
-                          for (i = Server.NUM_SECONDS_FOR_ELEGANT_CLEANUP; i > 0; i--) {
-                            try {
-                              if (LOGGER.isInfoEnabled()) {
-                                LOGGER.info(i + "");
-                              }
-                              Thread.sleep(MyriaConstants.WAITING_INTERVAL_1_SECOND_IN_MS);
-                              if (!cleaner.isAlive()) {
-                                break;
-                              }
-                            } catch (InterruptedException e) {
-                              break;
-                            }
-                          }
-                          if (i <= 0) {
-                            LOGGER.info(
-                                "Graceful cleaning-up timeout. Going to shutdown abruptly.");
-                            for (Thread t : Thread.getAllStackTraces().keySet()) {
-                              if (t != Thread.currentThread()) {
-                                t.interrupt();
-                              }
-                            }
-                          }
-                        }
-                      };
-                  cleaner.start();
-                  countDown.start();
-                  try {
-                    countDown.join();
-                  } catch (InterruptedException e) {
-                    // should not happen
-                    return;
-                  }
-                }
-              });
-      server.start();
-    } catch (Exception e) {
-      LOGGER.error("Unknown error occurs at Master. Quit directly.", e);
-    }
-  }
 
   /**
    * @return my connection pool for IPC.
@@ -429,74 +441,74 @@ public final class Server {
     return QueryExecutionMode.NON_BLOCKING;
   }
 
+  private final int connectTimeoutMillis;
+  private final int sendBufferSize;
+  private final int receiveBufferSize;
+  private final int writeBufferLowWaterMark;
+  private final int writeBufferHighWaterMark;
+  private final int inputBufferCapacity;
+  private final int inputBufferRecoverTrigger;
+  private final Injector injector;
+
   /**
    * Construct a server object, with configuration stored in the specified catalog file.
    *
-   * @param configFile the name of the config file.
-   * @throws FileNotFoundException the specified file not found.
-   * @throws CatalogException if there is an error reading from the Catalog.
-   * @throws ConfigFileException if there is an error reading the config file.
+   * @param masterHost hostname of the master
+   * @param masterPort RPC port of the master
+   * @param catalogPath absolute path of the directory containing the master catalog files
+   * @param databaseSystem name of the storage DB system
+   * @param connectTimeoutMillis connect timeout for worker IPC
+   * @param sendBufferSize send buffer size in bytes for worker IPC
+   * @param receiveBufferSize receive buffer size in bytes for worker IPC
+   * @param writeBufferLowWaterMark low watermark for write buffer overflow recovery
+   * @param writeBufferHighWaterMark high watermark for write buffer overflow recovery
+   * @param inputBufferCapacity size of the input buffer in bytes
+   * @param inputBufferRecoverTrigger number of bytes in the input buffer to trigger recovery after overflow
+   * @param persistURI the storage endpoint URI for persisting partitioned relations
+   * @param injector a Tang injector for instantiating objects from configuration
    */
-  public Server(final String configFile)
-      throws FileNotFoundException, CatalogException, ConfigFileException {
-    CONFIG = MyriaConfiguration.loadWithDefaultValues(configFile);
+  @Inject
+  public Server(
+      @Parameter(MasterHost.class) final String masterHost,
+      @Parameter(MasterRpcPort.class) final int masterPort,
+      @Parameter(DefaultInstancePath.class) final String catalogPath,
+      @Parameter(StorageDbms.class) final String databaseSystem,
+      @Parameter(TcpConnectionTimeoutMillis.class) final int connectTimeoutMillis,
+      @Parameter(TcpSendBufferSizeBytes.class) final int sendBufferSize,
+      @Parameter(TcpReceiveBufferSizeBytes.class) final int receiveBufferSize,
+      @Parameter(FlowControlWriteBufferLowMarkBytes.class) final int writeBufferLowWaterMark,
+      @Parameter(FlowControlWriteBufferHighMarkBytes.class) final int writeBufferHighWaterMark,
+      @Parameter(OperatorInputBufferCapacity.class) final int inputBufferCapacity,
+      @Parameter(OperatorInputBufferRecoverTrigger.class) final int inputBufferRecoverTrigger,
+      @Parameter(PersistUri.class) final String persistURI,
+      final Injector injector) {
 
-    masterSocketInfo = SocketInfo.valueOf(CONFIG.getHostPort(MyriaConstants.MASTER_ID));
+    this.connectTimeoutMillis = connectTimeoutMillis;
+    this.sendBufferSize = sendBufferSize;
+    this.receiveBufferSize = receiveBufferSize;
+    this.writeBufferLowWaterMark = writeBufferLowWaterMark;
+    this.writeBufferHighWaterMark = writeBufferHighWaterMark;
+    this.inputBufferCapacity = inputBufferCapacity;
+    this.inputBufferRecoverTrigger = inputBufferRecoverTrigger;
+    this.persistURI = persistURI;
+    this.injector = injector;
+
+    masterSocketInfo = new SocketInfo(masterHost, masterPort);
+    this.catalogPath = catalogPath;
 
     execEnvVars = new ConcurrentHashMap<>();
     execEnvVars.put(MyriaConstants.EXEC_ENV_VAR_NODE_ID, MyriaConstants.MASTER_ID);
     execEnvVars.put(MyriaConstants.EXEC_ENV_VAR_EXECUTION_MODE, getExecutionMode());
-
-    workers = new ConcurrentHashMap<>();
-    for (int id : CONFIG.getWorkerIds()) {
-      workers.put(id, SocketInfo.valueOf(CONFIG.getHostPort(id)));
-    }
-    final Map<Integer, SocketInfo> computingUnits = new HashMap<>(workers);
-    computingUnits.put(MyriaConstants.MASTER_ID, masterSocketInfo);
-    aliveWorkers = new ConcurrentHashMap<>();
-    scheduledWorkers = new ConcurrentHashMap<>();
-    scheduledWorkersTime = new ConcurrentHashMap<>();
-
-    removeWorkerAckReceived = new ConcurrentHashMap<>();
-    addWorkerAckReceived = new ConcurrentHashMap<>();
-
-    catalog = MasterCatalog.open(CONFIG.getMasterCatalogFile());
-    queryManager = new QueryManager(catalog, this);
-
-    messageQueue = new LinkedBlockingQueue<>();
-
-    int inputBufferCapacity =
-        Integer.valueOf(
-            CONFIG.getRequired("runtime", MyriaSystemConfigKeys.OPERATOR_INPUT_BUFFER_CAPACITY));
-    int inputBufferRecoverTrigger =
-        Integer.valueOf(
-            CONFIG.getRequired(
-                "runtime", MyriaSystemConfigKeys.OPERATOR_INPUT_BUFFER_RECOVER_TRIGGER));
-    connectionPool =
-        new IPCConnectionPool(
-            MyriaConstants.MASTER_ID,
-            computingUnits,
-            IPCConfigurations.createMasterIPCServerBootstrap(this),
-            IPCConfigurations.createMasterIPCClientBootstrap(this),
-            new TransportMessageSerializer(),
-            new QueueBasedShortMessageProcessor<TransportMessage>(messageQueue),
-            inputBufferCapacity,
-            inputBufferRecoverTrigger);
-
-    scheduledTaskExecutor =
-        Executors.newSingleThreadScheduledExecutor(
-            new RenamingThreadFactory("Master global timer"));
-
-    final String databaseSystem =
-        CONFIG.getRequired("deployment", MyriaSystemConfigKeys.WORKER_STORAGE_DATABASE_SYSTEM);
     execEnvVars.put(MyriaConstants.EXEC_ENV_VAR_DATABASE_SYSTEM, databaseSystem);
-    persistURI = CONFIG.getOptional("persist", MyriaSystemConfigKeys.PERSIST_URI);
+
+    aliveWorkers = Sets.newConcurrentHashSet();
+    messageQueue = new LinkedBlockingQueue<>();
   }
 
   /**
    * timer task executor.
    */
-  private final ScheduledExecutorService scheduledTaskExecutor;
+  private ScheduledExecutorService scheduledTaskExecutor;
 
   /**
    * This class presents only for the purpose of debugging. No other usage.
@@ -514,192 +526,34 @@ public final class Server {
     }
   }
 
-  /**
-   * The thread to check received REMOVE_WORKER_ACK and send ADD_WORKER to each worker. It's a temporary solution to
-   * guarantee message synchronization. Once we have a generalized design in the IPC layer in the future, it can be
-   * removed.
-   */
-  private Thread sendAddWorker = null;
-
-  /**
-   * The thread to check received REMOVE_WORKER_ACK and send ADD_WORKER to each worker.
-   */
-  private class SendAddWorker implements Runnable {
-
-    /** the worker id that was removed. */
-    private final int workerID;
-    /** the expected number of REMOVE_WORKER_ACK messages to receive. */
-    private int numOfAck;
-    /** the socket info of the new worker. */
-    private final SocketInfo socketInfo;
-
-    /**
-     * constructor.
-     *
-     * @param workerID the removed worker id.
-     * @param socketInfo the new worker's socket info.
-     * @param numOfAck the number of REMOVE_WORKER_ACK to receive.
-     */
-    SendAddWorker(final int workerID, final SocketInfo socketInfo, final int numOfAck) {
-      this.workerID = workerID;
-      this.socketInfo = socketInfo;
-      this.numOfAck = numOfAck;
+  private ImmutableSet<Configuration> getWorkerConfs(final Injector injector)
+      throws InjectionException, BindException, IOException {
+    final ImmutableSet.Builder<Configuration> workerConfsBuilder = new ImmutableSet.Builder<>();
+    final Set<String> serializedWorkerConfs = injector.getNamedInstance(WorkerConf.class);
+    final ConfigurationSerializer serializer = new AvroConfigurationSerializer();
+    for (final String serializedWorkerConf : serializedWorkerConfs) {
+      final Configuration workerConf = serializer.fromString(serializedWorkerConf);
+      workerConfsBuilder.add(workerConf);
     }
-
-    @Override
-    public void run() {
-      while (numOfAck > 0) {
-        for (int aliveWorkerId : aliveWorkers.keySet()) {
-          if (removeWorkerAckReceived.get(workerID).remove(aliveWorkerId)) {
-            numOfAck--;
-            connectionPool.sendShortMessage(
-                aliveWorkerId, IPCUtils.addWorkerTM(workerID, socketInfo));
-          }
-        }
-        try {
-          Thread.sleep(MyriaConstants.SHORT_WAITING_INTERVAL_100_MS);
-        } catch (InterruptedException e) {
-          Thread.currentThread().interrupt();
-        }
-      }
-    }
+    return workerConfsBuilder.build();
   }
 
-  /**
-   * @param workerID the worker to get updated
-   */
-  private void updateHeartbeat(final int workerID) {
-    if (scheduledWorkers.containsKey(workerID)) {
-      SocketInfo newWorker = scheduledWorkers.remove(workerID);
-      scheduledWorkersTime.remove(workerID);
-      if (newWorker != null) {
-        sendAddWorker.start();
-      }
-    }
-    aliveWorkers.put(workerID, System.currentTimeMillis());
+  private static Integer getIdFromWorkerConf(final Configuration workerConf)
+      throws InjectionException {
+    final Injector injector = Tang.Factory.getTang().newInjector(workerConf);
+    return injector.getNamedInstance(MyriaWorkerConfigurationModule.WorkerId.class);
   }
 
-  /**
-   * Check worker livenesses periodically. If a worker is detected as dead, its queries will be notified, it will be
-   * removed from connection pools, and a new worker will be scheduled.
-   */
-  private class WorkerLivenessChecker extends ErrorLoggingTimerTask {
-
-    @Override
-    public final synchronized void runInner() {
-      for (Integer workerId : aliveWorkers.keySet()) {
-        long currentTime = System.currentTimeMillis();
-        if (currentTime - aliveWorkers.get(workerId) >= MyriaConstants.WORKER_IS_DEAD_INTERVAL) {
-          /* scheduleAtFixedRate() is not accurate at all, use isRemoteAlive() to make sure the connection is lost. */
-          if (connectionPool.isRemoteAlive(workerId)) {
-            updateHeartbeat(workerId);
-            continue;
-          }
-
-          LOGGER.info("Worker {} doesn't have heartbeats, treat it as dead.", workerId);
-          aliveWorkers.remove(workerId);
-          queryManager.workerDied(workerId);
-
-          removeWorkerAckReceived.put(
-              workerId, Collections.newSetFromMap(new ConcurrentHashMap<Integer, Boolean>()));
-          addWorkerAckReceived.put(
-              workerId, Collections.newSetFromMap(new ConcurrentHashMap<Integer, Boolean>()));
-          /* for using containsAll() later */
-          addWorkerAckReceived.get(workerId).add(workerId);
-          try {
-            /* remove the failed worker from the connectionPool. */
-            connectionPool.removeRemote(workerId).await();
-          } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            return;
-          }
-          /* tell other workers to remove it too. */
-          for (int aliveWorkerId : aliveWorkers.keySet()) {
-            connectionPool.sendShortMessage(aliveWorkerId, IPCUtils.removeWorkerTM(workerId));
-          }
-
-          /* Temporary solution: using exactly the same hostname:port. One good thing is the data is still there. */
-          /* Temporary solution: using exactly the same worker id. */
-          String newAddress = workers.get(workerId).getHost();
-          int newPort = workers.get(workerId).getPort();
-          int newWorkerId = workerId;
-
-          /* a new worker will be launched, put its information in scheduledWorkers. */
-          scheduledWorkers.put(newWorkerId, new SocketInfo(newAddress, newPort));
-          scheduledWorkersTime.put(newWorkerId, currentTime);
-
-          sendAddWorker =
-              new Thread(
-                  new SendAddWorker(
-                      newWorkerId, new SocketInfo(newAddress, newPort), aliveWorkers.size()));
-          connectionPool.putRemote(newWorkerId, new SocketInfo(newAddress, newPort));
-
-          /* start a thread to launch the new worker. */
-          new Thread(new NewWorkerScheduler(newWorkerId, newAddress, newPort)).start();
-        }
-      }
-      for (Integer workerId : scheduledWorkers.keySet()) {
-        long currentTime = System.currentTimeMillis();
-        long time = scheduledWorkersTime.get(workerId);
-        /* Had several trials and may need to change hostname:port of the scheduled new worker. */
-        if (currentTime - time >= MyriaConstants.SCHEDULED_WORKER_UNABLE_TO_START) {
-          SocketInfo si = scheduledWorkers.remove(workerId);
-          scheduledWorkersTime.remove(workerId);
-          connectionPool.removeRemote(workerId);
-          LOGGER.error("Worker #{} ({}) failed to start. Give up.", workerId, si);
-          continue;
-          // Temporary solution: simply giving up launching this new worker
-          // TODO: find a new set of hostname:port for this scheduled worker
-        } else
-        /* Haven't heard heartbeats from the scheduled worker, try to launch it again. */
-        if (currentTime - time >= MyriaConstants.SCHEDULED_WORKER_FAILED_TO_START) {
-          SocketInfo info = scheduledWorkers.get(workerId);
-          new Thread(new NewWorkerScheduler(workerId, info.getHost(), info.getPort())).start();
-        }
-      }
-    }
+  private static String getHostFromWorkerConf(final Configuration workerConf)
+      throws InjectionException {
+    final Injector injector = Tang.Factory.getTang().newInjector(workerConf);
+    return injector.getNamedInstance(MyriaWorkerConfigurationModule.WorkerHost.class);
   }
 
-  /** The reader. */
-  private static MyriaConfiguration CONFIG;
-
-  /**
-   * The class to launch a new worker during recovery.
-   */
-  private class NewWorkerScheduler implements Runnable {
-    /** the new worker's worker id. */
-    private final int workerId;
-    /** the new worker's port number id. */
-    private final int port;
-    /** the new worker's hostname. */
-    private final String address;
-
-    /**
-     * constructor.
-     *
-     * @param workerId worker id.
-     * @param address hostname.
-     * @param port port number.
-     */
-    NewWorkerScheduler(final int workerId, final String address, final int port) {
-      this.workerId = workerId;
-      this.address = address;
-      this.port = port;
-    }
-
-    @Override
-    public void run() {
-      try {
-        final File temp = DeploymentUtils.createTempDeployment(MyriaConstants.DEPLOYMENT_CONF_FILE);
-        DeploymentUtils.deployWorker(temp.getAbsolutePath(), CONFIG, workerId);
-        LOGGER.info("starting new worker at {}:{}", address, port);
-        DeploymentUtils.startWorker(CONFIG, workerId);
-      } catch (ConfigFileException e) {
-        throw new RuntimeException(e);
-      } catch (IOException e) {
-        throw new RuntimeException(e);
-      }
-    }
+  private static Integer getPortFromWorkerConf(final Configuration workerConf)
+      throws InjectionException {
+    final Injector injector = Tang.Factory.getTang().newInjector(workerConf);
+    return injector.getNamedInstance(MyriaWorkerConfigurationModule.WorkerPort.class);
   }
 
   /**
@@ -707,18 +561,6 @@ public final class Server {
    */
   private void cleanup() {
     LOGGER.info("{} is going to shutdown", MyriaConstants.SYSTEM_NAME);
-
-    if (scheduledWorkers.size() > 0) {
-      LOGGER.info("Waiting for scheduled recovery workers, please wait");
-      while (scheduledWorkers.size() > 0) {
-        try {
-          Thread.sleep(MyriaConstants.WAITING_INTERVAL_1_SECOND_IN_MS);
-        } catch (InterruptedException e) {
-          Thread.currentThread().interrupt();
-          break;
-        }
-      }
-    }
 
     queryManager.killAll();
 
@@ -734,30 +576,6 @@ public final class Server {
      * IPC events.
      */
     catalog.close();
-
-    while (aliveWorkers.size() > 0) {
-      // TODO add process kill
-      LOGGER.info("Send shutdown requests to the workers, please wait");
-      for (final Integer workerId : aliveWorkers.keySet()) {
-        SocketInfo workerAddr = workers.get(workerId);
-        LOGGER.info("Shutting down #{} : {}", workerId, workerAddr);
-        connectionPool.sendShortMessage(workerId, IPCUtils.CONTROL_SHUTDOWN);
-      }
-
-      for (final int workerId : aliveWorkers.keySet()) {
-        if (!connectionPool.isRemoteAlive(workerId)) {
-          aliveWorkers.remove(workerId);
-        }
-      }
-      if (aliveWorkers.size() > 0) {
-        try {
-          Thread.sleep(MyriaConstants.WAITING_INTERVAL_1_SECOND_IN_MS);
-        } catch (InterruptedException e) {
-          Thread.currentThread().interrupt();
-          break;
-        }
-      }
-    }
 
     connectionPool.shutdown();
     connectionPool.releaseExternalResources();
@@ -784,14 +602,58 @@ public final class Server {
   public void start() throws Exception {
     LOGGER.info("Server starting on {}", masterSocketInfo);
 
+    final ImmutableSet<Configuration> workerConfs = getWorkerConfs(injector);
+    final ImmutableMap.Builder<Integer, SocketInfo> workersBuilder = ImmutableMap.builder();
+    for (Configuration workerConf : workerConfs) {
+      workersBuilder.put(
+          getIdFromWorkerConf(workerConf),
+          new SocketInfo(getHostFromWorkerConf(workerConf), getPortFromWorkerConf(workerConf)));
+    }
+    workers = workersBuilder.build();
+    // aliveWorkers.addAll(workers.keySet());
+    workerAddRemoveLock = Striped.lock(workers.size());
+
+    final Map<Integer, SocketInfo> computingUnits = new HashMap<>(workers);
+    computingUnits.put(MyriaConstants.MASTER_ID, masterSocketInfo);
+
+    try {
+      LOGGER.info("Attempting to open master catalog file under {}...", catalogPath);
+      catalog = MasterCatalog.open(catalogPath);
+    } catch (FileNotFoundException e) {
+      LOGGER.info(
+          "Failed to open master catalog file under {}, attempting to create it...\n({})",
+          catalogPath,
+          e.getMessage());
+      catalog = MasterCatalog.create(catalogPath);
+    }
+    queryManager = new QueryManager(catalog, this);
+
+    connectionPool =
+        new IPCConnectionPool(
+            MyriaConstants.MASTER_ID,
+            computingUnits,
+            IPCConfigurations.createMasterIPCServerBootstrap(
+                connectTimeoutMillis,
+                sendBufferSize,
+                receiveBufferSize,
+                writeBufferLowWaterMark,
+                writeBufferHighWaterMark),
+            IPCConfigurations.createMasterIPCClientBootstrap(
+                connectTimeoutMillis,
+                sendBufferSize,
+                receiveBufferSize,
+                writeBufferLowWaterMark,
+                writeBufferHighWaterMark),
+            new TransportMessageSerializer(),
+            new QueueBasedShortMessageProcessor<TransportMessage>(messageQueue),
+            inputBufferCapacity,
+            inputBufferRecoverTrigger);
+
+    scheduledTaskExecutor =
+        Executors.newSingleThreadScheduledExecutor(
+            new RenamingThreadFactory("Master global timer"));
     scheduledTaskExecutor.scheduleAtFixedRate(
         new DebugHelper(), DebugHelper.INTERVAL, DebugHelper.INTERVAL, TimeUnit.MILLISECONDS);
-    scheduledTaskExecutor.scheduleAtFixedRate(
-        new WorkerLivenessChecker(),
-        MyriaConstants.WORKER_LIVENESS_CHECKER_INTERVAL,
-        MyriaConstants.WORKER_LIVENESS_CHECKER_INTERVAL,
-        TimeUnit.MILLISECONDS);
-
     messageProcessingExecutor =
         Executors.newCachedThreadPool(new RenamingThreadFactory("Master message processor"));
     serverQueryExecutor =
@@ -810,7 +672,8 @@ public final class Server {
 
     ipcPipelineExecutor = null; // Remove the pipeline executor.
     // new OrderedMemoryAwareThreadPoolExecutor(Runtime.getRuntime().availableProcessors() * 2 + 1,
-    // 5 * MyriaConstants.MB, 0, MyriaConstants.THREAD_POOL_KEEP_ALIVE_TIME_IN_MS, TimeUnit.MILLISECONDS,
+    // 5 * MyriaConstants.MB, 0, MyriaConstants.THREAD_POOL_KEEP_ALIVE_TIME_IN_MS,
+    // TimeUnit.MILLISECONDS,
     // new RenamingThreadFactory("Master Pipeline executor"));
 
     /**
@@ -955,7 +818,7 @@ public final class Server {
    * @return the set of workers that are currently alive.
    */
   public Set<Integer> getAliveWorkers() {
-    return ImmutableSet.copyOf(aliveWorkers.keySet());
+    return ImmutableSet.copyOf(aliveWorkers);
   }
 
   /**
@@ -971,27 +834,16 @@ public final class Server {
     if (number == getAliveWorkers().size()) {
       return getAliveWorkers();
     }
-    List<Integer> workerList = new ArrayList<>(aliveWorkers.keySet());
+    List<Integer> workerList = new ArrayList<>(getAliveWorkers());
     Collections.shuffle(workerList);
     return ImmutableSet.copyOf(workerList.subList(0, number));
-  }
-
-  /**
-   * @return the set of workers that are currently alive with the time that the last heartbeats were received.
-   */
-  public Map<Integer, Long> getAliveWorkersWithLastHeartbeat() {
-    Map<Integer, Long> ret = new HashMap<Integer, Long>();
-    ret.putAll(aliveWorkers);
-    // add the current master time too
-    ret.put(MyriaConstants.MASTER_ID, System.currentTimeMillis());
-    return ret;
   }
 
   /**
    * @return the set of known workers in this Master.
    */
   public Map<Integer, SocketInfo> getWorkers() {
-    return ImmutableMap.copyOf(workers);
+    return workers;
   }
 
   /**
@@ -1001,6 +853,7 @@ public final class Server {
    * @param workersToIngest restrict the workers to ingest data (null for all)
    * @param indexes the indexes created.
    * @param source the source of tuples to be ingested.
+   * @param pf the PartitionFunction used to partition the ingested relation.
    * @return the status of the ingested dataset.
    * @throws InterruptedException interrupted
    * @throws DbException if there is an error
@@ -1157,7 +1010,6 @@ public final class Server {
    * @return the queryID
    * @throws DbException if there is an error
    * @throws InterruptedException interrupted
-   * @throws URISyntaxException
    */
   public long persistDataset(final RelationKey relationKey)
       throws DbException, InterruptedException, URISyntaxException {
@@ -1251,15 +1103,6 @@ public final class Server {
   public Set<Integer> getWorkersForTempRelation(
       @Nonnull final Long queryId, @Nonnull final RelationKey relationKey) {
     return queryManager.getQuery(queryId).getWorkersForTempRelation(relationKey);
-  }
-
-  /**
-   * @param configKey config key.
-   * @return the value.
-   * @throws ConfigFileException if error occurred paring the config file
-   */
-  public String getRuntimeConfiguration(final String configKey) throws ConfigFileException {
-    return CONFIG.getRequired("runtime", configKey);
   }
 
   /**
@@ -1411,7 +1254,7 @@ public final class Server {
     /* Construct the master plan. */
     final CollectConsumer consumer =
         new CollectConsumer(schema, operatorId, ImmutableSet.copyOf(scanWorkers));
-    DataOutput output = new DataOutput(consumer, writer, dataSink);
+    final DataOutput output = new DataOutput(consumer, writer, dataSink);
     final SubQueryPlan masterPlan = new SubQueryPlan(output);
 
     /* Submit the plan for the download. */
@@ -2303,13 +2146,6 @@ public final class Server {
     } catch (CatalogException e) {
       throw new DbException(e);
     }
-  }
-
-  /**
-   * @return config
-   */
-  public MyriaConfiguration getConfig() {
-    return CONFIG;
   }
 
   /**

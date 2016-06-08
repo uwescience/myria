@@ -1,37 +1,60 @@
 package edu.washington.escience.myria.daemon;
 
-import java.io.FileNotFoundException;
+import java.util.concurrent.CountDownLatch;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import org.apache.commons.io.FilenameUtils;
+import javax.inject.Inject;
 
-import edu.washington.escience.myria.MyriaConstants;
+import org.apache.reef.tang.annotations.Parameter;
+import org.apache.reef.task.Task;
+import org.apache.reef.task.events.CloseEvent;
+import org.apache.reef.wake.EventHandler;
+
 import edu.washington.escience.myria.api.MasterApiServer;
-import edu.washington.escience.myria.coordinator.CatalogException;
 import edu.washington.escience.myria.parallel.Server;
+import edu.washington.escience.myria.tools.MyriaGlobalConfigurationModule;
 
 /**
- * This is the class for the main daemon for Myria. It manages all the various services, including the API server and
- * the Myria server.
+ * This is the class for the main daemon for Myria. It manages all the various services, including
+ * the API server and the Myria server.
  *
  *
  */
-public final class MasterDaemon {
+public final class MasterDaemon implements Task, EventHandler<CloseEvent> {
 
-  /** The usage string. */
-  private static final String USAGE_STRING = "Usage: MasterDaemon <catalogFilename> <restPort>";
+  /** The logger for this class. */
+  private static final org.slf4j.Logger LOGGER =
+      org.slf4j.LoggerFactory.getLogger(MasterDaemon.class);
+
+  private final CountDownLatch terminated = new CountDownLatch(1);
 
   /**
-   * @param args the command-line arguments to start the daemon.
-   * @throws Exception if the Restlet server can't start.
+   * @param memento the memento object passed down by the driver.
+   * @return the user defined return value
+   * @throws Exception whenever the Task encounters an unsolved issue. This Exception will be thrown
+   *         at the Driver's event handler.
    */
-  public static void main(final String[] args) throws Exception {
-    processArguments(args);
-    String configFile = args[0];
-    int apiPort = Integer.parseInt(args[1]);
-    final MasterDaemon md = new MasterDaemon(configFile, apiPort);
-    md.start();
+  @Override
+  public byte[] call(@SuppressWarnings("unused") final byte[] memento) throws Exception {
+    try {
+      start();
+      terminated.await();
+    } catch (final InterruptedException e) {
+      Thread.currentThread().interrupt();
+    } finally {
+      stop();
+    }
+    return null;
+  }
+
+  /**
+   * Shut down this worker.
+   */
+  @Override
+  public void onNext(final CloseEvent closeEvent) {
+    LOGGER.info("CloseEvent received, shutting down...");
+    terminated.countDown();
   }
 
   /** The Myria server. */
@@ -46,42 +69,28 @@ public final class MasterDaemon {
    * @param apiPort api server port.
    * @throws Exception if there are issues loading the Catalog or instantiating the servers.
    */
-  public MasterDaemon(final String configFilePath, final int apiPort) throws Exception {
-    server = new Server(FilenameUtils.concat(configFilePath, MyriaConstants.DEPLOYMENT_CONF_FILE));
+  @Inject
+  public MasterDaemon(
+      final Server server,
+      final MasterApiServer apiServer,
+      final @Parameter(MyriaGlobalConfigurationModule.RestApiPort.class) int apiPort,
+      final @Parameter(MyriaGlobalConfigurationModule.UseSsl.class) boolean useSsl,
+      final @Parameter(MyriaGlobalConfigurationModule.SslKeystorePath.class) String keystorePath,
+      final @Parameter(MyriaGlobalConfigurationModule.SslKeystorePassword.class) String
+          keystorePassword,
+      final @Parameter(MyriaGlobalConfigurationModule.ApiAdminPassword.class) String adminPassword)
+      throws Exception {
+    this.server = server;
+    this.apiServer = apiServer;
     try {
-      apiServer = new MasterApiServer(server, this, apiPort);
-    } catch (Exception e) {
-      server.shutdown();
-      throw e;
-    }
-  }
-
-  /**
-   * @param args the command-line arguments to start the daemon.
-   * @throws CatalogException if the Catalog cannot be opened.
-   * @throws FileNotFoundException if the catalogFile does not exist.
-   */
-  private static void processArguments(final String[] args)
-      throws FileNotFoundException, CatalogException {
-    /* Check length. */
-    if (args.length != 2) {
-      throw new IllegalArgumentException(USAGE_STRING);
-    }
-
-    /* Check port. */
-    try {
-      int port = Integer.parseInt(args[1]);
       final int portMin = 1;
       final int portMax = 65535;
-      if ((port < portMin) || (port > portMax)) {
+      if ((apiPort < portMin) || (apiPort > portMax)) {
         throw new IllegalArgumentException("port must be between " + portMin + " and " + portMax);
       }
     } catch (NumberFormatException e) {
       throw new IllegalArgumentException(e);
     }
-
-    Logger.getLogger("com.almworks.sqlite4java").setLevel(Level.SEVERE);
-    Logger.getLogger("com.almworks.sqlite4java.Internal").setLevel(Level.SEVERE);
   }
 
   /**
@@ -90,6 +99,8 @@ public final class MasterDaemon {
    * @throws Exception if there is an issue starting either server.
    */
   public void start() throws Exception {
+    Logger.getLogger("com.almworks.sqlite4java").setLevel(Level.SEVERE);
+    Logger.getLogger("com.almworks.sqlite4java.Internal").setLevel(Level.SEVERE);
     server.start();
     apiServer.start();
   }

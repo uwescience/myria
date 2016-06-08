@@ -14,7 +14,6 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
  */
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "dataType")
 @JsonSubTypes({
-  @Type(name = "URI", value = UriSink.class),
   @Type(name = "Pipe", value = PipeSink.class),
   @Type(name = "Bytes", value = ByteSink.class)
 })

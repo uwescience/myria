@@ -25,8 +25,6 @@ import org.glassfish.jersey.server.filter.EncodingFilter;
 import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
 import com.wordnik.swagger.jaxrs.config.BeanConfig;
 
-import edu.washington.escience.myria.MyriaSystemConfigKeys;
-import edu.washington.escience.myria.daemon.MasterDaemon;
 import edu.washington.escience.myria.parallel.Server;
 
 /**
@@ -38,10 +36,9 @@ public final class MasterApplication extends ResourceConfig {
   /**
    * Instantiate the main application running on the Myria master.
    *
-   * @param server the Myria server running on this master.
-   * @param daemon the Myria daemon running on this master.
+   * @param adminPassword the password for administrator access.
    */
-  public MasterApplication(final Server server, final MasterDaemon daemon) {
+  public MasterApplication(final Server server, final String adminPassword) {
     /*
      * Tell Jersey to look for resources inside the entire project, and also for Swagger.
      */
@@ -65,7 +62,6 @@ public final class MasterApplication extends ResourceConfig {
           protected void configure() {
             /* Singletons binding. */
             bind(server).to(Server.class);
-            bind(daemon).to(MasterDaemon.class);
           }
         });
 
@@ -83,16 +79,19 @@ public final class MasterApplication extends ResourceConfig {
     myriaBeanConfig.setResourcePackage("edu.washington.escience.myria.api");
     myriaBeanConfig.setScan(true);
 
-    /* Add a response filter (i.e., runs on all responses) that sets headers for cross-origin objects. */
+    /*
+     * Add a response filter (i.e., runs on all responses) that sets headers for cross-origin
+     * objects.
+     */
     register(new CrossOriginResponseFilter());
     /* Add an admin authentication filter. */
-    register(new AdminAuthFilter());
+    register(new AdminAuthFilter(adminPassword));
   }
 
   /**
-   * This is a container response filter. It will run on all responses leaving the server and add the CORS filters
-   * saying that these API calls should be allowed from any website. This is a mechanism increasingly supported by
-   * modern browsers instead of, e.g., JSONP.
+   * This is a container response filter. It will run on all responses leaving the server and add
+   * the CORS filters saying that these API calls should be allowed from any website. This is a
+   * mechanism increasingly supported by modern browsers instead of, e.g., JSONP.
    *
    * For more information, visit http://www.w3.org/TR/cors/ and http://enable-cors.org/
    *
@@ -110,8 +109,8 @@ public final class MasterApplication extends ResourceConfig {
   }
 
   /**
-   * Annotation that indicates a REST API requires admin authentication. Only filters annotated with the same annotation
-   * will be invoked.
+   * Annotation that indicates a REST API requires admin authentication. Only filters annotated with
+   * the same annotation will be invoked.
    */
   @NameBinding
   @Retention(RetentionPolicy.RUNTIME)
@@ -124,15 +123,14 @@ public final class MasterApplication extends ResourceConfig {
   private class AdminAuthFilter implements ContainerRequestFilter {
     /** the server. */
     @Context private Server server;
+    private final String adminPassword;
+
+    public AdminAuthFilter(final String adminPassword) {
+      this.adminPassword = adminPassword;
+    }
 
     @Override
     public void filter(final ContainerRequestContext request) {
-      String adminPassword =
-          server.getConfig().getOptional("deployment", MyriaSystemConfigKeys.ADMIN_PASSWORD);
-      if (adminPassword == null) {
-        /* No admin password is required, pass. */
-        return;
-      }
       String authentication = request.getHeaderString(ContainerRequest.AUTHORIZATION);
       if (authentication == null || !authentication.startsWith("Basic ")) {
         /* No valid basic auth information. Return 401 to let the browser pop up a dialog. */

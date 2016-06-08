@@ -3,9 +3,11 @@ package edu.washington.escience.myria.api;
 import java.io.IOException;
 import java.net.URI;
 
+import javax.inject.Inject;
 import javax.net.ssl.SSLException;
 import javax.ws.rs.core.UriBuilder;
 
+import org.apache.reef.tang.annotations.Parameter;
 import org.glassfish.grizzly.http.server.HttpServer;
 import org.glassfish.grizzly.ssl.SSLContextConfigurator;
 import org.glassfish.grizzly.ssl.SSLEngineConfigurator;
@@ -14,8 +16,8 @@ import org.glassfish.jersey.server.ResourceConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import edu.washington.escience.myria.daemon.MasterDaemon;
 import edu.washington.escience.myria.parallel.Server;
+import edu.washington.escience.myria.tools.MyriaGlobalConfigurationModule;
 
 /**
  * The main class for the Myria API server.
@@ -38,19 +40,20 @@ public final class MasterApiServer {
    * @param port the port the Myria API server will listen on.
    * @throws IOException if the server cannot be created.
    */
-  public MasterApiServer(final Server server, final MasterDaemon daemon, final int port)
+  @Inject
+  public MasterApiServer(
+      final Server server,
+      final @Parameter(MyriaGlobalConfigurationModule.RestApiPort.class) int apiPort,
+      final @Parameter(MyriaGlobalConfigurationModule.UseSsl.class) boolean useSSL,
+      final @Parameter(MyriaGlobalConfigurationModule.SslKeystorePath.class) String keystorePath,
+      final @Parameter(MyriaGlobalConfigurationModule.SslKeystorePassword.class) String
+          keystorePassword,
+      final @Parameter(MyriaGlobalConfigurationModule.ApiAdminPassword.class) String adminPassword)
       throws IOException {
-    URI baseUri = UriBuilder.fromUri("http://0.0.0.0/").port(port).build();
-    ResourceConfig masterApplication = new MasterApplication(server, daemon);
+    URI baseUri = UriBuilder.fromUri("http://0.0.0.0/").port(apiPort).build();
+    ResourceConfig masterApplication = new MasterApplication(server, adminPassword);
 
-    /* If the keystore path and password are both set, use SSL. */
-    String keystorePath =
-        server.getConfig().getOptional("deployment", MyriaApiConstants.MYRIA_API_SSL_KEYSTORE);
-    String keystorePassword =
-        server
-            .getConfig()
-            .getOptional("deployment", MyriaApiConstants.MYRIA_API_SSL_KEYSTORE_PASSWORD);
-    if (keystorePath != null && keystorePassword != null) {
+    if (useSSL) {
       LOGGER.info("Enabling SSL");
       baseUri = UriBuilder.fromUri(baseUri).scheme("https").build();
       SSLContextConfigurator sslCon = new SSLContextConfigurator();

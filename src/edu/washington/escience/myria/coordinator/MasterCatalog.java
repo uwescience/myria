@@ -3,8 +3,9 @@ package edu.washington.escience.myria.coordinator;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.nio.file.FileSystems;
 import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -19,7 +20,6 @@ import java.util.logging.Level;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
-import org.apache.commons.io.FilenameUtils;
 import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -159,13 +159,19 @@ public final class MasterCatalog {
    *
    *           TODO add some sanity checks to the filename?
    */
-  public static void create(@Nonnull final String path) throws CatalogException {
+  public static MasterCatalog create(@Nonnull final String catalogRoot) throws CatalogException {
+    final Path catalogRootPath = Paths.get(catalogRoot);
+    final Path filePath = getFilePath(catalogRootPath);
     try {
-      Files.createDirectories(FileSystems.getDefault().getPath(path));
+      Files.createDirectories(filePath.getParent());
     } catch (IOException e) {
       throw new CatalogException(e);
     }
-    MasterCatalog.createFromFile(new File(FilenameUtils.concat(path, "master.catalog"))).close();
+    return MasterCatalog.createFromFile(filePath.toFile());
+  }
+
+  private static Path getFilePath(@Nonnull final Path catalogRoot) throws CatalogException {
+    return catalogRoot.resolve("master.catalog");
   }
 
   /**
@@ -238,17 +244,18 @@ public final class MasterCatalog {
    *
    *           TODO add some sanity checks to the filename?
    */
-  public static MasterCatalog open(final String filename)
+  public static MasterCatalog open(final String catalogRoot)
       throws FileNotFoundException, CatalogException {
-    Objects.requireNonNull(filename, "filename");
+
+    Objects.requireNonNull(catalogRoot, "filename");
 
     java.util.logging.Logger.getLogger("com.almworks.sqlite4java").setLevel(Level.SEVERE);
     java.util.logging.Logger.getLogger("com.almworks.sqlite4java.Internal").setLevel(Level.SEVERE);
 
     /* Ensure the file does actually exist. */
-    final File catalogFile = new File(filename);
+    final File catalogFile = getFilePath(Paths.get(catalogRoot)).toFile();
     if (!catalogFile.exists()) {
-      throw new FileNotFoundException(filename);
+      throw new FileNotFoundException(catalogFile.toString());
     }
 
     /* Connect to the database */

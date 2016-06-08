@@ -33,7 +33,7 @@ public class UriSource implements DataSource, Serializable {
   private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(UriSource.class);
 
   /** The Uniform Resource Indicator (URI) of the data source. */
-  transient URI parsedUri;
+  private URI parsedUri;
 
   /**
    * Construct a source of data from the specified URI. The URI may be: a path on the local file system; an HDFS link; a
