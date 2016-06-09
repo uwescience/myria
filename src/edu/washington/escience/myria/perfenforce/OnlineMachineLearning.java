@@ -25,7 +25,7 @@ public class OnlineMachineLearning implements ScalingAlgorithm {
   }
 
   @Override
-  public void step() {
+  public void step(final QueryMetaData q) {
     // queryPrediction modified here
   }
 

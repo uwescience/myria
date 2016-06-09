@@ -73,12 +73,12 @@ public final class PerfEnforceResource {
    * makes a step, depending on the algorithm initialized
    */
   @POST
-  @Path("/step-fake")
+  @Path("/step-fake-reactive")
   @Consumes(MediaType.APPLICATION_JSON)
   public Response scalingStepFake(final ScalingAlgorithmEncoding scalingAlgorithmEncoding) {
 
     LOGGER.warn("Run Fake Query....");
-    server.postFakeQuery(scalingAlgorithmEncoding);
+    server.postFakeQueryReactive(scalingAlgorithmEncoding);
 
     /* response */
     return Response.noContent().build();

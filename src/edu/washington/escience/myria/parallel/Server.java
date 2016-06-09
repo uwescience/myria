@@ -2057,8 +2057,8 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
     perfEnforceDriver.beginQueryMonitoring(scalingEncoding);
   }
 
-  public void postFakeQuery(final ScalingAlgorithmEncoding scalingAlgorithmEncoding) {
-    perfEnforceDriver.postFakeQuery(scalingAlgorithmEncoding);
+  public void postFakeQueryReactive(final ScalingAlgorithmEncoding scalingAlgorithmEncoding) {
+    perfEnforceDriver.postFakeQueryReactive(scalingAlgorithmEncoding);
   }
 
   // For the real demo, we might want to keep the algorithm fixed based on the initialization

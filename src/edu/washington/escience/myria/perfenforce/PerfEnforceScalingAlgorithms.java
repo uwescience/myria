@@ -31,6 +31,8 @@ public class PerfEnforceScalingAlgorithms {
 
   ScalingAlgorithm scalingAlgorithm;
 
+  static final double SET_POINT = 1.0;
+
   protected static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(PerfEnforceScalingAlgorithms.class);
 
   public PerfEnforceScalingAlgorithms(final InitializeScalingEncoding scalingEncoding) {
@@ -48,7 +50,7 @@ public class PerfEnforceScalingAlgorithms {
     switch (scalingEncoding.scalingAlgorithm.name) {
       case "RL":
         scalingAlgorithm =
-            new ReinforcementLearning(currentClusterSize, scalingEncoding.scalingAlgorithm.alpha,
+            new ReinforcementLearning(configs, currentClusterSize, scalingEncoding.scalingAlgorithm.alpha,
                 scalingEncoding.scalingAlgorithm.beta);
         break;
       case "PI":
@@ -63,7 +65,7 @@ public class PerfEnforceScalingAlgorithms {
   }
 
   public int getCurrentQueryIdealSize() {
-    return currentQuery.idealClusterSize;
+    return currentQuery.getIdealClusterSize();
   }
 
   public int getQueryCounter() {
@@ -79,7 +81,7 @@ public class PerfEnforceScalingAlgorithms {
   }
 
   public void step() {
-    scalingAlgorithm.step();
+    scalingAlgorithm.step(currentQuery);
     currentClusterSize = scalingAlgorithm.getCurrentClusterSize();
   }
 

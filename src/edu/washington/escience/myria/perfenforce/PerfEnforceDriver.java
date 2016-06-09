@@ -211,19 +211,12 @@ public class PerfEnforceDriver {
   }
 
   // Collect data from ith line in query-meta-data in the appropriate sequence
-  public void postFakeQuery(final ScalingAlgorithmEncoding scalingAlgorithmEncoding) {
+  public void postFakeQueryReactive(final ScalingAlgorithmEncoding scalingAlgorithmEncoding) {
 
     perfenforceScaling.updateParameters(scalingAlgorithmEncoding);
 
-    if (perfenforceScaling.scalingAlgorithm instanceof ReinforcementLearning
-        || perfenforceScaling.scalingAlgorithm instanceof PIControl) {
-      perfenforceScaling.setupNextFakeQuery();
-      perfenforceScaling.step();
-    } else {
-      // Tentative for proactive
-      perfenforceScaling.step();
-      perfenforceScaling.setupNextFakeQuery();
-    }
+    perfenforceScaling.setupNextFakeQuery();
+    perfenforceScaling.step();
 
     perfenforceScaling.incrementQueryCounter();
 

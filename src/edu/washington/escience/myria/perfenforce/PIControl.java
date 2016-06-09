@@ -37,7 +37,7 @@ public class PIControl implements ScalingAlgorithm {
   }
 
   @Override
-  public void step() {
+  public void step(final QueryMetaData q) {
 
   }
 

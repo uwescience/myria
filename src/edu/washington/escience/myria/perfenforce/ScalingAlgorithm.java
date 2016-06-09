@@ -9,7 +9,7 @@ import edu.washington.escience.myria.perfenforce.encoding.ScalingStatusEncoding;
  */
 public interface ScalingAlgorithm {
 
-  public void step();
+  public void step(QueryMetaData q);
 
   public int getCurrentClusterSize();
 

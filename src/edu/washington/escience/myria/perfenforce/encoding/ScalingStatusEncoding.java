@@ -9,7 +9,7 @@ import java.util.List;
  * 
  */
 public class ScalingStatusEncoding {
-  public List<Integer> RLActiveStates;
+  public List<Double> RLActiveStates;
   public double PIControlUT;
   public double OMLPrediction;
 }

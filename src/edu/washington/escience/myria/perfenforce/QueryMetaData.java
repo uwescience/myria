@@ -20,6 +20,14 @@ class QueryMetaData {
     this.runtimes = runtimes;
   }
 
+  public int getIdealClusterSize() {
+    return idealClusterSize;
+  }
+
+  public double getSLA() {
+    return slaRuntime;
+  }
+
   @Override
   public String toString() {
     return "id : " + id + "sla : " + slaRuntime + "ideal : " + idealClusterSize;
