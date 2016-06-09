@@ -3,7 +3,6 @@
  */
 package edu.washington.escience.myria.perfenforce;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -18,8 +17,9 @@ public class ReinforcementLearning implements ScalingAlgorithm {
 
   int alpha;
   int beta;
-  List<Double> activeStateRatios;
+  Double[] activeStateRatios;
   int currentClusterSize;
+  int clusterSizeIndex;
   List<Integer> configs;
 
   protected static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(ReinforcementLearning.class);
@@ -30,7 +30,17 @@ public class ReinforcementLearning implements ScalingAlgorithm {
     this.beta = beta;
     this.configs = configs;
     this.currentClusterSize = currentClusterSize;
-    activeStateRatios = new ArrayList<Double>();
+    activeStateRatios = new Double[configs.size()];
+
+    clusterSizeIndex = configs.indexOf(currentClusterSize);
+    for (int i = 0; i < configs.size(); i++) {
+      if (i == clusterSizeIndex) {
+        activeStateRatios[i] = 1.0;
+      } else {
+        activeStateRatios[i] = 0.0;
+      }
+    }
+
   }
 
   public void setAlpha(final int alpha) {
@@ -47,29 +57,27 @@ public class ReinforcementLearning implements ScalingAlgorithm {
   @Override
   public void step(final QueryMetaData currentQuery) {
     LOGGER.warn("Stepping for RL");
-    double ratio = currentQuery.runtimes.get(currentClusterSize) / currentQuery.slaRuntime;
+
+    double ratio = currentQuery.runtimes.get(clusterSizeIndex) / currentQuery.slaRuntime;
 
     // Make the correction based on alpha
-    double oldRatio = activeStateRatios.get(currentClusterSize);
+    double oldRatio = activeStateRatios[clusterSizeIndex];
     double newRatio = ratio;
-    activeStateRatios.set(currentClusterSize, alpha * (newRatio - oldRatio) + oldRatio);
+    activeStateRatios[clusterSizeIndex] = alpha * (newRatio - oldRatio) + oldRatio;
 
     // For all other states, make a beta change
-    for (int a = 0; a < activeStateRatios.size(); a++) {
-      if (a != currentClusterSize) {
-        activeStateRatios
-            .set(
-                a,
-                beta
-                    * (newRatio * ((1.0 * configs.get(currentClusterSize) / configs.get(a)) - activeStateRatios.get(a)) + activeStateRatios
-                        .get(a)));
+    for (int a = 0; a < activeStateRatios.length; a++) {
+      if (a != clusterSizeIndex) {
+        activeStateRatios[a] =
+            beta
+                * (newRatio * ((1.0 * configs.get(clusterSizeIndex) / configs.get(a)) - activeStateRatios[a]) + activeStateRatios[a]);
       }
     }
     // Find the best state
     int bestState = 0;
     double bestRatioScore = -1000;
-    for (int a = 0; a < activeStateRatios.size(); a++) {
-      double stateCalculateReward = closeToOneScore(activeStateRatios.get(a));
+    for (int a = 0; a < activeStateRatios.length; a++) {
+      double stateCalculateReward = closeToOneScore(activeStateRatios[a]);
 
       if (stateCalculateReward > bestRatioScore) {
         bestRatioScore = stateCalculateReward;
@@ -77,14 +85,16 @@ public class ReinforcementLearning implements ScalingAlgorithm {
       }
     }
     // Introduce another cluster state
-    if (activeStateRatios.get(bestState) > 1 && configs.get(bestState) < Collections.max(configs)) {
-      currentClusterSize = bestState + 1;
-      activeStateRatios.add(currentClusterSize, .999);
-    } else if (activeStateRatios.get(bestState) < 1 && configs.get(bestState) > Collections.min(configs)) {
+    if (activeStateRatios[bestState] > 1 && configs.get(bestState) < Collections.max(configs)) {
+      currentClusterSize = configs.get(bestState + 1);
+      clusterSizeIndex = configs.indexOf(currentClusterSize);
+      activeStateRatios[clusterSizeIndex] = .999;
+    } else if (activeStateRatios[bestState] < 1 && configs.get(bestState) > Collections.min(configs)) {
       currentClusterSize = bestState - 1;
-      activeStateRatios.add(currentClusterSize, 1.0);
+      clusterSizeIndex = configs.indexOf(currentClusterSize);
+      activeStateRatios[clusterSizeIndex] = .999;;
     } else {
-      currentClusterSize = bestState;
+      currentClusterSize = configs.get(bestState);
     }
 
   }

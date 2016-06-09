@@ -124,6 +124,8 @@ public class PerfEnforceScalingAlgorithms {
       slaReader.close();
       idealReader.close();
 
+      LOGGER.warn("CURRENT QUERY: " + currentQuery.toString());
+
     } catch (NumberFormatException | IOException e) {
       e.printStackTrace();
     }
