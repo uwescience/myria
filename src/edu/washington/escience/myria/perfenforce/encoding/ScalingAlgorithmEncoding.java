@@ -17,5 +17,6 @@ public class ScalingAlgorithmEncoding {
   public double beta;
   public double kp;
   public double ki;
+  public double w;
   public double lr;
 }

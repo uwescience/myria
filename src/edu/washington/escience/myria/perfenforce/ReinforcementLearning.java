@@ -68,7 +68,7 @@ public class ReinforcementLearning implements ScalingAlgorithm {
     // Find the best state
     int bestState = currentStateIndex;
 
-    // Introduce another cluster state
+    // Introduce another cluster state if we have the opportunity
     if (activeStateRatios[bestState] > 1 && bestState < configs.size()) {
       if (activeStateRatios[bestState + 1] == -1) {
         LOGGER.warn("CONDITION CHANGE " + (bestState + 1));
@@ -79,13 +79,14 @@ public class ReinforcementLearning implements ScalingAlgorithm {
     } else if (activeStateRatios[bestState] < 1 && bestState > 0) {
       if (activeStateRatios[bestState - 1] == -1) {
         LOGGER.warn("CONDITION CHANGE " + (bestState - 1));
-        currentClusterSize = bestState - 1;
+        currentClusterSize = configs.get(bestState - 1);
         currentStateIndex = configs.indexOf(currentClusterSize);
         activeStateRatios[currentStateIndex] = 1.0;
       }
     } else {
       LOGGER.warn("CONDITION CHANGE " + bestState);
       currentClusterSize = configs.get(bestState);
+      currentStateIndex = configs.indexOf(currentClusterSize);
     }
 
     // Resulting runtime

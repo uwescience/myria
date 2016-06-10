@@ -25,6 +25,9 @@ public class PIControl implements ScalingAlgorithm {
   List<Double> windowRuntimes;
   List<Double> windowSLAs;
 
+  double recordErrorSum;
+  double recordErrorValue;
+
   public PIControl(final List<Integer> configs, final int currentClusterSize, final double kp, final double ki,
       final int w) {
     this.kp = kp;
@@ -79,14 +82,17 @@ public class PIControl implements ScalingAlgorithm {
       avgRatios /= w;
 
       double currentWindowAverage = avgRatios - 1.0;
-      double current_kp_term = kp * currentWindowAverage * ut;
+      double currentError = kp * currentWindowAverage * ut;
 
       integralWindowSum.add(ki * currentWindowAverage * ut);
       int errorSum = 0;
       for (double x : integralWindowSum) {
         errorSum += x;
       }
-      double new_ut = 4 + errorSum + (current_kp_term);
+      double new_ut = 4 + errorSum + (currentError);
+
+      recordErrorSum = errorSum;
+      recordErrorValue = currentError;
 
       ut = new_ut;
 
@@ -125,7 +131,8 @@ public class PIControl implements ScalingAlgorithm {
   @Override
   public ScalingStatusEncoding getScalingStatus() {
     ScalingStatusEncoding statusEncoding = new ScalingStatusEncoding();
-    statusEncoding.PIControlUT = ut;
+    statusEncoding.PIControlIntegralErrorSum = recordErrorSum;
+    statusEncoding.PIControlIntegralErrorSum = recordErrorValue;
     return statusEncoding;
   }
 
