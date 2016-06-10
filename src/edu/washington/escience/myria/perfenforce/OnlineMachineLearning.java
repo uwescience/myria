@@ -10,17 +10,17 @@ import edu.washington.escience.myria.perfenforce.encoding.ScalingStatusEncoding;
  */
 public class OnlineMachineLearning implements ScalingAlgorithm {
 
-  int lr;
+  double lr;
   double queryPrediction;
   int currentClusterSize;
 
-  public OnlineMachineLearning(final int currentClusterSize, final int lr) {
+  public OnlineMachineLearning(final int currentClusterSize, final double lr) {
     this.lr = lr;
     this.currentClusterSize = currentClusterSize;
     queryPrediction = 0;
   }
 
-  public void setLR(final int lr) {
+  public void setLR(final double lr) {
     this.lr = lr;
   }
 

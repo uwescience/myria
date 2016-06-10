@@ -3,7 +3,6 @@
  */
 package edu.washington.escience.myria.perfenforce;
 
-import java.util.Collections;
 import java.util.List;
 
 import org.slf4j.LoggerFactory;
@@ -15,39 +14,45 @@ import edu.washington.escience.myria.perfenforce.encoding.ScalingStatusEncoding;
  */
 public class ReinforcementLearning implements ScalingAlgorithm {
 
-  int alpha;
-  int beta;
-  Double[] activeStateRatios;
+  double alpha;
+  double beta;
+
   int currentClusterSize;
-  int clusterSizeIndex;
+  int currentStateIndex;
   List<Integer> configs;
+
+  Double[] activeStateRatios;
 
   protected static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(ReinforcementLearning.class);
 
-  public ReinforcementLearning(final List<Integer> configs, final int currentClusterSize, final int alpha,
-      final int beta) {
+  public ReinforcementLearning(final List<Integer> configs, final int currentClusterSize, final double alpha,
+      final double beta) {
     this.alpha = alpha;
     this.beta = beta;
     this.configs = configs;
     this.currentClusterSize = currentClusterSize;
-    activeStateRatios = new Double[configs.size()];
+    currentStateIndex = configs.indexOf(currentClusterSize);
 
-    clusterSizeIndex = configs.indexOf(currentClusterSize);
-    for (int i = 0; i < configs.size(); i++) {
-      if (i == clusterSizeIndex) {
-        activeStateRatios[i] = 1.0;
-      } else {
-        activeStateRatios[i] = 0.0;
-      }
-    }
-
+    initializeActiveStates();
   }
 
-  public void setAlpha(final int alpha) {
+  public void initializeActiveStates() {
+    activeStateRatios = new Double[configs.size()];
+
+    for (int i = 0; i < configs.size(); i++) {
+      if (i == currentStateIndex) {
+        activeStateRatios[i] = 1.0;
+      } else {
+        activeStateRatios[i] = -1.0;
+      }
+    }
+  }
+
+  public void setAlpha(final double alpha) {
     this.alpha = alpha;
   }
 
-  public void setBeta(final int beta) {
+  public void setBeta(final double beta) {
     this.beta = beta;
   }
 
@@ -58,52 +63,66 @@ public class ReinforcementLearning implements ScalingAlgorithm {
   public void step(final QueryMetaData currentQuery) {
     LOGGER.warn("Stepping for RL");
 
-    double ratio = currentQuery.runtimes.get(clusterSizeIndex) / currentQuery.slaRuntime;
+    LOGGER.warn("Current State Index " + currentStateIndex);
+
+    // Find the best state
+    int bestState = currentStateIndex;
+
+    // Introduce another cluster state
+    if (activeStateRatios[bestState] > 1 && bestState < configs.size()) {
+      if (activeStateRatios[bestState + 1] == -1) {
+        LOGGER.warn("CONDITION CHANGE " + (bestState + 1));
+        currentClusterSize = configs.get(bestState + 1);
+        currentStateIndex = configs.indexOf(currentClusterSize);
+        activeStateRatios[currentStateIndex] = 1.0;
+      }
+    } else if (activeStateRatios[bestState] < 1 && bestState > 0) {
+      if (activeStateRatios[bestState - 1] == -1) {
+        LOGGER.warn("CONDITION CHANGE " + (bestState - 1));
+        currentClusterSize = bestState - 1;
+        currentStateIndex = configs.indexOf(currentClusterSize);
+        activeStateRatios[currentStateIndex] = 1.0;
+      }
+    } else {
+      LOGGER.warn("CONDITION CHANGE " + bestState);
+      currentClusterSize = configs.get(bestState);
+    }
+
+    // Resulting runtime
+    double ratio = currentQuery.runtimes.get(currentStateIndex) / currentQuery.slaRuntime;
 
     // Make the correction based on alpha
-    double oldRatio = activeStateRatios[clusterSizeIndex];
+    double oldRatio = activeStateRatios[currentStateIndex];
     double newRatio = ratio;
-    activeStateRatios[clusterSizeIndex] = alpha * (newRatio - oldRatio) + oldRatio;
+    activeStateRatios[currentStateIndex] = alpha * (newRatio - oldRatio) + oldRatio;
 
     // For all other states, make a beta change
     for (int a = 0; a < activeStateRatios.length; a++) {
-      if (a != clusterSizeIndex) {
+      if (a != currentStateIndex && activeStateRatios[a] != -1) {
         activeStateRatios[a] =
             beta
-                * (newRatio * ((1.0 * configs.get(clusterSizeIndex) / configs.get(a)) - activeStateRatios[a]) + activeStateRatios[a]);
+                * (newRatio * ((1.0 * configs.get(currentStateIndex) / configs.get(a)) - activeStateRatios[a]) + activeStateRatios[a]);
       }
     }
-    // Find the best state
-    int bestState = 0;
-    double bestRatioScore = -1000;
+
+    double bestRatioScore = Double.MIN_VALUE;
     for (int a = 0; a < activeStateRatios.length; a++) {
       double stateCalculateReward = closeToOneScore(activeStateRatios[a]);
-
       if (stateCalculateReward > bestRatioScore) {
         bestRatioScore = stateCalculateReward;
         bestState = a;
       }
     }
-    // Introduce another cluster state
-    if (activeStateRatios[bestState] > 1 && configs.get(bestState) < Collections.max(configs)) {
-      currentClusterSize = configs.get(bestState + 1);
-      clusterSizeIndex = configs.indexOf(currentClusterSize);
-      activeStateRatios[clusterSizeIndex] = .999;
-    } else if (activeStateRatios[bestState] < 1 && configs.get(bestState) > Collections.min(configs)) {
-      currentClusterSize = bestState - 1;
-      clusterSizeIndex = configs.indexOf(currentClusterSize);
-      activeStateRatios[clusterSizeIndex] = .999;;
-    } else {
-      currentClusterSize = configs.get(bestState);
-    }
+
+    LOGGER.warn("BEST STATE FOUND " + bestState);
 
   }
 
   public double closeToOneScore(final double ratio) {
-    if (ratio == PerfEnforceScalingAlgorithms.SET_POINT) {
+    if (ratio == 1.0) {
       return Double.MAX_VALUE;
     } else {
-      return Math.abs(1 / (ratio - PerfEnforceScalingAlgorithms.SET_POINT));
+      return Math.abs(1 / (ratio - 1.0));
     }
   }
 

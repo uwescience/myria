@@ -13,9 +13,9 @@ public class ScalingAlgorithmEncoding {
   public String name;
 
   // Optional Params
-  public int alpha;
-  public int beta;
-  public int kp;
-  public int ki;
-  public int lr;
+  public double alpha;
+  public double beta;
+  public double kp;
+  public double ki;
+  public double lr;
 }

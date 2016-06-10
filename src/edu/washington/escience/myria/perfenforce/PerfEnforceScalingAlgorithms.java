@@ -31,8 +31,6 @@ public class PerfEnforceScalingAlgorithms {
 
   ScalingAlgorithm scalingAlgorithm;
 
-  static final double SET_POINT = 1.0;
-
   protected static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(PerfEnforceScalingAlgorithms.class);
 
   public PerfEnforceScalingAlgorithms(final InitializeScalingEncoding scalingEncoding) {
