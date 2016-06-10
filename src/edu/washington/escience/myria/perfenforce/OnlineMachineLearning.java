@@ -3,6 +3,8 @@
  */
 package edu.washington.escience.myria.perfenforce;
 
+import java.util.List;
+
 import edu.washington.escience.myria.perfenforce.encoding.ScalingStatusEncoding;
 
 /**
@@ -11,13 +13,15 @@ import edu.washington.escience.myria.perfenforce.encoding.ScalingStatusEncoding;
 public class OnlineMachineLearning implements ScalingAlgorithm {
 
   double lr;
-  double queryPrediction;
+  Double[] queryPredictions;
   int currentClusterSize;
+  List<Integer> configs;
 
-  public OnlineMachineLearning(final int currentClusterSize, final double lr) {
+  public OnlineMachineLearning(final List<Integer> configs, final int currentClusterSize, final double lr) {
     this.lr = lr;
     this.currentClusterSize = currentClusterSize;
-    queryPrediction = 0;
+    this.configs = configs;
+    queryPredictions = new Double[configs.size()];
   }
 
   public void setLR(final double lr) {
@@ -37,7 +41,7 @@ public class OnlineMachineLearning implements ScalingAlgorithm {
   @Override
   public ScalingStatusEncoding getScalingStatus() {
     ScalingStatusEncoding statusEncoding = new ScalingStatusEncoding();
-    statusEncoding.OMLPrediction = queryPrediction;
+    statusEncoding.OMLPredictions = queryPredictions;
     return statusEncoding;
   }
 

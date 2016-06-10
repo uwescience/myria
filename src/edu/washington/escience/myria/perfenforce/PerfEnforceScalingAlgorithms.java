@@ -52,8 +52,12 @@ public class PerfEnforceScalingAlgorithms {
                 scalingEncoding.scalingAlgorithm.beta);
         break;
       case "PI":
+        scalingAlgorithm =
+            new PIControl(configs, currentClusterSize, scalingEncoding.scalingAlgorithm.kp,
+                scalingEncoding.scalingAlgorithm.ki, scalingEncoding.scalingAlgorithm.w);
         break;
       case "OML":
+        scalingAlgorithm = new OnlineMachineLearning(configs, currentClusterSize, scalingEncoding.scalingAlgorithm.lr);
         break;
     }
   }
