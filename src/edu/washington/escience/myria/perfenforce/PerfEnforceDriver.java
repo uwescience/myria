@@ -222,13 +222,6 @@ public class PerfEnforceDriver {
 
   }
 
-  // For real queries
-  // Given a query metadata from the query interception
-  // q should only be given an SLA and id...
-  public void postQuery(final QueryMetaData q) {
-
-  }
-
   /**
    */
   public ScalingStatusEncoding getScalingStatus() {

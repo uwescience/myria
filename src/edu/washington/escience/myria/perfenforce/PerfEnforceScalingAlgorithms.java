@@ -57,7 +57,8 @@ public class PerfEnforceScalingAlgorithms {
                 scalingEncoding.scalingAlgorithm.ki, scalingEncoding.scalingAlgorithm.w);
         break;
       case "OML":
-        scalingAlgorithm = new OnlineMachineLearning(configs, currentClusterSize, scalingEncoding.scalingAlgorithm.lr);
+        scalingAlgorithm =
+            new OnlineMachineLearning(configs, currentClusterSize, scalingEncoding.scalingAlgorithm.lr, path);
         break;
     }
   }
