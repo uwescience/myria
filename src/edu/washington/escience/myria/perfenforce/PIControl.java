@@ -6,6 +6,8 @@ package edu.washington.escience.myria.perfenforce;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.slf4j.LoggerFactory;
+
 import edu.washington.escience.myria.perfenforce.encoding.ScalingStatusEncoding;
 
 /**
@@ -27,6 +29,8 @@ public class PIControl implements ScalingAlgorithm {
 
   double recordErrorSum;
   double recordErrorValue;
+
+  protected static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(PIControl.class);
 
   public PIControl(final List<Integer> configs, final int currentClusterSize, final double kp, final double ki,
       final int w) {
@@ -73,8 +77,12 @@ public class PIControl implements ScalingAlgorithm {
       currentPositionIndex = 4;
     }
 
+    windowRuntimes.add(currentQuery.runtimes.get(currentPositionIndex));
+    windowSLAs.add(currentQuery.slaRuntime);
+
     if ((currentQuery.id + 1) % w == 0) // at window
     {
+      LOGGER.warn("INSIDE WINDOW ID " + currentQuery.id);
       double avgRatios = 0;
       for (int q = 0; q < windowRuntimes.size(); q++) {
         avgRatios += windowRuntimes.get(q) / windowSLAs.get(q);
@@ -85,14 +93,16 @@ public class PIControl implements ScalingAlgorithm {
       double currentError = kp * currentWindowAverage * ut;
 
       integralWindowSum.add(ki * currentWindowAverage * ut);
-      int errorSum = 0;
+      double errorSum = 0;
       for (double x : integralWindowSum) {
         errorSum += x;
       }
       double new_ut = 4 + errorSum + (currentError);
 
       recordErrorSum = errorSum;
+      LOGGER.warn("INSIDE SUM " + recordErrorSum);
       recordErrorValue = currentError;
+      LOGGER.warn("INSIDE Error " + recordErrorValue);
 
       ut = new_ut;
 
@@ -118,8 +128,9 @@ public class PIControl implements ScalingAlgorithm {
         ut = (ut - 10 < 12 - ut) ? 10 : 12;
       }
 
+      currentClusterSize = (int) ut;
+      currentPositionIndex = configs.indexOf(currentClusterSize);
       currentWindowAverage = 0;
-
     }
   }
 
@@ -132,7 +143,7 @@ public class PIControl implements ScalingAlgorithm {
   public ScalingStatusEncoding getScalingStatus() {
     ScalingStatusEncoding statusEncoding = new ScalingStatusEncoding();
     statusEncoding.PIControlIntegralErrorSum = recordErrorSum;
-    statusEncoding.PIControlIntegralErrorSum = recordErrorValue;
+    statusEncoding.PIControlProportionalErrorValue = recordErrorValue;
     return statusEncoding;
   }
 

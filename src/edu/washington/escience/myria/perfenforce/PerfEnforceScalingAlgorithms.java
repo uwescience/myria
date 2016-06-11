@@ -108,9 +108,10 @@ public class PerfEnforceScalingAlgorithms {
       while (runtimeLine != null) {
         if (counter == ithQuerySequence) {
           String[] runtimeParts = runtimeLine.split(",");
-          List<Integer> queryRuntimesList =
-              Arrays.asList(Integer.parseInt(runtimeParts[0]), Integer.parseInt(runtimeParts[1]), Integer
-                  .parseInt(runtimeParts[2]), Integer.parseInt(runtimeParts[3]), Integer.parseInt(runtimeParts[4]));
+          List<Double> queryRuntimesList =
+              Arrays.asList(Double.parseDouble(runtimeParts[0]), Double.parseDouble(runtimeParts[1]), Double
+                  .parseDouble(runtimeParts[2]), Double.parseDouble(runtimeParts[3]), Double
+                  .parseDouble(runtimeParts[4]));
           int queryIdeal = Integer.parseInt(idealLine);
           double querySLA = Double.parseDouble(slaLine);
           QueryMetaData q = new QueryMetaData(counter, querySLA, queryIdeal, queryRuntimesList);

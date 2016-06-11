@@ -6,14 +6,14 @@ class QueryMetaData {
   int id;
   double slaRuntime;
   int idealClusterSize;
-  List<Integer> runtimes;
+  List<Double> runtimes;
 
   public QueryMetaData(final int id, final double slaRuntime) {
     this.id = id;
     this.slaRuntime = slaRuntime;
   }
 
-  public QueryMetaData(final int id, final double slaRuntime, final int idealClusterSize, final List<Integer> runtimes) {
+  public QueryMetaData(final int id, final double slaRuntime, final int idealClusterSize, final List<Double> runtimes) {
     this.id = id;
     this.slaRuntime = slaRuntime;
     this.idealClusterSize = idealClusterSize;
