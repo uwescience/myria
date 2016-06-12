@@ -211,7 +211,7 @@ public class PerfEnforceDriver {
   }
 
   // Collect data from ith line in query-meta-data in the appropriate sequence
-  public void postFakeQueryReactive(final ScalingAlgorithmEncoding scalingAlgorithmEncoding) {
+  public void postFakeQuery(final ScalingAlgorithmEncoding scalingAlgorithmEncoding) {
 
     perfenforceScaling.updateParameters(scalingAlgorithmEncoding);
 

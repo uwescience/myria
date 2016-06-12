@@ -103,9 +103,9 @@ public class OnlineMachineLearning implements ScalingAlgorithm {
 
   // fill up queryPredictions array
   public void trainOnlineQueries(final int clusterSize, final int queryID) throws IOException {
-    String MOAFileName = path + "moa.jar";
-    String trainingFileName = path + "training.arff"; // Figure out which File to use as training
-    String modifiedTrainingFileName = path + "training-modified.arff";
+    String MOAFileName = path + "OMLFiles/moa.jar";
+    String trainingFileName = path + "OMLFiles/training.arff"; // Figure out which File to use as training
+    String modifiedTrainingFileName = path + "OMLFiles/training-modified.arff";
 
     // clear results -- necessary to make the file?
     PrintWriter outputWriter = new PrintWriter(modifiedTrainingFileName);
