@@ -8,6 +8,13 @@ PSLAManager/CommandLine.dll
 12_Workers/TRAINING.arff
 weka.jar
 tiers.txt
-ScalingAlgorithms/Replay/Seq0/Reactive/query_runtimes
-ScalingAlgorithms/Replay/Seq0/Reactive/SLAs/tier1
-ScalingAlgorithms/Replay/Seq0/Reactive/Ideal/ideal1
+ScalingAlgorithms/Replay/Seq0/query_runtimes
+ScalingAlgorithms/Replay/Seq0/SLAs/tier1
+ScalingAlgorithms/Replay/Seq0/Ideal/ideal1
+ScalingAlgorithms/Replay/Seq0/OMLFiles/moa.jar
+ScalingAlgorithms/Replay/Seq0/OMLFiles/training.arff
+ScalingAlgorithms/Replay/Seq0/OMLFiles/features/4
+ScalingAlgorithms/Replay/Seq0/OMLFiles/features/6
+ScalingAlgorithms/Replay/Seq0/OMLFiles/features/8
+ScalingAlgorithms/Replay/Seq0/OMLFiles/features/10
+ScalingAlgorithms/Replay/Seq0/OMLFiles/features/12
