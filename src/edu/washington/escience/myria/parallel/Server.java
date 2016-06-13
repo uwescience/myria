@@ -819,6 +819,7 @@ public final class Server {
           false);
       addRelationToCatalog(MyriaConstants.RESOURCE_PROFILING_RELATION, MyriaConstants.RESOURCE_PROFILING_SCHEMA,
           workerIds, false);
+      addRelationToCatalog(MyriaConstants.PYUDF_RELATION, MyriaConstants.PYUDF_SCHEMA, workerIds, false);
     }
   }
 
@@ -1151,6 +1152,9 @@ public final class Server {
       final Set<Integer> workers, final String binary, final Schema inputSchema, final Schema outputSchema)
       throws DbException, InterruptedException, IOException {
     long queryID = 0;
+    if (binary != null) {
+      LOGGER.info("code string length: " + binary.length());
+    }
 
     Set<Integer> actualWorkers = workers;
     if (workers == null) {
@@ -1158,7 +1162,6 @@ public final class Server {
     }
 
     // Send the UDF to workers!
-
     queryID = addFunctiontoDB(actualWorkers, name, text, binary, lang);
 
     /* Register the UDF in the master catalog */
@@ -1178,6 +1181,11 @@ public final class Server {
   public long addFunctiontoDB(final Set<Integer> workers, final String udfName, final String udfDefinition,
       final String binary, final MyriaConstants.FunctionLanguage lang) throws DbException {
 
+    if (binary != null) {
+      LOGGER.info("UDF code string length: " + binary.length());
+      LOGGER.info("Code String: " + binary);
+    }
+
     long queryID;
     try {
       LOGGER.info("got inside first try loop");
@@ -1188,7 +1196,7 @@ public final class Server {
             udfDefinition, lang, binary, null)));
 
       }
-      LOGGER.info("Attempting the submit query");
+      LOGGER.info("Attempting to the submit query");
       ListenableFuture<Query> qf =
           queryManager.submitQuery("create UDF", "create UDF", "create UDF", new SubQueryPlan(new SinkRoot(
               new EOSSource())), workerPlans);
@@ -1199,7 +1207,12 @@ public final class Server {
       } catch (ExecutionException | InterruptedException e) {
         throw new DbException("Error executing query", e.getCause());
       }
-    } catch (CatalogException e) {
+    } catch (Exception e) {
+      LOGGER.info("Attempting to submit query caused and exception");
+
+      LOGGER.info(e.getMessage());
+      e.printStackTrace();
+
       throw new DbException(e);
     }
     return queryID;

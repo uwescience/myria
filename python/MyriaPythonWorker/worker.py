@@ -6,33 +6,33 @@ import socket
 import traceback
 import struct
 
-
 from MyriaPythonWorker.serializers import read_int, write_int,SpecialLengths,write_with_length,PickleSerializer
 
 pickleSer = PickleSerializer()
-
-    
-def read_command( file, serializer):
-    #read one element, size=1
-    command = serializer._read_command(file)
-    return command
-
 
 
 def main(infile, outfile):
     try:
         #get code
 
-        func = read_command(infile, pickleSer)
+        func = pickleSer._read_command(infile)
+        print("read command!")
         tuplesize = read_int(infile)
+        print("read tuple size")
+
 
 
         if tuplesize < 1:
             raise ValueError("size of tuple should not be less than 1 ")
 
-
+        print(tuplesize)
         while True:
+            print("python process trying to read tuple")
             tup =pickleSer.read_tuple(infile,tuplesize)
+            print(str(type(tup)))
+            print(str(type(tup[0])))
+            print(str(type(func)))
+            print("python process done reading tuple, now writing ")
             pickleSer.write_with_length(func(tup),outfile)
             outfile.flush()
 

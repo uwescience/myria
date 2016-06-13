@@ -4,9 +4,6 @@
 package edu.washington.escience.myria.operator;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
-
-import sun.misc.BASE64Decoder;
 
 import com.google.common.collect.ImmutableMap;
 
@@ -73,13 +70,12 @@ public class DbFunction extends RootOperator {
     if (lang == MyriaConstants.FunctionLanguage.PYTHON) {
       LOGGER.info("in python function register");
 
-      BASE64Decoder decoder = new BASE64Decoder();
       if (binary != null) {
-        byte[] decodedBytes = decoder.decodeBuffer(binary);
-        ByteBuffer binaryFunction = ByteBuffer.wrap(decodedBytes);
-
+        LOGGER.info("UDF code string length: " + binary.length());
+        LOGGER.info("Code String: " + binary);
         PythonFunctionRegistrar pyFunc = new PythonFunctionRegistrar(connectionInfo);
-        pyFunc.addUDF(name, binaryFunction);
+
+        pyFunc.addUDF(name, binary);
       } else {
         throw new DbException("Cannot register python UDF without binary");
       }

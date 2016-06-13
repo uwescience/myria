@@ -13,7 +13,6 @@ import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.UnknownHostException;
-import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
@@ -62,15 +61,16 @@ public class PythonWorker {
 
   }
 
-  public void sendCodePickle(final ByteBuffer pyCode, final int tupleSize) throws DbException {
-    Preconditions.checkNotNull(pyCode);
+  public void sendCodePickle(final String pyCodeString, final int tupleSize) throws DbException {
+    Preconditions.checkNotNull(pyCodeString);
 
     try {
-      if (pyCode.array().length > 0 && dOut != null) {
-        dOut.writeInt(pyCode.array().length);
-        LOGGER.info("length of code buffer " + pyCode.array().length);
+      if (pyCodeString.length() > 0 && dOut != null) {
+        LOGGER.info("length of the code String: " + pyCodeString.length());
+        byte[] bytes = pyCodeString.getBytes(StandardCharsets.UTF_8);
+        dOut.writeInt(bytes.length);
+        dOut.write(bytes);
 
-        dOut.write(pyCode.array());
         dOut.writeInt(tupleSize);
 
         dOut.flush();
@@ -122,6 +122,14 @@ public class PythonWorker {
     String pythonWorker = MyriaConstants.PYTHONWORKER;
     ProcessBuilder pb = new ProcessBuilder(MyriaConstants.PYTHONEXEC, "-m", pythonWorker);
     final Map<String, String> env = pb.environment();
+
+    // for (Map.Entry<String, String> entry : env.entrySet()) {
+    // String key = entry.getKey();
+    // LOGGER.info("Key: " + key);
+    // String value = entry.getValue();
+    // LOGGER.info("Value: " + value);
+    // // do stuff
+    // }
 
     StringBuilder sb = new StringBuilder();
     sb.append(pythonPath);

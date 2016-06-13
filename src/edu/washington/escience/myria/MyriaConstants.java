@@ -206,7 +206,7 @@ public final class MyriaConstants {
   public static final int MAX_ACTIVE_QUERIES = 25;
   public static final RelationKey PYUDF_RELATION = new RelationKey("public", "UDF", "Python");
 
-  public static final Schema PYUDF_SCHEMA = Schema.ofFields("udfname", Type.STRING_TYPE, "binary", Type.BYTES_TYPE);
+  public static final Schema PYUDF_SCHEMA = Schema.ofFields("udfname", Type.STRING_TYPE, "binary", Type.STRING_TYPE);
 
   /**
    * The relation that stores profiling information about which operators executed when.

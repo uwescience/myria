@@ -4,6 +4,9 @@ import types
 import struct
 import cPickle
 import itertools
+import cloud
+import base64
+
 
 #pickling protocol to use
 protocol = 2
@@ -82,6 +85,8 @@ class PickleSerializer(object):
 
       for i in range (tuplesize):
           length = read_int(stream)
+          print("length of item")
+          print(length)
 
           if (length ==-5 ):
               print("this element is null", file=sys.stderr)
@@ -98,14 +103,21 @@ class PickleSerializer(object):
 
   def _read_command(self,stream):
       length = read_int(stream)
-
+      print ("stream length")
+      print (str(length))
       if length < 0:
-          print("this is a command!", file=sys.stderr)
+          print("command length is less than zero", file=sys.stderr)
           return None
-      obj = stream.read(length)
-      if len(obj) < length:
+      s = stream.read(length)
+      print ("stream ")
+      print(str(type(s)))
+      print (str(s))
+      if len(s) < length:
           raise EOFError
-      return self.loads(obj)
+      unenc = base64.urlsafe_b64decode(s)
+      
+      #unencodedString  = base64.urlsafe_b64decode(encodedstring)
+      return self.loads(unenc)
 
   def dumps(self, obj):
       return cPickle.dumps(obj,protocol)

@@ -1,6 +1,5 @@
 package edu.washington.escience.myria.functions;
 
-import java.nio.ByteBuffer;
 import java.sql.SQLException;
 import java.util.Iterator;
 
@@ -11,7 +10,6 @@ import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.accessmethod.AccessMethod;
 import edu.washington.escience.myria.accessmethod.ConnectionInfo;
 import edu.washington.escience.myria.accessmethod.JdbcAccessMethod;
-import edu.washington.escience.myria.profiling.ProfilingLogger;
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
 
@@ -21,7 +19,7 @@ import edu.washington.escience.myria.storage.TupleBatchBuffer;
 public class PythonFunctionRegistrar {
 
   /** The logger for this class. */
-  private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(ProfilingLogger.class);
+  private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(PythonFunctionRegistrar.class);
 
   /** The connection to the database database. */
   private final JdbcAccessMethod accessMethod;
@@ -48,18 +46,36 @@ public class PythonFunctionRegistrar {
     udfs = new TupleBatchBuffer(MyriaConstants.PYUDF_SCHEMA);
   }
 
-  public void addUDF(final String name, final ByteBuffer binary) throws DbException {
+  public void addUDF(final String name, final String binary) throws DbException {
     LOGGER.info("Adding UDF");
     // add UDF
+    LOGGER.info("UDF code string length: " + binary.length());
+    LOGGER.info("Code String: " + binary);
+    String insertStmt =
+        accessMethod.insertStatementFromSchema(MyriaConstants.PYUDF_SCHEMA, MyriaConstants.PYUDF_RELATION);
+    LOGGER.info("insert Statement", insertStmt);
+    String tableName = MyriaConstants.PYUDF_RELATION.toString(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL);
+
+    StringBuilder sb = new StringBuilder();
+    sb.append("DELETE FROM ");
+    sb.append(tableName);
+    sb.append(" where udfname='");;
+    sb.append(name);
+    sb.append("'");
+    String sql = sb.toString();
+    LOGGER.info("sql string" + sql);
+
+    accessMethod.executeSQLCommand(sql);
+
     udfs.putString(0, name);
-    udfs.putByteBuffer(1, binary);
+    udfs.putString(1, binary);
 
     accessMethod.tupleBatchInsert(MyriaConstants.PYUDF_RELATION, udfs.popAny());
 
     return;
   }
 
-  public ByteBuffer getUDF(final String name) throws DbException {
+  public String getUDF(final String name) throws DbException {
 
     StringBuilder sb = new StringBuilder();
     sb.append("Select * from ");
@@ -77,8 +93,20 @@ public class PythonFunctionRegistrar {
         final TupleBatch tb = tuples.next();
         LOGGER.info("Got {} tuples", tb.numTuples());
         if (tb.numTuples() > 0) {
-          LOGGER.info("number of tuples is greater than 1");
-          return tb.getByteBuffer(1, 0); // return second column of first row.
+
+          String codename = tb.getString(0, 0);
+
+          LOGGER.info("Codename String Length:" + codename.length());
+          LOGGER.info("codename: " + codename);
+
+          String codeString = tb.getString(1, 0);
+
+          // now un-encode the bb to string
+
+          LOGGER.info("codestringlength: " + codeString.length());
+          LOGGER.info("code string:" + codeString);
+
+          return codeString; // return second column of first row.
         }
 
       }

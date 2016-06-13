@@ -94,9 +94,7 @@ public class QueryManager {
    */
   public void updateResourceStats(final int senderId, final ControlMessage m) {
     for (ControlProto.ResourceStats stats : m.getResourceStatsList()) {
-      runningQueries
-          .get(stats.getQueryId())
-          .addResourceStats(senderId, ResourceStats.fromProtobuf(stats));
+      runningQueries.get(stats.getQueryId()).addResourceStats(senderId, ResourceStats.fromProtobuf(stats));
     }
   }
 
@@ -116,8 +114,7 @@ public class QueryManager {
    * @throws DbException if there is an error updating the Catalog
    */
   private void finishQuery(final Query queryState) throws DbException {
-    LOGGER.info(
-        "Finishing query {} with status {}", queryState.getQueryId(), queryState.getStatus());
+    LOGGER.info("Finishing query {} with status {}", queryState.getQueryId(), queryState.getStatus());
     try {
       catalog.queryFinished(queryState);
     } catch (CatalogException e) {
@@ -157,12 +154,8 @@ public class QueryManager {
    * @throws CatalogException if there is an error in the catalog.
    * @return a list of the status of every query that has been submitted to Myria.
    */
-  public List<QueryStatusEncoding> getQueries(
-      @Nullable final Long limit,
-      @Nullable final Long maxId,
-      @Nullable final Long minId,
-      @Nullable final String searchTerm)
-      throws CatalogException {
+  public List<QueryStatusEncoding> getQueries(@Nullable final Long limit, @Nullable final Long maxId,
+      @Nullable final Long minId, @Nullable final String searchTerm) throws CatalogException {
     List<QueryStatusEncoding> ret = new LinkedList<>();
 
     /* Now add in the status for all the inactive (finished, killed, etc.) queries. */
@@ -245,8 +238,7 @@ public class QueryManager {
    * @throws CatalogException if any error in processing catalog
    * @return the query future from which the query status can be looked up.
    */
-  private QueryFuture submitQuery(
-      final long queryId, final QueryEncoding query, final QueryPlan plan)
+  private QueryFuture submitQuery(final long queryId, final QueryEncoding query, final QueryPlan plan)
       throws DbException, CatalogException {
     final Query queryState = new Query(queryId, query, plan, server);
     boolean canStart = false;
@@ -279,9 +271,7 @@ public class QueryManager {
    */
   @Nonnull
   private MasterSubQuery getMasterSubQuery(@Nonnull final SubQueryId subQueryId) {
-    return Preconditions.checkNotNull(
-        executingSubQueries.get(subQueryId),
-        "MasterSubQuery for subquery {} not found",
+    return Preconditions.checkNotNull(executingSubQueries.get(subQueryId), "MasterSubQuery for subquery {} not found",
         subQueryId);
   }
 
@@ -314,8 +304,7 @@ public class QueryManager {
    * @param workerId the worker.
    * @param cause the cause of the worker's failure.
    */
-  public void workerFailed(
-      @Nonnull final SubQueryId subQueryId, final int workerId, final Throwable cause) {
+  public void workerFailed(@Nonnull final SubQueryId subQueryId, final int workerId, final Throwable cause) {
     getMasterSubQuery(subQueryId).workerFail(workerId, cause);
   }
 
@@ -328,8 +317,7 @@ public class QueryManager {
    * @throws DbException if there is an error
    */
   private LocalSubQueryFuture advanceQuery(final Query queryState) throws DbException {
-    Verify.verify(
-        queryState.getCurrentSubQuery() == null, "expected queryState current task is null");
+    Verify.verify(queryState.getCurrentSubQuery() == null, "expected queryState current task is null");
 
     SubQuery task;
     try {
@@ -360,8 +348,7 @@ public class QueryManager {
    */
   private LocalSubQueryFuture submitSubQuery(final Query queryState) throws DbException {
     final SubQuery subQuery =
-        Verify.verifyNotNull(
-            queryState.getCurrentSubQuery(), "query state should have a current subquery");
+        Verify.verifyNotNull(queryState.getCurrentSubQuery(), "query state should have a current subquery");
     final SubQueryId subQueryId = subQuery.getSubQueryId();
     try {
       final MasterSubQuery mqp = new MasterSubQuery(subQuery, server);
@@ -371,52 +358,46 @@ public class QueryManager {
 
       /* Add the future to update the metadata about created relations, if there are any. */
       queryState.addDatasetMetadataUpdater(catalog, queryExecutionFuture);
+      // REMOVE
+      LOGGER.info("Added query state");
 
-      queryExecutionFuture.addListener(
-          new LocalSubQueryFutureListener() {
-            @Override
-            public void operationComplete(final LocalSubQueryFuture future) throws Exception {
+      queryExecutionFuture.addListener(new LocalSubQueryFutureListener() {
+        @Override
+        public void operationComplete(final LocalSubQueryFuture future) throws Exception {
 
-              finishSubQuery(subQueryId);
+          finishSubQuery(subQueryId);
 
-              final Long elapsedNanos = mqp.getExecutionStatistics().getQueryExecutionElapse();
-              if (future.isSuccess()) {
-                LOGGER.info(
-                    "Subquery #{} succeeded. Time elapsed: {}.",
-                    subQueryId,
-                    DateTimeUtils.nanoElapseToHumanReadable(elapsedNanos));
-                // TODO success management.
-                advanceQuery(queryState);
-              } else {
-                Throwable cause = future.getCause();
-                LOGGER.info(
-                    "Subquery #{} failed. Time elapsed: {}. Failure cause is {}.",
-                    subQueryId,
-                    DateTimeUtils.nanoElapseToHumanReadable(elapsedNanos),
-                    cause);
-                if (cause instanceof QueryKilledException) {
-                  queryState.markKilled();
-                } else {
-                  queryState.markFailed(cause);
-                }
-                finishQuery(queryState);
-              }
+          final Long elapsedNanos = mqp.getExecutionStatistics().getQueryExecutionElapse();
+          if (future.isSuccess()) {
+            LOGGER.info("Subquery #{} succeeded. Time elapsed: {}.", subQueryId, DateTimeUtils
+                .nanoElapseToHumanReadable(elapsedNanos));
+            // TODO success management.
+            advanceQuery(queryState);
+          } else {
+            Throwable cause = future.getCause();
+            LOGGER.info("Subquery #{} failed. Time elapsed: {}. Failure cause is {}.", subQueryId, DateTimeUtils
+                .nanoElapseToHumanReadable(elapsedNanos), cause);
+            if (cause instanceof QueryKilledException) {
+              queryState.markKilled();
+            } else {
+              queryState.markFailed(cause);
             }
-          });
+            finishQuery(queryState);
+          }
+        }
+      });
 
-      dispatchWorkerQueryPlans(mqp)
-          .addListener(
-              new LocalSubQueryFutureListener() {
-                @Override
-                public void operationComplete(final LocalSubQueryFuture future) throws Exception {
-                  mqp.init();
-                  if (subQueryId.getSubqueryId() == 0) {
-                    getQuery(subQueryId.getQueryId()).markStart();
-                  }
-                  mqp.startExecution();
-                  startWorkerQuery(future.getLocalSubQuery().getSubQueryId());
-                }
-              });
+      dispatchWorkerQueryPlans(mqp).addListener(new LocalSubQueryFutureListener() {
+        @Override
+        public void operationComplete(final LocalSubQueryFuture future) throws Exception {
+          mqp.init();
+          if (subQueryId.getSubqueryId() == 0) {
+            getQuery(subQueryId.getQueryId()).markStart();
+          }
+          mqp.startExecution();
+          startWorkerQuery(future.getLocalSubQuery().getSubQueryId());
+        }
+      });
 
       return mqp.getExecutionFuture();
     } catch (DbException | RuntimeException e) {
@@ -444,8 +425,7 @@ public class QueryManager {
    * @return the query dispatch {@link LocalSubQueryFuture}.
    * @throws DbException if any error occurs.
    */
-  private LocalSubQueryFuture dispatchWorkerQueryPlans(final MasterSubQuery mqp)
-      throws DbException {
+  private LocalSubQueryFuture dispatchWorkerQueryPlans(final MasterSubQuery mqp) throws DbException {
     if (!server.getAliveWorkers().containsAll(mqp.getWorkerPlans().keySet())) {
       throw new DbException("Not all requested workers are alive.");
     }
@@ -454,9 +434,8 @@ public class QueryManager {
     for (final Map.Entry<Integer, SubQueryPlan> e : mqp.getWorkerPlans().entrySet()) {
       int workerId = e.getKey();
       try {
-        server
-            .getIPCConnectionPool()
-            .sendShortMessage(workerId, IPCUtils.queryMessage(mqp.getSubQueryId(), e.getValue()));
+        server.getIPCConnectionPool().sendShortMessage(workerId,
+            IPCUtils.queryMessage(mqp.getSubQueryId(), e.getValue()));
       } catch (final IOException ee) {
         throw new DbException(ee);
       }
@@ -498,15 +477,13 @@ public class QueryManager {
    * @throws CatalogException if any error in processing catalog
    * @return the query future from which the query status can be looked up.
    */
-  public QueryFuture submitQuery(final QueryEncoding query, final QueryPlan plan)
-      throws DbException, CatalogException {
+  public QueryFuture submitQuery(final QueryEncoding query, final QueryPlan plan) throws DbException, CatalogException {
     if (!canSubmitQuery()) {
       throw new DbException("Cannot submit query");
     }
     if (!query.profilingMode.isEmpty()) {
       if (!server.getDBMS().equals(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL)) {
-        throw new DbException(
-            "Profiling mode is only supported when using Postgres as the storage system.");
+        throw new DbException("Profiling mode is only supported when using Postgres as the storage system.");
       }
     }
     final long queryID = catalog.newQuery(query);
@@ -518,8 +495,7 @@ public class QueryManager {
    * @param relationKey the key of the desired temp relation.
    * @return the list of workers that store the specified relation.
    */
-  public Set<Integer> getWorkersForTempRelation(
-      @Nonnull final Long queryId, @Nonnull final RelationKey relationKey) {
+  public Set<Integer> getWorkersForTempRelation(@Nonnull final Long queryId, @Nonnull final RelationKey relationKey) {
     return getQuery(queryId).getWorkersForTempRelation(relationKey);
   }
 
@@ -551,13 +527,8 @@ public class QueryManager {
    * @throws CatalogException if any error in processing catalog
    * @return the query future from which the query status can be looked up.
    */
-  public QueryFuture submitQuery(
-      final String rawQuery,
-      final String logicalRa,
-      final String physicalPlan,
-      final SubQueryPlan masterPlan,
-      final Map<Integer, SubQueryPlan> workerPlans)
-      throws DbException, CatalogException {
+  public QueryFuture submitQuery(final String rawQuery, final String logicalRa, final String physicalPlan,
+      final SubQueryPlan masterPlan, final Map<Integer, SubQueryPlan> workerPlans) throws DbException, CatalogException {
     return submitQuery(rawQuery, logicalRa, physicalPlan, new SubQuery(masterPlan, workerPlans));
   }
 
@@ -573,12 +544,8 @@ public class QueryManager {
    * @throws CatalogException if any error in processing catalog
    * @return the query future from which the query status can be looked up.
    */
-  public QueryFuture submitQuery(
-      final String rawQuery,
-      final String logicalRa,
-      final String physicalPlan,
-      final QueryPlan plan)
-      throws DbException, CatalogException {
+  public QueryFuture submitQuery(final String rawQuery, final String logicalRa, final String physicalPlan,
+      final QueryPlan plan) throws DbException, CatalogException {
     QueryEncoding query = new QueryEncoding();
     query.rawQuery = rawQuery;
     query.logicalRa = rawQuery;
@@ -634,17 +601,13 @@ public class QueryManager {
    */
   protected void workerRestarted(final int workerId, final Set<Integer> workersAcked) {
     for (MasterSubQuery mqp : executingSubQueries.values()) {
-      if (mqp.getFTMode().equals(FTMode.REJOIN)
-          && mqp.getMissingWorkers().contains(workerId)
+      if (mqp.getFTMode().equals(FTMode.REJOIN) && mqp.getMissingWorkers().contains(workerId)
           && workersAcked.containsAll(mqp.getWorkerAssigned())) {
         /* so a following ADD_WORKER_ACK won't cause queryMessage to be sent again */
         mqp.getMissingWorkers().remove(workerId);
         try {
-          server
-              .getIPCConnectionPool()
-              .sendShortMessage(
-                  workerId,
-                  IPCUtils.queryMessage(mqp.getSubQueryId(), mqp.getWorkerPlans().get(workerId)));
+          server.getIPCConnectionPool().sendShortMessage(workerId,
+              IPCUtils.queryMessage(mqp.getSubQueryId(), mqp.getWorkerPlans().get(workerId)));
         } catch (final IOException e) {
           throw new RuntimeException(e);
         }

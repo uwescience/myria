@@ -24,8 +24,6 @@ import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import sun.misc.BASE64Decoder;
-
 import com.almworks.sqlite4java.SQLiteConnection;
 import com.almworks.sqlite4java.SQLiteException;
 import com.almworks.sqlite4java.SQLiteJob;
@@ -1663,8 +1661,6 @@ public final class MasterCatalog {
     LOGGER.info("name " + name + "\t" + text + "\t" + lang);
     LOGGER.info("outputschema " + outputSchema.toString());
 
-    LOGGER.info("in register UDFs");
-
     if (isClosed) {
       throw new CatalogException("Catalog is closed.");
     }
@@ -1687,10 +1683,8 @@ public final class MasterCatalog {
             statement.bind(3, text);
             statement.bind(4, lang.toString());
             if (binary != null) {
-              // unencode the blob
-              BASE64Decoder decoder = new BASE64Decoder();
-              byte[] decodedBytes = decoder.decodeBuffer(binary);
-              statement.bind(5, decodedBytes);
+              // send the base64 string as string
+              statement.bind(5, binary);
             }
 
             statement.stepThrough();
