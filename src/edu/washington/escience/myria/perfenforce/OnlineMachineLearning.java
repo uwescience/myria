@@ -9,7 +9,6 @@ import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.nio.channels.FileChannel;
@@ -57,9 +56,9 @@ public class OnlineMachineLearning implements ScalingAlgorithm {
 
     // Predict in parallel
     List<Thread> threadList = new ArrayList<Thread>();
-    for (int i = 0; i < 5; i++) {
+    for (int i = 0; i < configs.size(); i++) {
       final int clusterIndex = i;
-      Thread thread = new Thread() {
+      Thread thread = new Thread(new Runnable() {
         @Override
         public void run() {
           try {
@@ -68,14 +67,25 @@ public class OnlineMachineLearning implements ScalingAlgorithm {
             e.printStackTrace();
           }
         }
-      };
+      });
       threadList.add(thread);
     }
 
     for (Thread t : threadList) {
       t.start();
     }
+
+    for (Thread t : threadList) {
+      try {
+        t.join();
+      } catch (InterruptedException e) {
+        e.printStackTrace();
+      }
+    }
+
     LOGGER.warn("FINISHED PARALLEL PREDICTIONS ");
+    LOGGER.warn("ALL PREDICTIONS " + queryPredictions[0] + "," + queryPredictions[1] + "," + queryPredictions[2] + ","
+        + queryPredictions[3] + "," + queryPredictions[4]);
 
     int maxScore = 0;
     int winnerIndex = 0;
@@ -97,15 +107,15 @@ public class OnlineMachineLearning implements ScalingAlgorithm {
     currentPositionIndex = winnerIndex;
     currentClusterSize = configs.get(currentPositionIndex);
     LOGGER.warn("WINNER SIZE " + currentClusterSize);
-    LOGGER.warn("ALL PREDICTIONS " + queryPredictions[0] + "," + queryPredictions[1] + "," + queryPredictions[2] + ","
-        + queryPredictions[3] + "," + queryPredictions[4]);
+
   }
 
   // fill up queryPredictions array
-  public void trainOnlineQueries(final int clusterSize, final int queryID) throws IOException {
+  public void trainOnlineQueries(final int clusterIndex, final int queryID) throws IOException {
     String MOAFileName = path + "OMLFiles/moa.jar";
     String trainingFileName = path + "OMLFiles/training.arff"; // Figure out which File to use as training
-    String modifiedTrainingFileName = path + "OMLFiles/training-modified.arff";
+    String modifiedTrainingFileName = path + "OMLFiles/training-modified-" + clusterIndex + ".arff";
+    String predictionsFileName = path + "OMLFiles/predictions" + clusterIndex + ".txt";
 
     // clear results -- necessary to make the file?
     PrintWriter outputWriter = new PrintWriter(modifiedTrainingFileName);
@@ -125,49 +135,37 @@ public class OnlineMachineLearning implements ScalingAlgorithm {
       LOGGER.warn("ADDED POINT " + s);
     }
     // Append the current point
-    String newPoint = getQueryFeature(clusterSize, queryID);
+    String newPoint = getQueryFeature(clusterIndex, queryID);
     LOGGER.warn("ADDED NEW POINT " + newPoint);
     appendDataWriter.write(newPoint + "\n");
 
     appendDataWriter.close();
 
-    // Run a java app in a separate system process
     String moaCommand =
         String
             .format(
-                "java -cp %s moa.DoTask \"EvaluatePrequentialRegression -l (rules.functions.Perceptron  -d -l %s) -s (ArffFileStream -f %s) -e (WindowRegressionPerformanceEvaluator -w 1) -f 1 -o %s",
-                MOAFileName, lr, modifiedTrainingFileName);
-    LOGGER.warn("OML command " + moaCommand);
-    Process p = Runtime.getRuntime().exec(moaCommand);
+                "EvaluatePrequentialRegression -l (rules.functions.Perceptron  -d -l %s) -s (ArffFileStream -f %s) -e (WindowRegressionPerformanceEvaluator -w 1) -f 1 -o %s",
+                lr, modifiedTrainingFileName, predictionsFileName);
+    LOGGER.warn("MOA COMMAND " + moaCommand);
+    String[] arrayCommand = new String[] { "java", "-classpath", MOAFileName, "moa.DoTask", moaCommand };
+
+    Process p = Runtime.getRuntime().exec(arrayCommand);
+
+    BufferedReader reader = new BufferedReader(new InputStreamReader(p.getInputStream()));
+    while ((reader.readLine()) != null) {
+    }
     try {
       p.waitFor();
     } catch (InterruptedException e) {
       e.printStackTrace();
     }
 
-    // Then retrieve the output and feed it to the parser
-    InputStream in = p.getInputStream();
-
     // read the file and return the final prediction parsingOnlineFile(clusterSize);
-    parsingOnlineFile(clusterSize, in);
+    parsingOnlineFile(clusterIndex, predictionsFileName);
   }
 
-  public String getQueryFeature(final int clusterSize, final int queryID) throws IOException {
-    String featureFilePath = path + "features/" + clusterSize;
-    LOGGER.warn("Feature path " + featureFilePath);
-    BufferedReader featureReader = new BufferedReader(new FileReader(featureFilePath));
-
-    // Lines to skip
-    for (int i = 0; i < queryID; i++) {
-      featureReader.readLine();
-    }
-    String result = featureReader.readLine();
-    featureReader.close();
-    return result;
-  }
-
-  public void parsingOnlineFile(final int clusterSize, final InputStream in) {
-    BufferedReader streamReader = new BufferedReader(new InputStreamReader(in));
+  public void parsingOnlineFile(final int clusterSize, final String predictionFileName) throws IOException {
+    BufferedReader streamReader = new BufferedReader(new FileReader(predictionFileName));
 
     String currentLine = "";
     int numberHeaderLines = 0;
@@ -184,7 +182,6 @@ public class OnlineMachineLearning implements ScalingAlgorithm {
       while ((currentLine = streamReader.readLine()) != null) {
         countLine++;
         if (countLine > totalLinesToSkip) {
-          LOGGER.warn("FROM STREAM " + currentLine);
           nextQueryPrediction = Double.parseDouble((currentLine.split(",")[0]).split(":")[1]);
         }
       }
@@ -194,6 +191,20 @@ public class OnlineMachineLearning implements ScalingAlgorithm {
       e.printStackTrace();
     }
 
+  }
+
+  public String getQueryFeature(final int clusterIndex, final int queryID) throws IOException {
+    String featureFilePath = path + "OMLFiles/features/" + configs.get(clusterIndex);
+    LOGGER.warn("Feature path " + featureFilePath);
+    BufferedReader featureReader = new BufferedReader(new FileReader(featureFilePath));
+
+    // Lines to skip
+    for (int i = 0; i < queryID; i++) {
+      featureReader.readLine();
+    }
+    String result = featureReader.readLine();
+    featureReader.close();
+    return result;
   }
 
   public double closeToOneScore(final double ratio) {
