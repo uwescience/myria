@@ -15,6 +15,7 @@ import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.commons.lang.time.StopWatch;
 import org.slf4j.LoggerFactory;
 
 import edu.washington.escience.myria.perfenforce.encoding.ScalingStatusEncoding;
@@ -31,8 +32,6 @@ public class OnlineMachineLearning implements ScalingAlgorithm {
   String path;
   List<Integer> configs;
   List<String> additionalDataPoints;
-
-  static final int totalNumberOfTrainingQueries = 2000;
 
   protected static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(OnlineMachineLearning.class);
 
@@ -55,6 +54,8 @@ public class OnlineMachineLearning implements ScalingAlgorithm {
   public void step(final QueryMetaData nextQuery) {
 
     // Predict in parallel
+    StopWatch stopWatch = new StopWatch();
+    stopWatch.start();
     List<Thread> threadList = new ArrayList<Thread>();
     for (int i = 0; i < configs.size(); i++) {
       final int clusterIndex = i;
@@ -82,6 +83,8 @@ public class OnlineMachineLearning implements ScalingAlgorithm {
         e.printStackTrace();
       }
     }
+    stopWatch.stop();
+    LOGGER.warn("TIME : " + stopWatch.getTime() / 1000 + " seconds");
 
     LOGGER.warn("FINISHED PARALLEL PREDICTIONS ");
     LOGGER.warn("ALL PREDICTIONS " + queryPredictions[0] + "," + queryPredictions[1] + "," + queryPredictions[2] + ","
@@ -166,24 +169,11 @@ public class OnlineMachineLearning implements ScalingAlgorithm {
 
   public void parsingOnlineFile(final int clusterSize, final String predictionFileName) throws IOException {
     BufferedReader streamReader = new BufferedReader(new FileReader(predictionFileName));
-
     String currentLine = "";
-    int numberHeaderLines = 0;
-    int numberDataPoints = 0;
-    int numberTraining = 0;
-
-    numberDataPoints = totalNumberOfTrainingQueries;
-    numberTraining = numberDataPoints + additionalDataPoints.size();
-    int totalLinesToSkip = numberHeaderLines + numberTraining;
-
-    int countLine = 0;
     double nextQueryPrediction = 0;
     try {
       while ((currentLine = streamReader.readLine()) != null) {
-        countLine++;
-        if (countLine > totalLinesToSkip) {
-          nextQueryPrediction = Double.parseDouble((currentLine.split(",")[0]).split(":")[1]);
-        }
+        nextQueryPrediction = Double.parseDouble((currentLine.split(",")[0]).split(":")[1]);
       }
       streamReader.close();
       queryPredictions[clusterSize] = nextQueryPrediction;

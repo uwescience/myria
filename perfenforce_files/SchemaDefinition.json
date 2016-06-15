@@ -93,7 +93,9 @@
     "keys": [
       0
     ],
-    "corresponding_fact_key":[3]
+    "corresponding_fact_key": [
+      3
+    ]
   },
   {
     "relationKey": {
@@ -133,6 +135,106 @@
     "keys": [
       0
     ],
-    "corresponding_fact_key":[2]
+    "corresponding_fact_key": [
+      2
+    ]
+  },
+  {
+    "relationKey": {
+      "userName": "public",
+      "programName": "adhoc",
+      "relationName": "supplier"
+    },
+    "type": "dimension",
+    "source": {
+      "s3Uri": "s3://tpchssb/supplierOUT.csv"
+    },
+    "schema": {
+      "columnTypes": [
+        "INT_TYPE",
+        "STRING_TYPE",
+        "STRING_TYPE",
+        "STRING_TYPE",
+        "STRING_TYPE",
+        "STRING_TYPE",
+        "STRING_TYPE",
+        "STRING_TYPE"
+      ],
+      "columnNames": [
+        "s_suppkey",
+        "s_name",
+        "s_address",
+        "s_city",
+        "s_nation_prefix",
+        "s_nation",
+        "s_region",
+        "s_phone"
+      ]
+    },
+    "delimiter": "|",
+    "keys": [
+      0
+    ],
+    "corresponding_fact_key": [
+      4
+    ]
+  },
+  {
+    "relationKey": {
+      "userName": "public",
+      "programName": "adhoc",
+      "relationName": "date"
+    },
+    "type": "dimension",
+    "source": {
+      "s3Uri": "s3://tpchssb/dateOUT.csv"
+    },
+    "schema": {
+      "columnTypes": [
+        "LONG_TYPE",
+        "STRING_TYPE",
+        "STRING_TYPE",
+        "STRING_TYPE",
+        "LONG_TYPE",
+        "LONG_TYPE",
+        "STRING_TYPE",
+        "LONG_TYPE",
+        "LONG_TYPE",
+        "LONG_TYPE",
+        "LONG_TYPE",
+        "LONG_TYPE",
+        "STRING_TYPE",
+        "STRING_TYPE",
+        "STRING_TYPE",
+        "STRING_TYPE",
+        "STRING_TYPE"
+      ],
+      "columnNames": [
+        "d_datekey",
+        "d_date",
+        "d_dayofweek",
+        "d_month",
+        "d_year",
+        "d_yearmonthnum",
+        "d_yearmonth",
+        "d_daynuminweek",
+        "d_daynuminmonth",
+        "d_daynuminyear",
+        "d_monthnuminyear",
+        "d_weeknuminyear",
+        "d_sellingseason",
+        "d_lastdayinweekfl",
+        "d_lastdayinmonthfl",
+        "d_holidayfl",
+        "d_weekdayfl"
+      ]
+    },
+    "delimiter": "|",
+    "keys": [
+      0
+    ],
+    "corresponding_fact_key": [
+      15
+    ]
   }
 ]

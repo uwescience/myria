@@ -21,6 +21,7 @@ import com.amazonaws.util.json.JSONException;
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.coordinator.CatalogException;
 import edu.washington.escience.myria.parallel.Server;
+import edu.washington.escience.myria.perfenforce.QueryMetaData;
 import edu.washington.escience.myria.perfenforce.encoding.InitializeScalingEncoding;
 import edu.washington.escience.myria.perfenforce.encoding.ScalingAlgorithmEncoding;
 import edu.washington.escience.myria.perfenforce.encoding.ScalingStatusEncoding;
@@ -70,17 +71,25 @@ public final class PerfEnforceResource {
   }
 
   /*
-   * makes a step, depending on the algorithm initialized
+   * prepares the next query
    */
   @POST
-  @Path("/step-fake")
+  @Path("/setup-fake")
   @Consumes(MediaType.APPLICATION_JSON)
   public Response scalingStepFake(final ScalingAlgorithmEncoding scalingAlgorithmEncoding) {
-
-    LOGGER.warn("Run Fake Query....");
-    server.postFakeQuery(scalingAlgorithmEncoding);
+    server.postSetupNextFakeQuery(scalingAlgorithmEncoding);
 
     /* response */
+    return Response.noContent().build();
+  }
+
+  /*
+   * runs an iteration, depending on the algorithm initialized
+   */
+  @POST
+  @Path("/step-iteration")
+  public Response postRunIterationQuery() {
+    server.postRunIterationQuery();
     return Response.noContent().build();
   }
 
@@ -101,6 +110,18 @@ public final class PerfEnforceResource {
   @Produces(MediaType.APPLICATION_JSON)
   public ScalingStatusEncoding getScalingStatus() throws DbException {
     return server.getScalingStatus();
+  }
+
+  @GET
+  @Path("/get-previous-query")
+  public QueryMetaData getPreviousQuery() throws DbException {
+    return server.getPreviousQuery();
+  }
+
+  @GET
+  @Path("/get-current-query")
+  public QueryMetaData getCurrentQuery() throws DbException {
+    return server.getCurrentQuery();
   }
 
 }

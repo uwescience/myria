@@ -26,6 +26,7 @@ public class PerfEnforceScalingAlgorithms {
   int currentClusterSize;
   List<Integer> configs;
   QueryMetaData currentQuery;
+  QueryMetaData previousQuery;
 
   String path;
 
@@ -40,6 +41,8 @@ public class PerfEnforceScalingAlgorithms {
     configs = Arrays.asList(4, 6, 8, 10, 12);
     ithQuerySequence = 0;
     currentClusterSize = configs.get(tier);
+    currentQuery = new QueryMetaData();
+    previousQuery = new QueryMetaData();
 
     initializeScalingAlgorithm(scalingEncoding);
   }
@@ -96,15 +99,19 @@ public class PerfEnforceScalingAlgorithms {
     LOGGER.warn(slaFile);
     String idealFile = path + "Ideal/ideal" + tier;
     LOGGER.warn(idealFile);
+    String descFile = path + "descriptions";
+    LOGGER.warn(descFile);
 
     try {
       BufferedReader runtimeReader = new BufferedReader(new InputStreamReader(new FileInputStream(queryRuntimeFile)));
       BufferedReader slaReader = new BufferedReader(new InputStreamReader(new FileInputStream(slaFile)));
       BufferedReader idealReader = new BufferedReader(new InputStreamReader(new FileInputStream(idealFile)));
+      BufferedReader descReader = new BufferedReader(new InputStreamReader(new FileInputStream(descFile)));
 
       String runtimeLine = runtimeReader.readLine();
       String slaLine = slaReader.readLine();
       String idealLine = idealReader.readLine();
+      String desc = descReader.readLine();
       int counter = 0;
       while (runtimeLine != null) {
         if (counter == ithQuerySequence) {
@@ -115,20 +122,32 @@ public class PerfEnforceScalingAlgorithms {
                   .parseDouble(runtimeParts[4]));
           int queryIdeal = Integer.parseInt(idealLine);
           double querySLA = Double.parseDouble(slaLine);
-          QueryMetaData q = new QueryMetaData(counter, querySLA, queryIdeal, queryRuntimesList);
+          QueryMetaData q = new QueryMetaData(counter, desc, querySLA, queryIdeal, queryRuntimesList);
+          previousQuery = currentQuery;
           setCurrentQuery(q);
         }
 
         runtimeLine = runtimeReader.readLine();
         slaLine = slaReader.readLine();
         idealLine = idealReader.readLine();
+        desc = descReader.readLine();
         counter++;
       }
       runtimeReader.close();
       slaReader.close();
       idealReader.close();
+      descReader.close();
 
+      LOGGER.warn("PREVIOUS QUERY: " + previousQuery.toString());
       LOGGER.warn("CURRENT QUERY: " + currentQuery.toString());
+
+      // case if we finish the sequence
+      if (counter == ithQuerySequence + 1) {
+        currentQuery = null;
+      } else if (counter < ithQuerySequence) {
+        currentQuery = null;
+        previousQuery = null;
+      }
 
     } catch (NumberFormatException | IOException e) {
       e.printStackTrace();
@@ -157,6 +176,14 @@ public class PerfEnforceScalingAlgorithms {
    */
   public ScalingStatusEncoding getScalingStatus() {
     return scalingAlgorithm.getScalingStatus();
+  }
+
+  public QueryMetaData getPreviousQuery() {
+    return previousQuery;
+  }
+
+  public QueryMetaData getCurrentQuery() {
+    return currentQuery;
   }
 
 }

@@ -120,6 +120,7 @@ import edu.washington.escience.myria.parallel.ipc.IPCMessage;
 import edu.washington.escience.myria.parallel.ipc.InJVMLoopbackChannelSink;
 import edu.washington.escience.myria.parallel.ipc.QueueBasedShortMessageProcessor;
 import edu.washington.escience.myria.perfenforce.PerfEnforceDriver;
+import edu.washington.escience.myria.perfenforce.QueryMetaData;
 import edu.washington.escience.myria.perfenforce.encoding.InitializeScalingEncoding;
 import edu.washington.escience.myria.perfenforce.encoding.ScalingAlgorithmEncoding;
 import edu.washington.escience.myria.perfenforce.encoding.ScalingStatusEncoding;
@@ -2057,18 +2058,12 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
     perfEnforceDriver.beginQueryMonitoring(scalingEncoding);
   }
 
-  public void postFakeQuery(final ScalingAlgorithmEncoding scalingAlgorithmEncoding) {
-    perfEnforceDriver.postFakeQuery(scalingAlgorithmEncoding);
+  public void postSetupNextFakeQuery(final ScalingAlgorithmEncoding scalingAlgorithmEncoding) {
+    perfEnforceDriver.postSetupNextFakeQuery(scalingAlgorithmEncoding);
   }
 
-  // For the real demo, we might want to keep the algorithm fixed based on the initialization
-  public void postRealQuery() {
-    // MOVE THIS TO PERFENFORCE DRIVER
-    // The intercepted query from the rest call can be sent here and modified here
-    // Then the server will either run the query first and then run the method, or the other way around.
-    // If the query runs first (reactive methods) then the query runtime will be sent to the algorithm through the
-    // currentQuery metadata
-    // If the method runs first (proactive)
+  public void postRunIterationQuery() {
+    perfEnforceDriver.postRunIterationQuery();
   }
 
   public int getClusterSize() {
@@ -2081,5 +2076,23 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
 
   public ScalingStatusEncoding getScalingStatus() {
     return perfEnforceDriver.getScalingStatus();
+  }
+
+  public QueryMetaData getPreviousQuery() {
+    return perfEnforceDriver.perfenforceScaling.getPreviousQuery();
+  }
+
+  public QueryMetaData getCurrentQuery() {
+    return perfEnforceDriver.perfenforceScaling.getCurrentQuery();
+  }
+
+  // For the real demo, we might want to keep the algorithm fixed based on the initialization
+  public void postRealQuery() {
+    // MOVE THIS TO PERFENFORCE DRIVER
+    // The intercepted query from the rest call can be sent here and modified here
+    // Then the server will either run the query first and then run the method, or the other way around.
+    // If the query runs first (reactive methods) then the query runtime will be sent to the algorithm through the
+    // currentQuery metadata
+    // If the method runs first (proactive)
   }
 }

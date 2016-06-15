@@ -210,16 +210,14 @@ public class PerfEnforceDriver {
     perfenforceScaling = new PerfEnforceScalingAlgorithms(scalingAlgorithm);
   }
 
-  // Collect data from ith line in query-meta-data in the appropriate sequence
-  public void postFakeQuery(final ScalingAlgorithmEncoding scalingAlgorithmEncoding) {
-
+  public void postSetupNextFakeQuery(final ScalingAlgorithmEncoding scalingAlgorithmEncoding) {
     perfenforceScaling.updateParameters(scalingAlgorithmEncoding);
-
     perfenforceScaling.setupNextFakeQuery();
+  }
+
+  public void postRunIterationQuery() {
     perfenforceScaling.step();
-
     perfenforceScaling.incrementQueryCounter();
-
   }
 
   /**

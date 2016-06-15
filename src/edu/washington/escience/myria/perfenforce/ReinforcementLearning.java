@@ -69,7 +69,7 @@ public class ReinforcementLearning implements ScalingAlgorithm {
     int bestState = currentStateIndex;
 
     // Introduce another cluster state if we have the opportunity
-    if (activeStateRatios[bestState] > 1 && bestState < configs.size()) {
+    if (activeStateRatios[bestState] > 1 && bestState < configs.size() - 1) {
       if (activeStateRatios[bestState + 1] == -1) {
         LOGGER.warn("CONDITION CHANGE " + (bestState + 1));
         currentClusterSize = configs.get(bestState + 1);

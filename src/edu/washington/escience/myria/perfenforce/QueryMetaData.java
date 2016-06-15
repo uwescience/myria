@@ -2,22 +2,33 @@ package edu.washington.escience.myria.perfenforce;
 
 import java.util.List;
 
-class QueryMetaData {
-  int id;
-  double slaRuntime;
-  int idealClusterSize;
-  List<Double> runtimes;
+import edu.washington.escience.myria.api.encoding.Required;
+
+public class QueryMetaData {
+  @Required
+  public int id;
+  @Required
+  public double slaRuntime;
+  @Required
+  public String description;
+  public int idealClusterSize;
+  public List<Double> runtimes;
+
+  public QueryMetaData() {
+  }
 
   public QueryMetaData(final int id, final double slaRuntime) {
     this.id = id;
     this.slaRuntime = slaRuntime;
   }
 
-  public QueryMetaData(final int id, final double slaRuntime, final int idealClusterSize, final List<Double> runtimes) {
+  public QueryMetaData(final int id, final String description, final double slaRuntime, final int idealClusterSize,
+      final List<Double> runtimes) {
     this.id = id;
     this.slaRuntime = slaRuntime;
     this.idealClusterSize = idealClusterSize;
     this.runtimes = runtimes;
+    this.description = description;
   }
 
   public int getIdealClusterSize() {

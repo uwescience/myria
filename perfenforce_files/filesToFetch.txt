@@ -10,7 +10,15 @@ weka.jar
 tiers.txt
 ScalingAlgorithms/Replay/Seq0/query_runtimes
 ScalingAlgorithms/Replay/Seq0/SLAs/tier1
+ScalingAlgorithms/Replay/Seq0/SLAs/tier2
+ScalingAlgorithms/Replay/Seq0/SLAs/tier3
+ScalingAlgorithms/Replay/Seq0/SLAs/tier4
+ScalingAlgorithms/Replay/Seq0/SLAs/tier5
+ScalingAlgorithms/Replay/Seq0/Ideal/ideal0
 ScalingAlgorithms/Replay/Seq0/Ideal/ideal1
+ScalingAlgorithms/Replay/Seq0/Ideal/ideal2
+ScalingAlgorithms/Replay/Seq0/Ideal/ideal3
+ScalingAlgorithms/Replay/Seq0/Ideal/ideal4
 ScalingAlgorithms/Replay/Seq0/OMLFiles/moa.jar
 ScalingAlgorithms/Replay/Seq0/OMLFiles/training.arff
 ScalingAlgorithms/Replay/Seq0/OMLFiles/features/4
