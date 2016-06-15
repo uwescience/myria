@@ -50,7 +50,7 @@ public final class MyriaDriverLauncher {
   private static final Logger LOGGER = LoggerFactory.getLogger(MyriaDriverLauncher.class);
 
   private static final String USAGE_STRING =
-      "Usage: MyriaDriverLauncher [-yarn true|false] -configPath <configPath> -javaLibPath <javaLibPath> -nativeLibPath <nativeLibPath>";
+      "Usage: MyriaDriverLauncher [-runtimeClass <runtimeClass>] -configPath <configPath> -javaLibPath <javaLibPath> -nativeLibPath <nativeLibPath>";
 
   private static final long DRIVER_PING_TIMEOUT_MILLIS = 60 * 1000;
 
