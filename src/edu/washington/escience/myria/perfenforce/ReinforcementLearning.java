@@ -20,6 +20,7 @@ public class ReinforcementLearning implements ScalingAlgorithm {
   int currentClusterSize;
   int currentStateIndex;
   List<Integer> configs;
+  int bestState;
 
   Double[] activeStateRatios;
 
@@ -32,6 +33,7 @@ public class ReinforcementLearning implements ScalingAlgorithm {
     this.configs = configs;
     this.currentClusterSize = currentClusterSize;
     currentStateIndex = configs.indexOf(currentClusterSize);
+    bestState = currentStateIndex;
 
     initializeActiveStates();
   }
@@ -63,10 +65,10 @@ public class ReinforcementLearning implements ScalingAlgorithm {
   public void step(final QueryMetaData currentQuery) {
     LOGGER.warn("Stepping for RL");
 
-    LOGGER.warn("Current State Index " + currentStateIndex);
+    currentClusterSize = configs.get(bestState);
+    currentStateIndex = configs.indexOf(currentClusterSize);
 
-    // Find the best state
-    int bestState = currentStateIndex;
+    LOGGER.warn("Current State Index " + currentStateIndex);
 
     // Introduce another cluster state if we have the opportunity
     if (activeStateRatios[bestState] > 1 && bestState < configs.size() - 1) {
@@ -84,11 +86,8 @@ public class ReinforcementLearning implements ScalingAlgorithm {
         activeStateRatios[currentStateIndex] = 1.0;
       }
     } else {
-      LOGGER.warn("CONDITION CHANGE " + bestState);
-      currentClusterSize = configs.get(bestState);
-      currentStateIndex = configs.indexOf(currentClusterSize);
+      LOGGER.warn("BEST STATE PREVIOUSLY FOUND " + bestState);
     }
-
     // Resulting runtime
     double ratio = currentQuery.runtimes.get(currentStateIndex) / currentQuery.slaRuntime;
 
@@ -101,21 +100,24 @@ public class ReinforcementLearning implements ScalingAlgorithm {
     for (int a = 0; a < activeStateRatios.length; a++) {
       if (a != currentStateIndex && activeStateRatios[a] != -1) {
         activeStateRatios[a] =
-            beta
-                * (newRatio * ((1.0 * configs.get(currentStateIndex) / configs.get(a)) - activeStateRatios[a]) + activeStateRatios[a]);
+            beta * (newRatio * ((1.0 * configs.get(currentStateIndex) / configs.get(a))) - activeStateRatios[a])
+                + activeStateRatios[a];
       }
     }
 
     double bestRatioScore = Double.MIN_VALUE;
     for (int a = 0; a < activeStateRatios.length; a++) {
-      double stateCalculateReward = closeToOneScore(activeStateRatios[a]);
-      if (stateCalculateReward > bestRatioScore) {
-        bestRatioScore = stateCalculateReward;
-        bestState = a;
+      if (activeStateRatios[a] != -1) {
+        double stateCalculateReward = closeToOneScore(activeStateRatios[a]);
+        LOGGER.warn("SCORE FOR " + a + " is " + stateCalculateReward);
+        if (stateCalculateReward > bestRatioScore) {
+          bestRatioScore = stateCalculateReward;
+          bestState = a;
+
+        }
       }
     }
-
-    LOGGER.warn("BEST STATE FOUND " + bestState);
+    LOGGER.warn("WINNER IS " + bestState);
 
   }
 

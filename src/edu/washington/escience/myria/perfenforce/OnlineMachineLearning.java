@@ -111,6 +111,12 @@ public class OnlineMachineLearning implements ScalingAlgorithm {
     currentClusterSize = configs.get(currentPositionIndex);
     LOGGER.warn("WINNER SIZE " + currentClusterSize);
 
+    try {
+      additionalDataPoints.add(getQueryFeature(currentPositionIndex, nextQuery.id));
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+
   }
 
   // fill up queryPredictions array
