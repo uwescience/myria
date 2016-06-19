@@ -89,20 +89,26 @@ public class OnlineMachineLearning implements ScalingAlgorithm {
     LOGGER.warn("FINISHED PARALLEL PREDICTIONS ");
     LOGGER.warn("ALL PREDICTIONS " + queryPredictions[0] + "," + queryPredictions[1] + "," + queryPredictions[2] + ","
         + queryPredictions[3] + "," + queryPredictions[4]);
+    LOGGER.warn("SLA GOAL " + nextQuery.slaRuntime);
 
-    int maxScore = 0;
+    double maxScore = 0;
     int winnerIndex = 0;
     for (int currentState = 0; currentState < configs.size(); currentState++) {
       double onlinePrediction = queryPredictions[currentState];
 
       onlinePrediction = (onlinePrediction < 0) ? 0 : onlinePrediction;
 
-      double currentRatio = onlinePrediction / nextQuery.slaRuntime;
-
+      double currentRatio = 0;
+      if (nextQuery.slaRuntime == 0) {
+        currentRatio = onlinePrediction / 1;
+      } else {
+        currentRatio = onlinePrediction / nextQuery.slaRuntime;
+      }
       double currentScore = closeToOneScore(currentRatio);
+
       if (currentScore > maxScore) {
         winnerIndex = currentState;
-        maxScore = (int) currentScore;
+        maxScore = currentScore;
       }
     }
 
@@ -141,11 +147,11 @@ public class OnlineMachineLearning implements ScalingAlgorithm {
     FileWriter appendDataWriter = new FileWriter(modifiedTrainingFileName, true);
     for (String s : additionalDataPoints) {
       appendDataWriter.write(s + "\n");
-      LOGGER.warn("ADDED POINT " + s);
+      // LOGGER.warn("ADDED POINT " + s);
     }
     // Append the current point
     String newPoint = getQueryFeature(clusterIndex, queryID);
-    LOGGER.warn("ADDED NEW POINT " + newPoint);
+    // LOGGER.warn("ADDED NEW POINT " + newPoint);
     appendDataWriter.write(newPoint + "\n");
 
     appendDataWriter.close();
@@ -155,7 +161,7 @@ public class OnlineMachineLearning implements ScalingAlgorithm {
             .format(
                 "EvaluatePrequentialRegression -l (rules.functions.Perceptron  -d -l %s) -s (ArffFileStream -f %s) -e (WindowRegressionPerformanceEvaluator -w 1) -f 1 -o %s",
                 lr, modifiedTrainingFileName, predictionsFileName);
-    LOGGER.warn("MOA COMMAND " + moaCommand);
+    // LOGGER.warn("MOA COMMAND " + moaCommand);
     String[] arrayCommand = new String[] { "java", "-classpath", MOAFileName, "moa.DoTask", moaCommand };
 
     Process p = Runtime.getRuntime().exec(arrayCommand);
@@ -163,11 +169,11 @@ public class OnlineMachineLearning implements ScalingAlgorithm {
     BufferedReader reader = new BufferedReader(new InputStreamReader(p.getInputStream()));
     while ((reader.readLine()) != null) {
     }
-    try {
-      p.waitFor();
-    } catch (InterruptedException e) {
-      e.printStackTrace();
-    }
+    // try {
+    // p.waitFor();
+    // } catch (InterruptedException e) {
+    // e.printStackTrace();
+    // }
 
     // read the file and return the final prediction parsingOnlineFile(clusterSize);
     parsingOnlineFile(clusterIndex, predictionsFileName);

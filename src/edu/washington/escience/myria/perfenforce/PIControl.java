@@ -85,7 +85,13 @@ public class PIControl implements ScalingAlgorithm {
       LOGGER.warn("INSIDE WINDOW ID " + currentQuery.id);
       double avgRatios = 0;
       for (int q = 0; q < windowRuntimes.size(); q++) {
-        avgRatios += windowRuntimes.get(q) / windowSLAs.get(q);
+        double ratio = 0;
+        if (currentQuery.slaRuntime == 0) {
+          ratio = windowRuntimes.get(q) / 1;
+        } else {
+          ratio = windowRuntimes.get(q) / windowSLAs.get(q);
+        }
+        avgRatios += ratio;
       }
       avgRatios /= w;
 

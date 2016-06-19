@@ -89,7 +89,12 @@ public class ReinforcementLearning implements ScalingAlgorithm {
       LOGGER.warn("BEST STATE PREVIOUSLY FOUND " + bestState);
     }
     // Resulting runtime
-    double ratio = currentQuery.runtimes.get(currentStateIndex) / currentQuery.slaRuntime;
+    double ratio = 0;
+    if (currentQuery.slaRuntime == 0) {
+      ratio = currentQuery.runtimes.get(currentStateIndex) / 1;
+    } else {
+      ratio = currentQuery.runtimes.get(currentStateIndex) / currentQuery.slaRuntime;
+    }
 
     // Make the correction based on alpha
     double oldRatio = activeStateRatios[currentStateIndex];
@@ -99,6 +104,7 @@ public class ReinforcementLearning implements ScalingAlgorithm {
     // For all other states, make a beta change
     for (int a = 0; a < activeStateRatios.length; a++) {
       if (a != currentStateIndex && activeStateRatios[a] != -1) {
+        LOGGER.warn("Fraction" + configs.get(currentStateIndex) / configs.get(a));
         activeStateRatios[a] =
             beta * (newRatio * ((1.0 * configs.get(currentStateIndex) / configs.get(a))) - activeStateRatios[a])
                 + activeStateRatios[a];
