@@ -30,6 +30,8 @@ public class PIControl implements ScalingAlgorithm {
   double recordErrorSum;
   double recordErrorValue;
 
+  int initClusterSize = 0;
+
   protected static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(PIControl.class);
 
   public PIControl(final List<Integer> configs, final int currentClusterSize, final double kp, final double ki,
@@ -41,6 +43,7 @@ public class PIControl implements ScalingAlgorithm {
     this.configs = configs;
 
     ut = currentClusterSize;
+    initClusterSize = currentClusterSize;
     windowRuntimes = new ArrayList<Double>();
     windowSLAs = new ArrayList<Double>();
     integralWindowSum = new ArrayList<Double>();
@@ -84,16 +87,22 @@ public class PIControl implements ScalingAlgorithm {
     {
       LOGGER.warn("INSIDE WINDOW ID " + currentQuery.id);
       double avgRatios = 0;
+
       for (int q = 0; q < windowRuntimes.size(); q++) {
+        LOGGER.warn("RUNTIME  " + windowRuntimes.get(q));
+        LOGGER.warn("SLA  " + windowSLAs.get(q));
         double ratio = 0;
+
         if (currentQuery.slaRuntime == 0) {
           ratio = windowRuntimes.get(q) / 1;
         } else {
           ratio = windowRuntimes.get(q) / windowSLAs.get(q);
         }
         avgRatios += ratio;
+        LOGGER.warn("RATIO  " + ratio);
       }
       avgRatios /= w;
+      LOGGER.warn("AVG RATIO  " + avgRatios);
 
       double currentWindowAverage = avgRatios - 1.0;
       double currentError = kp * currentWindowAverage * ut;
@@ -103,7 +112,7 @@ public class PIControl implements ScalingAlgorithm {
       for (double x : integralWindowSum) {
         errorSum += x;
       }
-      double new_ut = 4 + errorSum + (currentError);
+      double new_ut = initClusterSize + errorSum + (currentError);
 
       recordErrorSum = errorSum;
       LOGGER.warn("INSIDE SUM " + recordErrorSum);

@@ -93,6 +93,16 @@ public final class PerfEnforceResource {
     return Response.noContent().build();
   }
 
+  /*
+   * Predicts SLA using weka information and writes the features for MOA
+   */
+  @POST
+  @Path("/predict")
+  public Response predictQuery(final String querySQL) throws DbException {
+    server.predictQuery(querySQL);
+    return Response.noContent().build();
+  }
+
   @GET
   @Path("/cluster-size")
   public Response getClusterSize() throws DbException {
