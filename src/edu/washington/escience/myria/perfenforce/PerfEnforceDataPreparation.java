@@ -277,12 +277,15 @@ public class PerfEnforceDataPreparation {
   /*
    * Called within a configuration, calls the query to explain
    */
-  public String generatePostgresFeatures(final String query) throws IOException, DbException {
+  public String generatePostgresFeatures(final String query, final int worker) throws IOException, DbException {
     String explainQuery = "EXPLAIN " + query;
+    LOGGER.warn("QUERY EXPLAIN " + explainQuery);
+    LOGGER.warn("Worker " + worker);
 
     // only run on worker 1
     String result =
-        server.executeSQLCommandSingleRowSingleWorker(explainQuery, Schema.ofFields("explain", Type.STRING_TYPE), 1);
+        server.executeSQLCommandSingleRowSingleWorker(explainQuery, Schema.ofFields("explain", Type.STRING_TYPE),
+            worker);
 
     return result;
   }

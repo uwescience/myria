@@ -98,8 +98,10 @@ public final class PerfEnforceResource {
    */
   @POST
   @Path("/predict")
-  public Response predictQuery(final String querySQL) throws DbException {
-    server.predictQuery(querySQL);
+  @Consumes(MediaType.MULTIPART_FORM_DATA)
+  public Response predictQuery(@FormDataParam("querySQL") final String querySQL,
+      @FormDataParam("path") final String path) throws DbException {
+    server.predictQuery(querySQL, path);
     return Response.noContent().build();
   }
 

@@ -60,3 +60,12 @@ ScalingAlgorithms/Replay/Seq3/OMLFiles/features/6
 ScalingAlgorithms/Replay/Seq3/OMLFiles/features/8
 ScalingAlgorithms/Replay/Seq3/OMLFiles/features/10
 ScalingAlgorithms/Replay/Seq3/OMLFiles/features/12
+ScalingAlgorithms/Live/weka.jar
+ScalingAlgorithms/Live/WekaTraining/4_Workers/TRAINING.arff
+ScalingAlgorithms/Live/WekaTraining/6_Workers/TRAINING.arff
+ScalingAlgorithms/Live/WekaTraining/8_Workers/TRAINING.arff
+ScalingAlgorithms/Live/WekaTraining/10_Workers/TRAINING.arff
+ScalingAlgorithms/Live/WekaTraining/12_Workers/TRAINING.arff
+ScalingAlgorithms/Live/MOATraining/moa.jar
+ScalingAlgorithms/Live/MOATraining/training.arff
+ScalingAlgorithms/Live/MOATraining/features/test.txt

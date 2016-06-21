@@ -2086,19 +2086,9 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
     return perfEnforceDriver.perfenforceScaling.getCurrentQuery();
   }
 
-  public void predictQuery(final String querySQL) {
-    // this should be send to perfenforceDriver -- send via this? for access to server
-
-    // create query plan and send these all to workers -- execute command with one line
-    // find the max (these are the features) use weka to find the prediction depending on the tier selected (initialize
-    // should be CALLED from web!)
-
-    // the next step is like calling setup query
-    // setup nextQuery using the featues here? (why write it down? -- we can skip the reading if OML keeps previous
-    // points learned)
-
-    // move the "next cluster state" depending on the SLA info and prediction
-    // dthen the web can call cluster size to intercept the query correctly
+  // path to /live folder
+  public void predictQuery(final String querySQL, final String path) {
+    perfEnforceDriver.predictQuery(this, querySQL, path);
   }
 
   // For the real demo, we might want to keep the algorithm fixed based on the initialization
