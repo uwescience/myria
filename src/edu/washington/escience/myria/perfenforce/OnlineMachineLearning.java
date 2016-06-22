@@ -215,7 +215,7 @@ public class OnlineMachineLearning implements ScalingAlgorithm {
       String[] parts = result.split(",");
       result =
           parts[0] + "," + parts[1] + "," + parts[2] + "," + parts[3] + "," + parts[4] + "," + parts[5] + ","
-              + parts[6] + "," + parts[7] + "," + queryRuntime;
+              + queryRuntime;
     }
 
     featureReader.close();

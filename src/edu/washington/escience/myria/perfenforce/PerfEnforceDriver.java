@@ -293,7 +293,7 @@ public class PerfEnforceDriver {
       FileWriter fw; // write max
       try {
         fw = new FileWriter(path + "OMLFiles/features/" + c);
-        fw.write(maxFeatureForConfiguration + "," + c + "," + "0" + '\n');
+        fw.write(maxFeatureForConfiguration + '\n');
         fw.close();
       } catch (IOException e) {
         e.printStackTrace();
@@ -350,7 +350,7 @@ public class PerfEnforceDriver {
         features = "1," + features;
       }
 
-      features += "," + w + ",0";
+      features += "," + configuration + ",0";
       featuresList.add(features);
     }
 
