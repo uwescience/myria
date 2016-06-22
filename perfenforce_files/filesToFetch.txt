@@ -66,6 +66,10 @@ ScalingAlgorithms/Live/WekaTraining/6_Workers/TRAINING.arff
 ScalingAlgorithms/Live/WekaTraining/8_Workers/TRAINING.arff
 ScalingAlgorithms/Live/WekaTraining/10_Workers/TRAINING.arff
 ScalingAlgorithms/Live/WekaTraining/12_Workers/TRAINING.arff
-ScalingAlgorithms/Live/MOATraining/moa.jar
-ScalingAlgorithms/Live/MOATraining/training.arff
-ScalingAlgorithms/Live/MOATraining/features/test.txt
+ScalingAlgorithms/Live/OMLFiles/moa.jar
+ScalingAlgorithms/Live/OMLFiles/training.arff
+ScalingAlgorithms/Live/OMLFiles/features/4
+ScalingAlgorithms/Live/OMLFiles/features/6
+ScalingAlgorithms/Live/OMLFiles/features/8
+ScalingAlgorithms/Live/OMLFiles/features/10
+ScalingAlgorithms/Live/OMLFiles/features/12

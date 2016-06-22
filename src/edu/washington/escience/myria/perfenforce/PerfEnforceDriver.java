@@ -95,8 +95,7 @@ public class PerfEnforceDriver {
 
       temp.relationKey =
           new RelationKey(entry.getValue().getUserName(), entry.getValue().getProgramName(), entry.getValue()
-              .getRelationName()
-              + "_U");
+              .getRelationName());
       dataPrepare.runPostgresStatistics(temp);
     }
 
@@ -232,54 +231,11 @@ public class PerfEnforceDriver {
   }
 
   public void predictQuery(final Server server, final String querySQL, final String path) {
-    List<String> featuresList = new ArrayList<String>();
-    String baseFeature = "";
-    // This is a repeat from above
-    for (int w : server.getAliveWorkers()) {
-      String features;
-      try {
-        String explainQuery = "EXPLAIN " + querySQL;
-
-        // run on worker w
-        features =
-            server
-                .executeSQLCommandSingleRowSingleWorker(explainQuery, Schema.ofFields("explain", Type.STRING_TYPE), w);
-
-        features = features.substring(features.indexOf("cost"));
-        features = features.replace("\"", " ");
-        String[] cmd =
-            {
-                "sh",
-                "-c",
-                "echo \"" + features
-                    + "\" | sed -e 's/.*cost=//' -e 's/\\.\\./,/' -e 's/ rows=/,/' -e 's/ width=/,/' -e 's/)//'" };
-        ProcessBuilder pb = new ProcessBuilder(cmd);
-        Process p = pb.start();
-
-        BufferedReader input = new BufferedReader(new InputStreamReader(p.getInputStream()));
-        features = input.readLine();
-
-        // add the extra features -- hacky
-        if (querySQL.contains("WHERE")) {
-          String[] tables = querySQL.substring(querySQL.indexOf("FROM"), querySQL.indexOf("WHERE")).split(",");
-          features = tables.length + "," + features;
-        } else {
-          features = "1," + features;
-        }
-
-        features += "," + w + ",0";
-        featuresList.add(features);
-        LOGGER.warn("ADDED " + features);
-      } catch (IOException | DbException e) {
-        e.printStackTrace();
-      }
-    }
 
     // select the highest feature -- first for now
-    String highestFeatures = featuresList.get(0);
+    int[] configs = { 4, 6, 8, 10, 12 };
+    String highestFeatures = getMaxFeature(server, querySQL, configs[perfenforceScaling.tier]);
     LOGGER.warn("HIGHEST " + highestFeatures);
-
-    // predict for weka -- only predict for the current cluster size
 
     try {
       PrintWriter featureWriter = new PrintWriter(path + "TESTING.arff", "UTF-8");
@@ -306,8 +262,8 @@ public class PerfEnforceDriver {
     String[] cmd =
         {
             "java", "-cp", path + "weka.jar", "weka.classifiers.rules.M5Rules", "-M", "4.0", "-t",
-            path + "WekaTraining/" + perfenforceScaling.tier + "_Workers/TRAINING.arff", "-T", path + "TESTING.arff",
-            "-p", "0", "-classifications",
+            path + "WekaTraining/" + configs[perfenforceScaling.tier] + "_Workers/TRAINING.arff", "-T",
+            path + "TESTING.arff", "-p", "0", "-classifications",
             " weka.classifiers.evaluation.output.prediction.CSV -file \"" + path + "results.txt" + "\"" };
     ProcessBuilder pb = new ProcessBuilder(cmd);
 
@@ -330,26 +286,83 @@ public class PerfEnforceDriver {
     }
 
     // write to other MOA files HERE
-    // base features
-    String[] featuresParts = highestFeatures.split(",");
-    baseFeature =
-        featuresParts[0] + "," + featuresParts[1] + "," + featuresParts[2] + "," + featuresParts[3] + ","
-            + featuresParts[4];
-    LOGGER.warn(baseFeature);
+
     for (int c : configurations) {
-      FileWriter fw;
+      String maxFeatureForConfiguration = getMaxFeature(server, querySQL, c);
+      LOGGER.warn("Max feature for C: " + maxFeatureForConfiguration);
+      FileWriter fw; // write max
       try {
-        fw = new FileWriter(path + "features/" + c, true);
-        fw.write(baseFeature + "," + c + "," + "0");
+        fw = new FileWriter(path + "OMLFiles/features/" + c);
+        fw.write(maxFeatureForConfiguration + "," + c + "," + "0" + '\n');
         fw.close();
       } catch (IOException e) {
         e.printStackTrace();
       }
     }
-
     // SET NEXT QUERY
     QueryMetaData nextQuery = new QueryMetaData(perfenforceScaling.getQueryCounter(), Double.parseDouble(sla));
     perfenforceScaling.setCurrentQuery(nextQuery);
+
+    perfenforceScaling.step();
+  }
+
+  public String getMaxFeature(final Server server, final String sqlQuery, final int configuration) {
+    String explainQuery = "EXPLAIN " + sqlQuery;
+    explainQuery = explainQuery.replace("lineitem", "lineitem" + configuration);
+
+    List<String> featuresList = new ArrayList<String>();
+    String maxFeature = "";
+    double maxCost = Integer.MIN_VALUE;
+
+    for (int w = 1; w <= configuration; w++) {
+      String features = "";
+      try {
+        features =
+            server
+                .executeSQLCommandSingleRowSingleWorker(explainQuery, Schema.ofFields("explain", Type.STRING_TYPE), w);
+      } catch (IOException | DbException e) {
+        e.printStackTrace();
+      }
+
+      features = features.substring(features.indexOf("cost"));
+      features = features.replace("\"", " ");
+      String[] cmd =
+          {
+              "sh",
+              "-c",
+              "echo \"" + features
+                  + "\" | sed -e 's/.*cost=//' -e 's/\\.\\./,/' -e 's/ rows=/,/' -e 's/ width=/,/' -e 's/)//'" };
+      ProcessBuilder pb = new ProcessBuilder(cmd);
+      Process p;
+      try {
+        p = pb.start();
+        BufferedReader input = new BufferedReader(new InputStreamReader(p.getInputStream()));
+        features = input.readLine();
+      } catch (IOException e) {
+        e.printStackTrace();
+      }
+
+      // add the extra features -- hacky
+      if (sqlQuery.contains("WHERE")) {
+        String[] tables = sqlQuery.substring(sqlQuery.indexOf("FROM"), sqlQuery.indexOf("WHERE")).split(",");
+        features = tables.length + "," + features;
+      } else {
+        features = "1," + features;
+      }
+
+      features += "," + w + ",0";
+      featuresList.add(features);
+    }
+
+    for (String f : featuresList) {
+      double cost = Double.parseDouble(f.split(",")[2]);
+      if (cost > maxCost) {
+        maxCost = cost;
+        maxFeature = f;
+      }
+    }
+
+    return maxFeature;
 
   }
 }

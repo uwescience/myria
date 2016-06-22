@@ -186,4 +186,8 @@ public class PerfEnforceScalingAlgorithms {
     return currentQuery;
   }
 
+  public ScalingAlgorithm getScalingAlgorithm() {
+    return scalingAlgorithm;
+  }
+
 }

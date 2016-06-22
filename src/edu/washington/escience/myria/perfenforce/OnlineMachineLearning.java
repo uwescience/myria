@@ -32,6 +32,7 @@ public class OnlineMachineLearning implements ScalingAlgorithm {
   String path;
   List<Integer> configs;
   List<String> additionalDataPoints;
+  QueryMetaData nextQuery;
 
   protected static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(OnlineMachineLearning.class);
 
@@ -44,6 +45,7 @@ public class OnlineMachineLearning implements ScalingAlgorithm {
     this.path = path;
     queryPredictions = new Double[configs.size()];
     additionalDataPoints = new ArrayList<String>();
+    nextQuery = null;
   }
 
   public void setLR(final double lr) {
@@ -52,6 +54,7 @@ public class OnlineMachineLearning implements ScalingAlgorithm {
 
   @Override
   public void step(final QueryMetaData nextQuery) {
+    this.nextQuery = nextQuery;
 
     // Predict in parallel
     StopWatch stopWatch = new StopWatch();
@@ -117,12 +120,14 @@ public class OnlineMachineLearning implements ScalingAlgorithm {
     currentClusterSize = configs.get(currentPositionIndex);
     LOGGER.warn("WINNER SIZE " + currentClusterSize);
 
+  }
+
+  public void addDataPoint(final double queryRuntime) {
     try {
-      additionalDataPoints.add(getQueryFeature(currentPositionIndex, nextQuery.id));
+      additionalDataPoints.add(getQueryFeature(currentPositionIndex, nextQuery.id, queryRuntime));
     } catch (IOException e) {
       e.printStackTrace();
     }
-
   }
 
   // fill up queryPredictions array
@@ -150,7 +155,7 @@ public class OnlineMachineLearning implements ScalingAlgorithm {
       // LOGGER.warn("ADDED POINT " + s);
     }
     // Append the current point
-    String newPoint = getQueryFeature(clusterIndex, queryID);
+    String newPoint = getQueryFeature(clusterIndex, queryID, 0);
     // LOGGER.warn("ADDED NEW POINT " + newPoint);
     appendDataWriter.write(newPoint + "\n");
 
@@ -161,7 +166,7 @@ public class OnlineMachineLearning implements ScalingAlgorithm {
             .format(
                 "EvaluatePrequentialRegression -l (rules.functions.Perceptron  -d -l %s) -s (ArffFileStream -f %s) -e (WindowRegressionPerformanceEvaluator -w 1) -f 1 -o %s",
                 lr, modifiedTrainingFileName, predictionsFileName);
-    // LOGGER.warn("MOA COMMAND " + moaCommand);
+    LOGGER.warn("MOA COMMAND " + moaCommand);
     String[] arrayCommand = new String[] { "java", "-classpath", MOAFileName, "moa.DoTask", moaCommand };
 
     Process p = Runtime.getRuntime().exec(arrayCommand);
@@ -195,7 +200,8 @@ public class OnlineMachineLearning implements ScalingAlgorithm {
 
   }
 
-  public String getQueryFeature(final int clusterIndex, final int queryID) throws IOException {
+  public String getQueryFeature(final int clusterIndex, final int queryID, final double queryRuntime)
+      throws IOException {
     String featureFilePath = path + "OMLFiles/features/" + configs.get(clusterIndex);
     LOGGER.warn("Feature path " + featureFilePath);
     BufferedReader featureReader = new BufferedReader(new FileReader(featureFilePath));
@@ -205,6 +211,13 @@ public class OnlineMachineLearning implements ScalingAlgorithm {
       featureReader.readLine();
     }
     String result = featureReader.readLine();
+    if (queryRuntime != 0) {
+      String[] parts = result.split(",");
+      result =
+          parts[0] + "," + parts[1] + "," + parts[2] + "," + parts[3] + "," + parts[4] + "," + parts[5] + ","
+              + parts[6] + "," + parts[7] + "," + queryRuntime;
+    }
+
     featureReader.close();
     return result;
   }

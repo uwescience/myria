@@ -119,6 +119,7 @@ import edu.washington.escience.myria.parallel.ipc.IPCConnectionPool;
 import edu.washington.escience.myria.parallel.ipc.IPCMessage;
 import edu.washington.escience.myria.parallel.ipc.InJVMLoopbackChannelSink;
 import edu.washington.escience.myria.parallel.ipc.QueueBasedShortMessageProcessor;
+import edu.washington.escience.myria.perfenforce.OnlineMachineLearning;
 import edu.washington.escience.myria.perfenforce.PerfEnforceDriver;
 import edu.washington.escience.myria.perfenforce.QueryMetaData;
 import edu.washington.escience.myria.perfenforce.encoding.InitializeScalingEncoding;
@@ -1066,10 +1067,10 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
 
     // get query response
     byte[] responseBytes = ((ByteArrayOutputStream) byteSink.getOutputStream()).toByteArray();
-    LOGGER.warn("BYTES FROM SERVER: " + responseBytes.length);
+    // LOGGER.warn("BYTES FROM SERVER: " + responseBytes.length);
     String response = new String(responseBytes, Charset.forName("UTF-8"));
     String[] pieces = response.split("\r\n");
-    LOGGER.warn("RESPONSE FROM SERVER: " + response);
+    // LOGGER.warn("RESPONSE FROM SERVER: " + response);
     return pieces[1];
   }
 
@@ -2089,6 +2090,11 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
   // path to /live folder
   public void predictQuery(final String querySQL, final String path) {
     perfEnforceDriver.predictQuery(this, querySQL, path);
+  }
+
+  public void addDataPoint(final Double queryRuntime) {
+    OnlineMachineLearning oml = ((OnlineMachineLearning) perfEnforceDriver.perfenforceScaling.getScalingAlgorithm());
+    oml.addDataPoint(queryRuntime);
   }
 
   // For the real demo, we might want to keep the algorithm fixed based on the initialization

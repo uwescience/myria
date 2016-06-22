@@ -105,6 +105,14 @@ public final class PerfEnforceResource {
     return Response.noContent().build();
   }
 
+  @POST
+  @Path("/add-data-point")
+  @Consumes(MediaType.MULTIPART_FORM_DATA)
+  public Response addDataPoint(@FormDataParam("dataPointRuntime") final Double queryRuntime) throws DbException {
+    server.addDataPoint(queryRuntime);
+    return Response.noContent().build();
+  }
+
   @GET
   @Path("/cluster-size")
   public Response getClusterSize() throws DbException {
