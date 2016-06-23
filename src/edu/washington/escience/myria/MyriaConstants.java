@@ -288,6 +288,19 @@ public final class MyriaConstants {
     /** Python UDF */
     PYTHON
   };
+  public static enum PythonType {
+    INT(1), LONG(2), FLOAT(3), DOUBLE(4), BYTES(5);
+    private int val;
+
+    PythonType(final int val) {
+      this.val = val;
+
+    }
+
+    public int getVal() {
+      return val;
+    }
+  }
 
   /**
    * python executable name

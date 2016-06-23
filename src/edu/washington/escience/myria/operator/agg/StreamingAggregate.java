@@ -66,16 +66,13 @@ public class StreamingAggregate extends UnaryOperator {
    * @param gfields The columns over which we are grouping the result.
    * @param factories The factories that will produce the {@link Aggregator}s for each group.
    */
-  public StreamingAggregate(
-      @Nullable final Operator child,
-      @Nonnull final int[] gfields,
+  public StreamingAggregate(@Nullable final Operator child, @Nonnull final int[] gfields,
       @Nonnull final AggregatorFactory... factories) {
     super(child);
     gFields = Objects.requireNonNull(gfields, "gfields");
     this.factories = Objects.requireNonNull(factories, "factories");
     Preconditions.checkArgument(gfields.length > 0, " must have at least one group by field");
-    Preconditions.checkArgument(
-        factories.length > 0, "to use StreamingAggregate, must specify some aggregates");
+    Preconditions.checkArgument(factories.length > 0, "to use StreamingAggregate, must specify some aggregates");
     gRange = new int[gfields.length];
     for (int i = 0; i < gRange.length; ++i) {
       gRange[i] = i;
@@ -175,7 +172,7 @@ public class StreamingAggregate extends UnaryOperator {
     groupSchema = inputSchema.getSubSchema(gFields);
     resultSchema = Schema.of(groupSchema.getColumnTypes(), groupSchema.getColumnNames());
     try {
-      for (Aggregator agg : AggUtils.allocateAggs(factories, inputSchema)) {
+      for (Aggregator agg : AggUtils.allocateAggs(factories, inputSchema, null)) {
         Schema curAggSchema = agg.getResultSchema();
         resultSchema = Schema.merge(resultSchema, curAggSchema);
       }
@@ -188,7 +185,7 @@ public class StreamingAggregate extends UnaryOperator {
   @Override
   protected void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
     Preconditions.checkState(getSchema() != null, "unable to determine schema in init");
-    aggregators = AggUtils.allocateAggs(factories, getChild().getSchema());
+    aggregators = AggUtils.allocateAggs(factories, getChild().getSchema(), null);
     aggregatorStates = AggUtils.allocateAggStates(aggregators);
     resultBuffer = new TupleBatchBuffer(getSchema());
   }
