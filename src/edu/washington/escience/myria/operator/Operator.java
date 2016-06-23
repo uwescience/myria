@@ -110,8 +110,9 @@ public abstract class Operator implements Serializable {
   private PythonFunctionRegistrar pyFuncReg;
 
   public PythonFunctionRegistrar getPythonFunctionRegistrar() {
-    Preconditions.checkNotNull(pyFuncReg);
+    // Preconditions.checkNotNull(pyFuncReg);
     return pyFuncReg;
+
   }
 
   /**
@@ -389,6 +390,7 @@ public abstract class Operator implements Serializable {
       // XXX Do some error handling to multi-open?
       throw new DbException("Operator (opName=" + getOpName() + ") already open.");
     }
+
     if (execEnvVars == null) {
       this.execEnvVars = null;
     } else {
@@ -402,15 +404,16 @@ public abstract class Operator implements Serializable {
         }
       }
     }
+    // do my initialization
+    if (getLocalSubQuery() instanceof WorkerSubQuery) {
+      // LOGGER.info("Got access to python function registrar");
+      pyFuncReg = ((WorkerSubQuery) getLocalSubQuery()).getWorker().getPythonFunctionRegistrar();
+    }
     eos = false;
     eoi = false;
     numOutputTBs = 0;
     numOutputTuples = 0;
-    // do my initialization
-    if (getLocalSubQuery() instanceof WorkerSubQuery) {
 
-      pyFuncReg = ((WorkerSubQuery) getLocalSubQuery()).getWorker().getPythonFunctionRegistrar();
-    }
     try {
       init(this.execEnvVars);
     } catch (DbException | RuntimeException e) {

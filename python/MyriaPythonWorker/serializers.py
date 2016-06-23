@@ -16,22 +16,36 @@ class SpecialLengths(object):
   END_OF_STREAM = -4
   NULL = -5
 
-
-class SpecialCommands(object):
-    SUM = -1
-    AVERAGE = -2
+class DataType(object):
+     INT =1
+     LONG = 2
+     FLOAT = 3
+     DOUBLE = 4
+     BYTES = 5
 
 def read_long(stream):
-    length = stream.read(8)
-    if not length:
+    obj = stream.read(8)
+    if not obj:
         raise EOFError
-    return struct.unpack("!q", length)[0]
+    return struct.unpack("!q", obj)[0]
+
+def read_float(stream):
+    obj = stream.read(4)
+    if not obj:
+        raise EOFError
+    return struct.unpack("!f", obj)[0]
+
+def read_double(stream):
+    obj = stream.read(8)
+    if not obj:
+        raise EOFError
+    return struct.unpack("!d", obj)[0]
 
 def read_int(stream):
-    length = stream.read(4)
-    if not length:
+    obj = stream.read(4)
+    if not obj:
         raise EOFError
-    return struct.unpack("!i",length)[0]
+    return struct.unpack("!i",obj)[0]
 
 def write_int(value, stream):
     stream.write(struct.pack("!i",value))
@@ -72,51 +86,74 @@ class PickleSerializer(object):
 
      length = read_int(stream)
      if length < 0:
-         print("this is a command!", file=sys.err)
-         return None
+         print("this is a command!")
+         if (length == SpecialLengths.NULL):
+             print("got a null value")
+             return 0
+         else:
+             return None
      obj = stream.read(length)
      if len(obj) < length:
          raise EOFError
 
      return obj
 
-  def read_tuple(self,stream, tuplesize):
+  def write_tuple(self, stream, tuptype, tuplesize):
+      if(len(tuptype)!=tuplesize):
+         raise ValueError("type list is not the same as tuple size")
+
+  def read_item(self, stream,elementType,length):
+    if(elementType ==DataType.INT):
+        obj = read_int(stream)
+    elif(elementType == DataType.LONG):
+        obj = read_long(stream)
+    elif(elementType == DataType.FLOAT):
+        obj = read_float(stream)
+    elif(elementType == DataType.DOUBLE ):
+        obj  = read_double(stream)
+    elif(elementType == DataType.BYTES):
+        obj = self.loads(stream.read(length))
+
+    return obj
+
+
+  def read_tuple(self, stream, tuplesize):
       datalist= []
-
+      print ("length is  tuple is "+str(tuplesize))
       for i in range (tuplesize):
+          #first element read type
+          elementType = read_int(stream)
+          print("type : " + str(elementType))
+          #Second read the length
           length = read_int(stream)
-          print("length of item")
-          print(length)
+          print("length of item : " + str(length))
 
-          if (length ==-5 ):
-              print("this element is null", file=sys.stderr)
-              return None
-          elif (length<0):
-              print("this is a command!", file=sys.stderr)
-              return None
-          obj = stream.read(length)
-          if len(obj) < length:
-              raise EOFError
-          datalist.append(self.loads(obj))
+          if (length == -5 ):
+              print("this element is null")
+              print("tuple item "+ str(i))
+              datalist.append(0)
+          #length is >0, read the item now
+          elif (length > 0):
+              print("tuple item "+ str(i))
+              obj = self.read_item(stream, elementType, length)
+              datalist.append(obj)
 
+      print ( "datalist length "+str(len(datalist)))
       return datalist
+
+
 
   def _read_command(self,stream):
       length = read_int(stream)
-      print ("stream length")
-      print (str(length))
+
       if length < 0:
           print("command length is less than zero", file=sys.stderr)
           return None
       s = stream.read(length)
-      print ("stream ")
-      print(str(type(s)))
-      print (str(s))
+
       if len(s) < length:
           raise EOFError
       unenc = base64.urlsafe_b64decode(s)
-      
-      #unencodedString  = base64.urlsafe_b64decode(encodedstring)
       return self.loads(unenc)
 
   def dumps(self, obj):

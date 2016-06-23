@@ -5,13 +5,15 @@ package edu.washington.escience.myria.expression.evaluate;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
-import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.List;
 
 import org.codehaus.janino.ExpressionEvaluator;
 
+import com.google.common.base.Preconditions;
+
 import edu.washington.escience.myria.DbException;
+import edu.washington.escience.myria.MyriaConstants;
+import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.Column;
 import edu.washington.escience.myria.column.builder.ColumnBuilder;
@@ -20,10 +22,13 @@ import edu.washington.escience.myria.column.builder.WritableColumn;
 import edu.washington.escience.myria.expression.Expression;
 import edu.washington.escience.myria.expression.ExpressionOperator;
 import edu.washington.escience.myria.expression.PyUDFExpression;
+import edu.washington.escience.myria.expression.StateExpression;
+import edu.washington.escience.myria.expression.VariableExpression;
 import edu.washington.escience.myria.functions.PythonFunctionRegistrar;
 import edu.washington.escience.myria.functions.PythonWorker;
 import edu.washington.escience.myria.operator.Apply;
 import edu.washington.escience.myria.operator.StatefulApply;
+import edu.washington.escience.myria.storage.AppendableTable;
 import edu.washington.escience.myria.storage.ReadableTable;
 import edu.washington.escience.myria.storage.TupleBatch;
 
@@ -34,9 +39,19 @@ import edu.washington.escience.myria.storage.TupleBatch;
 public class PythonUDFEvaluator extends GenericEvaluator {
 
   /** logger for this class. */
-  private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(GenericEvaluator.class);
+  private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(PythonUDFEvaluator.class);
   private final PythonFunctionRegistrar pyFunction;
+
+  private final static int PYTHON_EXCEPTION = -3;
+  private final static int NULL_LENGTH = -5;
+
   private PythonWorker pyWorker;
+  private boolean needsState = false;
+  private int leftColumnIdx = -1;
+  private int rightColumnIdx = -1;
+
+  private boolean bLeftState = false;
+  private boolean bRightState = false;
 
   /**
    * Default constructor.
@@ -47,19 +62,43 @@ public class PythonUDFEvaluator extends GenericEvaluator {
   public PythonUDFEvaluator(final Expression expression, final ExpressionOperatorParameter parameters,
       final PythonFunctionRegistrar pyFuncReg) {
     super(expression, parameters);
+
     // parameters and expression are saved in the super
-    LOGGER.info(getExpression().getOutputName());
-
-    pyFunction = pyFuncReg;
-
-    try {
-
-      pyWorker = new PythonWorker();
-      initEvaluator();
-    } catch (DbException e) {
-      // TODO Auto-generated catch block
-      LOGGER.info(e.getMessage());
+    LOGGER.info("Output name for the python expression" + getExpression().getOutputName());
+    if (pyFuncReg != null) {
+      pyFunction = pyFuncReg;
+    } else {
+      pyFunction = null;
     }
+    if (parameters.getStateSchema() != null) {
+      needsState = true;
+    }
+    PyUDFExpression op = (PyUDFExpression) expression.getRootExpressionOperator();
+
+    ExpressionOperator left = op.getLeft();
+    LOGGER.info("left string :" + left.toString());
+
+    ExpressionOperator right = op.getRight();
+    LOGGER.info("right string :" + right.toString());
+
+    if (left.getClass().equals(VariableExpression.class)) {
+      leftColumnIdx = ((VariableExpression) left).getColumnIdx();
+
+    } else if (left.getClass().equals(StateExpression.class)) {
+      leftColumnIdx = ((StateExpression) left).getColumnIdx();
+      bLeftState = true;
+    }
+
+    if (right.getClass().equals(VariableExpression.class)) {
+      rightColumnIdx = ((VariableExpression) right).getColumnIdx();
+
+    } else if (right.getClass().equals(StateExpression.class)) {
+      rightColumnIdx = ((StateExpression) right).getColumnIdx();
+      bRightState = true;
+    }
+
+    LOGGER.info("Left column ID " + leftColumnIdx + "left variable? " + bLeftState);
+    LOGGER.info("right column ID " + rightColumnIdx + "right variable? " + bRightState);
 
   }
 
@@ -92,56 +131,93 @@ public class PythonUDFEvaluator extends GenericEvaluator {
   }
 
   @Override
-  public void eval(final ReadableTable tb, final int rowIdx, final WritableColumn result, final ReadableTable state) {
+  public void eval(final ReadableTable tb, final int rowIdx, final WritableColumn result, final ReadableTable state)
+      throws DbException {
+    Object obj = evaluatePython(tb, rowIdx, state);
+    result.appendByteBuffer(ByteBuffer.wrap((byte[]) obj));
+  }
 
-    // try {
-    // evaluator.evaluate(tb, rowIdx, result, state);
+  public void evalUpdatePyExpression(final ReadableTable tb, final int rowIdx, final AppendableTable result,
+      final ReadableTable state) throws DbException {
+    // this is only called when updating the state tuple
+    Object obj = evaluatePython(tb, rowIdx, state);
+    int resultcol = -1;
+    if (bLeftState) {
+      resultcol = leftColumnIdx;
+    }
+    if (bRightState) {
+      resultcol = rightColumnIdx;
+    }
+    LOGGER.info("trying to update state on column: " + resultcol);
+
+    result.putByteBuffer(resultcol, (ByteBuffer.wrap((byte[]) obj)));
+
+  }
+
+  private Object evaluatePython(final ReadableTable tb, final int rowIdx, final ReadableTable state) throws DbException {
+    LOGGER.info("eval called!");
+    if (pyWorker == null) {
+      pyWorker = new PythonWorker();
+      initEvaluator();
+    }
+
+    try {
+      if (needsState == false && (bRightState || bLeftState)) {
+        LOGGER.info("needs State: " + needsState + " Right column is state: " + bRightState + " Left column is state: "
+            + bLeftState);
+        throw new DbException("this evaluator should not need state!");
+
+      } else {
+        DataOutputStream dOut = pyWorker.getDataOutputStream();
+        LOGGER.info("got the output stream!");
+        ReadableTable readbuffer;
+        // send left column
+        if (bLeftState) {
+          readbuffer = state;
+        } else {
+          readbuffer = tb;
+        }
+        writeToStream(readbuffer, rowIdx, leftColumnIdx, dOut);
+        // send right column
+        if (bRightState) {
+          readbuffer = state;
+        } else {
+          readbuffer = tb;
+        }
+        writeToStream(readbuffer, rowIdx, rightColumnIdx, dOut);
+        // read response back
+        Object result = readFromStream();
+        return result;
+      }
+
+    } catch (DbException e) {
+      LOGGER.info("Error writing to python stream" + e.getMessage());
+      throw new DbException(e);
+    }
 
   }
 
   @Override
   public Column<?> evaluateColumn(final TupleBatch tb) throws DbException {
 
-    LOGGER.info("trying to evaluate column for tuple batch");
     Type type = getOutputType();
-
     ColumnBuilder<?> ret = ColumnFactory.allocateColumn(type);
-    for (int row = 0; row < tb.numTuples(); row++) {
-      try {
-        LOGGER.info("row number" + row);
-        LOGGER.info("number of tuples " + tb.numTuples());
-        LOGGER.info("number of columns" + tb.numColumns());
-        // write tuples to stream
-        writeToStream(tb, row, tb.numColumns());
-        // read results back from stream
-        readFromStream(ret);
-        // sendErrorbuffer(ret);
-        LOGGER.info("successfully read from the stream");
-      } catch (DbException e) {
-        LOGGER.info("Error writing to python stream" + e.getMessage());
-        throw new DbException(e);
-      }
+    for (int row = 0; row < tb.numTuples(); ++row) {
+      eval(tb, row, ret, null);
     }
-    LOGGER.info("done trying to return column");
     return ret.build();
   }
 
-  private void sendErrorbuffer(final WritableColumn output) {
-    byte[] b = "1".getBytes();
-
-    output.appendByteBuffer(ByteBuffer.wrap(b));
-
-  }
-
-  private void readFromStream(final WritableColumn output) throws DbException {
+  private Object readFromStream() throws DbException {
     LOGGER.info("trying to read now");
     int length = 0;
+    byte[] obj = null;
     DataInputStream dIn = pyWorker.getDataInputStream();
 
     try {
       length = dIn.readInt(); // read length of incoming message
       switch (length) {
-        case -3:
+        case PYTHON_EXCEPTION:
           int excepLength = dIn.readInt();
           byte[] excp = new byte[excepLength];
           dIn.readFully(excp);
@@ -150,9 +226,8 @@ public class PythonUDFEvaluator extends GenericEvaluator {
         default:
           if (length > 0) {
             LOGGER.info("length greater than zero!");
-            byte[] obj = new byte[length];
+            obj = new byte[length];
             dIn.readFully(obj);
-            output.appendByteBuffer(ByteBuffer.wrap(obj));
           }
           break;
       }
@@ -161,74 +236,80 @@ public class PythonUDFEvaluator extends GenericEvaluator {
       LOGGER.info("Error reading int from stream");
       throw new DbException(e);
     }
+    return obj;
 
   }
 
-  private void writeToStream(final TupleBatch tb, final int row, final int tuplesize) throws DbException {
-    List<? extends Column<?>> inputColumns = tb.getDataColumns();
-    DataOutputStream dOut = pyWorker.getDataOutputStream();
-    LOGGER.info("got the output stream!");
+  private void writeToStream(final ReadableTable tb, final int row, final int columnIdx, final DataOutputStream dOut)
+      throws DbException {
 
-    if (tuplesize > 1) {
-      LOGGER.info("tuple size = " + tuplesize);
-      try {
+    Preconditions.checkNotNull(tb, "tuple input cannot be null");
+    Preconditions.checkNotNull(dOut, "Output stream for python process cannot be null");
 
-        for (int element = 0; element < tuplesize; element++) {
-
-          Type type = inputColumns.get(element).getType();
-          LOGGER.info("column type" + type);
-
-          switch (type) {
-            case BOOLEAN_TYPE:
-              dOut.writeInt(Integer.SIZE / Byte.SIZE);
-              dOut.writeBoolean(inputColumns.get(element).getBoolean(row));
-              break;
-            case DOUBLE_TYPE:
-              dOut.writeInt(Double.SIZE / Byte.SIZE);
-              dOut.writeDouble(inputColumns.get(element).getDouble(row));
-              break;
-            case FLOAT_TYPE:
-              dOut.writeInt(Float.SIZE / Byte.SIZE);
-              dOut.writeFloat(inputColumns.get(element).getFloat(row));
-              break;
-            case INT_TYPE:
-              int i = inputColumns.get(element).getInt(row);
-              LOGGER.info("int type" + i);
-              // dOut.writeInt(Integer.SIZE / Byte.SIZE);
-              // dOut.writeInt(inputColumns.get(element).getInt(row));
-              break;
-            case LONG_TYPE:
-              dOut.writeInt(Long.SIZE / Byte.SIZE);
-              dOut.writeLong(inputColumns.get(element).getLong(row));
-              break;
-            case STRING_TYPE:
-              StringBuilder sb = new StringBuilder();
-              sb.append(inputColumns.get(element).getString(row));
-              dOut.writeInt(sb.length());
-              dOut.writeChars(sb.toString());
-              break;
-            case DATETIME_TYPE:
-              LOGGER.info("date time not yet supported for python UDF ");
-              break;
-            case BYTES_TYPE:
-              LOGGER.info("writing Bytebuffer to py process");
-              ByteBuffer input = inputColumns.get(element).getByteBuffer(row);
-              LOGGER.info("input array buffer length" + input.array().length);
-              dOut.writeInt(input.array().length);
-              dOut.write(input.array());
-              break;
+    Schema tbsc = tb.getSchema();
+    LOGGER.info("tuple batch schema " + tbsc.toString());
+    try {
+      Type type = tbsc.getColumnType(columnIdx);
+      LOGGER.info("column index " + columnIdx + " columnType " + type.toString());
+      switch (type) {
+        case BOOLEAN_TYPE:
+          LOGGER.info("BOOLEAN type not supported for python UDF ");
+          break;
+        case DOUBLE_TYPE:
+          dOut.writeInt(MyriaConstants.PythonType.DOUBLE.getVal());
+          dOut.writeInt(Double.SIZE / Byte.SIZE);
+          dOut.writeDouble(tb.getDouble(columnIdx, row));
+          break;
+        case FLOAT_TYPE:
+          dOut.writeInt(MyriaConstants.PythonType.FLOAT.getVal());
+          dOut.writeInt(Float.SIZE / Byte.SIZE);
+          dOut.writeFloat(tb.getFloat(columnIdx, row));
+          break;
+        case INT_TYPE:
+          dOut.writeInt(MyriaConstants.PythonType.INT.getVal());
+          dOut.writeInt(Integer.SIZE / Byte.SIZE);
+          dOut.writeInt(tb.getInt(columnIdx, row));
+          LOGGER.info("writing int to py process");
+          break;
+        case LONG_TYPE:
+          dOut.writeInt(MyriaConstants.PythonType.LONG.getVal());
+          dOut.writeInt(Long.SIZE / Byte.SIZE);
+          dOut.writeLong(tb.getLong(columnIdx, row));
+          break;
+        case STRING_TYPE:
+          LOGGER.info("STRING type is not yet supported for python UDF ");
+          break;
+        case DATETIME_TYPE:
+          LOGGER.info("date time not yet supported for python UDF ");
+          break;
+        case BYTES_TYPE:
+          dOut.writeInt(MyriaConstants.PythonType.BYTES.getVal());
+          LOGGER.info("writing Bytebuffer to py process");
+          ByteBuffer input = tb.getByteBuffer(columnIdx, row);
+          if (input != null && input.hasArray()) {
+            LOGGER.info("input array buffer length" + input.array().length);
+            dOut.writeInt(input.array().length);
+            dOut.write(input.array());
+          } else {
+            LOGGER.info("input arraybuffer length is null");
+            dOut.writeInt(NULL_LENGTH);
           }
-          LOGGER.info("flushing data");
-          dOut.flush();
-
-        }
-
-      } catch (IOException e) {
-        LOGGER.info("IOException when writing to python process stream");
-        // throw new DbException(e);
       }
+      LOGGER.info("flushing data");
+      dOut.flush();
+
+    } catch (Exception e) {
+      LOGGER.info(e.getMessage());
+      throw new DbException(e);
     }
 
   }
+
+  /**
+   * @param from
+   * @param row
+   * @param stateTuple
+   * @param stateTuple2
+   */
 
 }

@@ -1,5 +1,6 @@
 package edu.washington.escience.myria.util;
 
+import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -19,7 +20,8 @@ public final class MyriaUtils {
   /**
    * Utility classes should not be instantiated.
    */
-  private MyriaUtils() {}
+  private MyriaUtils() {
+  }
 
   /**
    * Get the only element in single-element list.
@@ -122,12 +124,8 @@ public final class MyriaUtils {
       if (oldV == null) {
         dest.put(newK, newV);
       } else {
-        Preconditions.checkArgument(
-            oldV.equals(newV),
-            "New value %s for key %s does not match old value %s",
-            newV,
-            newK,
-            oldV);
+        Preconditions.checkArgument(oldV.equals(newV), "New value %s for key %s does not match old value %s", newV,
+            newK, oldV);
       }
     }
   }
@@ -140,7 +138,11 @@ public final class MyriaUtils {
    * @throws IllegalArgumentException if the object is not a valid Myria type.
    */
   public static Object ensureObjectIsValidType(final Object o) throws IllegalArgumentException {
+
     if (o instanceof Boolean) {
+      return o;
+    }
+    if (o instanceof ByteBuffer) {
       return o;
     }
     if (o instanceof Double || o instanceof Float) {
@@ -155,7 +157,10 @@ public final class MyriaUtils {
     if (o instanceof String) {
       return o;
     }
-    throw new IllegalArgumentException(
-        "Object of type " + o.getClass() + " is not a valid Myria type");
+    if (o == null) {
+      // allow initialization with a null object -- needed for bytebuffer.
+      return o;
+    }
+    throw new IllegalArgumentException("Object of type " + o.getClass() + " is not a valid Myria type");
   }
 }

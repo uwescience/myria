@@ -1,5 +1,6 @@
 package edu.washington.escience.myria.expression;
 
+import java.nio.ByteBuffer;
 import java.util.Objects;
 
 import org.apache.commons.lang.StringEscapeUtils;
@@ -14,6 +15,8 @@ import edu.washington.escience.myria.expression.evaluate.ExpressionOperatorParam
  * An expression that returns a constant value.
  */
 public class ConstantExpression extends ZeroaryExpression {
+  /** logger for this class. */
+  private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(ConstantExpression.class);
 
   /***/
   private static final long serialVersionUID = 1L;
@@ -88,6 +91,15 @@ public class ConstantExpression extends ZeroaryExpression {
   }
 
   /**
+   * Construct Bytes constant.
+   *
+   * @param value the value of this constant.
+   */
+  public ConstantExpression(final ByteBuffer value) {
+    this(Type.BYTES_TYPE, String.valueOf(value));
+  }
+
+  /**
    * Construct string constant.
    *
    * @param value the value of this constant.
@@ -103,6 +115,7 @@ public class ConstantExpression extends ZeroaryExpression {
 
   @Override
   public String getJavaString(final ExpressionOperatorParameter parameters) {
+    LOGGER.info("looking for expression value for parameter");
     switch (valueType) {
       case BOOLEAN_TYPE:
       case DOUBLE_TYPE:
@@ -115,7 +128,8 @@ public class ConstantExpression extends ZeroaryExpression {
       case STRING_TYPE:
         return '\"' + StringEscapeUtils.escapeJava(value) + '\"';
       case BYTES_TYPE:
-        throw new UnsupportedOperationException("using constant value of type BYTES");
+        return value;
+
     }
     throw new UnsupportedOperationException("using constant value of type " + valueType);
   }

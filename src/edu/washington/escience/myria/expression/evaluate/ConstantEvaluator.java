@@ -31,6 +31,8 @@ public final class ConstantEvaluator extends GenericEvaluator {
   private final Object value;
   /** The type of the value of this expression. */
   private final Type type;
+  /** logger for this class. */
+  private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(ConstantEvaluator.class);
 
   /**
    * Default constructor.
@@ -39,16 +41,14 @@ public final class ConstantEvaluator extends GenericEvaluator {
    * @param parameters parameters that are passed to the expression
    * @throws DbException if there is an error compiling the expression
    */
-  public ConstantEvaluator(
-      final Expression expression, final ExpressionOperatorParameter parameters)
+  public ConstantEvaluator(final Expression expression, final ExpressionOperatorParameter parameters)
       throws DbException {
     super(expression, parameters);
-    Preconditions.checkArgument(
-        !expression.hasOperator(VariableExpression.class)
-            && !expression.hasOperator(StateExpression.class),
-        "Expression %s does not evaluate to a constant",
-        expression);
+    Preconditions.checkArgument(!expression.hasOperator(VariableExpression.class)
+        && !expression.hasOperator(StateExpression.class), "Expression %s does not evaluate to a constant", expression);
+
     type = expression.getOutputType(parameters);
+
     String java;
     try {
       java = expression.getJavaExpression(parameters);
@@ -62,8 +62,11 @@ public final class ConstantEvaluator extends GenericEvaluator {
 
     try {
       evaluator.setExpressionType(type.toJavaType());
+      // LOGGER.info("set expression type successfully!");
       evaluator.cook(java);
+      // LOGGER.info("cooked the expression !");
       value = evaluator.evaluate(NO_ARGS);
+      // LOGGER.info("evaluate the expression successfully!");
     } catch (CompileException e) {
       throw new DbException("Error when compiling expression " + java, e);
     } catch (InvocationTargetException e) {
@@ -95,11 +98,7 @@ public final class ConstantEvaluator extends GenericEvaluator {
   }
 
   @Override
-  public void eval(
-      final ReadableTable tb,
-      final int rowIdx,
-      final WritableColumn result,
-      final ReadableTable state) {
+  public void eval(final ReadableTable tb, final int rowIdx, final WritableColumn result, final ReadableTable state) {
     throw new UnsupportedOperationException("Should not be here. Should be using eval() instead");
   }
 

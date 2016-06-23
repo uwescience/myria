@@ -87,9 +87,10 @@ public class GenericEvaluator extends Evaluator {
    * @param result the column that the result should be appended to
    * @param state additional state that affects the computation
    * @throws InvocationTargetException exception thrown from janino
+   * @throws DbException
    */
   public void eval(final ReadableTable tb, final int rowIdx, final WritableColumn result, final ReadableTable state)
-      throws InvocationTargetException {
+      throws InvocationTargetException, DbException {
     Preconditions.checkArgument(evaluator != null,
         "Call compile first or copy the data if it is the same in the input.");
     try {
@@ -125,7 +126,6 @@ public class GenericEvaluator extends Evaluator {
     }
 
     Type type = getOutputType();
-
     ColumnBuilder<?> ret = ColumnFactory.allocateColumn(type);
     for (int row = 0; row < tb.numTuples(); ++row) {
       /** We already have an object, so we're not using the wrong version of put. Remove the warning. */

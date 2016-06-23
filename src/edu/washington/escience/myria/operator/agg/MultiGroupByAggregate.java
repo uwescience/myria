@@ -66,15 +66,13 @@ public final class MultiGroupByAggregate extends UnaryOperator {
    * @param gfields The columns over which we are grouping the result.
    * @param factories The factories that will produce the {@link Aggregator}s for each group..
    */
-  public MultiGroupByAggregate(
-      @Nullable final Operator child, final int[] gfields, final AggregatorFactory... factories) {
+  public MultiGroupByAggregate(@Nullable final Operator child, final int[] gfields,
+      final AggregatorFactory... factories) {
     super(child);
     this.gfields = Objects.requireNonNull(gfields, "gfields");
     this.factories = Objects.requireNonNull(factories, "factories");
-    Preconditions.checkArgument(
-        gfields.length > 1, "to use MultiGroupByAggregate, must group over multiple fields");
-    Preconditions.checkArgument(
-        factories.length != 0, "to use MultiGroupByAggregate, must specify some aggregates");
+    Preconditions.checkArgument(gfields.length > 1, "to use MultiGroupByAggregate, must group over multiple fields");
+    Preconditions.checkArgument(factories.length != 0, "to use MultiGroupByAggregate, must specify some aggregates");
     grpRange = new int[gfields.length];
     for (int i = 0; i < gfields.length; ++i) {
       grpRange[i] = i;
@@ -154,8 +152,7 @@ public final class MultiGroupByAggregate extends UnaryOperator {
    * @param hashMatches the list of all rows in the output {@link TupleBuffer}s that match this hash.
    * @throws DbException if there is an error.
    */
-  private void newGroup(final TupleBatch tb, final int row, final IntArrayList hashMatches)
-      throws DbException {
+  private void newGroup(final TupleBatch tb, final int row, final IntArrayList hashMatches) throws DbException {
     int newIndex = groupKeys.numTuples();
     for (int column = 0; column < gfields.length; ++column) {
       TupleUtils.copyValue(tb, gfields[column], row, groupKeys, column);
@@ -164,11 +161,8 @@ public final class MultiGroupByAggregate extends UnaryOperator {
     Object[] curAggStates = AggUtils.allocateAggStates(aggregators);
     aggStates.add(curAggStates);
     updateGroup(tb, row, curAggStates);
-    Preconditions.checkState(
-        groupKeys.numTuples() == aggStates.size(),
-        "groupKeys %s != groupAggs %s",
-        groupKeys.numTuples(),
-        aggStates.size());
+    Preconditions.checkState(groupKeys.numTuples() == aggStates.size(), "groupKeys %s != groupAggs %s", groupKeys
+        .numTuples(), aggStates.size());
   }
 
   /**
@@ -192,8 +186,7 @@ public final class MultiGroupByAggregate extends UnaryOperator {
    * @param curAggStates the aggregation states to be updated.
    * @throws DbException if there is an error.
    */
-  private void updateGroup(final TupleBatch tb, final int row, final Object[] curAggStates)
-      throws DbException {
+  private void updateGroup(final TupleBatch tb, final int row, final Object[] curAggStates) throws DbException {
     for (int agg = 0; agg < aggregators.length; ++agg) {
       aggregators[agg].addRow(tb, row, curAggStates[agg]);
     }
@@ -204,8 +197,7 @@ public final class MultiGroupByAggregate extends UnaryOperator {
    * @throws DbException if there is an error.
    */
   private TupleBatch getResultBatch() throws DbException {
-    Preconditions.checkState(
-        getChild().eos(), "cannot extract results from an aggregate until child has reached EOS");
+    Preconditions.checkState(getChild().eos(), "cannot extract results from an aggregate until child has reached EOS");
     if (groupKeyList == null) {
       groupKeyList = Lists.newLinkedList(groupKeys.finalResult());
       groupKeys = null;
@@ -226,20 +218,13 @@ public final class MultiGroupByAggregate extends UnaryOperator {
       }
     }
     TupleBatch aggResults = curGroupAggs.popAny();
-    Preconditions.checkState(
-        curGroupKeys.numTuples() == aggResults.numTuples(),
-        "curGroupKeys size %s != aggResults size %s",
-        curGroupKeys.numTuples(),
-        aggResults.numTuples());
+    Preconditions.checkState(curGroupKeys.numTuples() == aggResults.numTuples(),
+        "curGroupKeys size %s != aggResults size %s", curGroupKeys.numTuples(), aggResults.numTuples());
 
     /* Note: as of Java7 sublists of sublists do what we want -- the sublists are at most one deep. */
     aggStates = aggStates.subList(curGroupKeys.numTuples(), aggStates.size());
-    return new TupleBatch(
-        getSchema(),
-        ImmutableList.<Column<?>>builder()
-            .addAll(curGroupKeys.getDataColumns())
-            .addAll(aggResults.getDataColumns())
-            .build());
+    return new TupleBatch(getSchema(), ImmutableList.<Column<?>> builder().addAll(curGroupKeys.getDataColumns())
+        .addAll(aggResults.getDataColumns()).build());
   }
 
   /**
@@ -261,11 +246,11 @@ public final class MultiGroupByAggregate extends UnaryOperator {
     groupSchema = inputSchema.getSubSchema(gfields);
 
     /* Build the output schema from the group schema and the aggregates. */
-    final ImmutableList.Builder<Type> aggTypes = ImmutableList.<Type>builder();
-    final ImmutableList.Builder<String> aggNames = ImmutableList.<String>builder();
+    final ImmutableList.Builder<Type> aggTypes = ImmutableList.<Type> builder();
+    final ImmutableList.Builder<String> aggNames = ImmutableList.<String> builder();
 
     try {
-      for (Aggregator agg : AggUtils.allocateAggs(factories, inputSchema)) {
+      for (Aggregator agg : AggUtils.allocateAggs(factories, inputSchema, null)) {
         Schema curAggSchema = agg.getResultSchema();
         aggTypes.addAll(curAggSchema.getColumnTypes());
         aggNames.addAll(curAggSchema.getColumnNames());
@@ -280,7 +265,7 @@ public final class MultiGroupByAggregate extends UnaryOperator {
   @Override
   protected void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
     Preconditions.checkState(getSchema() != null, "unable to determine schema in init");
-    aggregators = AggUtils.allocateAggs(factories, getChild().getSchema());
+    aggregators = AggUtils.allocateAggs(factories, getChild().getSchema(), null);
     groupKeys = new TupleBuffer(groupSchema);
     aggStates = new ArrayList<>();
     groupKeyMap = new IntObjectHashMap<>();

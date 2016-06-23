@@ -29,7 +29,7 @@ public class Apply extends UnaryOperator {
   private static final long serialVersionUID = 1L;
 
   /** logger for this class. */
-  private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(GenericEvaluator.class);
+  private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(Apply.class);
 
   /**
    * List of expressions that will be used to create the output.
@@ -107,7 +107,7 @@ public class Apply extends UnaryOperator {
       if (expr.isConstant()) {
         evaluator = new ConstantEvaluator(expr, parameters);
       } else if (expr.isRegisteredUDF()) {
-        LOGGER.info("PythonUDF!!");
+
         evaluator = new PythonUDFEvaluator(expr, parameters, getPythonFunctionRegistrar());
       } else {
         evaluator = new GenericEvaluator(expr, parameters);

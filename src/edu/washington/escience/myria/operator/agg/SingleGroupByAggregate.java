@@ -32,8 +32,7 @@ public class SingleGroupByAggregate extends UnaryOperator {
   /**
    * The Logger.
    */
-  private static final org.slf4j.Logger LOGGER =
-      org.slf4j.LoggerFactory.getLogger(SingleGroupByAggregate.class);
+  private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(SingleGroupByAggregate.class);
 
   /**
    * default serialization ID.
@@ -104,8 +103,7 @@ public class SingleGroupByAggregate extends UnaryOperator {
    * @param gfield The column over which we are grouping the result.
    * @param factories Factories for the aggregation operators to use.
    */
-  public SingleGroupByAggregate(
-      @Nullable final Operator child, final int gfield, final AggregatorFactory... factories) {
+  public SingleGroupByAggregate(@Nullable final Operator child, final int gfield, final AggregatorFactory... factories) {
     super(child);
     gColumn = Objects.requireNonNull(gfield, "gfield");
     this.factories = Objects.requireNonNull(factories, "factories");
@@ -227,8 +225,7 @@ public class SingleGroupByAggregate extends UnaryOperator {
    * @param aggState the states corresponding to all aggregators.
    * @throws DbException if there is an error.
    */
-  private void concatResults(final TupleBatchBuffer resultBuffer, final Object[] aggState)
-      throws DbException {
+  private void concatResults(final TupleBatchBuffer resultBuffer, final Object[] aggState) throws DbException {
     int index = 1;
     for (int agg = 0; agg < aggregators.length; ++agg) {
       aggregators[agg].getResult(resultBuffer, index, aggState[agg]);
@@ -330,7 +327,7 @@ public class SingleGroupByAggregate extends UnaryOperator {
   protected final void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
     Preconditions.checkState(getSchema() != null, "unable to determine schema in init");
 
-    aggregators = AggUtils.allocateAggs(factories, getChild().getSchema());
+    aggregators = AggUtils.allocateAggs(factories, getChild().getSchema(), getPythonFunctionRegistrar());
     resultBuffer = new TupleBatchBuffer(getSchema());
 
     switch (gColumnType) {
@@ -371,12 +368,11 @@ public class SingleGroupByAggregate extends UnaryOperator {
 
     Preconditions.checkElementIndex(gColumn, inputSchema.numColumns(), "group column");
 
-    Schema outputSchema =
-        Schema.ofFields(inputSchema.getColumnType(gColumn), inputSchema.getColumnName(gColumn));
+    Schema outputSchema = Schema.ofFields(inputSchema.getColumnType(gColumn), inputSchema.getColumnName(gColumn));
 
     gColumnType = inputSchema.getColumnType(gColumn);
     try {
-      for (Aggregator a : AggUtils.allocateAggs(factories, inputSchema)) {
+      for (Aggregator a : AggUtils.allocateAggs(factories, inputSchema, null)) {
         outputSchema = Schema.merge(outputSchema, a.getResultSchema());
       }
     } catch (DbException e) {

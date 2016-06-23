@@ -29,10 +29,8 @@ def main(infile, outfile):
         while True:
             print("python process trying to read tuple")
             tup =pickleSer.read_tuple(infile,tuplesize)
-            print(str(type(tup)))
-            print(str(type(tup[0])))
-            print(str(type(func)))
-            print("python process done reading tuple, now writing ")
+
+            print("python process done reading tuple, now writing ")            
             pickleSer.write_with_length(func(tup),outfile)
             outfile.flush()
 

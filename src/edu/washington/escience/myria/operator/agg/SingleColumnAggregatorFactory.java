@@ -6,8 +6,10 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Preconditions;
 
+import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
+import edu.washington.escience.myria.functions.PythonFunctionRegistrar;
 import edu.washington.escience.myria.operator.agg.PrimitiveAggregator.AggregationOp;
 
 /**
@@ -18,9 +20,11 @@ public class SingleColumnAggregatorFactory implements AggregatorFactory {
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
   /** Which column of the input to aggregate over. */
-  @JsonProperty private final int column;
+  @JsonProperty
+  private final int column;
   /** Which aggregate options are requested. See {@link PrimitiveAggregator}. */
-  @JsonProperty private final AggregationOp[] aggOps;
+  @JsonProperty
+  private final AggregationOp[] aggOps;
 
   /**
    * A wrapper for the {@link PrimitiveAggregator} implementations like {@link IntegerAggregator}.
@@ -29,8 +33,7 @@ public class SingleColumnAggregatorFactory implements AggregatorFactory {
    * @param aggOps which aggregate operations are requested. See {@link PrimitiveAggregator}.
    */
   @JsonCreator
-  public SingleColumnAggregatorFactory(
-      @JsonProperty(value = "column", required = true) final Integer column,
+  public SingleColumnAggregatorFactory(@JsonProperty(value = "column", required = true) final Integer column,
       @JsonProperty(value = "aggOps", required = true) final AggregationOp... aggOps) {
     this.column = Objects.requireNonNull(column, "column").intValue();
     this.aggOps = Objects.requireNonNull(aggOps, "aggOps");
@@ -63,5 +66,10 @@ public class SingleColumnAggregatorFactory implements AggregatorFactory {
         return new StringAggregator(inputName, aggOps, column);
     }
     throw new IllegalArgumentException("Unknown column type: " + type);
+  }
+
+  @Override
+  public Aggregator get(final Schema inputSchema, final PythonFunctionRegistrar pyFuncReg) throws DbException {
+    return get(inputSchema);
   }
 }

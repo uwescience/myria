@@ -66,7 +66,7 @@ public class PythonWorker {
 
     try {
       if (pyCodeString.length() > 0 && dOut != null) {
-        LOGGER.info("length of the code String: " + pyCodeString.length());
+        // LOGGER.info("length of the code String: " + pyCodeString.length());
         byte[] bytes = pyCodeString.getBytes(StandardCharsets.UTF_8);
         dOut.writeInt(bytes.length);
         dOut.write(bytes);
@@ -74,7 +74,7 @@ public class PythonWorker {
         dOut.writeInt(tupleSize);
 
         dOut.flush();
-        LOGGER.info("wrote and flushed code snippet ");
+        // LOGGER.info("wrote and flushed code snippet ");
       } else {
         LOGGER.info("something is very wrong, python code  or output stream are empty");
         throw new DbException("Can't write pythonCode to worker!");
@@ -123,20 +123,10 @@ public class PythonWorker {
     ProcessBuilder pb = new ProcessBuilder(MyriaConstants.PYTHONEXEC, "-m", pythonWorker);
     final Map<String, String> env = pb.environment();
 
-    // for (Map.Entry<String, String> entry : env.entrySet()) {
-    // String key = entry.getKey();
-    // LOGGER.info("Key: " + key);
-    // String value = entry.getValue();
-    // LOGGER.info("Value: " + value);
-    // // do stuff
-    // }
-
     StringBuilder sb = new StringBuilder();
     sb.append(pythonPath);
     sb.append(":");
     sb.append(env.get("PATH"));
-    LOGGER.info("PATH");
-    LOGGER.info(sb.toString());
     env.put("PATH", sb.toString());
     env.put("PYTHONUNBUFFERED", "YES");
 
@@ -145,7 +135,7 @@ public class PythonWorker {
 
     // write the env variables to the path of the starting process
     worker = pb.start();
-    LOGGER.info("Started the python process");
+    // LOGGER.info("Started the python process");
     OutputStream stdin = worker.getOutputStream();
     OutputStreamWriter out = new OutputStreamWriter(stdin, StandardCharsets.UTF_8);
 
@@ -162,7 +152,7 @@ public class PythonWorker {
     if (clientSock != null) {
       dOut = new DataOutputStream(clientSock.getOutputStream());
       dIn = new DataInputStream(clientSock.getInputStream());
-      LOGGER.info("successfully setup streams");
+
     }
 
   }

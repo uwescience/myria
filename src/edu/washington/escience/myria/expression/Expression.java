@@ -160,8 +160,8 @@ public class Expression implements Serializable {
   }
 
   /**
-   * An expression is a pythonUDF when it has to be evaluated only once. This means that an expression with variables,
-   * state or random is likely not a constant.
+   * An expression is a pythonUDF when it has PYUDF expression. This means that an expression has python code that needs
+   * to be executed to, be evaluated as part of the expression evaluation.
    *
    * @return if this expression evaluates to a pythonUDF
    */
