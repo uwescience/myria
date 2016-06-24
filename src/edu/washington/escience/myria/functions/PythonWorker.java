@@ -20,6 +20,7 @@ import com.google.common.base.Preconditions;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
+import edu.washington.escience.myria.Type;
 
 /**
  * 
@@ -61,7 +62,7 @@ public class PythonWorker {
 
   }
 
-  public void sendCodePickle(final String pyCodeString, final int tupleSize) throws DbException {
+  public void sendCodePickle(final String pyCodeString, final int tupleSize, final Type outputType) throws DbException {
     Preconditions.checkNotNull(pyCodeString);
 
     try {
@@ -72,6 +73,7 @@ public class PythonWorker {
         dOut.write(bytes);
 
         dOut.writeInt(tupleSize);
+        writeOutputType(outputType);
 
         dOut.flush();
         // LOGGER.info("wrote and flushed code snippet ");
@@ -146,6 +148,29 @@ public class PythonWorker {
     setupStreams();
 
     return;
+  }
+
+  private void writeOutputType(final Type outputType) throws IOException, DbException {
+    switch (outputType) {
+      case DOUBLE_TYPE:
+        dOut.writeInt(MyriaConstants.PythonType.DOUBLE.getVal());
+        break;
+      case FLOAT_TYPE:
+        dOut.writeInt(MyriaConstants.PythonType.FLOAT.getVal());
+        break;
+      case INT_TYPE:
+        dOut.writeInt(MyriaConstants.PythonType.INT.getVal());
+        break;
+      case LONG_TYPE:
+        dOut.writeInt(MyriaConstants.PythonType.LONG.getVal());
+        break;
+      case BYTES_TYPE:
+        dOut.writeInt(MyriaConstants.PythonType.BYTES.getVal());
+        break;
+      default:
+        throw new DbException("Type not supported for python UDF ");
+
+    }
   }
 
   private void setupStreams() throws IOException {

@@ -50,25 +50,42 @@ def read_int(stream):
 def write_int(value, stream):
     stream.write(struct.pack("!i",value))
 
-def write_with_length(obj, stream):
-    write_int(len(obj),stream)
-    stream.write(obj)
+def write_float(value, stream):
+    stream.write(struct.pack("!f",value))
+
+def write_double(value, stream):
+    stream.write(struct.pack("!d",value))
+
+def write_long(value, stream):
+    stream.write(struct.pack("!q",value))
+
+
+def write_with_length(obj, stream, outputType):
+    print("in write_with_length")
+    print("Output type: "+ str(outputType))
+
+    if(outputType ==DataType.INT):
+        print("trying to send back an int")
+        write_int(DataType.INT, stream)
+        write_int(obj,stream)
+    elif(outputType == DataType.LONG):
+        write_int(DataType.LONG,stream)
+        write_long(stream.write(obj))
+    elif(outputType == DataType.FLOAT):
+        write_int(DataType.FLOAT,stream)
+        write_float(stream.write(obj))
+    elif(outputType == DataType.DOUBLE ):
+        write_int(DataType.DOUBLE,stream)
+        write_double(stream.write(obj))
+    elif(outputType == DataType.BYTES):
+        write_int(DataType.BYTES,stream)
+        write_int(len(obj),stream)
+        stream.write(obj)
+
+
 
 
 class PickleSerializer(object):
-
-  def dump_stream(self,iterator,stream):
-    for obj in iterator:
-      self._write_with_length(obj,stream)
-
-
-  def load_stream(self,stream, size):
-    while True:
-      try:
-        (yield self._read_with_length(stream, size))
-      except EOFError:
-        return
-
 
   def write_with_length(self, obj, stream):
       serialized = self.dumps(obj)
@@ -81,37 +98,20 @@ class PickleSerializer(object):
       write_int(len(serialized), stream)
       stream.write(serialized)
 
-
-  def read_with_length(self,stream):
-
-     length = read_int(stream)
-     if length < 0:
-         print("this is a command!")
-         if (length == SpecialLengths.NULL):
-             print("got a null value")
-             return 0
-         else:
-             return None
-     obj = stream.read(length)
-     if len(obj) < length:
-         raise EOFError
-
-     return obj
-
   def write_tuple(self, stream, tuptype, tuplesize):
       if(len(tuptype)!=tuplesize):
          raise ValueError("type list is not the same as tuple size")
 
-  def read_item(self, stream,elementType,length):
-    if(elementType ==DataType.INT):
+  def read_item(self, stream, itemType,length):
+    if(itemType ==DataType.INT):
         obj = read_int(stream)
-    elif(elementType == DataType.LONG):
+    elif(itemType == DataType.LONG):
         obj = read_long(stream)
-    elif(elementType == DataType.FLOAT):
+    elif(itemType == DataType.FLOAT):
         obj = read_float(stream)
-    elif(elementType == DataType.DOUBLE ):
+    elif(itemType == DataType.DOUBLE ):
         obj  = read_double(stream)
-    elif(elementType == DataType.BYTES):
+    elif(itemType == DataType.BYTES):
         obj = self.loads(stream.read(length))
 
     return obj
@@ -143,7 +143,7 @@ class PickleSerializer(object):
 
 
 
-  def _read_command(self,stream):
+  def read_command(self,stream):
       length = read_int(stream)
 
       if length < 0:

@@ -115,7 +115,7 @@ public class ConstantExpression extends ZeroaryExpression {
 
   @Override
   public String getJavaString(final ExpressionOperatorParameter parameters) {
-    LOGGER.info("looking for expression value for parameter");
+
     switch (valueType) {
       case BOOLEAN_TYPE:
       case DOUBLE_TYPE:

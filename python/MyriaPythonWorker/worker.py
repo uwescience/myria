@@ -15,10 +15,12 @@ def main(infile, outfile):
     try:
         #get code
 
-        func = pickleSer._read_command(infile)
+        func = pickleSer.read_command(infile)
         print("read command!")
         tuplesize = read_int(infile)
         print("read tuple size")
+        outputType = read_int(infile)
+        print("read output type")
 
 
 
@@ -30,15 +32,17 @@ def main(infile, outfile):
             print("python process trying to read tuple")
             tup =pickleSer.read_tuple(infile,tuplesize)
 
-            print("python process done reading tuple, now writing ")            
-            pickleSer.write_with_length(func(tup),outfile)
+            print("python process done reading tuple, now writing ")
+            retval = func(tup)
+            write_with_length(retval, outfile, outputType)
+            #pickleSer.write_with_length(func(tup),outfile)
             outfile.flush()
 
 
     except Exception:
         try:
             write_int(SpecialLengths.PYTHON_EXCEPTION_THROWN,outfile)
-            write_with_length(traceback.format_exc().encode("utf-8"),outfile)
+            write_with_length(traceback.format_exc().encode("utf-8"),outfile,5)
             print(traceback.format_exc(), file=sys.stderr)
         except Exception:
             print("python process failed with exception: ", file=sys.stderr)

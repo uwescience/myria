@@ -19,6 +19,8 @@ public class PyUDFExpression extends BinaryExpression {
   /** The name of the python function. */
   @JsonProperty
   private final String name;
+  @JsonProperty
+  private final Type outputType;
 
   // private int leftColumnIdx;
   // private int rightColumnIdx;
@@ -31,22 +33,22 @@ public class PyUDFExpression extends BinaryExpression {
   @SuppressWarnings("unused")
   private PyUDFExpression() {
     name = "";
+    outputType = Type.BYTES_TYPE;
   }
 
-  public PyUDFExpression(final ExpressionOperator left, final ExpressionOperator right, final String name) {
+  public PyUDFExpression(final ExpressionOperator left, final ExpressionOperator right, final String name,
+      final Type outputType) {
     super(left, right);
     this.name = name;
-
-    LOGGER.info("left string :" + left.toString());
-    LOGGER.info("right string :" + right.toString());
-    // setColumnId(left, right);
+    this.outputType = outputType;
 
   }
 
   @Override
   public Type getOutputType(final ExpressionOperatorParameter parameters) {
     // look at the output schema of from the expressionOperatorParameter?
-    return Type.BYTES_TYPE;
+
+    return outputType;
 
   }
 
@@ -55,6 +57,10 @@ public class PyUDFExpression extends BinaryExpression {
    */
   public String getName() {
     return name;
+  }
+
+  public Type getOutput() {
+    return outputType;
   }
 
   // don't need the getJavaSubstring

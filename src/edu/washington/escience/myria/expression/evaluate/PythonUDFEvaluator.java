@@ -53,6 +53,8 @@ public class PythonUDFEvaluator extends GenericEvaluator {
   private boolean bLeftState = false;
   private boolean bRightState = false;
 
+  private final Type outputType;
+
   /**
    * Default constructor.
    *
@@ -65,6 +67,7 @@ public class PythonUDFEvaluator extends GenericEvaluator {
 
     // parameters and expression are saved in the super
     LOGGER.info("Output name for the python expression" + getExpression().getOutputName());
+
     if (pyFuncReg != null) {
       pyFunction = pyFuncReg;
     } else {
@@ -74,12 +77,13 @@ public class PythonUDFEvaluator extends GenericEvaluator {
       needsState = true;
     }
     PyUDFExpression op = (PyUDFExpression) expression.getRootExpressionOperator();
+    outputType = op.getOutput();
 
     ExpressionOperator left = op.getLeft();
-    LOGGER.info("left string :" + left.toString());
+    // LOGGER.info("left string :" + left.toString());
 
     ExpressionOperator right = op.getRight();
-    LOGGER.info("right string :" + right.toString());
+    // LOGGER.info("right string :" + right.toString());
 
     if (left.getClass().equals(VariableExpression.class)) {
       leftColumnIdx = ((VariableExpression) left).getColumnIdx();
@@ -106,12 +110,18 @@ public class PythonUDFEvaluator extends GenericEvaluator {
     ExpressionOperator op = getExpression().getRootExpressionOperator();
 
     String pyFunc = ((PyUDFExpression) op).getName();
+
     LOGGER.info(pyFunc);
 
     try {
+
       String pyCodeString = pyFunction.getUDF(pyFunc);
-      LOGGER.info("length of string from postgres " + pyCodeString.length());
-      pyWorker.sendCodePickle(pyCodeString, 2);// tuple size is always 2 for binary expression.
+      if (pyCodeString == null) {
+        LOGGER.info("no python UDF with name {} registered.", pyFunc);
+        throw new DbException("No Python UDf with given name registered.");
+      } else {
+        pyWorker.sendCodePickle(pyCodeString, 2, outputType);// tuple size is always 2 for binary expression.
+      }
 
     } catch (Exception e) {
       LOGGER.info(e.getMessage());
@@ -134,7 +144,35 @@ public class PythonUDFEvaluator extends GenericEvaluator {
   public void eval(final ReadableTable tb, final int rowIdx, final WritableColumn result, final ReadableTable state)
       throws DbException {
     Object obj = evaluatePython(tb, rowIdx, state);
-    result.appendByteBuffer(ByteBuffer.wrap((byte[]) obj));
+    if (obj == null) {
+      throw new DbException("python process returned null!");
+    }
+    try {
+      switch (outputType) {
+        case DOUBLE_TYPE:
+          result.appendDouble((Double) obj);
+          break;
+        case BYTES_TYPE:
+          result.appendByteBuffer(ByteBuffer.wrap((byte[]) obj));
+          break;
+        case FLOAT_TYPE:
+          result.appendFloat((float) obj);
+          break;
+        case INT_TYPE:
+          result.appendInt((int) obj);
+          break;
+        case LONG_TYPE:
+          result.appendLong((long) obj);
+          break;
+        default:
+          LOGGER.info("type not supported as python Output");
+          break;
+
+      }
+    } catch (Exception e) {
+      throw new DbException(e);
+    }
+
   }
 
   public void evalUpdatePyExpression(final ReadableTable tb, final int rowIdx, final AppendableTable result,
@@ -149,8 +187,32 @@ public class PythonUDFEvaluator extends GenericEvaluator {
       resultcol = rightColumnIdx;
     }
     LOGGER.info("trying to update state on column: " + resultcol);
+    try {
+      switch (outputType) {
+        case DOUBLE_TYPE:
+          result.putDouble(resultcol, (Double) obj);
+          break;
+        case BYTES_TYPE:
+          result.putByteBuffer(resultcol, (ByteBuffer.wrap((byte[]) obj)));
+          break;
+        case FLOAT_TYPE:
+          result.putFloat(resultcol, (float) obj);
+          break;
+        case INT_TYPE:
+          result.putInt(resultcol, (int) obj);
+          break;
+        case LONG_TYPE:
+          result.putLong(resultcol, (long) obj);
+          break;
 
-    result.putByteBuffer(resultcol, (ByteBuffer.wrap((byte[]) obj)));
+        default:
+          LOGGER.info("type not supported as python Output");
+          break;
+
+      }
+    } catch (Exception e) {
+      throw new DbException(e);
+    }
 
   }
 
@@ -210,30 +272,41 @@ public class PythonUDFEvaluator extends GenericEvaluator {
 
   private Object readFromStream() throws DbException {
     LOGGER.info("trying to read now");
-    int length = 0;
-    byte[] obj = null;
+    int type = 0;
+    Object obj = null;
     DataInputStream dIn = pyWorker.getDataInputStream();
 
     try {
-      length = dIn.readInt(); // read length of incoming message
-      switch (length) {
-        case PYTHON_EXCEPTION:
-          int excepLength = dIn.readInt();
-          byte[] excp = new byte[excepLength];
-          dIn.readFully(excp);
-          throw new DbException(new String(excp));
-
-        default:
-          if (length > 0) {
+      type = dIn.readInt(); // read length of incoming message
+      if (type == PYTHON_EXCEPTION) {
+        int excepLength = dIn.readInt();
+        byte[] excp = new byte[excepLength];
+        dIn.readFully(excp);
+        throw new DbException(new String(excp));
+      } else {
+        LOGGER.info("type read: " + type);
+        if (type == MyriaConstants.PythonType.DOUBLE.getVal()) {
+          obj = dIn.readDouble();
+        } else if (type == MyriaConstants.PythonType.FLOAT.getVal()) {
+          obj = dIn.readFloat();
+        } else if (type == MyriaConstants.PythonType.INT.getVal()) {
+          LOGGER.info("trying to read int ");
+          obj = dIn.readInt();
+        } else if (type == MyriaConstants.PythonType.LONG.getVal()) {
+          obj = dIn.readLong();
+        } else if (type == MyriaConstants.PythonType.BYTES.getVal()) {
+          int l = dIn.readInt();
+          if (l > 0) {
             LOGGER.info("length greater than zero!");
-            obj = new byte[length];
-            dIn.readFully(obj);
+            obj = new byte[l];
+            dIn.readFully((byte[]) obj);
           }
-          break;
+        }
+
       }
 
     } catch (Exception e) {
-      LOGGER.info("Error reading int from stream");
+      LOGGER.info("Error reading from stream");
       throw new DbException(e);
     }
     return obj;
@@ -304,12 +377,5 @@ public class PythonUDFEvaluator extends GenericEvaluator {
     }
 
   }
-
-  /**
-   * @param from
-   * @param row
-   * @param stateTuple
-   * @param stateTuple2
-   */
 
 }

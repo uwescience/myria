@@ -61,18 +61,17 @@ public class DbFunction extends RootOperator {
     }
 
     if (lang == MyriaConstants.FunctionLanguage.POSTGRES) {
-      LOGGER.info("in postgres function register");
+
       /* Open the database connection */
       accessMethod = AccessMethod.of(connectionInfo.getDbms(), connectionInfo, false);
       /* Add the POSTGRES UDF */
       accessMethod.executeSQLCommand(text);
     }
     if (lang == MyriaConstants.FunctionLanguage.PYTHON) {
-      LOGGER.info("in python function register");
 
       if (binary != null) {
-        LOGGER.info("UDF code string length: " + binary.length());
-        LOGGER.info("Code String: " + binary);
+        // LOGGER.info("UDF code string length: " + binary.length());
+        // LOGGER.info("Code String: " + binary);
         PythonFunctionRegistrar pyFunc = new PythonFunctionRegistrar(connectionInfo);
 
         pyFunc.addUDF(name, binary);

@@ -37,7 +37,7 @@ public class PythonFunctionRegistrar {
     Preconditions.checkArgument(connectionInfo.getDbms().equals(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL),
         "Profiling only supported with Postgres JDBC connection");
 
-    LOGGER.info("trying to register a function");
+    // LOGGER.info("trying to register a function");
 
     /* open the database connection */
     accessMethod = (JdbcAccessMethod) AccessMethod.of(connectionInfo.getDbms(), connectionInfo, false);
@@ -47,13 +47,8 @@ public class PythonFunctionRegistrar {
   }
 
   public void addUDF(final String name, final String binary) throws DbException {
-    LOGGER.info("Adding UDF");
     // add UDF
-    LOGGER.info("UDF code string length: " + binary.length());
-    LOGGER.info("Code String: " + binary);
-    String insertStmt =
-        accessMethod.insertStatementFromSchema(MyriaConstants.PYUDF_SCHEMA, MyriaConstants.PYUDF_RELATION);
-    LOGGER.info("insert Statement", insertStmt);
+
     String tableName = MyriaConstants.PYUDF_RELATION.toString(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL);
 
     StringBuilder sb = new StringBuilder();
@@ -63,7 +58,6 @@ public class PythonFunctionRegistrar {
     sb.append(name);
     sb.append("'");
     String sql = sb.toString();
-    LOGGER.info("sql string" + sql);
 
     accessMethod.executeSQLCommand(sql);
 
@@ -84,7 +78,6 @@ public class PythonFunctionRegistrar {
     sb.append(name);
     sb.append("'");
 
-    LOGGER.info(sb.toString());
     try {
       Iterator<TupleBatch> tuples =
           accessMethod.tupleBatchIteratorFromQuery(sb.toString(), MyriaConstants.PYUDF_SCHEMA);
@@ -95,16 +88,9 @@ public class PythonFunctionRegistrar {
         if (tb.numTuples() > 0) {
 
           String codename = tb.getString(0, 0);
-
-          LOGGER.info("Codename String Length:" + codename.length());
           LOGGER.info("codename: " + codename);
 
           String codeString = tb.getString(1, 0);
-
-          // now un-encode the bb to string
-
-          LOGGER.info("codestringlength: " + codeString.length());
-          LOGGER.info("code string:" + codeString);
 
           return codeString; // return second column of first row.
         }
