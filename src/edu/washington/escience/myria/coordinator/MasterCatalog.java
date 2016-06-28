@@ -1693,9 +1693,9 @@ public final class MasterCatalog {
    * Register UDFs in the catalog
    */
 
-  public void registerFunction(@Nonnull final String name, @Nonnull final String text,
-      @Nonnull final Schema outputSchema, final Schema inputSchema, final MyriaConstants.FunctionLanguage lang,
-      final String binary) throws CatalogException {
+  public void registerFunction(@Nonnull final String name, @Nonnull final String text, final Schema inputSchema,
+      @Nonnull final Schema outputSchema, final MyriaConstants.FunctionLanguage lang, final String binary)
+      throws CatalogException {
 
     if (isClosed) {
       throw new CatalogException("Catalog is closed.");
