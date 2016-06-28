@@ -59,6 +59,7 @@ import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.accessmethod.AccessMethod.IndexRef;
 import edu.washington.escience.myria.api.MyriaJsonMapperProvider;
 import edu.washington.escience.myria.api.encoding.DatasetStatus;
+import edu.washington.escience.myria.api.encoding.FunctionStatus;
 import edu.washington.escience.myria.api.encoding.QueryEncoding;
 import edu.washington.escience.myria.coordinator.CatalogException;
 import edu.washington.escience.myria.coordinator.ConfigFileException;
@@ -1181,14 +1182,9 @@ public final class Server {
   public long addFunctiontoDB(final Set<Integer> workers, final String udfName, final String udfDefinition,
       final String binary, final MyriaConstants.FunctionLanguage lang) throws DbException {
 
-    if (binary != null) {
-      LOGGER.info("UDF code string length: " + binary.length());
-      LOGGER.info("Code String: " + binary);
-    }
-
     long queryID;
     try {
-      LOGGER.info("got inside first try loop");
+
       Map<Integer, SubQueryPlan> workerPlans = new HashMap<>();
       for (Integer workerId : workers) {
         LOGGER.info("adding subplan for worker id " + workerId);
@@ -1196,41 +1192,24 @@ public final class Server {
             udfDefinition, lang, binary, null)));
 
       }
-      LOGGER.info("Attempting to the submit query");
+
       ListenableFuture<Query> qf =
           queryManager.submitQuery("create UDF", "create UDF", "create UDF", new SubQueryPlan(new SinkRoot(
               new EOSSource())), workerPlans);
-      LOGGER.info("submit query succeeded");
+
       try {
-        LOGGER.info("getQueryID?");
         queryID = qf.get().getQueryId();
       } catch (ExecutionException | InterruptedException e) {
         throw new DbException("Error executing query", e.getCause());
       }
     } catch (Exception e) {
-      LOGGER.info("Attempting to submit query caused and exception");
-
+      LOGGER.info("Attempting to submit query caused an exception");
       LOGGER.info(e.getMessage());
       e.printStackTrace();
 
       throw new DbException(e);
     }
     return queryID;
-  }
-
-  public boolean functionExists(final String udfName) {
-    // check in the catalog if the function exists
-    return true;
-  }
-
-  public void deleteFunction(final String udfName) throws DbException {
-    // call catalog delete this function
-    try {
-      catalog.deleteFunctionFromCatalog(udfName);
-    } catch (CatalogException e) {
-      throw new DbException(e);
-    }
-
   }
 
   public List<String> getFunctions() throws DbException {
@@ -2230,5 +2209,20 @@ public final class Server {
    */
   public MasterCatalog getCatalog() {
     return catalog;
+  }
+
+  /**
+   * @param functionName
+   * @return
+   * @throws DbException
+   */
+  public FunctionStatus getFunctionDetails(final String functionName) throws DbException {
+
+    try {
+      LOGGER.info("get function status for function with name: " + functionName);
+      return catalog.getFunctionStatus(functionName);
+    } catch (CatalogException e) {
+      throw new DbException(e);
+    }
   }
 }

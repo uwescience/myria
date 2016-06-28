@@ -61,7 +61,6 @@ public class DbFunction extends RootOperator {
     }
 
     if (lang == MyriaConstants.FunctionLanguage.POSTGRES) {
-
       /* Open the database connection */
       accessMethod = AccessMethod.of(connectionInfo.getDbms(), connectionInfo, false);
       /* Add the POSTGRES UDF */
@@ -70,10 +69,7 @@ public class DbFunction extends RootOperator {
     if (lang == MyriaConstants.FunctionLanguage.PYTHON) {
 
       if (binary != null) {
-        // LOGGER.info("UDF code string length: " + binary.length());
-        // LOGGER.info("Code String: " + binary);
         PythonFunctionRegistrar pyFunc = new PythonFunctionRegistrar(connectionInfo);
-
         pyFunc.addUDF(name, binary);
       } else {
         throw new DbException("Cannot register python UDF without binary");

@@ -47,7 +47,6 @@ import edu.washington.escience.myria.api.encoding.CreateIndexEncoding;
 import edu.washington.escience.myria.api.encoding.CreateViewEncoding;
 import edu.washington.escience.myria.api.encoding.DatasetEncoding;
 import edu.washington.escience.myria.api.encoding.DatasetStatus;
-import edu.washington.escience.myria.api.encoding.FunctionEncoding;
 import edu.washington.escience.myria.api.encoding.TipsyDatasetEncoding;
 import edu.washington.escience.myria.coordinator.CatalogException;
 import edu.washington.escience.myria.io.InputStreamSource;
@@ -61,8 +60,6 @@ import edu.washington.escience.myria.operator.network.partition.PartitionFunctio
 import edu.washington.escience.myria.operator.network.partition.RoundRobinPartitionFunction;
 import edu.washington.escience.myria.parallel.Server;
 import edu.washington.escience.myria.storage.TupleBatch;
-
-// remove once function encoding is complete
 
 /**
  * This is the class that handles API calls to create or fetch datasets.
@@ -413,78 +410,6 @@ public final class DatasetResource {
     /* Build the response to return the queryId */
     ResponseBuilder response = Response.ok();
     return response.entity(queryId).build();
-  }
-
-  /**
-   * Creates an Function based on DbFunctionEncoding
-   * 
-   * @POST
-   * @Path("/Function/")
-   * @Consumes(MediaType.APPLICATION_JSON) public Response createFunction(final CreateFunctionEncoding encoding) throws
-   *                                       DbException { long queryId; try { queryId =
-   *                                       server.createUDF(encoding.udfName, encoding.udfDefinition, encoding.workers);
-   *                                       } catch (Exception e) { throw new DbException(); } // Build the response to
-   *                                       return the queryId ResponseBuilder response = Response.ok(); return
-   *                                       response.entity(queryId).build(); }
-   */
-
-  /**
-   * Creates an function based on DbFunctionEncoding
-   */
-  @POST
-  @Path("/function/")
-  @Consumes(MediaType.APPLICATION_JSON)
-  public Response createFunction(final FunctionEncoding encoding) throws DbException {
-    long queryId;
-    try {
-      LOGGER.info(encoding.name + "\t " + encoding.text + "\t " + encoding.lang + "\t " + encoding.workers);
-      queryId =
-          server.createFunction(encoding.name, encoding.text, encoding.lang, encoding.workers, encoding.binary,
-              encoding.inputSchema, encoding.outputSchema);
-
-    } catch (Exception e) {
-      throw new DbException();
-    }
-    /* Build the response to return the queryId */
-    ResponseBuilder response = Response.ok();
-    return response.entity(queryId).build();
-  }
-
-  /**
-   * @param queryId an optional query ID specifying which datasets to get.
-   * @return a list of datasets.
-   * @throws DbException if there is an error accessing the Catalog.
-   */
-  @GET
-  @Path("/function/")
-  public List<String> getFunctions() throws DbException {
-    return server.getFunctions();
-  }
-
-  /**
-   * @param userName the user who owns the target relation.
-   * @param programName the program to which the target relation belongs.
-   * @param relationName the name of the target relation.
-   * @return metadata
-   * @throws DbException if there is an error in the database.
-   */
-  @DELETE
-  @Path("/function/")
-  public Response deleteFunction(final String udf_name) throws DbException {
-
-    Boolean status = server.functionExists(udf_name);
-    if (status == false) {
-      /* function not found, throw a 404 (Not Found) */
-      throw new MyriaApiException(Status.NOT_FOUND, "That dataset was not found");
-    }
-
-    // delete command
-    try {
-      server.deleteFunction(udf_name);
-    } catch (Exception e) {
-      throw new DbException();
-    }
-    return Response.noContent().build();
   }
 
   /**

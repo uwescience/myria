@@ -48,6 +48,7 @@ import edu.washington.escience.myria.accessmethod.AccessMethod.IndexRef;
 import edu.washington.escience.myria.accessmethod.SQLiteTupleBatchIterator;
 import edu.washington.escience.myria.api.MyriaJsonMapperProvider;
 import edu.washington.escience.myria.api.encoding.DatasetStatus;
+import edu.washington.escience.myria.api.encoding.FunctionStatus;
 import edu.washington.escience.myria.api.encoding.QueryEncoding;
 import edu.washington.escience.myria.api.encoding.QueryStatusEncoding;
 import edu.washington.escience.myria.api.encoding.plan.SubPlanEncoding;
@@ -151,19 +152,13 @@ public final class MasterCatalog {
     + "WHERE status = '" + QueryStatusEncoding.Status.ACCEPTED.toString() + "';";
   private static final String CREATE_REGISTERED_UDFS =
       "CREATE TABLE registered_udfs (\n"
-          + "    udf_id INTEGER NOT NULL, \n"
           + "    udf_name INTEGER NOT NULL, \n" 
           + "    udf_definition TEXT NOT NULL,\n"
-          + "    udf_language TEXT NOT NULL,\n"
-          + "    udf_binary BLOB);";
-  private static final String CREATE_UDF_SCHEMA =
-      "CREATE TABLE udf_schema (\n"
-          + "    udf_name TEXT NOT NULL,\n"
-          + "    udf_input INTEGER NOT NULL,\n" 
-          + "    udf_output INTEGER NOT NULL,\n"           
-          + "    col_index INTEGER NOT NULL,\n"
-          + "    col_name TEXT,\n"
-          + "    col_type TEXT NOT NULL);";
+          + "    udf_language INTEGER,\n"
+          + "    udf_binary BLOB,\n"
+          + "    udf_outputSchema TEXT NOT NULL,\n"
+          + "    udf_inputSchema TEXT);";
+
           
   
  /** CREATE TABLE statements @formatter:on */
@@ -216,7 +211,6 @@ public final class MasterCatalog {
             sqliteConnection.exec(CREATE_SHARDS);
             sqliteConnection.exec(CREATE_SHARDS_INDEX);
             sqliteConnection.exec(CREATE_REGISTERED_UDFS);
-            sqliteConnection.exec(CREATE_UDF_SCHEMA);
             sqliteConnection.exec("END TRANSACTION");
           } catch (final SQLiteException e) {
             sqliteConnection.exec("ROLLBACK TRANSACTION");
@@ -366,6 +360,55 @@ public final class MasterCatalog {
           }
 
           return udfnames;
+        }
+      }).get();
+    } catch (InterruptedException | ExecutionException e) {
+      throw new CatalogException(e);
+    }
+  }
+
+  /**
+   * Get the metadata about a relation.
+   *
+   * @param relationKey specified which relation to get the metadata about.
+   * @return the metadata of the specified relation.
+   * @throws CatalogException if there is an error in the catalog.
+   */
+  public FunctionStatus getFunctionStatus(final String name) throws CatalogException {
+    if (isClosed) {
+      throw new CatalogException("Catalog is closed.");
+    }
+
+    LOGGER.info("ger function status for function with name: " + name);
+    try {
+      return queue.execute(new SQLiteJob<FunctionStatus>() {
+        @Override
+        protected FunctionStatus job(final SQLiteConnection sqliteConnection) throws CatalogException, SQLiteException {
+          try {
+            SQLiteStatement statement =
+                sqliteConnection
+                    .prepare("SELECT udf_name, udf_definition, udf_language, udf_outputSchema, udf_inputSchema FROM registered_udfs WHERE udf_name=?");
+
+            statement.bind(1, name);
+            if (!statement.step()) {
+              LOGGER.info("returning null");
+              return null;
+            }
+
+            String name = statement.columnString(0);
+            String text = statement.columnString(1);
+            int lang = statement.columnInt(2);
+            String outputSchema = statement.columnString(3);
+            String inputSchema = statement.columnString(4);
+
+            statement.dispose();
+
+            return new FunctionStatus(name, inputSchema, outputSchema, text,
+                MyriaConstants.FunctionLanguage.values()[lang]);
+
+          } catch (final SQLiteException e) {
+            throw new CatalogException(e);
+          }
         }
       }).get();
     } catch (InterruptedException | ExecutionException e) {
@@ -1511,17 +1554,13 @@ public final class MasterCatalog {
   private void deleteFunctionIfExists(@Nonnull final SQLiteConnection sqliteConnection, @Nonnull final String udf_name,
       final boolean isOverwrite) throws CatalogException {
     try {
-      String sql =
-          String
-              .format("DELETE FROM registered_udfs WHERE udf_name=?  AND %s;", (isOverwrite ? "1=1" : "is_deleted=1"));
+      String sql = String.format("DELETE FROM registered_udfs WHERE udf_name=? ");
       SQLiteStatement statement = sqliteConnection.prepare(sql);
       statement.bind(1, udf_name);
       statement.stepThrough();
       statement.dispose();
       statement = null;
 
-      // TODO: need to delete the input and output schema from the udf_schema table
-      // TODO: need to delete the UDF from postgres!
     } catch (final SQLiteException e) {
       throw new CatalogException(e);
     }
@@ -1657,13 +1696,13 @@ public final class MasterCatalog {
   public void registerFunction(@Nonnull final String name, @Nonnull final String text,
       @Nonnull final Schema outputSchema, final Schema inputSchema, final MyriaConstants.FunctionLanguage lang,
       final String binary) throws CatalogException {
-    LOGGER.info("in register UDFs");
-    LOGGER.info("name " + name + "\t" + text + "\t" + lang);
-    LOGGER.info("outputschema " + outputSchema.toString());
 
     if (isClosed) {
       throw new CatalogException("Catalog is closed.");
     }
+    LOGGER.info("Name of function: " + name);
+    LOGGER.info("input schema " + inputSchema);
+    LOGGER.info("output schema " + outputSchema);
 
     try {
       queue.execute(new SQLiteJob<Void>() {
@@ -1672,54 +1711,26 @@ public final class MasterCatalog {
         protected Void job(final SQLiteConnection sqliteConnection) throws CatalogException, SQLiteException,
             IOException {
           try {
-            long udf_id = sqliteConnection.getLastInsertId();
             /* First register the UDF */
+            // surround delete and insert in a transaction:
+
+            deleteFunctionIfExists(sqliteConnection, name, false);
+
             SQLiteStatement statement =
                 sqliteConnection
-                    .prepare("INSERT INTO registered_udfs (udf_id, udf_name, udf_definition, udf_language, udf_binary) VALUES (?,?,?,?,?);");
+                    .prepare("INSERT INTO registered_udfs ( udf_name, udf_definition, udf_language, udf_binary, udf_outputSchema, udf_inputSchema) VALUES (?,?,?,?,?,?);");
 
-            statement.bind(1, udf_id);
-            statement.bind(2, name);
-            statement.bind(3, text);
-            statement.bind(4, lang.toString());
+            statement.bind(1, name);
+            statement.bind(2, text);
+            statement.bind(3, lang.ordinal());
             if (binary != null) {
               // send the base64 string as string
-              statement.bind(5, binary);
+              statement.bind(4, binary);
             }
+            statement.bind(5, outputSchema.toString());
+            statement.bind(6, inputSchema.toString());
 
             statement.stepThrough();
-            statement.dispose();
-            statement = null;
-
-            /* Second, populate the Schema */
-            statement =
-                sqliteConnection
-                    .prepare("INSERT INTO udf_schema(udf_name,udf_input, udf_output,col_index,col_name,col_type) "
-                        + "VALUES (?,?,?,?,?,?);");
-            statement.bind(1, name);
-
-            // output schema
-            for (int i = 0; i < outputSchema.numColumns(); ++i) {
-              statement.bind(2, 0);
-              statement.bind(3, 1);// output schema
-              statement.bind(4, i);
-              statement.bind(5, outputSchema.getColumnName(i));
-              statement.bind(6, outputSchema.getColumnType(i).toString());
-              statement.step();
-              statement.reset(false);
-            }
-            // input schema
-            if (inputSchema != null) {
-              for (int i = 0; i < inputSchema.numColumns(); ++i) {
-                statement.bind(2, 1);// input schema
-                statement.bind(3, 0);
-                statement.bind(4, i);
-                statement.bind(5, inputSchema.getColumnName(i));
-                statement.bind(6, inputSchema.getColumnType(i).toString());
-                statement.step();
-                statement.reset(false);
-              }
-            }
             statement.dispose();
             statement = null;
 
