@@ -24,10 +24,10 @@ public class FunctionStatus {
    */
   @JsonCreator
   public FunctionStatus(@JsonProperty("name") final String name, @JsonProperty("inputSchema") final String inputSchema,
-      @JsonProperty("outputSchema") final String outputSchema, @JsonProperty("text") final String text,
+      @JsonProperty("outputType") final String outputType, @JsonProperty("text") final String text,
       @JsonProperty("lang") final MyriaConstants.FunctionLanguage lang) {
     this.name = name;
-    this.outputSchema = outputSchema;
+    this.outputType = outputType;
     this.inputSchema = inputSchema;
     this.text = text;
     this.lang = lang;
@@ -39,7 +39,7 @@ public class FunctionStatus {
   private final String name;
   /** The {@link Schema} of the output tuples to the function. */
   @JsonProperty
-  private final String outputSchema;
+  private final String outputType;
   /** The {@link Schema} of the input tuples to the function. */
   @JsonProperty
   private final String inputSchema;
@@ -62,8 +62,8 @@ public class FunctionStatus {
   /**
    * @return The {@link Schema} of the output tuples in the function.
    */
-  public String getOutputSchema() {
-    return outputSchema;
+  public String getOutputType() {
+    return outputType;
   }
 
   /**

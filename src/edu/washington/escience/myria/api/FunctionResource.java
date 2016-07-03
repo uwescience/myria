@@ -77,8 +77,7 @@ public class FunctionResource {
     try {
       queryId =
           server.createFunction(encoding.name, encoding.text, encoding.lang, encoding.workers, encoding.binary,
-              encoding.inputSchema, encoding.outputSchema);
-
+              encoding.inputSchema, encoding.outputType);
     } catch (Exception e) {
       throw new DbException();
     }

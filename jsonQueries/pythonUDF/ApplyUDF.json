@@ -17,6 +17,7 @@
         "rootExpressionOperator": {
           "type": "PYUDF",
           "name": "denoise",
+          "outputType":"BYTES_TYPE",
           "left": {
             "type": "VARIABLE",
             "columnIdx": 1

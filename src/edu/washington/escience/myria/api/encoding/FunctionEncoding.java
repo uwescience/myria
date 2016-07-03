@@ -19,7 +19,7 @@ public class FunctionEncoding extends MyriaApiEncoding {
   @Required
   public MyriaConstants.FunctionLanguage lang;
   @Required
-  public Schema outputSchema;
+  public String outputType;
   @Required
   public Schema inputSchema;
 

@@ -1694,7 +1694,7 @@ public final class MasterCatalog {
    */
 
   public void registerFunction(@Nonnull final String name, @Nonnull final String text, final Schema inputSchema,
-      @Nonnull final Schema outputSchema, final MyriaConstants.FunctionLanguage lang, final String binary)
+      @Nonnull final String outputType, final MyriaConstants.FunctionLanguage lang, final String binary)
       throws CatalogException {
 
     if (isClosed) {
@@ -1702,7 +1702,7 @@ public final class MasterCatalog {
     }
     LOGGER.info("Name of function: " + name);
     LOGGER.info("input schema " + inputSchema);
-    LOGGER.info("output schema " + outputSchema);
+    LOGGER.info("output schema " + outputType);
 
     try {
       queue.execute(new SQLiteJob<Void>() {
@@ -1727,7 +1727,7 @@ public final class MasterCatalog {
               // send the base64 string as string
               statement.bind(4, binary);
             }
-            statement.bind(5, outputSchema.toString());
+            statement.bind(5, outputType);
             statement.bind(6, inputSchema.toString());
 
             statement.stepThrough();

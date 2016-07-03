@@ -1150,7 +1150,7 @@ public final class Server {
    * @throws IOException
    */
   public long createFunction(final String name, final String text, final MyriaConstants.FunctionLanguage lang,
-      final Set<Integer> workers, final String binary, final Schema inputSchema, final Schema outputSchema)
+      final Set<Integer> workers, final String binary, final Schema inputSchema, final String outputType)
       throws DbException, InterruptedException, IOException {
     long queryID = 0;
     if (binary != null) {
@@ -1169,7 +1169,7 @@ public final class Server {
     try {
       LOGGER.info("trying to register UDF");
 
-      catalog.registerFunction(name, text, inputSchema, outputSchema, lang, binary);
+      catalog.registerFunction(name, text, inputSchema, outputType, lang, binary);
 
     } catch (CatalogException e) {
       LOGGER.info(e.toString());
