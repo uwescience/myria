@@ -53,15 +53,22 @@ public class UriSource implements DataSource, Serializable {
     /* Force using the Hadoop S3A FileSystem */
     if (parsedUri.getScheme().equals("s3")) {
       parsedUri =
-          new URI("s3a", parsedUri.getUserInfo(), parsedUri.getHost(), parsedUri.getPort(), parsedUri.getPath(),
-              parsedUri.getQuery(), parsedUri.getFragment());
+          new URI(
+              "s3a",
+              parsedUri.getUserInfo(),
+              parsedUri.getHost(),
+              parsedUri.getPort(),
+              parsedUri.getPath(),
+              parsedUri.getQuery(),
+              parsedUri.getFragment());
     }
   }
 
   @Override
   public InputStream getInputStream() throws IOException {
-    return (parsedUri.getScheme().equals("http") || parsedUri.getScheme().equals("https")) ? parsedUri.toURL()
-        .openConnection().getInputStream() : getHadoopFileSystemInputStream(parsedUri);
+    return (parsedUri.getScheme().equals("http") || parsedUri.getScheme().equals("https"))
+        ? parsedUri.toURL().openConnection().getInputStream()
+        : getHadoopFileSystemInputStream(parsedUri);
   }
 
   /**
@@ -87,5 +94,4 @@ public class UriSource implements DataSource, Serializable {
 
     return new SequenceInputStream(java.util.Collections.enumeration(streams));
   }
-
 }

@@ -23,7 +23,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.MoreObjects;
 
 /**
- * 
+ *
  */
 @NotThreadSafe
 public class AmazonS3Source implements DataSource, Serializable {
@@ -31,7 +31,8 @@ public class AmazonS3Source implements DataSource, Serializable {
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
   /** The logger for debug, trace, etc. messages in this class. */
-  private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(AmazonS3Source.class);
+  private static final org.slf4j.Logger LOGGER =
+      org.slf4j.LoggerFactory.getLogger(AmazonS3Source.class);
 
   private final URI s3Uri;
   private transient ClientConfiguration clientConfig;
@@ -45,14 +46,17 @@ public class AmazonS3Source implements DataSource, Serializable {
   private final String key;
 
   @JsonCreator
-  public AmazonS3Source(@JsonProperty(value = "uri", required = true) final String uri) throws URIException {
+  public AmazonS3Source(@JsonProperty(value = "uri", required = true) final String uri)
+      throws URIException {
     this(uri, null, null);
   }
 
   @JsonCreator
-  public AmazonS3Source(@JsonProperty(value = "uri", required = true) final String uri,
+  public AmazonS3Source(
+      @JsonProperty(value = "uri", required = true) final String uri,
       @Nullable @JsonProperty(value = "startRange", required = false) final Long startRange,
-      @Nullable @JsonProperty(value = "endRange", required = false) final Long endRange) throws URIException {
+      @Nullable @JsonProperty(value = "endRange", required = false) final Long endRange)
+      throws URIException {
     s3Uri = URI.create(Objects.requireNonNull(uri, "Parameter uri to UriSource may not be null"));
     if (!s3Uri.getScheme().equals("s3")) {
       throw new URIException("URI must contain an S3 scheme");

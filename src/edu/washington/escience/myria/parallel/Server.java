@@ -32,7 +32,6 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.inject.Inject;
 
-
 import org.apache.commons.httpclient.URIException;
 import org.apache.commons.io.FilenameUtils;
 
@@ -926,16 +925,22 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
 
   /**
    * Parallel Ingest
-   * 
+   *
    * @param relationKey the name of the dataset.
    * @param workersToIngest restrict the workers to ingest data (null for all)
    * @throws URIException
    * @throws DbException
    * @throws InterruptedException
    */
-  public DatasetStatus parallelIngestDataset(final RelationKey relationKey, final Schema schema,
-      @Nullable final Character delimiter, @Nullable final Character quote, @Nullable final Character escape,
-      @Nullable final Integer numberOfSkippedLines, final String S3URI, final Set<Integer> workersToIngest)
+  public DatasetStatus parallelIngestDataset(
+      final RelationKey relationKey,
+      final Schema schema,
+      @Nullable final Character delimiter,
+      @Nullable final Character quote,
+      @Nullable final Character escape,
+      @Nullable final Integer numberOfSkippedLines,
+      final String S3URI,
+      final Set<Integer> workersToIngest)
       throws URIException, DbException, InterruptedException {
     /* Figure out the workers we will use */
 
@@ -977,7 +982,15 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
       long endRange = startRange + partitionSize;
 
       CSVFileScanFragment scanFragment =
-          new CSVFileScanFragment(s3Source, schema, startRange, endRange, isLastWorker, delimiter, quote, escape,
+          new CSVFileScanFragment(
+              s3Source,
+              schema,
+              startRange,
+              endRange,
+              isLastWorker,
+              delimiter,
+              quote,
+              escape,
               numberOfSkippedLines);
       workerPlans.put(workerID, new SubQueryPlan(new DbInsert(scanFragment, relationKey, true)));
       workerCounterID++;
@@ -986,8 +999,12 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
     ListenableFuture<Query> qf;
     try {
       qf =
-          queryManager.submitQuery("ingest " + relationKey.toString(), "ingest " + relationKey.toString(), "ingest "
-              + relationKey.toString(getDBMS()), new SubQueryPlan(new SinkRoot(new EOSSource())), workerPlans);
+          queryManager.submitQuery(
+              "ingest " + relationKey.toString(),
+              "ingest " + relationKey.toString(),
+              "ingest " + relationKey.toString(getDBMS()),
+              new SubQueryPlan(new SinkRoot(new EOSSource())),
+              workerPlans);
     } catch (CatalogException e) {
       throw new DbException("Error submitting query", e);
     }

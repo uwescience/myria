@@ -33,7 +33,7 @@ import edu.washington.escience.myria.storage.TupleBatchBuffer;
 import edu.washington.escience.myria.util.DateTimeUtils;
 
 /**
- * 
+ *
  */
 public class CSVFileScanFragment extends LeafOperator {
 
@@ -72,38 +72,88 @@ public class CSVFileScanFragment extends LeafOperator {
   /**
    * The logger for debug, trace, etc. messages in this class.
    */
-  private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(CSVFileScanFragment.class);
+  private static final org.slf4j.Logger LOGGER =
+      org.slf4j.LoggerFactory.getLogger(CSVFileScanFragment.class);
 
-  public CSVFileScanFragment(final String filename, final Schema schema, final long startByteRange,
-      final long endByteRange, final boolean isLastWorker) {
+  public CSVFileScanFragment(
+      final String filename,
+      final Schema schema,
+      final long startByteRange,
+      final long endByteRange,
+      final boolean isLastWorker) {
     this(filename, schema, startByteRange, endByteRange, isLastWorker, null, null, null, null);
   }
 
-  public CSVFileScanFragment(final DataSource source, final Schema schema, final long startByteRange,
-      final long endByteRange, final boolean isLastWorker) {
+  public CSVFileScanFragment(
+      final DataSource source,
+      final Schema schema,
+      final long startByteRange,
+      final long endByteRange,
+      final boolean isLastWorker) {
     this(source, schema, startByteRange, endByteRange, isLastWorker, null, null, null, null);
   }
 
-  public CSVFileScanFragment(final String filename, final Schema schema, final long startByteRange,
-      final long endByteRange, final boolean isLastWorker, final Character delimiter) {
-    this(new FileSource(filename), schema, startByteRange, endByteRange, isLastWorker, delimiter, null, null, null);
+  public CSVFileScanFragment(
+      final String filename,
+      final Schema schema,
+      final long startByteRange,
+      final long endByteRange,
+      final boolean isLastWorker,
+      final Character delimiter) {
+    this(
+        new FileSource(filename),
+        schema,
+        startByteRange,
+        endByteRange,
+        isLastWorker,
+        delimiter,
+        null,
+        null,
+        null);
   }
 
-  public CSVFileScanFragment(final DataSource source, final Schema schema, final long startByteRange,
-      final long endByteRange, final boolean isLastWorker, final Character delimiter) {
+  public CSVFileScanFragment(
+      final DataSource source,
+      final Schema schema,
+      final long startByteRange,
+      final long endByteRange,
+      final boolean isLastWorker,
+      final Character delimiter) {
     this(source, schema, startByteRange, endByteRange, isLastWorker, delimiter, null, null, null);
   }
 
-  public CSVFileScanFragment(final String filename, final Schema schema, final long startByteRange,
-      final long endByteRange, final boolean isLastWorker, @Nullable final Character delimiter,
-      @Nullable final Character quote, @Nullable final Character escape, @Nullable final Integer numberOfSkippedLines) {
-    this(new FileSource(filename), schema, startByteRange, endByteRange, isLastWorker, delimiter, quote, escape,
+  public CSVFileScanFragment(
+      final String filename,
+      final Schema schema,
+      final long startByteRange,
+      final long endByteRange,
+      final boolean isLastWorker,
+      @Nullable final Character delimiter,
+      @Nullable final Character quote,
+      @Nullable final Character escape,
+      @Nullable final Integer numberOfSkippedLines) {
+    this(
+        new FileSource(filename),
+        schema,
+        startByteRange,
+        endByteRange,
+        isLastWorker,
+        delimiter,
+        quote,
+        escape,
         numberOfSkippedLines);
   }
 
-  public CSVFileScanFragment(final DataSource source, final Schema schema, final long partitionStartByteRange,
-      final long partitionEndByteRange, final boolean isLastWorker, @Nullable final Character delimiter,
-      @Nullable final Character quote, @Nullable final Character escape, @Nullable final Integer numberOfSkippedLines) {
+  public CSVFileScanFragment(
+      final DataSource source,
+      final Schema schema,
+      final long partitionStartByteRange,
+      final long partitionEndByteRange,
+      final boolean isLastWorker,
+      @Nullable final Character delimiter,
+      @Nullable final Character quote,
+      @Nullable final Character escape,
+      @Nullable final Integer numberOfSkippedLines) {
     this.source = (AmazonS3Source) Preconditions.checkNotNull(source, "source");
     this.schema = Preconditions.checkNotNull(schema, "schema");
 
@@ -115,7 +165,6 @@ public class CSVFileScanFragment extends LeafOperator {
     this.partitionStartByteRange = partitionStartByteRange;
     this.partitionEndByteRange = partitionEndByteRange;
     this.isLastWorker = isLastWorker;
-
   }
 
   @Override
@@ -143,7 +192,9 @@ public class CSVFileScanFragment extends LeafOperator {
       CSVRecord record = iterator.next();
       // This covers the case where the first row of a worker matches the schema. We only want to read this row if the
       // previous character is '\n' or '\r'
-      if (record.size() == schema.numColumns() && lineNumber - 1 == 0 && partitionStartByteRange != 0) {
+      if (record.size() == schema.numColumns()
+          && lineNumber - 1 == 0
+          && partitionStartByteRange != 0) {
         InputStreamReader startStreamReader = new InputStreamReader(partitionInputStream);
         char currentChar = (char) startStreamReader.read();
         if (currentChar != '\n' && currentChar != '\r') {
@@ -159,7 +210,8 @@ public class CSVFileScanFragment extends LeafOperator {
         while (!newLineFound) {
           movingEndByte += MyriaConstants.BYTE_OVERLAP_PARALLEL_INGEST;
           // Create a stream to look for the new line
-          InputStream trailingEndInputStream = source.getInputStream(partitionEndByteRange, movingEndByte);
+          InputStream trailingEndInputStream =
+              source.getInputStream(partitionEndByteRange, movingEndByte);
           InputStreamReader startStreamReader = new InputStreamReader(trailingEndInputStream);
           int dataChar = startStreamReader.read();
           while (dataChar != -1) {
@@ -169,11 +221,16 @@ public class CSVFileScanFragment extends LeafOperator {
               // Re-initialize the parser with the last row only
               InputStream beginningOfRecord =
                   source.getInputStream(bytePositionAtBeginningOfRecord, partitionEndByteRange);
-              InputStream concatenateEndOfRecord = source.getInputStream(partitionEndByteRange + 1, movingEndByte);
-              partitionInputStream = new SequenceInputStream(beginningOfRecord, concatenateEndOfRecord);
+              InputStream concatenateEndOfRecord =
+                  source.getInputStream(partitionEndByteRange + 1, movingEndByte);
+              partitionInputStream =
+                  new SequenceInputStream(beginningOfRecord, concatenateEndOfRecord);
               parser =
-                  new CSVParser(new BufferedReader(new InputStreamReader(partitionInputStream)), CSVFormat.newFormat(
-                      delimiter).withQuote(quote).withEscape(escape), bytePositionAtBeginningOfRecord, 0);
+                  new CSVParser(
+                      new BufferedReader(new InputStreamReader(partitionInputStream)),
+                      CSVFormat.newFormat(delimiter).withQuote(quote).withEscape(escape),
+                      bytePositionAtBeginningOfRecord,
+                      0);
               iterator = parser.iterator();
               onLastRow = true;
               record = iterator.next();
@@ -194,11 +251,13 @@ public class CSVFileScanFragment extends LeafOperator {
             partitionStartByteRange += bytePositionAtBeginningOfRecord;
           }
           partitionEndByteRange += byteOverlap;
-          InputStream overlapStream = source.getInputStream(partitionStartByteRange, partitionEndByteRange);
+          InputStream overlapStream =
+              source.getInputStream(partitionStartByteRange, partitionEndByteRange);
           partitionInputStream = new SequenceInputStream(partitionInputStream, overlapStream);
           parser =
-              new CSVParser(new BufferedReader(new InputStreamReader(partitionInputStream)), CSVFormat.newFormat(
-                  delimiter).withQuote(quote).withEscape(escape));
+              new CSVParser(
+                  new BufferedReader(new InputStreamReader(partitionInputStream)),
+                  CSVFormat.newFormat(delimiter).withQuote(quote).withEscape(escape));
           iterator = parser.iterator();
           byteOverlap *= 2;
         } else {
@@ -236,22 +295,27 @@ public class CSVFileScanFragment extends LeafOperator {
                 break;
             }
           } catch (final IllegalArgumentException e) {
-            throw new DbException("Error parsing column " + column + " of row " + lineNumber + ", expected type: "
-                + schema.getColumnType(column) + ", scanned value: " + cell, e);
+            throw new DbException(
+                "Error parsing column "
+                    + column
+                    + " of row "
+                    + lineNumber
+                    + ", expected type: "
+                    + schema.getColumnType(column)
+                    + ", scanned value: "
+                    + cell,
+                e);
           }
           if (onLastRow) {
             parser.close();
-
           }
         }
       }
-
     }
 
     LOGGER.debug("Scanned {} input lines", lineNumber - lineNumberBegin);
 
     return buffer.popAny();
-
   }
 
   @Override
@@ -277,8 +341,9 @@ public class CSVFileScanFragment extends LeafOperator {
       }
       partitionInputStream = source.getInputStream(partitionStartByteRange, partitionEndByteRange);
       parser =
-          new CSVParser(new BufferedReader(new InputStreamReader(partitionInputStream)), CSVFormat.newFormat(delimiter)
-              .withQuote(quote).withEscape(escape));
+          new CSVParser(
+              new BufferedReader(new InputStreamReader(partitionInputStream)),
+              CSVFormat.newFormat(delimiter).withQuote(quote).withEscape(escape));
       iterator = parser.iterator();
       for (int i = 0; i < numberOfSkippedLines; i++) {
         iterator.next();
