@@ -142,22 +142,20 @@ public class CSVFileScanFragment extends LeafOperator {
       }
       CSVRecord record = iterator.next();
       // This covers the case where the first row of a worker matches the schema. We only want to read this row if the
-      // previous character is '\n'
+      // previous character is '\n' or '\r'
       if (record.size() == schema.numColumns() && lineNumber - 1 == 0 && partitionStartByteRange != 0) {
-        InputStreamReader startStreamReader =
-            new InputStreamReader(source.getInputStream(partitionStartByteRange - 1, partitionStartByteRange));
+        InputStreamReader startStreamReader = new InputStreamReader(partitionInputStream);
         char currentChar = (char) startStreamReader.read();
-        if (currentChar != '\n') {
+        if (currentChar != '\n' && currentChar != '\r') {
           discardedRecord = true;
         }
       }
-      // This covers the case where the last row matches the schema. We need to ensure that we read the entire row
-      // completely
+      // This covers the case where the last row matches the schema's number of columns. We need to ensure that we read
+      // the entire row completely
       else if (record.size() == schema.numColumns() && !iterator.hasNext() && !isLastWorker) {
         long movingEndByte = partitionEndByteRange;
         long bytePositionAtBeginningOfRecord = record.getCharacterPosition();
         boolean newLineFound = false;
-
         while (!newLineFound) {
           movingEndByte += MyriaConstants.BYTE_OVERLAP_PARALLEL_INGEST;
           // Create a stream to look for the new line
@@ -166,7 +164,7 @@ public class CSVFileScanFragment extends LeafOperator {
           int dataChar = startStreamReader.read();
           while (dataChar != -1) {
             char currentChar = (char) dataChar;
-            if (currentChar == '\n') {
+            if (currentChar == '\n' || currentChar == '\r') {
               newLineFound = true;
               // Re-initialize the parser with the last row only
               InputStream beginningOfRecord =
@@ -186,7 +184,7 @@ public class CSVFileScanFragment extends LeafOperator {
           startStreamReader.close();
         }
       }
-      // This is a partial fragment, need to read more bytes
+      // This is a partial fragment, columns are missing and we need to read more bytes
       if (record.size() < schema.numColumns()) {
         if (lineNumber - 1 != 0 && !isLastWorker) {
           onLastRow = true;
@@ -273,6 +271,10 @@ public class CSVFileScanFragment extends LeafOperator {
   protected void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
     buffer = new TupleBatchBuffer(getSchema());
     try {
+      // (Optimization) Read the preceding byte if this is not the first worker
+      if (partitionStartByteRange != 0) {
+        partitionStartByteRange = partitionStartByteRange - 1;
+      }
       partitionInputStream = source.getInputStream(partitionStartByteRange, partitionEndByteRange);
       parser =
           new CSVParser(new BufferedReader(new InputStreamReader(partitionInputStream)), CSVFormat.newFormat(delimiter)

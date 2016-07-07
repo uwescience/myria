@@ -161,20 +161,20 @@ public class ParallelIngestS3Test extends SystemTestBase {
   /**
    * With two workers, this covers the case where Worker #1 has a long string on the last row
    **/
-  public void truncatedEndFragmentTest() throws Exception {
-    String endTrailAddress = "s3://myria-test/TestLongEndTrail.txt";
+  public void truncatedEndFragmentTestLF() throws Exception {
+    String endTrailAddress = "s3://myria-test/TestLongEndTrail_nlines.txt";
     Schema endTrailSchema =
         Schema.ofFields("x", Type.INT_TYPE, "y", Type.INT_TYPE, "z", Type.INT_TYPE, "a", Type.INT_TYPE, "w",
             Type.STRING_TYPE);
 
     /* Ingest in parallel */
-    RelationKey relationKeyParallelIngest = RelationKey.of("public", "adhoc", "endParallel");
+    RelationKey relationKeyParallelIngest = RelationKey.of("public", "adhoc", "endParallel_nlines");
     server.parallelIngestDataset(relationKeyParallelIngest, endTrailSchema, ',', null, null, 0, endTrailAddress, server
         .getAliveWorkers());
     assertEquals(4, server.getDatasetStatus(relationKeyParallelIngest).getNumTuples());
 
     /* Ingest the through the coordinator */
-    RelationKey relationKeyCoordinatorIngest = RelationKey.of("public", "adhoc", "endCoordinator");
+    RelationKey relationKeyCoordinatorIngest = RelationKey.of("public", "adhoc", "endCoordinator_nlines");
     server.ingestDataset(relationKeyCoordinatorIngest, server.getAliveWorkers(), null, new FileScan(new UriSource(
         endTrailAddress), endTrailSchema, ',', null, null, 0), new RoundRobinPartitionFunction(workerIDs.length));
     assertEquals(4, server.getDatasetStatus(relationKeyCoordinatorIngest).getNumTuples());
@@ -183,24 +183,112 @@ public class ParallelIngestS3Test extends SystemTestBase {
 
   @Test
   /**
+   * Test for truncated end for carriage return
+   **/
+  public void truncatedEndFragmentCR() throws Exception {
+    String fileAddress = "s3://myria-test/TestLongEndTrail_rlines.txt";
+    Schema fileSchema =
+        Schema.ofFields("x", Type.INT_TYPE, "y", Type.INT_TYPE, "z", Type.INT_TYPE, "a", Type.INT_TYPE, "w",
+            Type.STRING_TYPE);
+
+    /* Ingest in parallel */
+    RelationKey relationKeyParallelIngest = RelationKey.of("public", "adhoc", "endParallel_rlines");
+    server.parallelIngestDataset(relationKeyParallelIngest, fileSchema, ',', null, null, 0, fileAddress, server
+        .getAliveWorkers());
+    assertEquals(4, server.getDatasetStatus(relationKeyParallelIngest).getNumTuples());
+
+    /* Ingest the through the coordinator */
+    RelationKey relationKeyCoordinatorIngest = RelationKey.of("public", "adhoc", "endCoordinator_rlines");
+    server.ingestDataset(relationKeyCoordinatorIngest, server.getAliveWorkers(), null, new FileScan(new UriSource(
+        fileAddress), fileSchema, ',', null, null, 0), new RoundRobinPartitionFunction(workerIDs.length));
+    assertEquals(4, server.getDatasetStatus(relationKeyCoordinatorIngest).getNumTuples());
+    diffHelperMethod(relationKeyParallelIngest, relationKeyCoordinatorIngest, fileSchema);
+
+  }
+
+  @Test
+  /**
+   * Test for truncated end for carriage return and line feed
+   **/
+  public void truncatedEndFragmentCRLF() throws Exception {
+    String fileAddress = "s3://myria-test/TestLongEndTrail_rnlines.txt";
+    Schema fileSchema =
+        Schema.ofFields("x", Type.INT_TYPE, "y", Type.INT_TYPE, "z", Type.INT_TYPE, "a", Type.INT_TYPE, "w",
+            Type.STRING_TYPE);
+
+    /* Ingest in parallel */
+    RelationKey relationKeyParallelIngest = RelationKey.of("public", "adhoc", "endParallel_rnlines");
+    server.parallelIngestDataset(relationKeyParallelIngest, fileSchema, ',', null, null, 0, fileAddress, server
+        .getAliveWorkers());
+    assertEquals(4, server.getDatasetStatus(relationKeyParallelIngest).getNumTuples());
+
+    /* Ingest the through the coordinator */
+    RelationKey relationKeyCoordinatorIngest = RelationKey.of("public", "adhoc", "endCoordinator_rnlines");
+    server.ingestDataset(relationKeyCoordinatorIngest, server.getAliveWorkers(), null, new FileScan(new UriSource(
+        fileAddress), fileSchema, ',', null, null, 0), new RoundRobinPartitionFunction(workerIDs.length));
+    assertEquals(4, server.getDatasetStatus(relationKeyCoordinatorIngest).getNumTuples());
+    diffHelperMethod(relationKeyParallelIngest, relationKeyCoordinatorIngest, fileSchema);
+  }
+
+  @Test
+  /**
    * Testing a perfect split case
    **/
-  public void perfectRowSplit() throws Exception {
-    String perfectSplitAddress = "s3://myria-test/PerfectSplit.txt";
+  public void perfectRowSplitLF() throws Exception {
+    String perfectSplitAddress = "s3://myria-test/PerfectSplit_nlines.txt";
     Schema perfectSplitSchema = Schema.ofFields("x", Type.INT_TYPE, "w", Type.STRING_TYPE);
 
     /* Ingest in parallel */
-    RelationKey relationKeyParallelIngest = RelationKey.of("public", "adhoc", "endParallel");
+    RelationKey relationKeyParallelIngest = RelationKey.of("public", "adhoc", "perfectParallel_nlines");
     server.parallelIngestDataset(relationKeyParallelIngest, perfectSplitSchema, ',', null, null, 0,
         perfectSplitAddress, server.getAliveWorkers());
     assertEquals(4, server.getDatasetStatus(relationKeyParallelIngest).getNumTuples());
 
     /* Ingest the through the coordinator */
-    RelationKey relationKeyCoordinatorIngest = RelationKey.of("public", "adhoc", "endCoordinator");
+    RelationKey relationKeyCoordinatorIngest = RelationKey.of("public", "adhoc", "perfectCoordinator_nlines");
     server.ingestDataset(relationKeyCoordinatorIngest, server.getAliveWorkers(), null, new FileScan(new UriSource(
         perfectSplitAddress), perfectSplitSchema, ',', null, null, 0),
         new RoundRobinPartitionFunction(workerIDs.length));
     assertEquals(4, server.getDatasetStatus(relationKeyCoordinatorIngest).getNumTuples());
     diffHelperMethod(relationKeyParallelIngest, relationKeyCoordinatorIngest, perfectSplitSchema);
   }
+
+  @Test
+  public void perfectRowSplitCR() throws Exception {
+    String fileAddress = "s3://myria-test/PerfectSplit_rlines.txt";
+    Schema fileSchema = Schema.ofFields("x", Type.INT_TYPE, "w", Type.STRING_TYPE);
+
+    /* Ingest in parallel */
+    RelationKey relationKeyParallelIngest = RelationKey.of("public", "adhoc", "perfectParallel_rlines");
+    server.parallelIngestDataset(relationKeyParallelIngest, fileSchema, ',', null, null, 0, fileAddress, server
+        .getAliveWorkers());
+    assertEquals(4, server.getDatasetStatus(relationKeyParallelIngest).getNumTuples());
+
+    /* Ingest the through the coordinator */
+    RelationKey relationKeyCoordinatorIngest = RelationKey.of("public", "adhoc", "perfectCoordinator_rlines");
+    server.ingestDataset(relationKeyCoordinatorIngest, server.getAliveWorkers(), null, new FileScan(new UriSource(
+        fileAddress), fileSchema, ',', null, null, 0), new RoundRobinPartitionFunction(workerIDs.length));
+    assertEquals(4, server.getDatasetStatus(relationKeyCoordinatorIngest).getNumTuples());
+    diffHelperMethod(relationKeyParallelIngest, relationKeyCoordinatorIngest, fileSchema);
+  }
+
+  @Test
+  public void perfectRowSplitCRLF() throws Exception {
+    String fileAddress = "s3://myria-test/PerfectSplit_rnlines.txt";
+    Schema fileSchema = Schema.ofFields("x", Type.INT_TYPE, "w", Type.STRING_TYPE);
+
+    /* Ingest in parallel */
+    RelationKey relationKeyParallelIngest = RelationKey.of("public", "adhoc", "perfectParallel_rnlines");
+    server.parallelIngestDataset(relationKeyParallelIngest, fileSchema, ',', null, null, 0, fileAddress, server
+        .getAliveWorkers());
+    assertEquals(4, server.getDatasetStatus(relationKeyParallelIngest).getNumTuples());
+
+    /* Ingest the through the coordinator */
+    RelationKey relationKeyCoordinatorIngest = RelationKey.of("public", "adhoc", "perfectCoordinator_rnlines");
+    server.ingestDataset(relationKeyCoordinatorIngest, server.getAliveWorkers(), null, new FileScan(new UriSource(
+        fileAddress), fileSchema, ',', null, null, 0), new RoundRobinPartitionFunction(workerIDs.length));
+    assertEquals(4, server.getDatasetStatus(relationKeyCoordinatorIngest).getNumTuples());
+    diffHelperMethod(relationKeyParallelIngest, relationKeyCoordinatorIngest, fileSchema);
+  }
+
 }
