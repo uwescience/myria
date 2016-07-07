@@ -32,7 +32,7 @@ public class BinaryTupleReader implements TupleReader {
   private transient DataInput dataInput;
 
   /**
-   * Construct a new BinaryFileScan object that reads the given binary file and creates tuples from the file data that
+   * Construct a new BinaryTupleReader object that reads the given binary file and creates tuples from the file data that
    * has the given schema. The default endianess is big endian.
    *
    * @param schema The tuple schema to be used for creating tuple from the binary file's data.
@@ -42,7 +42,7 @@ public class BinaryTupleReader implements TupleReader {
   }
 
   /**
-   * Construct a new BinaryFileScan object that reads the given binary file and create tuples from the file data that
+   * Construct a new BinaryTupleReader object that reads the given binary file and create tuples from the file data that
    * has the given schema. The endianess of the binary file is indicated by the isLittleEndian flag.
    *
    * @param schema The tuple schema to be used for creating tuple from the binary file's data.
@@ -94,7 +94,7 @@ public class BinaryTupleReader implements TupleReader {
               break;
             default:
               throw new UnsupportedOperationException(
-                  "BinaryFileScan only support reading fixed width type from the binary file.");
+                  "BinaryTupleReader only support reading fixed width type from the binary file.");
           }
           building = true;
         }
