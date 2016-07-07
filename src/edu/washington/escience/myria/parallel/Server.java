@@ -972,16 +972,8 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
                 new DbDelete(EmptyRelation.of(catalog.getSchema(relationKey)), relationKey, null)));
       }
       ListenableFuture<Query> qf =
-<<<<<<< HEAD
-          queryManager.submitQuery(
-              "delete " + relationKey.toString(),
-              "delete " + relationKey.toString(),
-              "deleting from " + relationKey.toString(getDBMS()),
-              new SubQueryPlan(new SinkRoot(new EOSSource())),
-=======
           queryManager.submitQuery("delete " + relationKey.toString(), "delete " + relationKey.toString(),
               "deleting from " + relationKey.toString(getDBMS()), new SubQueryPlan(new EmptySink(new EOSSource())),
->>>>>>> clean up and renaming
               workerPlans);
       try {
         qf.get();
@@ -1032,29 +1024,12 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
                 relationKey.getProgramName(),
                 relationKey.getRelationName());
         DataSink workerSink = new UriSink(partitionName);
-<<<<<<< HEAD
-        workerPlans.put(
-            workerId,
-            new SubQueryPlan(
-                new DataOutput(
-                    new DbQueryScan(relationKey, getSchema(relationKey)),
-                    new PostgresBinaryTupleWriter(),
-                    workerSink)));
-      }
-      ListenableFuture<Query> qf =
-          queryManager.submitQuery(
-              "persist " + relationKey.toString(),
-              "persist " + relationKey.toString(),
-              "persisting from " + relationKey.toString(getDBMS()),
-              new SubQueryPlan(new SinkRoot(new EOSSource())),
-=======
         workerPlans.put(workerId, new SubQueryPlan(new TupleSink(new DbQueryScan(relationKey, getSchema(relationKey)),
             new PostgresBinaryTupleWriter(), workerSink)));
       }
       ListenableFuture<Query> qf =
           queryManager.submitQuery("persist " + relationKey.toString(), "persist " + relationKey.toString(),
               "persisting from " + relationKey.toString(getDBMS()), new SubQueryPlan(new EmptySink(new EOSSource())),
->>>>>>> clean up and renaming
               workerPlans.build());
       try {
         queryID = qf.get().getQueryId();
@@ -1258,14 +1233,8 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
     }
 
     /* Construct the master plan. */
-<<<<<<< HEAD
-    final CollectConsumer consumer =
-        new CollectConsumer(schema, operatorId, ImmutableSet.copyOf(scanWorkers));
-    final DataOutput output = new DataOutput(consumer, writer, dataSink);
-=======
     final CollectConsumer consumer = new CollectConsumer(schema, operatorId, ImmutableSet.copyOf(scanWorkers));
     TupleSink output = new TupleSink(consumer, writer, dataSink);
->>>>>>> clean up and renaming
     final SubQueryPlan masterPlan = new SubQueryPlan(output);
 
     /* Submit the plan for the download. */
@@ -1318,14 +1287,8 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
     }
 
     /* Construct the master plan. */
-<<<<<<< HEAD
-    final CollectConsumer consumer =
-        new CollectConsumer(schema, operatorId, ImmutableSet.copyOf(scanWorkers));
-    DataOutput output = new DataOutput(consumer, writer, dataSink);
-=======
     final CollectConsumer consumer = new CollectConsumer(schema, operatorId, ImmutableSet.copyOf(scanWorkers));
     TupleSink output = new TupleSink(consumer, writer, dataSink);
->>>>>>> clean up and renaming
     final SubQueryPlan masterPlan = new SubQueryPlan(output);
 
     /* Submit the plan for the download. */
