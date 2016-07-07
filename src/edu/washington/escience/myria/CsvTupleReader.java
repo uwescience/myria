@@ -186,7 +186,7 @@ public class CsvTupleReader implements TupleReader {
   }
 
   @Override
-  public void done() throws IOException {
+  public void close() throws IOException {
     parser = null;
     while (buffer.numTuples() > 0) {
       buffer.popAny();

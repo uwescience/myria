@@ -19,7 +19,6 @@ import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.TupleReader;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.api.encoding.CrossWithSingletonEncoding;
-import edu.washington.escience.myria.api.encoding.TupleSourceEncoding;
 import edu.washington.escience.myria.api.encoding.DbInsertEncoding;
 import edu.washington.escience.myria.api.encoding.EmptyRelationEncoding;
 import edu.washington.escience.myria.api.encoding.PlanFragmentEncoding;
@@ -28,6 +27,7 @@ import edu.washington.escience.myria.api.encoding.QueryStatusEncoding;
 import edu.washington.escience.myria.api.encoding.QueryStatusEncoding.Status;
 import edu.washington.escience.myria.api.encoding.SingletonEncoding;
 import edu.washington.escience.myria.api.encoding.SplitEncoding;
+import edu.washington.escience.myria.api.encoding.TupleSourceEncoding;
 import edu.washington.escience.myria.api.encoding.plan.SubQueryEncoding;
 import edu.washington.escience.myria.io.DataSource;
 import edu.washington.escience.myria.io.FileSource;
@@ -123,6 +123,6 @@ public class JsonOperatorTests extends SystemTestBase {
             .getProgramName(), outputRelation.getRelationName(), "json");
     String expectedData =
         "[{\"string_array\":\"a:b:c:d:e:f\",\"string_array_splits\":\"a\"},{\"string_array\":\"a:b:c:d:e:f\",\"string_array_splits\":\"b\"},{\"string_array\":\"a:b:c:d:e:f\",\"string_array_splits\":\"c\"},{\"string_array\":\"a:b:c:d:e:f\",\"string_array_splits\":\"d\"},{\"string_array\":\"a:b:c:d:e:f\",\"string_array_splits\":\"e\"},{\"string_array\":\"a:b:c:d:e:f\",\"string_array_splits\":\"f\"}]";
-    assertEquals(data, expectedData);
+    assertEquals(expectedData, data);
   }
 }

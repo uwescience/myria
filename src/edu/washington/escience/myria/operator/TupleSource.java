@@ -51,4 +51,13 @@ public class TupleSource extends LeafOperator {
   protected Schema generateSchema() {
     return tupleReader.getSchema();
   }
+
+  @Override
+  protected void cleanup() throws DbException {
+    try {
+      tupleReader.close();
+    } catch (IOException e) {
+      throw new DbException(e);
+    }
+  }
 }

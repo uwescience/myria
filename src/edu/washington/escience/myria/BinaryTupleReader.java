@@ -32,8 +32,8 @@ public class BinaryTupleReader implements TupleReader {
   private transient DataInput dataInput;
 
   /**
-   * Construct a new BinaryTupleReader object that reads the given binary file and creates tuples from the file data that
-   * has the given schema. The default endianess is big endian.
+   * Construct a new BinaryTupleReader object that reads the given binary file and creates tuples from the file data
+   * that has the given schema. The default endianess is big endian.
    *
    * @param schema The tuple schema to be used for creating tuple from the binary file's data.
    */
@@ -56,8 +56,7 @@ public class BinaryTupleReader implements TupleReader {
   @Override
   public void open(final InputStream stream) throws IOException, DbException {
     buffer = new TupleBatchBuffer(schema);
-    InputStream inputStream;
-    inputStream = new BufferedInputStream(stream);
+    InputStream inputStream = new BufferedInputStream(stream);
 
     if (isLittleEndian) {
       dataInput = new LittleEndianDataInputStream(inputStream);
@@ -115,7 +114,7 @@ public class BinaryTupleReader implements TupleReader {
   }
 
   @Override
-  public void done() throws IOException {
+  public void close() throws IOException {
     while (buffer.numTuples() > 0) {
       buffer.popAny();
     }

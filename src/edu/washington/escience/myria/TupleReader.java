@@ -40,7 +40,7 @@ public interface TupleReader extends Serializable {
   /**
    * Clears the buffer making sure all tuples are read from the source
    */
-  void done() throws IOException;
+  void close() throws IOException;
 
   /**
    * Provides the schema to the {@link TupleSource} operator
