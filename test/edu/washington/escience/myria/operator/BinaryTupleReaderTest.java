@@ -12,6 +12,7 @@ import org.junit.Test;
 
 import com.google.common.collect.ImmutableList;
 
+import edu.washington.escience.myria.BinaryTupleReader;
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
@@ -24,7 +25,7 @@ import edu.washington.escience.myria.storage.TupleBatch;
  * @author leelee
  *
  */
-public class BinaryFileScanTest {
+public class BinaryTupleReaderTest {
 
   @Test
   /**
@@ -37,7 +38,7 @@ public class BinaryFileScanTest {
     Schema schema = new Schema(ImmutableList.of(Type.INT_TYPE, Type.INT_TYPE));
     String filename =
         "testdata" + File.separatorChar + "binaryfilescan" + File.separatorChar + "testSimple";
-    BinaryFileScan bfs = new BinaryFileScan(schema, new FileSource(filename));
+    TupleSource bfs = new TupleSource(new BinaryTupleReader(schema), new FileSource(filename));
     assertEquals(2, getRowCount(bfs));
   }
 
@@ -74,7 +75,7 @@ public class BinaryFileScanTest {
             + "binaryfilescan"
             + File.separatorChar
             + "testWithAstronomySchema";
-    BinaryFileScan bfs = new BinaryFileScan(schema, new FileSource(filename));
+    TupleSource bfs = new TupleSource(new BinaryTupleReader(schema), new FileSource(filename));
     assertEquals(8, getRowCount(bfs));
   }
 
@@ -104,7 +105,8 @@ public class BinaryFileScanTest {
             + "binaryfilescan"
             + File.separatorChar
             + "cosmo50cmb.256g2bwK.00024.star.bin";
-    BinaryFileScan bfs = new BinaryFileScan(schema, new FileSource(filename), true);
+    TupleSource bfs =
+        new TupleSource(new BinaryTupleReader(schema, true), new FileSource(filename));
     assertEquals(1291, getRowCount(bfs));
   }
 
@@ -116,7 +118,7 @@ public class BinaryFileScanTest {
    * @param row The number of row.
    */
   @SuppressWarnings("unused")
-  private void generateBinaryFile(String filename, Type[] typeAr, int row) {
+  private void generateBinaryFile(final String filename, final Type[] typeAr, final int row) {
     try {
       RandomAccessFile raf = new RandomAccessFile(filename, "rw");
       for (int i = 0; i < row; i++) {
@@ -159,7 +161,7 @@ public class BinaryFileScanTest {
    * @param row
    */
   @SuppressWarnings("unused")
-  private void generateSimpleBinaryFile(String filename, int row) {
+  private void generateSimpleBinaryFile(final String filename, final int row) {
     try {
       RandomAccessFile raf = new RandomAccessFile(filename, "rw");
       for (int i = 0; i < row; i++) {
@@ -181,13 +183,13 @@ public class BinaryFileScanTest {
    * @return the number of rows in the file.
    * @throws DbException if the file does not match the given Schema.
    */
-  private static int getRowCount(BinaryFileScan fileScan) throws DbException {
-    fileScan.open(null);
+  private static int getRowCount(final TupleSource input) throws DbException {
+    input.open(null);
 
     int count = 0;
     TupleBatch tb = null;
-    while (!fileScan.eos()) {
-      tb = fileScan.nextReady();
+    while (!input.eos()) {
+      tb = input.nextReady();
       if (tb != null) {
         count += tb.numTuples();
       }

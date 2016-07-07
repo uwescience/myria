@@ -4,7 +4,7 @@ import com.google.common.base.Preconditions;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.operator.Operator;
-import edu.washington.escience.myria.operator.TupleSource;
+import edu.washington.escience.myria.operator.BatchTupleSource;
 import edu.washington.escience.myria.parallel.ExchangePairID;
 import edu.washington.escience.myria.parallel.ipc.StreamOutputChannel;
 import edu.washington.escience.myria.storage.TupleBatch;
@@ -50,7 +50,7 @@ public final class RecoverProducer extends CollectProducer {
   @Override
   protected void childEOS() throws DbException {
     writePartitionsIntoChannels(false, null);
-    Preconditions.checkArgument(getChild() instanceof TupleSource);
+    Preconditions.checkArgument(getChild() instanceof BatchTupleSource);
     if (!oriProducer.eos()) {
       StreamOutputChannel<TupleBatch> tmp = getChannels()[0];
       if (LOGGER.isTraceEnabled()) {

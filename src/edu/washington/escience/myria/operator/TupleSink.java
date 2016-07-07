@@ -15,7 +15,7 @@ import edu.washington.escience.myria.storage.TupleBatch;
  *
  *
  */
-public final class DataOutput extends RootOperator {
+public final class TupleSink extends RootOperator {
 
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
@@ -32,7 +32,7 @@ public final class DataOutput extends RootOperator {
    * @param writer the {@link TupleWriter} which will serialize the tuples.
    * @param dataSink the {@link DataSink} for the tuple destination
    */
-  public DataOutput(final Operator child, final TupleWriter tupleWriter, final DataSink dataSink) {
+  public TupleSink(final Operator child, final TupleWriter tupleWriter, final DataSink dataSink) {
     super(child);
     this.dataSink = dataSink;
     this.tupleWriter = tupleWriter;

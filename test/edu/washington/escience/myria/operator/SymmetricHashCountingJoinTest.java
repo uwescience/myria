@@ -14,8 +14,8 @@ public class SymmetricHashCountingJoinTest {
 
   @Test
   public void testSymmetricHashCountingJoin() throws DbException {
-    TupleSource left = new TupleSource(JoinTestUtils.leftInput);
-    TupleSource right = new TupleSource(JoinTestUtils.rightInput);
+    BatchTupleSource left = new BatchTupleSource(JoinTestUtils.leftInput);
+    BatchTupleSource right = new BatchTupleSource(JoinTestUtils.rightInput);
     Operator join =
         new SymmetricHashCountingJoin(left, right, new int[] {0, 1, 2}, new int[] {1, 2, 0});
     join.open(TestEnvVars.get());
@@ -37,8 +37,8 @@ public class SymmetricHashCountingJoinTest {
 
   @Test(expected = IllegalStateException.class)
   public void testIncompatibleJoinKeys() throws DbException {
-    TupleSource left = new TupleSource(JoinTestUtils.leftInput);
-    TupleSource right = new TupleSource(JoinTestUtils.rightInput);
+    BatchTupleSource left = new BatchTupleSource(JoinTestUtils.leftInput);
+    BatchTupleSource right = new BatchTupleSource(JoinTestUtils.rightInput);
     Operator join = new SymmetricHashCountingJoin(left, right, new int[] {0}, new int[] {0});
     join.open(TestEnvVars.get());
   }

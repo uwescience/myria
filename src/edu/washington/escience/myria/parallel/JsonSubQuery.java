@@ -21,7 +21,7 @@ import edu.washington.escience.myria.api.encoding.QueryConstruct;
 import edu.washington.escience.myria.api.encoding.QueryConstruct.ConstructArgs;
 import edu.washington.escience.myria.coordinator.CatalogException;
 import edu.washington.escience.myria.operator.EOSSource;
-import edu.washington.escience.myria.operator.SinkRoot;
+import edu.washington.escience.myria.operator.EmptySink;
 
 /**
  * A {@link QueryPlan} that runs a single subquery. Note that a {@link JsonSubQuery} cannot have a {@link QueryPlan} as
@@ -83,7 +83,7 @@ public final class JsonSubQuery extends QueryPlan {
     } else {
       workerPlans = allPlans;
       /* Create the empty server plan. TODO why do we need this? */
-      serverPlan = new SubQueryPlan(new SinkRoot(new EOSSource()));
+      serverPlan = new SubQueryPlan(new EmptySink(new EOSSource()));
     }
 
     String planEncoding = null;

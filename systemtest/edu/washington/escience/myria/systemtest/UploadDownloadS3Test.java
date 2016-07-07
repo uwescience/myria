@@ -11,6 +11,7 @@ import java.util.Map;
 
 import org.junit.Test;
 
+import edu.washington.escience.myria.CsvTupleReader;
 import edu.washington.escience.myria.CsvTupleWriter;
 import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.Schema;
@@ -20,12 +21,12 @@ import edu.washington.escience.myria.io.DataSource;
 import edu.washington.escience.myria.io.FileSource;
 import edu.washington.escience.myria.io.UriSink;
 import edu.washington.escience.myria.io.UriSource;
-import edu.washington.escience.myria.operator.DataOutput;
 import edu.washington.escience.myria.operator.DbInsert;
 import edu.washington.escience.myria.operator.DbQueryScan;
-import edu.washington.escience.myria.operator.FileScan;
 import edu.washington.escience.myria.operator.InMemoryOrderBy;
 import edu.washington.escience.myria.operator.RootOperator;
+import edu.washington.escience.myria.operator.TupleSink;
+import edu.washington.escience.myria.operator.TupleSource;
 import edu.washington.escience.myria.operator.network.CollectConsumer;
 import edu.washington.escience.myria.operator.network.CollectProducer;
 import edu.washington.escience.myria.operator.network.GenericShuffleConsumer;
@@ -76,7 +77,7 @@ public class UploadDownloadS3Test extends SystemTestBase {
     InMemoryOrderBy sortOperator =
         new InMemoryOrderBy(serverConsumer, new int[] {1}, new boolean[] {true});
     DataSink dataSink = new UriSink(fileName);
-    DataOutput masterRoot = new DataOutput(sortOperator, new CsvTupleWriter(), dataSink);
+    TupleSink masterRoot = new TupleSink(sortOperator, new CsvTupleWriter(), dataSink);
     server.submitQueryPlan(masterRoot, workerPlans).get();
 
     /* Read the data back in from S3 and shuffle to one worker */
@@ -84,13 +85,10 @@ public class UploadDownloadS3Test extends SystemTestBase {
     DataSource relationSourceS3 = new UriSource(fileName);
 
     ExchangePairID workerReceiveID = ExchangePairID.newID();
-    FileScan serverFileScan = new FileScan(relationSourceS3, relationSchema, ',', null, null, 1);
+    TupleSource serverInput = new TupleSource(new CsvTupleReader(relationSchema, ',', null, null, 1), relationSourceS3);
     GenericShuffleProducer serverProduce =
-        new GenericShuffleProducer(
-            serverFileScan,
-            workerReceiveID,
-            workerIDs,
-            new SingleFieldHashPartitionFunction(workerIDs.length, 0));
+        new GenericShuffleProducer(serverInput, workerReceiveID, workerIDs, new SingleFieldHashPartitionFunction(
+            workerIDs.length, 0));
     GenericShuffleConsumer workerConsumer =
         new GenericShuffleConsumer(relationSchema, workerReceiveID, new int[] {MASTER_ID});
     DbInsert workerInsert = new DbInsert(workerConsumer, relationKeyDownload, true);

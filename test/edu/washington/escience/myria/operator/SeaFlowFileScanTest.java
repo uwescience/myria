@@ -16,7 +16,7 @@ public class SeaFlowFileScanTest {
     SeaFlowFileScan scan =
         new SeaFlowFileScan(
             new FileSource(Paths.get("testdata", "seaflow", "1.evt.opp").toString()));
-    SinkRoot sink = new SinkRoot(scan);
+    EmptySink sink = new EmptySink(scan);
     sink.open(null);
     while (!sink.eos()) {
       sink.nextReady();

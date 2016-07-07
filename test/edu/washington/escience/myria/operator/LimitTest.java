@@ -23,7 +23,7 @@ public class LimitTest {
     final int total = TupleBatch.BATCH_SIZE;
     final long limit = 100;
     assertTrue(limit < total);
-    TupleSource source = new TupleSource(TestUtils.range(total));
+    BatchTupleSource source = new BatchTupleSource(TestUtils.range(total));
     Limit limiter = new Limit(limit, source);
     limiter.open(TestEnvVars.get());
     TupleBatch tb = limiter.nextReady();
@@ -40,7 +40,7 @@ public class LimitTest {
     final int total = 2 * TupleBatch.BATCH_SIZE + 2;
     final long limit = 0;
     assertTrue(limit < total);
-    TupleSource source = new TupleSource(TestUtils.range(total));
+    BatchTupleSource source = new BatchTupleSource(TestUtils.range(total));
     Limit limiter = new Limit(limit, source);
     limiter.open(TestEnvVars.get());
     TupleBatch tb = limiter.nextReady();
@@ -56,7 +56,7 @@ public class LimitTest {
     TupleBatchBuffer tbb1 = TestUtils.range((int) limit);
     TupleBatchBuffer tbb2 = TestUtils.range((int) limit);
     List<TupleBatch> sourceList = ImmutableList.of(tbb1.popAny(), tbb2.popAny());
-    TupleSource source = new TupleSource(sourceList);
+    BatchTupleSource source = new BatchTupleSource(sourceList);
     Limit limiter = new Limit(limit, source);
     limiter.open(TestEnvVars.get());
     TupleBatch tb = limiter.nextReady();
@@ -73,7 +73,7 @@ public class LimitTest {
     final int total = 2 * TupleBatch.BATCH_SIZE + 2;
     final long limit = TupleBatch.BATCH_SIZE + 3;
     assertTrue(limit < total);
-    TupleSource source = new TupleSource(TestUtils.range(total));
+    BatchTupleSource source = new BatchTupleSource(TestUtils.range(total));
     Limit limiter = new Limit(limit, source);
     limiter.open(TestEnvVars.get());
     long count = 0;

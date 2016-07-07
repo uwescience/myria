@@ -56,7 +56,7 @@ public class FilterTest {
     testBase.putInt(1, 1);
     testBase.putInt(2, 3);
 
-    Filter filter = new Filter(WithinSumRangeExpression(0, 1, 2), new TupleSource(testBase));
+    Filter filter = new Filter(WithinSumRangeExpression(0, 1, 2), new BatchTupleSource(testBase));
     assertEquals(1, getRowCount(filter));
   }
 
@@ -80,7 +80,7 @@ public class FilterTest {
     testBase.putLong(0, 4L);
     testBase.putLong(1, 1L);
     testBase.putLong(2, 3L);
-    Filter filter = new Filter(WithinSumRangeExpression(0, 1, 2), new TupleSource(testBase));
+    Filter filter = new Filter(WithinSumRangeExpression(0, 1, 2), new BatchTupleSource(testBase));
     assertEquals(1, getRowCount(filter));
   }
 
@@ -112,7 +112,7 @@ public class FilterTest {
     testBase.putDouble(0, 4.0);
     testBase.putDouble(1, 1.0);
     testBase.putDouble(2, 5.1);
-    Filter filter = new Filter(WithinSumRangeExpression(0, 1, 2), new TupleSource(testBase));
+    Filter filter = new Filter(WithinSumRangeExpression(0, 1, 2), new BatchTupleSource(testBase));
     assertEquals(2, getRowCount(filter));
   }
 
@@ -144,7 +144,7 @@ public class FilterTest {
     testBase.putFloat(0, 4.0f);
     testBase.putFloat(1, 1.0f);
     testBase.putFloat(2, 5.1f);
-    Filter filter = new Filter(WithinSumRangeExpression(0, 1, 2), new TupleSource(testBase));
+    Filter filter = new Filter(WithinSumRangeExpression(0, 1, 2), new BatchTupleSource(testBase));
     assertEquals(2, getRowCount(filter));
   }
 
