@@ -14,7 +14,7 @@ import edu.washington.escience.myria.io.DataSource;
 import edu.washington.escience.myria.storage.TupleBatch;
 
 /**
- * 
+ *
  */
 public class TupleSource extends LeafOperator {
 
@@ -51,5 +51,4 @@ public class TupleSource extends LeafOperator {
   protected Schema generateSchema() {
     return tupleReader.getSchema();
   }
-
 }

@@ -15,11 +15,17 @@ import edu.washington.escience.myria.operator.TupleSource;
 import edu.washington.escience.myria.storage.TupleBatch;
 
 /**
- * 
+ *
  */
-@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "readerType")
+@JsonTypeInfo(
+  use = JsonTypeInfo.Id.NAME,
+  include = JsonTypeInfo.As.PROPERTY,
+  property = "readerType"
+)
 @JsonSubTypes({
-    @Type(name = "Csv", value = CsvTupleReader.class), @Type(name = "Binary", value = BinaryTupleReader.class) })
+  @Type(name = "Csv", value = CsvTupleReader.class),
+  @Type(name = "Binary", value = BinaryTupleReader.class)
+})
 public interface TupleReader extends Serializable {
   /**
    * This will initialize the {@link TupleReader} InputStream from the DataSource

@@ -16,7 +16,7 @@ public class SymmetricHashJoinTest {
   public void testSymmetricHashJoin() throws DbException {
     BatchTupleSource left = new BatchTupleSource(JoinTestUtils.leftInput);
     BatchTupleSource right = new BatchTupleSource(JoinTestUtils.rightInput);
-    Operator join = new SymmetricHashJoin(left, right, new int[] { 1, 0, 2 }, new int[] { 2, 1, 0 });
+    Operator join = new SymmetricHashJoin(left, right, new int[] {1, 0, 2}, new int[] {2, 1, 0});
     join.open(TestEnvVars.get());
     assertEquals(
         Schema.merge(JoinTestUtils.leftSchema, JoinTestUtils.rightSchema), join.getSchema());
@@ -36,7 +36,7 @@ public class SymmetricHashJoinTest {
   public void testIncompatibleJoinKeys() throws DbException {
     BatchTupleSource left = new BatchTupleSource(JoinTestUtils.leftInput);
     BatchTupleSource right = new BatchTupleSource(JoinTestUtils.rightInput);
-    Operator join = new SymmetricHashJoin(left, right, new int[] { 0 }, new int[] { 0 });
+    Operator join = new SymmetricHashJoin(left, right, new int[] {0}, new int[] {0});
     join.open(TestEnvVars.get());
   }
 }

@@ -26,24 +26,19 @@ import edu.washington.escience.myria.storage.TupleBatchBuffer;
 import edu.washington.escience.myria.util.DateTimeUtils;
 
 /**
- * 
+ *
  */
 public class CsvTupleReader implements TupleReader {
   /** The Schema of the relation stored in this file. */
-  @JsonProperty
-  private final Schema schema;
+  @JsonProperty private final Schema schema;
   /** A user-provided file delimiter; if null, the system uses the default comma as delimiter. */
-  @JsonProperty
-  private final Character delimiter;
+  @JsonProperty private final Character delimiter;
   /** A user-provided quotation mark, if null, the system uses '"'. */
-  @JsonProperty
-  private final Character quote;
+  @JsonProperty private final Character quote;
   /** A user-provided escape character to escape quote and itself, if null, the system uses '/'. */
-  @JsonProperty
-  private final Character escape;
+  @JsonProperty private final Character escape;
   /** Number of skipped lines on the head. */
-  @JsonProperty
-  private final Integer numberOfSkippedLines;
+  @JsonProperty private final Integer numberOfSkippedLines;
 
   /** Scanner used to parse the file. */
   private transient CSVParser parser = null;
@@ -60,7 +55,8 @@ public class CsvTupleReader implements TupleReader {
   /**
    * The logger for debug, trace, etc. messages in this class.
    */
-  private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(CsvTupleReader.class);
+  private static final org.slf4j.Logger LOGGER =
+      org.slf4j.LoggerFactory.getLogger(CsvTupleReader.class);
 
   public CsvTupleReader(final Schema schema) {
     this(schema, null, null, null, null);
@@ -70,11 +66,13 @@ public class CsvTupleReader implements TupleReader {
     this(schema, delimiter, null, null, null);
   }
 
-  public CsvTupleReader(@JsonProperty(value = "schema", required = true) final Schema schema,
+  public CsvTupleReader(
+      @JsonProperty(value = "schema", required = true) final Schema schema,
       @JsonProperty(value = "delimiter", required = false) @Nullable final Character delimiter,
       @JsonProperty(value = "quote", required = false) @Nullable final Character quote,
       @JsonProperty(value = "escape", required = false) @Nullable final Character escape,
-      @JsonProperty(value = "numberOfSkippedLines", required = false) @Nullable final Integer numberOfSkippedLines) {
+      @JsonProperty(value = "numberOfSkippedLines", required = false) @Nullable
+      final Integer numberOfSkippedLines) {
     this.schema = Preconditions.checkNotNull(schema, "schema");
 
     this.delimiter = MoreObjects.firstNonNull(delimiter, CSVFormat.DEFAULT.getDelimiter());
@@ -88,8 +86,9 @@ public class CsvTupleReader implements TupleReader {
     buffer = new TupleBatchBuffer(schema);
     try {
       parser =
-          new CSVParser(new BufferedReader(new InputStreamReader(stream)), CSVFormat.newFormat(delimiter).withQuote(
-              quote).withEscape(escape));
+          new CSVParser(
+              new BufferedReader(new InputStreamReader(stream)),
+              CSVFormat.newFormat(delimiter).withQuote(quote).withEscape(escape));
       iterator = parser.iterator();
       for (int i = 0; i < numberOfSkippedLines; i++) {
         iterator.next();
@@ -122,8 +121,14 @@ public class CsvTupleReader implements TupleReader {
       CSVRecord record = iterator.next();
 
       if (record.size() != schema.numColumns()) {
-        throw new DbException("Error parsing row " + lineNumber + ": Found " + record.size()
-            + " column(s) but expected " + schema.numColumns() + " column(s).");
+        throw new DbException(
+            "Error parsing row "
+                + lineNumber
+                + ": Found "
+                + record.size()
+                + " column(s) but expected "
+                + schema.numColumns()
+                + " column(s).");
       }
       for (int column = 0; column < schema.numColumns(); ++column) {
         String cell = record.get(column);
@@ -156,8 +161,16 @@ public class CsvTupleReader implements TupleReader {
               break;
           }
         } catch (final IllegalArgumentException e) {
-          throw new DbException("Error parsing column " + column + " of row " + lineNumber + ", expected type: "
-              + schema.getColumnType(column) + ", scanned value: " + cell, e);
+          throw new DbException(
+              "Error parsing column "
+                  + column
+                  + " of row "
+                  + lineNumber
+                  + ", expected type: "
+                  + schema.getColumnType(column)
+                  + ", scanned value: "
+                  + cell,
+              e);
         }
       }
     }
@@ -179,5 +192,4 @@ public class CsvTupleReader implements TupleReader {
       buffer.popAny();
     }
   }
-
 }

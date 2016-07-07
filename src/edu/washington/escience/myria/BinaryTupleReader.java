@@ -17,7 +17,7 @@ import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
 
 /**
- * 
+ *
  */
 public class BinaryTupleReader implements TupleReader {
   /** Required for Java serialization. */
@@ -34,7 +34,7 @@ public class BinaryTupleReader implements TupleReader {
   /**
    * Construct a new BinaryFileScan object that reads the given binary file and creates tuples from the file data that
    * has the given schema. The default endianess is big endian.
-   * 
+   *
    * @param schema The tuple schema to be used for creating tuple from the binary file's data.
    */
   public BinaryTupleReader(final Schema schema) {
@@ -64,7 +64,6 @@ public class BinaryTupleReader implements TupleReader {
     } else {
       dataInput = new DataInputStream(inputStream);
     }
-
   }
 
   @Override
@@ -113,7 +112,6 @@ public class BinaryTupleReader implements TupleReader {
     }
     TupleBatch tb = buffer.popAny();
     return tb;
-
   }
 
   @Override
@@ -122,5 +120,4 @@ public class BinaryTupleReader implements TupleReader {
       buffer.popAny();
     }
   }
-
 }

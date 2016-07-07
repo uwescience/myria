@@ -427,7 +427,8 @@ public final class TestUtils {
    * @param sorted Generate sorted tuples, sorted by id
    * @return
    */
-  public static TupleBatchBuffer generateRandomTuples(final int numTuples, final int sampleSize, final boolean sorted) {
+  public static TupleBatchBuffer generateRandomTuples(
+      final int numTuples, final int sampleSize, final boolean sorted) {
     final ArrayList<Entry<Long, String>> entries = new ArrayList<Entry<Long, String>>();
 
     final long[] ids = randomLong(0, sampleSize, numTuples);
@@ -466,9 +467,16 @@ public final class TestUtils {
    * @return a SubQuery that will insert the given tuples (starting on the master) on the specified workers using the
    *         specified relation key and partition function.
    */
-  public static final SubQuery insertRelation(@Nonnull final Operator masterSource, @Nonnull final RelationKey dest,
-      @Nonnull final PartitionFunction pf, @Nonnull final Set<Integer> workers) {
-    return insertRelation(masterSource, dest, pf, ArrayUtils.toPrimitive(workers.toArray(new Integer[workers.size()])));
+  public static final SubQuery insertRelation(
+      @Nonnull final Operator masterSource,
+      @Nonnull final RelationKey dest,
+      @Nonnull final PartitionFunction pf,
+      @Nonnull final Set<Integer> workers) {
+    return insertRelation(
+        masterSource,
+        dest,
+        pf,
+        ArrayUtils.toPrimitive(workers.toArray(new Integer[workers.size()])));
   }
 
   /**
@@ -482,8 +490,11 @@ public final class TestUtils {
    * @return a SubQuery that will insert the given tuples (starting on the master) on the specified workers using the
    *         specified relation key and partition function.
    */
-  public static final SubQuery insertRelation(@Nonnull final Operator masterSource, @Nonnull final RelationKey dest,
-      @Nonnull final PartitionFunction pf, @Nonnull final int[] workers) {
+  public static final SubQuery insertRelation(
+      @Nonnull final Operator masterSource,
+      @Nonnull final RelationKey dest,
+      @Nonnull final PartitionFunction pf,
+      @Nonnull final int[] workers) {
     final ExchangePairID id = ExchangePairID.newID();
     /* Master plan */
     GenericShuffleProducer sp = new GenericShuffleProducer(masterSource, id, workers, pf);
@@ -528,7 +539,8 @@ public final class TestUtils {
     /* Worker plans */
     Map<Integer, SubQueryPlan> workerPlans = Maps.newHashMap();
     /* First worker */
-    workerPlans.put(workers[0], new SubQueryPlan(new EmptySink(new InitFailureInjector(new EOSSource()))));
+    workerPlans.put(
+        workers[0], new SubQueryPlan(new EmptySink(new InitFailureInjector(new EOSSource()))));
     return new SubQuery(masterPlan, workerPlans);
   }
 

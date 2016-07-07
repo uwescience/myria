@@ -160,7 +160,7 @@ public class OperatorTest {
     children[0] = new BatchTupleSource(generateRandomTuples(12300, 5000, true));
     children[1] = new BatchTupleSource(generateRandomTuples(4200, 2000, true));
     children[2] = new BatchTupleSource(generateRandomTuples(9900, 5000, true));
-    NAryOperator merge = new Merge(children, new int[] { 0 }, new boolean[] { true });
+    NAryOperator merge = new Merge(children, new int[] {0}, new boolean[] {true});
     merge.open(null);
     TupleBatch tb = null;
     int count = 0;

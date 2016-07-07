@@ -87,7 +87,9 @@ public class CsvTupleReaderTest {
       throws DbException, InterruptedException {
     final String realFilename = Paths.get("testdata", "filescan", filename).toString();
     TupleSource dataInput =
-        new TupleSource(new CsvTupleReader(schema, delimiter, quote, escape, null), new FileSource(realFilename));
+        new TupleSource(
+            new CsvTupleReader(schema, delimiter, quote, escape, null),
+            new FileSource(realFilename));
     return getRowCount(dataInput);
   }
 
@@ -99,7 +101,8 @@ public class CsvTupleReaderTest {
    * @throws DbException if the file does not match the given Schema.
    * @throws InterruptedException
    */
-  private static int getRowCount(final TupleSource dataInput) throws DbException, InterruptedException {
+  private static int getRowCount(final TupleSource dataInput)
+      throws DbException, InterruptedException {
     dataInput.open(null);
 
     int count = 0;
@@ -229,7 +232,9 @@ public class CsvTupleReaderTest {
     }
     printedBytes.flush();
     TupleSource scanBytes =
-        new TupleSource(new CsvTupleReader(Schema.of(ImmutableList.of(Type.INT_TYPE), ImmutableList.of("col1"))),
+        new TupleSource(
+            new CsvTupleReader(
+                Schema.of(ImmutableList.of(Type.INT_TYPE), ImmutableList.of("col1"))),
             new ByteArraySource(bytes.toByteArray()));
     assertEquals(2 * TupleBatch.BATCH_SIZE, getRowCount(scanBytes));
   }

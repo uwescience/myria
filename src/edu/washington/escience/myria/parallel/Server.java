@@ -758,8 +758,13 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
       long queryId = catalog.newQuery(query);
 
       final Query queryState =
-          new Query(queryId, query, new SubQuery(new SubQueryPlan(new EmptySink(new EOSSource())),
-              new HashMap<Integer, SubQueryPlan>()), this);
+          new Query(
+              queryId,
+              query,
+              new SubQuery(
+                  new SubQueryPlan(new EmptySink(new EOSSource())),
+                  new HashMap<Integer, SubQueryPlan>()),
+              this);
       queryState.markSuccess();
       catalog.queryFinished(queryState);
 
@@ -933,9 +938,12 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
             workerId, new SubQueryPlan(new DbInsert(EmptyRelation.of(schema), relationKey, false)));
       }
       ListenableFuture<Query> qf =
-          queryManager.submitQuery("add to catalog " + relationKey.toString(), "add to catalog "
-              + relationKey.toString(), "add to catalog " + relationKey.toString(getDBMS()), new SubQueryPlan(
-              new EmptySink(new EOSSource())), workerPlans);
+          queryManager.submitQuery(
+              "add to catalog " + relationKey.toString(),
+              "add to catalog " + relationKey.toString(),
+              "add to catalog " + relationKey.toString(getDBMS()),
+              new SubQueryPlan(new EmptySink(new EOSSource())),
+              workerPlans);
       try {
         qf.get();
       } catch (ExecutionException e) {
@@ -972,8 +980,11 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
                 new DbDelete(EmptyRelation.of(catalog.getSchema(relationKey)), relationKey, null)));
       }
       ListenableFuture<Query> qf =
-          queryManager.submitQuery("delete " + relationKey.toString(), "delete " + relationKey.toString(),
-              "deleting from " + relationKey.toString(getDBMS()), new SubQueryPlan(new EmptySink(new EOSSource())),
+          queryManager.submitQuery(
+              "delete " + relationKey.toString(),
+              "delete " + relationKey.toString(),
+              "deleting from " + relationKey.toString(getDBMS()),
+              new SubQueryPlan(new EmptySink(new EOSSource())),
               workerPlans);
       try {
         qf.get();
@@ -1024,12 +1035,20 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
                 relationKey.getProgramName(),
                 relationKey.getRelationName());
         DataSink workerSink = new UriSink(partitionName);
-        workerPlans.put(workerId, new SubQueryPlan(new TupleSink(new DbQueryScan(relationKey, getSchema(relationKey)),
-            new PostgresBinaryTupleWriter(), workerSink)));
+        workerPlans.put(
+            workerId,
+            new SubQueryPlan(
+                new TupleSink(
+                    new DbQueryScan(relationKey, getSchema(relationKey)),
+                    new PostgresBinaryTupleWriter(),
+                    workerSink)));
       }
       ListenableFuture<Query> qf =
-          queryManager.submitQuery("persist " + relationKey.toString(), "persist " + relationKey.toString(),
-              "persisting from " + relationKey.toString(getDBMS()), new SubQueryPlan(new EmptySink(new EOSSource())),
+          queryManager.submitQuery(
+              "persist " + relationKey.toString(),
+              "persist " + relationKey.toString(),
+              "persisting from " + relationKey.toString(getDBMS()),
+              new SubQueryPlan(new EmptySink(new EOSSource())),
               workerPlans.build());
       try {
         queryID = qf.get().getQueryId();
@@ -1233,7 +1252,8 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
     }
 
     /* Construct the master plan. */
-    final CollectConsumer consumer = new CollectConsumer(schema, operatorId, ImmutableSet.copyOf(scanWorkers));
+    final CollectConsumer consumer =
+        new CollectConsumer(schema, operatorId, ImmutableSet.copyOf(scanWorkers));
     TupleSink output = new TupleSink(consumer, writer, dataSink);
     final SubQueryPlan masterPlan = new SubQueryPlan(output);
 
@@ -1287,7 +1307,8 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
     }
 
     /* Construct the master plan. */
-    final CollectConsumer consumer = new CollectConsumer(schema, operatorId, ImmutableSet.copyOf(scanWorkers));
+    final CollectConsumer consumer =
+        new CollectConsumer(schema, operatorId, ImmutableSet.copyOf(scanWorkers));
     TupleSink output = new TupleSink(consumer, writer, dataSink);
     final SubQueryPlan masterPlan = new SubQueryPlan(output);
 

@@ -75,13 +75,19 @@ public class LeapFrogJoinTest {
             ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE), ImmutableList.of("t_z", "t_x"));
     /* read data from files. */
     final String realFilename = Paths.get("testdata", "twitter", "TwitterK.csv").toString();
-    TupleSource dataInputR = new TupleSource(new CsvTupleReader(r_schema), new FileSource(realFilename));
-    TupleSource dataInputS = new TupleSource(new CsvTupleReader(s_schema), new FileSource(realFilename));
-    TupleSource dataInputT = new TupleSource(new CsvTupleReader(t_schema), new FileSource(realFilename));
+    TupleSource dataInputR =
+        new TupleSource(new CsvTupleReader(r_schema), new FileSource(realFilename));
+    TupleSource dataInputS =
+        new TupleSource(new CsvTupleReader(s_schema), new FileSource(realFilename));
+    TupleSource dataInputT =
+        new TupleSource(new CsvTupleReader(t_schema), new FileSource(realFilename));
     /* order the tables. */
-    InMemoryOrderBy orderR = new InMemoryOrderBy(dataInputR, new int[] { 0, 1 }, new boolean[] { true, true });
-    InMemoryOrderBy orderS = new InMemoryOrderBy(dataInputS, new int[] { 0, 1 }, new boolean[] { true, true });
-    InMemoryOrderBy orderT = new InMemoryOrderBy(dataInputT, new int[] { 1, 0 }, new boolean[] { true, true });
+    InMemoryOrderBy orderR =
+        new InMemoryOrderBy(dataInputR, new int[] {0, 1}, new boolean[] {true, true});
+    InMemoryOrderBy orderS =
+        new InMemoryOrderBy(dataInputS, new int[] {0, 1}, new boolean[] {true, true});
+    InMemoryOrderBy orderT =
+        new InMemoryOrderBy(dataInputT, new int[] {1, 0}, new boolean[] {true, true});
     /* leapfrog join. */
     int[][][] fieldMap = new int[][][] {{{0, 0}, {2, 1}}, {{0, 1}, {1, 0}}, {{1, 1}, {2, 0}}};
     int[][] outputMap = new int[][] {{0, 0}, {0, 1}, {1, 1}};
@@ -125,8 +131,10 @@ public class LeapFrogJoinTest {
     TupleSource dataInputR = new TupleSource(new CsvTupleReader(r_schema), new FileSource(r_path));
     TupleSource dataInputT = new TupleSource(new CsvTupleReader(t_schema), new FileSource(t_path));
     /* order the tables. */
-    InMemoryOrderBy orderR = new InMemoryOrderBy(dataInputR, new int[] { 0, 1 }, new boolean[] { true, true });
-    InMemoryOrderBy orderT = new InMemoryOrderBy(dataInputT, new int[] { 0, 1 }, new boolean[] { true, true });
+    InMemoryOrderBy orderR =
+        new InMemoryOrderBy(dataInputR, new int[] {0, 1}, new boolean[] {true, true});
+    InMemoryOrderBy orderT =
+        new InMemoryOrderBy(dataInputT, new int[] {0, 1}, new boolean[] {true, true});
     /* leapfrog join. */
     int[][][] fieldMap = new int[][][] {{{0, 0}, {1, 0}}, {{0, 1}, {1, 2}}};
     int[][] outputMap = new int[][] {{0, 0}, {0, 1}};
@@ -174,9 +182,12 @@ public class LeapFrogJoinTest {
     TupleSource dataInputS = new TupleSource(new CsvTupleReader(s_schema), new FileSource(s_path));
     TupleSource dataInputT = new TupleSource(new CsvTupleReader(t_schema), new FileSource(t_path));
     /* order the tables. */
-    InMemoryOrderBy orderR = new InMemoryOrderBy(dataInputR, new int[] { 0, 1 }, new boolean[] { true, true });
-    InMemoryOrderBy orderS = new InMemoryOrderBy(dataInputS, new int[] { 0, 1 }, new boolean[] { true, true });
-    InMemoryOrderBy orderT = new InMemoryOrderBy(dataInputT, new int[] { 0, 1, 2 }, new boolean[] { true, true, true });
+    InMemoryOrderBy orderR =
+        new InMemoryOrderBy(dataInputR, new int[] {0, 1}, new boolean[] {true, true});
+    InMemoryOrderBy orderS =
+        new InMemoryOrderBy(dataInputS, new int[] {0, 1}, new boolean[] {true, true});
+    InMemoryOrderBy orderT =
+        new InMemoryOrderBy(dataInputT, new int[] {0, 1, 2}, new boolean[] {true, true, true});
     /* leapfrog join. */
     int[][][] fieldMap =
         new int[][][] {{{0, 0}, {2, 0}}, {{0, 1}, {1, 0}, {2, 1}}, {{1, 1}, {2, 2}}};
@@ -233,11 +244,16 @@ public class LeapFrogJoinTest {
     TupleSource dataInputK = new TupleSource(new CsvTupleReader(k_schema), new FileSource(r_path));
     TupleSource dataInputM = new TupleSource(new CsvTupleReader(m_schema), new FileSource(m_path));
     /* order the tables. */
-    InMemoryOrderBy orderR = new InMemoryOrderBy(dataInputR, new int[] { 0, 1 }, new boolean[] { true, true });
-    InMemoryOrderBy orderS = new InMemoryOrderBy(dataInputS, new int[] { 0, 1 }, new boolean[] { true, true });
-    InMemoryOrderBy orderT = new InMemoryOrderBy(dataInputT, new int[] { 0, 1 }, new boolean[] { true, true });
-    InMemoryOrderBy orderK = new InMemoryOrderBy(dataInputK, new int[] { 1, 0 }, new boolean[] { true, true });
-    InMemoryOrderBy orderM = new InMemoryOrderBy(dataInputM, new int[] { 0, 1, 2 }, new boolean[] { true, true, true });
+    InMemoryOrderBy orderR =
+        new InMemoryOrderBy(dataInputR, new int[] {0, 1}, new boolean[] {true, true});
+    InMemoryOrderBy orderS =
+        new InMemoryOrderBy(dataInputS, new int[] {0, 1}, new boolean[] {true, true});
+    InMemoryOrderBy orderT =
+        new InMemoryOrderBy(dataInputT, new int[] {0, 1}, new boolean[] {true, true});
+    InMemoryOrderBy orderK =
+        new InMemoryOrderBy(dataInputK, new int[] {1, 0}, new boolean[] {true, true});
+    InMemoryOrderBy orderM =
+        new InMemoryOrderBy(dataInputM, new int[] {0, 1, 2}, new boolean[] {true, true, true});
 
     /* leapfrog join, Rectangle(x,y,z,p) :- R(x,y),S(y,z),T(z,p),K(p,x),M(x,y,z). */
     int[][][] fieldMap =
@@ -292,9 +308,9 @@ public class LeapFrogJoinTest {
     TupleSource dataInputS = new TupleSource(new CsvTupleReader(s_schema), new FileSource(s_path));
     TupleSource dataInputT = new TupleSource(new CsvTupleReader(t_schema), new FileSource(t_path));
     /* order the tables. */
-    InMemoryOrderBy orderR = new InMemoryOrderBy(dataInputR, new int[] { 0 }, new boolean[] { true });
-    InMemoryOrderBy orderS = new InMemoryOrderBy(dataInputS, new int[] { 0 }, new boolean[] { true });
-    InMemoryOrderBy orderT = new InMemoryOrderBy(dataInputT, new int[] { 1 }, new boolean[] { true });
+    InMemoryOrderBy orderR = new InMemoryOrderBy(dataInputR, new int[] {0}, new boolean[] {true});
+    InMemoryOrderBy orderS = new InMemoryOrderBy(dataInputS, new int[] {0}, new boolean[] {true});
+    InMemoryOrderBy orderT = new InMemoryOrderBy(dataInputT, new int[] {1}, new boolean[] {true});
     /* leapfrog join. */
     int[][][] fieldMap = new int[][][] {{{0, 0}, {1, 0}, {2, 1}}};
     int[][] outputMap = new int[][] {{0, 0}, {2, 0}};
@@ -335,9 +351,9 @@ public class LeapFrogJoinTest {
     TupleSource dataInputB = new TupleSource(new CsvTupleReader(b_schema), new FileSource(b_path));
     TupleSource dataInputC = new TupleSource(new CsvTupleReader(c_schema), new FileSource(c_path));
     /* order the tables. */
-    InMemoryOrderBy orderA = new InMemoryOrderBy(dataInputA, new int[] { 0 }, new boolean[] { true });
-    InMemoryOrderBy orderB = new InMemoryOrderBy(dataInputB, new int[] { 0 }, new boolean[] { true });
-    InMemoryOrderBy orderC = new InMemoryOrderBy(dataInputC, new int[] { 0 }, new boolean[] { true });
+    InMemoryOrderBy orderA = new InMemoryOrderBy(dataInputA, new int[] {0}, new boolean[] {true});
+    InMemoryOrderBy orderB = new InMemoryOrderBy(dataInputB, new int[] {0}, new boolean[] {true});
+    InMemoryOrderBy orderC = new InMemoryOrderBy(dataInputC, new int[] {0}, new boolean[] {true});
     /* leapfrog join. */
     int[][][] fieldMap = new int[][][] {{{0, 0}, {1, 0}, {2, 0}}};
     int[][] outputMap = new int[][] {{0, 0}};
@@ -382,9 +398,10 @@ public class LeapFrogJoinTest {
     TupleSource dataInputO = new TupleSource(new CsvTupleReader(o_schema), new FileSource(o_path));
     TupleSource dataInputP = new TupleSource(new CsvTupleReader(p_schema), new FileSource(p_path));
     TupleSource dataInputQ = new TupleSource(new CsvTupleReader(q_schema), new FileSource(q_path));
-    InMemoryOrderBy orderO = new InMemoryOrderBy(dataInputO, new int[] { 1 }, new boolean[] { true });
-    InMemoryOrderBy orderP = new InMemoryOrderBy(dataInputP, new int[] { 0, 1 }, new boolean[] { true, true });
-    InMemoryOrderBy orderQ = new InMemoryOrderBy(dataInputQ, new int[] { 0 }, new boolean[] { true });
+    InMemoryOrderBy orderO = new InMemoryOrderBy(dataInputO, new int[] {1}, new boolean[] {true});
+    InMemoryOrderBy orderP =
+        new InMemoryOrderBy(dataInputP, new int[] {0, 1}, new boolean[] {true, true});
+    InMemoryOrderBy orderQ = new InMemoryOrderBy(dataInputQ, new int[] {0}, new boolean[] {true});
     /* leapfrog join. */
     int[][][] fieldMap = new int[][][] {{{0, 1}, {1, 0}}, {{1, 1}, {2, 0}}};
     int[][] outputMap = new int[][] {{0, 0}};

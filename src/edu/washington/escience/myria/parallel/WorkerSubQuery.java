@@ -270,7 +270,8 @@ public class WorkerSubQuery extends LocalSubQuery {
         for (int i = 0; i < indices.size(); ++i) {
           int j = indices.get(i);
           /* buffers.get(j) might be an empty List<TupleBatch>, so need to set its schema explicitly. */
-          BatchTupleSource scan = new BatchTupleSource(buffers.get(j).exportState(), buffers.get(j).getSchema());
+          BatchTupleSource scan =
+              new BatchTupleSource(buffers.get(j).exportState(), buffers.get(j).getSchema());
           scan.setOpId(newOpId);
           newOpId++;
           scan.setOpName(
