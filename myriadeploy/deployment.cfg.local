@@ -3,6 +3,7 @@
 path = /tmp/myria
 name = twoNodeLocalParallel
 dbms = sqlite
+database_name = myria
 rest_port = 8753
 # Uncomment if need to set a specific username; does not work for localhost
 #username = dhalperi
