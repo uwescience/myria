@@ -119,8 +119,7 @@ public class SampleWoRTest {
     leftInput.putInt(1, partitionSize);
     leftInput.putInt(2, sampleSize);
     leftInput.putString(3, "WithoutReplacement");
-    sampOp =
-        new Sample(new BatchTupleSource(leftInput), new BatchTupleSource(rightInput), RANDOM_SEED);
+    sampOp = new Sample(new TupleSource(leftInput), new TupleSource(rightInput), RANDOM_SEED);
     sampOp.open(TestEnvVars.get());
 
     int rowIdx = 0;
@@ -139,8 +138,7 @@ public class SampleWoRTest {
     leftInput.putInt(1, partitionSize);
     leftInput.putInt(2, sampleSize);
     leftInput.putString(3, "WithoutReplacement");
-    sampOp =
-        new Sample(new BatchTupleSource(leftInput), new BatchTupleSource(rightInput), RANDOM_SEED);
+    sampOp = new Sample(new TupleSource(leftInput), new TupleSource(rightInput), RANDOM_SEED);
     sampOp.open(TestEnvVars.get());
     while (!sampOp.eos()) {
       sampOp.nextReady();

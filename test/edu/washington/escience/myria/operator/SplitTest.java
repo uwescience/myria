@@ -49,7 +49,7 @@ public class SplitTest {
     input.putString(1, ":qux::");
     input.putLong(2, 2L);
     input.putDouble(3, 0.2);
-    Split splitOp = new Split(new BatchTupleSource(input), 1, ":");
+    Split splitOp = new Split(new TupleSource(input), 1, ":");
 
     splitOp.open(TestEnvVars.get());
     int rowIdx = 0;
@@ -86,7 +86,7 @@ public class SplitTest {
         Schema.appendColumn(schema, Type.STRING_TYPE, "string_splits");
     final TupleBatchBuffer input = new TupleBatchBuffer(schema);
     input.putString(0, "foo:bar:baz");
-    Split splitOp = new Split(new BatchTupleSource(input), 0, ":");
+    Split splitOp = new Split(new TupleSource(input), 0, ":");
 
     splitOp.open(TestEnvVars.get());
     int rowIdx = 0;
@@ -127,7 +127,7 @@ public class SplitTest {
     }
     input.putString(0, sb.toString());
 
-    Split splitOp = new Split(new BatchTupleSource(input), 0, ",");
+    Split splitOp = new Split(new TupleSource(input), 0, ",");
     splitOp.open(TestEnvVars.get());
     long rowIdx = 0;
     while (!splitOp.eos()) {
@@ -149,7 +149,7 @@ public class SplitTest {
     final Schema schema = Schema.ofFields("long", Type.LONG_TYPE);
     final TupleBatchBuffer input = new TupleBatchBuffer(schema);
     input.putLong(0, 1L);
-    Split splitOp = new Split(new BatchTupleSource(input), 0, ":");
+    Split splitOp = new Split(new TupleSource(input), 0, ":");
     splitOp.open(TestEnvVars.get());
   }
 
@@ -158,7 +158,7 @@ public class SplitTest {
     final Schema schema = Schema.ofFields("string", Type.STRING_TYPE);
     final TupleBatchBuffer input = new TupleBatchBuffer(schema);
     input.putString(0, "foo");
-    Split splitOp = new Split(new BatchTupleSource(input), 0, "?:(");
+    Split splitOp = new Split(new TupleSource(input), 0, "?:(");
     splitOp.open(TestEnvVars.get());
   }
 }

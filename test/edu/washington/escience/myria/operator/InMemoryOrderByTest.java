@@ -21,7 +21,7 @@ public class InMemoryOrderByTest {
   public void testInMemoryOrderBy() throws DbException {
     TupleBatchBuffer randomTuples = TestUtils.generateRandomTuples(52300, 5000, false);
 
-    BatchTupleSource child = new BatchTupleSource(randomTuples);
+    TupleSource child = new TupleSource(randomTuples);
 
     InMemoryOrderBy order =
         new InMemoryOrderBy(child, new int[] {0, 1}, new boolean[] {true, true});
@@ -56,7 +56,7 @@ public class InMemoryOrderByTest {
     // cases only the results were wrong.
     TupleBatchBuffer randomTuples = TestUtils.generateRandomTuples(52300, 5000, false);
 
-    BatchTupleSource child = new BatchTupleSource(randomTuples);
+    TupleSource child = new TupleSource(randomTuples);
 
     InMemoryOrderBy order = new InMemoryOrderBy(child, new int[] {1}, new boolean[] {false});
     order.open(null);

@@ -10,7 +10,6 @@ import java.nio.charset.Charset;
 
 import org.junit.Test;
 
-import edu.washington.escience.myria.CsvTupleReader;
 import edu.washington.escience.myria.CsvTupleWriter;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
@@ -32,10 +31,9 @@ public class DataSinkTest {
     byte[] srcBytes = dataSrc.getBytes(Charset.forName("UTF-8"));
     Schema relationSchema = Schema.ofFields("x", Type.INT_TYPE, "y", Type.INT_TYPE);
     DataSource byteSource = new ByteArraySource(srcBytes);
-    TupleSource dataInput =
-        new TupleSource(new CsvTupleReader(relationSchema, ',', null, null, 1), byteSource);
+    FileScan fileScan = new FileScan(byteSource, relationSchema, ',', null, null, 1);
     ByteSink byteSink = new ByteSink();
-    TupleSink dataOutput = new TupleSink(dataInput, new CsvTupleWriter(), byteSink);
+    DataOutput dataOutput = new DataOutput(fileScan, new CsvTupleWriter(), byteSink);
 
     dataOutput.open(TestEnvVars.get());
     while (!dataOutput.eos()) {

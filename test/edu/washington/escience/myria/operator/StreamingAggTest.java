@@ -80,7 +80,7 @@ public class StreamingAggTest {
     // group by col0
     StreamingAggregate agg =
         new StreamingAggregate(
-            new BatchTupleSource(source),
+            new TupleSource(source),
             new int[] {0},
             new SingleColumnAggregatorFactory(7, AggregationOp.COUNT));
     agg.open(null);
@@ -96,7 +96,7 @@ public class StreamingAggTest {
     // group by col1
     agg =
         new StreamingAggregate(
-            new BatchTupleSource(source),
+            new TupleSource(source),
             new int[] {1},
             new SingleColumnAggregatorFactory(7, AggregationOp.COUNT));
     agg.open(null);
@@ -112,7 +112,7 @@ public class StreamingAggTest {
     // group by col2
     agg =
         new StreamingAggregate(
-            new BatchTupleSource(source),
+            new TupleSource(source),
             new int[] {2},
             new SingleColumnAggregatorFactory(7, AggregationOp.COUNT));
     agg.open(null);
@@ -128,7 +128,7 @@ public class StreamingAggTest {
     // group by col3
     agg =
         new StreamingAggregate(
-            new BatchTupleSource(source),
+            new TupleSource(source),
             new int[] {3},
             new SingleColumnAggregatorFactory(7, AggregationOp.COUNT));
     agg.open(null);
@@ -144,7 +144,7 @@ public class StreamingAggTest {
     // group by col4
     agg =
         new StreamingAggregate(
-            new BatchTupleSource(source),
+            new TupleSource(source),
             new int[] {4},
             new SingleColumnAggregatorFactory(7, AggregationOp.COUNT));
     agg.open(null);
@@ -160,7 +160,7 @@ public class StreamingAggTest {
     // group by col5
     agg =
         new StreamingAggregate(
-            new BatchTupleSource(source),
+            new TupleSource(source),
             new int[] {5},
             new SingleColumnAggregatorFactory(7, AggregationOp.COUNT));
     agg.open(null);
@@ -176,7 +176,7 @@ public class StreamingAggTest {
     // group by col6
     agg =
         new StreamingAggregate(
-            new BatchTupleSource(source),
+            new TupleSource(source),
             new int[] {6},
             new SingleColumnAggregatorFactory(7, AggregationOp.COUNT));
     agg.open(null);
@@ -202,7 +202,7 @@ public class StreamingAggTest {
     // group by col0
     StreamingAggregate agg =
         new StreamingAggregate(
-            new BatchTupleSource(source),
+            new TupleSource(source),
             new int[] {0},
             new SingleColumnAggregatorFactory(7, AggregationOp.SUM));
     agg.open(null);
@@ -218,7 +218,7 @@ public class StreamingAggTest {
     // group by col1
     agg =
         new StreamingAggregate(
-            new BatchTupleSource(source),
+            new TupleSource(source),
             new int[] {1},
             new SingleColumnAggregatorFactory(7, AggregationOp.SUM));
     agg.open(null);
@@ -234,7 +234,7 @@ public class StreamingAggTest {
     // group by col2
     agg =
         new StreamingAggregate(
-            new BatchTupleSource(source),
+            new TupleSource(source),
             new int[] {2},
             new SingleColumnAggregatorFactory(7, AggregationOp.SUM));
     agg.open(null);
@@ -250,7 +250,7 @@ public class StreamingAggTest {
     // group by col3
     agg =
         new StreamingAggregate(
-            new BatchTupleSource(source),
+            new TupleSource(source),
             new int[] {3},
             new SingleColumnAggregatorFactory(7, AggregationOp.SUM));
     agg.open(null);
@@ -266,7 +266,7 @@ public class StreamingAggTest {
     // group by col4
     agg =
         new StreamingAggregate(
-            new BatchTupleSource(source),
+            new TupleSource(source),
             new int[] {4},
             new SingleColumnAggregatorFactory(7, AggregationOp.SUM));
     agg.open(null);
@@ -282,7 +282,7 @@ public class StreamingAggTest {
     // group by col5
     agg =
         new StreamingAggregate(
-            new BatchTupleSource(source),
+            new TupleSource(source),
             new int[] {5},
             new SingleColumnAggregatorFactory(7, AggregationOp.SUM));
     agg.open(null);
@@ -298,7 +298,7 @@ public class StreamingAggTest {
     // group by col6
     agg =
         new StreamingAggregate(
-            new BatchTupleSource(source),
+            new TupleSource(source),
             new int[] {6},
             new SingleColumnAggregatorFactory(7, AggregationOp.SUM));
     agg.open(null);
@@ -324,7 +324,7 @@ public class StreamingAggTest {
     // group by col0
     StreamingAggregate agg =
         new StreamingAggregate(
-            new BatchTupleSource(source),
+            new TupleSource(source),
             new int[] {0},
             new SingleColumnAggregatorFactory(7, AggregationOp.AVG));
     agg.open(null);
@@ -340,7 +340,7 @@ public class StreamingAggTest {
     // group by col1
     agg =
         new StreamingAggregate(
-            new BatchTupleSource(source),
+            new TupleSource(source),
             new int[] {1},
             new SingleColumnAggregatorFactory(7, AggregationOp.AVG));
     agg.open(null);
@@ -356,7 +356,7 @@ public class StreamingAggTest {
     // group by col2
     agg =
         new StreamingAggregate(
-            new BatchTupleSource(source),
+            new TupleSource(source),
             new int[] {2},
             new SingleColumnAggregatorFactory(7, AggregationOp.AVG));
     agg.open(null);
@@ -372,7 +372,7 @@ public class StreamingAggTest {
     // group by col3
     agg =
         new StreamingAggregate(
-            new BatchTupleSource(source),
+            new TupleSource(source),
             new int[] {3},
             new SingleColumnAggregatorFactory(7, AggregationOp.AVG));
     agg.open(null);
@@ -388,7 +388,7 @@ public class StreamingAggTest {
     // group by col4
     agg =
         new StreamingAggregate(
-            new BatchTupleSource(source),
+            new TupleSource(source),
             new int[] {4},
             new SingleColumnAggregatorFactory(7, AggregationOp.AVG));
     agg.open(null);
@@ -404,7 +404,7 @@ public class StreamingAggTest {
     // group by col5
     agg =
         new StreamingAggregate(
-            new BatchTupleSource(source),
+            new TupleSource(source),
             new int[] {5},
             new SingleColumnAggregatorFactory(7, AggregationOp.AVG));
     agg.open(null);
@@ -420,7 +420,7 @@ public class StreamingAggTest {
     // group by col6
     agg =
         new StreamingAggregate(
-            new BatchTupleSource(source),
+            new TupleSource(source),
             new int[] {6},
             new SingleColumnAggregatorFactory(7, AggregationOp.AVG));
     agg.open(null);
@@ -446,7 +446,7 @@ public class StreamingAggTest {
     // group by col0
     StreamingAggregate agg =
         new StreamingAggregate(
-            new BatchTupleSource(source),
+            new TupleSource(source),
             new int[] {0},
             new SingleColumnAggregatorFactory(7, AggregationOp.STDEV));
     agg.open(null);
@@ -462,7 +462,7 @@ public class StreamingAggTest {
     // group by col1
     agg =
         new StreamingAggregate(
-            new BatchTupleSource(source),
+            new TupleSource(source),
             new int[] {1},
             new SingleColumnAggregatorFactory(7, AggregationOp.STDEV));
     agg.open(null);
@@ -478,7 +478,7 @@ public class StreamingAggTest {
     // group by col2
     agg =
         new StreamingAggregate(
-            new BatchTupleSource(source),
+            new TupleSource(source),
             new int[] {2},
             new SingleColumnAggregatorFactory(7, AggregationOp.STDEV));
     agg.open(null);
@@ -494,7 +494,7 @@ public class StreamingAggTest {
     // group by col3
     agg =
         new StreamingAggregate(
-            new BatchTupleSource(source),
+            new TupleSource(source),
             new int[] {3},
             new SingleColumnAggregatorFactory(7, AggregationOp.STDEV));
     agg.open(null);
@@ -510,7 +510,7 @@ public class StreamingAggTest {
     // group by col4
     agg =
         new StreamingAggregate(
-            new BatchTupleSource(source),
+            new TupleSource(source),
             new int[] {4},
             new SingleColumnAggregatorFactory(7, AggregationOp.STDEV));
     agg.open(null);
@@ -526,7 +526,7 @@ public class StreamingAggTest {
     // group by col5
     agg =
         new StreamingAggregate(
-            new BatchTupleSource(source),
+            new TupleSource(source),
             new int[] {5},
             new SingleColumnAggregatorFactory(7, AggregationOp.STDEV));
     agg.open(null);
@@ -542,7 +542,7 @@ public class StreamingAggTest {
     // group by col6
     agg =
         new StreamingAggregate(
-            new BatchTupleSource(source),
+            new TupleSource(source),
             new int[] {6},
             new SingleColumnAggregatorFactory(7, AggregationOp.STDEV));
     agg.open(null);
@@ -568,7 +568,7 @@ public class StreamingAggTest {
     // group by col7, agg over col0
     StreamingAggregate agg =
         new StreamingAggregate(
-            new BatchTupleSource(source),
+            new TupleSource(source),
             new int[] {7},
             new SingleColumnAggregatorFactory(0, AggregationOp.MIN));
     agg.open(null);
@@ -584,7 +584,7 @@ public class StreamingAggTest {
     // group by col7, agg over col1
     agg =
         new StreamingAggregate(
-            new BatchTupleSource(source),
+            new TupleSource(source),
             new int[] {7},
             new SingleColumnAggregatorFactory(1, AggregationOp.MIN));
     agg.open(null);
@@ -600,7 +600,7 @@ public class StreamingAggTest {
     // group by col7, agg over col2
     agg =
         new StreamingAggregate(
-            new BatchTupleSource(source),
+            new TupleSource(source),
             new int[] {7},
             new SingleColumnAggregatorFactory(2, AggregationOp.MIN));
     agg.open(null);
@@ -616,7 +616,7 @@ public class StreamingAggTest {
     // group by col7, agg over col3
     agg =
         new StreamingAggregate(
-            new BatchTupleSource(source),
+            new TupleSource(source),
             new int[] {7},
             new SingleColumnAggregatorFactory(3, AggregationOp.MIN));
     agg.open(null);
@@ -632,7 +632,7 @@ public class StreamingAggTest {
     // group by col4, agg over col4
     agg =
         new StreamingAggregate(
-            new BatchTupleSource(source),
+            new TupleSource(source),
             new int[] {7},
             new SingleColumnAggregatorFactory(4, AggregationOp.MIN));
     agg.open(null);
@@ -648,7 +648,7 @@ public class StreamingAggTest {
     // group by col7, agg over col5
     agg =
         new StreamingAggregate(
-            new BatchTupleSource(source),
+            new TupleSource(source),
             new int[] {7},
             new SingleColumnAggregatorFactory(5, AggregationOp.MIN));
     agg.open(null);
@@ -676,7 +676,7 @@ public class StreamingAggTest {
     // group by col7, agg over col0
     StreamingAggregate agg =
         new StreamingAggregate(
-            new BatchTupleSource(source),
+            new TupleSource(source),
             new int[] {7},
             new SingleColumnAggregatorFactory(0, AggregationOp.MAX));
     agg.open(null);
@@ -692,7 +692,7 @@ public class StreamingAggTest {
     // group by col7, agg over col1
     agg =
         new StreamingAggregate(
-            new BatchTupleSource(source),
+            new TupleSource(source),
             new int[] {7},
             new SingleColumnAggregatorFactory(1, AggregationOp.MAX));
     agg.open(null);
@@ -708,7 +708,7 @@ public class StreamingAggTest {
     // group by col7, agg over col2
     agg =
         new StreamingAggregate(
-            new BatchTupleSource(source),
+            new TupleSource(source),
             new int[] {7},
             new SingleColumnAggregatorFactory(2, AggregationOp.MAX));
     agg.open(null);
@@ -724,7 +724,7 @@ public class StreamingAggTest {
     // group by col7, agg over col3
     agg =
         new StreamingAggregate(
-            new BatchTupleSource(source),
+            new TupleSource(source),
             new int[] {7},
             new SingleColumnAggregatorFactory(3, AggregationOp.MAX));
     agg.open(null);
@@ -740,7 +740,7 @@ public class StreamingAggTest {
     // group by col4, agg over col4
     agg =
         new StreamingAggregate(
-            new BatchTupleSource(source),
+            new TupleSource(source),
             new int[] {7},
             new SingleColumnAggregatorFactory(4, AggregationOp.MAX));
     agg.open(null);
@@ -756,7 +756,7 @@ public class StreamingAggTest {
     // group by col7, agg over col5
     agg =
         new StreamingAggregate(
-            new BatchTupleSource(source),
+            new TupleSource(source),
             new int[] {7},
             new SingleColumnAggregatorFactory(5, AggregationOp.MAX));
     agg.open(null);
@@ -786,7 +786,7 @@ public class StreamingAggTest {
     }
     StreamingAggregate agg =
         new StreamingAggregate(
-            new BatchTupleSource(tbb),
+            new TupleSource(tbb),
             new int[] {0, 1},
             new SingleColumnAggregatorFactory(2, AggregationOp.COUNT));
     agg.open(null);
@@ -814,7 +814,7 @@ public class StreamingAggTest {
     }
     StreamingAggregate agg =
         new StreamingAggregate(
-            new BatchTupleSource(tbb),
+            new TupleSource(tbb),
             new int[] {0, 1},
             new SingleColumnAggregatorFactory(2, AggregationOp.MIN));
     agg.open(null);
@@ -844,7 +844,7 @@ public class StreamingAggTest {
     }
     StreamingAggregate agg =
         new StreamingAggregate(
-            new BatchTupleSource(tbb),
+            new TupleSource(tbb),
             new int[] {0, 1},
             new SingleColumnAggregatorFactory(2, AggregationOp.MAX));
     agg.open(null);
@@ -874,7 +874,7 @@ public class StreamingAggTest {
     }
     StreamingAggregate agg =
         new StreamingAggregate(
-            new BatchTupleSource(tbb),
+            new TupleSource(tbb),
             new int[] {0, 1},
             new SingleColumnAggregatorFactory(2, AggregationOp.SUM));
     agg.open(null);
@@ -902,7 +902,7 @@ public class StreamingAggTest {
     }
     StreamingAggregate agg =
         new StreamingAggregate(
-            new BatchTupleSource(tbb),
+            new TupleSource(tbb),
             new int[] {0, 1},
             new SingleColumnAggregatorFactory(2, AggregationOp.AVG));
     agg.open(null);
@@ -930,7 +930,7 @@ public class StreamingAggTest {
     }
     StreamingAggregate agg =
         new StreamingAggregate(
-            new BatchTupleSource(tbb),
+            new TupleSource(tbb),
             new int[] {0, 1},
             new SingleColumnAggregatorFactory(2, AggregationOp.STDEV));
     agg.open(null);
@@ -957,7 +957,7 @@ public class StreamingAggTest {
     // group by gkey; min on gkey, max on gkey, count on value, sum on value, avg on value, stdev on value
     StreamingAggregate agg =
         new StreamingAggregate(
-            new BatchTupleSource(tbb),
+            new TupleSource(tbb),
             new int[] {0},
             new SingleColumnAggregatorFactory(0, AggregationOp.MIN),
             new SingleColumnAggregatorFactory(0, AggregationOp.MAX),
@@ -1028,7 +1028,7 @@ public class StreamingAggTest {
     // group by col0 and col1, then min max count sum avg stdev
     StreamingAggregate agg =
         new StreamingAggregate(
-            new BatchTupleSource(tbb),
+            new TupleSource(tbb),
             new int[] {0, 1},
             new SingleColumnAggregatorFactory(2, AggregationOp.MIN),
             new SingleColumnAggregatorFactory(2, AggregationOp.MAX),
@@ -1088,7 +1088,7 @@ public class StreamingAggTest {
     // group by gkey, then min max count sum avg stdev
     StreamingAggregate agg =
         new StreamingAggregate(
-            new BatchTupleSource(tbb),
+            new TupleSource(tbb),
             new int[] {0},
             new SingleColumnAggregatorFactory(1, AggregationOp.MIN),
             new SingleColumnAggregatorFactory(1, AggregationOp.MAX),
@@ -1178,7 +1178,7 @@ public class StreamingAggTest {
     // group by col0 and col1, then min max count sum avg stdev
     StreamingAggregate agg =
         new StreamingAggregate(
-            new BatchTupleSource(tbb),
+            new TupleSource(tbb),
             new int[] {0, 1},
             new SingleColumnAggregatorFactory(2, AggregationOp.MIN),
             new SingleColumnAggregatorFactory(2, AggregationOp.MAX),
@@ -1237,7 +1237,7 @@ public class StreamingAggTest {
     // group by col0, count
     StreamingAggregate agg =
         new StreamingAggregate(
-            new BatchTupleSource(tbb),
+            new TupleSource(tbb),
             new int[] {0},
             new SingleColumnAggregatorFactory(1, AggregationOp.COUNT));
     agg.open(null);

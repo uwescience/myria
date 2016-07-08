@@ -19,8 +19,8 @@ public class MergeTest {
 
   @Test
   public void testMergeConstructorWithNull() throws DbException {
-    BatchTupleSource[] children = new BatchTupleSource[1];
-    children[0] = new BatchTupleSource(TestUtils.generateRandomTuples(10, 10, false));
+    TupleSource[] children = new TupleSource[1];
+    children[0] = new TupleSource(TestUtils.generateRandomTuples(10, 10, false));
     Merge merge = new Merge(null, null, null);
     merge.setChildren(children);
     merge.setSortedColumns(new int[] {0}, new boolean[] {true});
@@ -28,10 +28,10 @@ public class MergeTest {
 
   @Test
   public void testMergeCount() throws DbException {
-    BatchTupleSource[] children = new BatchTupleSource[3];
-    children[0] = new BatchTupleSource(TestUtils.generateRandomTuples(12300, 5000, true));
-    children[1] = new BatchTupleSource(TestUtils.generateRandomTuples(4200, 2000, true));
-    children[2] = new BatchTupleSource(TestUtils.generateRandomTuples(9900, 5000, true));
+    TupleSource[] children = new TupleSource[3];
+    children[0] = new TupleSource(TestUtils.generateRandomTuples(12300, 5000, true));
+    children[1] = new TupleSource(TestUtils.generateRandomTuples(4200, 2000, true));
+    children[2] = new TupleSource(TestUtils.generateRandomTuples(9900, 5000, true));
     NAryOperator merge = new Merge(children, new int[] {0}, new boolean[] {true});
     merge.open(null);
     TupleBatch tb = null;
@@ -53,10 +53,10 @@ public class MergeTest {
     randomTuples[1] = TestUtils.generateRandomTuples(14200, 5000, true);
     randomTuples[2] = TestUtils.generateRandomTuples(29900, 5000, true);
 
-    BatchTupleSource[] children = new BatchTupleSource[3];
-    children[0] = new BatchTupleSource(randomTuples[0]);
-    children[1] = new BatchTupleSource(randomTuples[1]);
-    children[2] = new BatchTupleSource(randomTuples[2]);
+    TupleSource[] children = new TupleSource[3];
+    children[0] = new TupleSource(randomTuples[0]);
+    children[1] = new TupleSource(randomTuples[1]);
+    children[2] = new TupleSource(randomTuples[2]);
 
     NAryOperator merge = new Merge(children, new int[] {0, 1}, new boolean[] {true, true});
     merge.open(null);
