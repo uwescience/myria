@@ -618,26 +618,37 @@ public final class JdbcAccessMethod extends AccessMethod {
   }
 
   @Override
-  public void createViewIfNotExists(final String viewName, final String viewDefinition) throws DbException {
+  public void createViewIfNotExists(final String viewName, final String viewDefinition)
+      throws DbException {
     if (jdbcInfo.getDbms().equals(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL)) {
       createViewIfNotExistPostgres(viewName, viewDefinition);
     } else {
-      throw new UnsupportedOperationException("create index if not exists is not supported in " + jdbcInfo.getDbms()
-          + ", implement me");
+      throw new UnsupportedOperationException(
+          "create index if not exists is not supported in "
+              + jdbcInfo.getDbms()
+              + ", implement me");
     }
   }
 
   /**
    * Create a view in postgres if no view with the same name exists
-   * 
+   *
    * @param viewName the name of the views
    * @param viewDefinition the view to be created
    * @throws DbException if there is an error in the DBMS.
    */
-  public void createViewIfNotExistPostgres(final String viewName, final String viewDefinition) throws DbException {
+  public void createViewIfNotExistPostgres(final String viewName, final String viewDefinition)
+      throws DbException {
     String statement =
-        Joiner.on(' ').join("DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_class WHERE relkind = 'v' AND relname='",
-            viewName, "') THEN CREATE OR REPLACE VIEW", viewName, "AS", viewDefinition, "; END IF; END$$;");
+        Joiner.on(' ')
+            .join(
+                "DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_class WHERE relkind = 'v' AND relname='",
+                viewName,
+                "') THEN CREATE OR REPLACE VIEW",
+                viewName,
+                "AS",
+                viewDefinition,
+                "; END IF; END$$;");
     execute(statement);
   }
 
@@ -646,8 +657,8 @@ public final class JdbcAccessMethod extends AccessMethod {
     if (jdbcInfo.getDbms().equals(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL)) {
       execute(command);
     } else {
-      throw new UnsupportedOperationException("run command is not supported in " + jdbcInfo.getDbms()
-          + ", implement me");
+      throw new UnsupportedOperationException(
+          "run command is not supported in " + jdbcInfo.getDbms() + ", implement me");
     }
   }
 

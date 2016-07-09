@@ -416,7 +416,8 @@ public final class DatasetResource {
   public Response createIndex(final CreateIndexEncoding encoding) throws DbException {
     long queryId;
     try {
-      queryId = server.addIndexesToRelation(encoding.relationKey, encoding.schema, encoding.indexes);
+      queryId =
+          server.addIndexesToRelation(encoding.relationKey, encoding.schema, encoding.indexes);
     } catch (Exception e) {
       throw new DbException();
     }

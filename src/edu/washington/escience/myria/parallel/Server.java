@@ -1011,20 +1011,31 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
   /**
    * Create indexes and add the metadata to the catalog
    */
-  public long addIndexesToRelation(final RelationKey relationKey, final Schema schema, final List<IndexRef> indexes)
+  public long addIndexesToRelation(
+      final RelationKey relationKey, final Schema schema, final List<IndexRef> indexes)
       throws DbException, InterruptedException {
     long queryID;
     /* Add indexes to relations */
     try {
       Map<Integer, SubQueryPlan> workerPlans = new HashMap<>();
       for (Integer workerId : getWorkersForRelation(relationKey, null)) {
-        workerPlans.put(workerId, new SubQueryPlan(new DbCreateIndex(EmptyRelation.of(catalog.getSchema(relationKey)),
-            relationKey, schema, indexes, null)));
+        workerPlans.put(
+            workerId,
+            new SubQueryPlan(
+                new DbCreateIndex(
+                    EmptyRelation.of(catalog.getSchema(relationKey)),
+                    relationKey,
+                    schema,
+                    indexes,
+                    null)));
       }
       ListenableFuture<Query> qf =
-          queryManager.submitQuery("add indexes to " + relationKey.toString(), "add indexes to  "
-              + relationKey.toString(), "add indexes to " + relationKey.toString(getDBMS()), new SubQueryPlan(
-              new SinkRoot(new EOSSource())), workerPlans);
+          queryManager.submitQuery(
+              "add indexes to " + relationKey.toString(),
+              "add indexes to  " + relationKey.toString(),
+              "add indexes to " + relationKey.toString(getDBMS()),
+              new SubQueryPlan(new SinkRoot(new EOSSource())),
+              workerPlans);
       try {
         queryID = qf.get().getQueryId();
       } catch (ExecutionException e) {
@@ -1047,7 +1058,8 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
   /**
    * Create a view
    */
-  public long createView(final String viewName, final String viewDefinition, final Set<Integer> workers)
+  public long createView(
+      final String viewName, final String viewDefinition, final Set<Integer> workers)
       throws DbException, InterruptedException {
     long queryID;
     Set<Integer> actualWorkers = workers;
@@ -1059,12 +1071,19 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
     try {
       Map<Integer, SubQueryPlan> workerPlans = new HashMap<>();
       for (Integer workerId : actualWorkers) {
-        workerPlans.put(workerId, new SubQueryPlan(new DbCreateView(EmptyRelation.of(Schema.EMPTY_SCHEMA), viewName,
-            viewDefinition, null)));
+        workerPlans.put(
+            workerId,
+            new SubQueryPlan(
+                new DbCreateView(
+                    EmptyRelation.of(Schema.EMPTY_SCHEMA), viewName, viewDefinition, null)));
       }
       ListenableFuture<Query> qf =
-          queryManager.submitQuery("create view", "create view", "create view", new SubQueryPlan(new SinkRoot(
-              new EOSSource())), workerPlans);
+          queryManager.submitQuery(
+              "create view",
+              "create view",
+              "create view",
+              new SubQueryPlan(new SinkRoot(new EOSSource())),
+              workerPlans);
       try {
         queryID = qf.get().getQueryId();
       } catch (ExecutionException e) {
@@ -1080,7 +1099,8 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
   /**
    * Create a udf and register it in the catalog
    */
-  public long createUDF(final String udfName, final String udfDefinition, final Set<Integer> workers)
+  public long createUDF(
+      final String udfName, final String udfDefinition, final Set<Integer> workers)
       throws DbException, InterruptedException {
     long queryID;
     Set<Integer> actualWorkers = workers;
@@ -1092,12 +1112,18 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
     try {
       Map<Integer, SubQueryPlan> workerPlans = new HashMap<>();
       for (Integer workerId : actualWorkers) {
-        workerPlans.put(workerId, new SubQueryPlan(new DbCreateUDF(EmptyRelation.of(Schema.EMPTY_SCHEMA),
-            udfDefinition, null)));
+        workerPlans.put(
+            workerId,
+            new SubQueryPlan(
+                new DbCreateUDF(EmptyRelation.of(Schema.EMPTY_SCHEMA), udfDefinition, null)));
       }
       ListenableFuture<Query> qf =
-          queryManager.submitQuery("create UDF", "create UDF", "create UDF", new SubQueryPlan(new SinkRoot(
-              new EOSSource())), workerPlans);
+          queryManager.submitQuery(
+              "create UDF",
+              "create UDF",
+              "create UDF",
+              new SubQueryPlan(new SinkRoot(new EOSSource())),
+              workerPlans);
       try {
         queryID = qf.get().getQueryId();
       } catch (ExecutionException e) {

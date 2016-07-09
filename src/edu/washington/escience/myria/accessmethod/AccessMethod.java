@@ -190,16 +190,17 @@ public abstract class AccessMethod {
 
   /**
    * Creates a view
-   * 
+   *
    * @param viewName
    * @param viewDefinition
    * @throws DbException
    */
-  public abstract void createViewIfNotExists(String viewName, String viewDefinition) throws DbException;
+  public abstract void createViewIfNotExists(String viewName, String viewDefinition)
+      throws DbException;
 
   /**
    * Executes a command on the underlying database
-   * 
+   *
    * @param command
    * @throws DbException
    */
