@@ -618,10 +618,9 @@ public final class JdbcAccessMethod extends AccessMethod {
   }
 
   @Override
-  public void createViewIfNotExists(final String viewName, final String viewDefinition)
-      throws DbException {
+  public void createView(final String viewName, final String viewDefinition) throws DbException {
     if (jdbcInfo.getDbms().equals(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL)) {
-      createViewIfNotExistPostgres(viewName, viewDefinition);
+      createViewPostgres(viewName, viewDefinition);
     } else {
       throw new UnsupportedOperationException(
           "create index if not exists is not supported in "
@@ -637,18 +636,10 @@ public final class JdbcAccessMethod extends AccessMethod {
    * @param viewDefinition the view to be created
    * @throws DbException if there is an error in the DBMS.
    */
-  public void createViewIfNotExistPostgres(final String viewName, final String viewDefinition)
+  public void createViewPostgres(final String viewName, final String viewDefinition)
       throws DbException {
     String statement =
-        Joiner.on(' ')
-            .join(
-                "DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_class WHERE relkind = 'v' AND relname='",
-                viewName,
-                "') THEN CREATE OR REPLACE VIEW",
-                viewName,
-                "AS",
-                viewDefinition,
-                "; END IF; END$$;");
+        Joiner.on(' ').join("CREATE OR REPLACE VIEW", viewName, "AS", viewDefinition, ";");
     execute(statement);
   }
 

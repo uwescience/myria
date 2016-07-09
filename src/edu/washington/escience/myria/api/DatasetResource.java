@@ -43,8 +43,8 @@ import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.TupleWriter;
 import edu.washington.escience.myria.accessmethod.AccessMethod.IndexRef;
+import edu.washington.escience.myria.api.encoding.CreateFunctionEncoding;
 import edu.washington.escience.myria.api.encoding.CreateIndexEncoding;
-import edu.washington.escience.myria.api.encoding.CreateUDFEncoding;
 import edu.washington.escience.myria.api.encoding.CreateViewEncoding;
 import edu.washington.escience.myria.api.encoding.DatasetEncoding;
 import edu.washington.escience.myria.api.encoding.DatasetStatus;
@@ -416,8 +416,8 @@ public final class DatasetResource {
   public Response createIndex(final CreateIndexEncoding encoding) throws DbException {
     long queryId;
     try {
-      queryId =
-          server.addIndexesToRelation(encoding.relationKey, encoding.schema, encoding.indexes);
+      Schema relationSchema = server.getSchema(encoding.relationKey);
+      queryId = server.addIndexesToRelation(encoding.relationKey, relationSchema, encoding.indexes);
     } catch (Exception e) {
       throw new DbException();
     }
@@ -445,15 +445,17 @@ public final class DatasetResource {
   }
 
   /**
-   * Creates an UDF based on DbCreateUDFEncoding
+   * Creates an function based on DbCreateFunctionEncoding
    */
   @POST
-  @Path("/createUDF/")
+  @Path("/createFunction/")
   @Consumes(MediaType.APPLICATION_JSON)
-  public Response createUDF(final CreateUDFEncoding encoding) throws DbException {
+  public Response createFunction(final CreateFunctionEncoding encoding) throws DbException {
     long queryId;
     try {
-      queryId = server.createUDF(encoding.udfName, encoding.udfDefinition, encoding.workers);
+      queryId =
+          server.createFunction(
+              encoding.functionName, encoding.functionDefinition, encoding.workers);
     } catch (Exception e) {
       throw new DbException();
     }

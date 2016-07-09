@@ -3,6 +3,9 @@
  */
 package edu.washington.escience.myria.operator;
 
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 import com.google.common.collect.ImmutableMap;
 
 import edu.washington.escience.myria.DbException;
@@ -14,7 +17,7 @@ import edu.washington.escience.myria.storage.TupleBatch;
 /**
  *
  */
-public class DbCreateUDF extends RootOperator {
+public class DbCreateFunction extends RootOperator {
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
 
@@ -23,18 +26,23 @@ public class DbCreateUDF extends RootOperator {
   /** The information for the database connection. */
   private ConnectionInfo connectionInfo;
 
-  private final String udfDefinition;
+  private final String functionName;
+  private final String functionDefinition;
 
   /**
    * @param child the source of tuples to be inserted.
    * @param relationKey the key of the table the tuples should be inserted into.
    * @param connectionInfo the parameters of the database connection.
    */
-  public DbCreateUDF(
-      final Operator child, final String sqlString, final ConnectionInfo connectionInfo) {
+  public DbCreateFunction(
+      final Operator child,
+      final String functionName,
+      final String functionDefinition,
+      final ConnectionInfo connectionInfo) {
     super(child);
     this.connectionInfo = connectionInfo;
-    udfDefinition = sqlString;
+    this.functionName = functionName;
+    this.functionDefinition = functionDefinition;
   }
 
   @Override
@@ -47,8 +55,14 @@ public class DbCreateUDF extends RootOperator {
     /* Open the database connection */
     accessMethod = AccessMethod.of(connectionInfo.getDbms(), connectionInfo, false);
 
-    /* Drop the table */
-    accessMethod.runCommand(udfDefinition);
+    /* Validate command */
+    Pattern pattern = Pattern.compile("(CREATE FUNCTION)([\\s\\S]*)(LANGUAGE SQL;)");
+    Matcher matcher = pattern.matcher(functionDefinition);
+
+    if (matcher.matches()) {
+      /* Run command */
+      accessMethod.runCommand(functionDefinition);
+    }
   }
 
   @Override

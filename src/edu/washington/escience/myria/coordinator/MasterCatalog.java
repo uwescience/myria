@@ -115,6 +115,7 @@ public final class MasterCatalog {
           + "    col_name TEXT,\n"
           + "    col_type TEXT NOT NULL,\n"
           + "    is_indexed INTEGER NOT NULL, \n"
+          + "    ascending_order BOOLEAN,\n"
           + "    FOREIGN KEY (user_name,program_name,relation_name) REFERENCES relations ON DELETE CASCADE);";
   /** Create an index on the relation_schema table. */
   private static final String CREATE_RELATION_SCHEMA_INDEX =
@@ -152,11 +153,11 @@ public final class MasterCatalog {
           + "WHERE status = '"
           + QueryStatusEncoding.Status.ACCEPTED.toString()
           + "';";
-  private static final String CREATE_REGISTERED_UDFS =
-      "CREATE TABLE registered_udfs (\n"
-          + "    udf_id INTEGER NOT NULL, \n"
-          + "    udf_name INTEGER NOT NULL, \n"
-          + "    udf_definition TEXT NOT NULL);";
+  private static final String CREATE_REGISTERED_FUNCTIONS =
+      "CREATE TABLE registered_functions (\n"
+          + "    function_name TEXT NOT NULL, \n"
+          + "    function_definition TEXT NOT NULL,\n"
+          + "    function_outputSchema TEXT NOT NULL);";
 
   /** CREATE TABLE statements @formatter:on */
 
@@ -216,7 +217,7 @@ public final class MasterCatalog {
                     sqliteConnection.exec(CREATE_STORED_RELATIONS_INDEX);
                     sqliteConnection.exec(CREATE_SHARDS);
                     sqliteConnection.exec(CREATE_SHARDS_INDEX);
-                    sqliteConnection.exec(CREATE_REGISTERED_UDFS);
+                    sqliteConnection.exec(CREATE_REGISTERED_FUNCTIONS);
                     sqliteConnection.exec("END TRANSACTION");
                   } catch (final SQLiteException e) {
                     sqliteConnection.exec("ROLLBACK TRANSACTION");
@@ -1706,13 +1707,14 @@ public final class MasterCatalog {
   }
 
   /*
-   * Register UDFs in the catalog
+   * Register a function in the catalog
    */
 
-  public void registerUDFs(@Nonnull final String udfName, @Nonnull final String udfDefinition)
+  public void registerFunction(
+      @Nonnull final String functionName, @Nonnull final String functionDefinition)
       throws CatalogException {
-    Objects.requireNonNull(udfName, "udf name");
-    Objects.requireNonNull(udfDefinition, "udf definition");
+    Objects.requireNonNull(functionName, "function name");
+    Objects.requireNonNull(functionDefinition, "function definition");
     if (isClosed) {
       throw new CatalogException("Catalog is closed.");
     }
@@ -1726,14 +1728,13 @@ public final class MasterCatalog {
                 protected Void job(final SQLiteConnection sqliteConnection)
                     throws CatalogException, SQLiteException {
                   try {
-                    long udf_id = sqliteConnection.getLastInsertId();
+                    deleteFunctionIfExists(sqliteConnection, functionName, false);
+
                     SQLiteStatement statement =
                         sqliteConnection.prepare(
-                            "INSERT INTO registered_udfs (udf_id, udf_name, udf_definition) VALUES (?,?,?);");
-
-                    statement.bind(1, udf_id);
-                    statement.bind(2, udfName);
-                    statement.bind(3, udfDefinition);
+                            "INSERT INTO registered_functions (function_name, function_definition) VALUES (?,?);");
+                    statement.bind(1, functionName);
+                    statement.bind(2, functionDefinition);
                     statement.stepThrough();
                     statement.dispose();
 
@@ -1745,6 +1746,30 @@ public final class MasterCatalog {
               })
           .get();
     } catch (InterruptedException | ExecutionException e) {
+      throw new CatalogException(e);
+    }
+  }
+
+  /**
+   * Delete the specified function from the catalog, if it exists.
+   *
+   * @param sqliteConnection the connection to the SQLite database
+   * @param functionName the function to be deleted.
+   * @throws CatalogException if there is an error
+   */
+  private void deleteFunctionIfExists(
+      @Nonnull final SQLiteConnection sqliteConnection,
+      @Nonnull final String functionName,
+      final boolean isOverwrite)
+      throws CatalogException {
+    try {
+      String sql = String.format("DELETE FROM registered_functions WHERE function_name=? ");
+      SQLiteStatement statement = sqliteConnection.prepare(sql);
+      statement.bind(1, functionName);
+      statement.stepThrough();
+      statement.dispose();
+      statement = null;
+    } catch (final SQLiteException e) {
       throw new CatalogException(e);
     }
   }

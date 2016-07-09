@@ -86,8 +86,8 @@ import edu.washington.escience.myria.io.DataSink;
 import edu.washington.escience.myria.io.UriSink;
 import edu.washington.escience.myria.operator.Apply;
 import edu.washington.escience.myria.operator.DataOutput;
+import edu.washington.escience.myria.operator.DbCreateFunction;
 import edu.washington.escience.myria.operator.DbCreateIndex;
-import edu.washington.escience.myria.operator.DbCreateUDF;
 import edu.washington.escience.myria.operator.DbCreateView;
 import edu.washington.escience.myria.operator.DbDelete;
 import edu.washington.escience.myria.operator.DbInsert;
@@ -1097,10 +1097,10 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
   }
 
   /**
-   * Create a udf and register it in the catalog
+   * Create a function and register it in the catalog
    */
-  public long createUDF(
-      final String udfName, final String udfDefinition, final Set<Integer> workers)
+  public long createFunction(
+      final String functionName, final String functionDefinition, final Set<Integer> workers)
       throws DbException, InterruptedException {
     long queryID;
     Set<Integer> actualWorkers = workers;
@@ -1108,20 +1108,24 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
       actualWorkers = getWorkers().keySet();
     }
 
-    /* Create the UDF */
+    /* Create the function */
     try {
       Map<Integer, SubQueryPlan> workerPlans = new HashMap<>();
       for (Integer workerId : actualWorkers) {
         workerPlans.put(
             workerId,
             new SubQueryPlan(
-                new DbCreateUDF(EmptyRelation.of(Schema.EMPTY_SCHEMA), udfDefinition, null)));
+                new DbCreateFunction(
+                    EmptyRelation.of(Schema.EMPTY_SCHEMA),
+                    functionName,
+                    functionDefinition,
+                    null)));
       }
       ListenableFuture<Query> qf =
           queryManager.submitQuery(
-              "create UDF",
-              "create UDF",
-              "create UDF",
+              "create function",
+              "create function",
+              "create function",
               new SubQueryPlan(new SinkRoot(new EOSSource())),
               workerPlans);
       try {
@@ -1133,9 +1137,9 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
       throw new DbException(e);
     }
 
-    /* Register the UDF to the catalog */
+    /* Register the function to the catalog */
     try {
-      catalog.registerUDFs(udfName, udfDefinition);
+      catalog.registerFunction(functionName, functionDefinition);
     } catch (CatalogException e) {
       throw new DbException(e);
     }

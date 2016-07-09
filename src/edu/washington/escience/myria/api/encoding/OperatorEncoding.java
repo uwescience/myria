@@ -35,7 +35,7 @@ import edu.washington.escience.myria.operator.Operator;
   @Type(name = "DbQueryScan", value = QueryScanEncoding.class),
   @Type(name = "DbCreateIndex", value = CreateIndexEncoding.class),
   @Type(name = "DbCreateView", value = CreateViewEncoding.class),
-  @Type(name = "DbCreateUDF", value = CreateUDFEncoding.class),
+  @Type(name = "DbCreateFunction", value = CreateFunctionEncoding.class),
   @Type(name = "Difference", value = DifferenceEncoding.class),
   @Type(name = "DupElim", value = DupElimEncoding.class),
   @Type(name = "Empty", value = EmptyRelationEncoding.class),

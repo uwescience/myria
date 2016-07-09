@@ -48,7 +48,7 @@ public class DbCreateView extends RootOperator {
     accessMethod = AccessMethod.of(connectionInfo.getDbms(), connectionInfo, false);
 
     /* Add the indexes to the relation */
-    accessMethod.createViewIfNotExists(viewName, viewQuery);
+    accessMethod.createView(viewName, viewQuery);
   }
 
   @Override
