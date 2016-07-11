@@ -80,10 +80,10 @@ public class PythonUDFEvaluator extends GenericEvaluator {
     outputType = op.getOutput();
 
     ExpressionOperator left = op.getLeft();
-    // LOGGER.info("left string :" + left.toString());
+    LOGGER.info("left string :" + left.toString());
 
     ExpressionOperator right = op.getRight();
-    // LOGGER.info("right string :" + right.toString());
+    LOGGER.info("right string :" + right.toString());
 
     if (left.getClass().equals(VariableExpression.class)) {
       leftColumnIdx = ((VariableExpression) left).getColumnIdx();
@@ -177,7 +177,7 @@ public class PythonUDFEvaluator extends GenericEvaluator {
 
   public void evalUpdatePyExpression(final ReadableTable tb, final int rowIdx, final AppendableTable result,
       final ReadableTable state) throws DbException {
-    // this is only called when updating the state tuple
+    
     Object obj = evaluatePython(tb, rowIdx, state);
     int resultcol = -1;
     if (bLeftState) {
@@ -232,21 +232,22 @@ public class PythonUDFEvaluator extends GenericEvaluator {
       } else {
         DataOutputStream dOut = pyWorker.getDataOutputStream();
         LOGGER.info("got the output stream!");
-        ReadableTable readbuffer;
+        ReadableTable lreadbuffer;
         // send left column
         if (bLeftState) {
-          readbuffer = state;
+          lreadbuffer = state;
         } else {
-          readbuffer = tb;
+          lreadbuffer = tb;
         }
-        writeToStream(readbuffer, rowIdx, leftColumnIdx, dOut);
+        writeToStream(lreadbuffer, rowIdx, leftColumnIdx, dOut);
+        ReadableTable rreadbuffer;
         // send right column
         if (bRightState) {
-          readbuffer = state;
+          rreadbuffer = state;
         } else {
-          readbuffer = tb;
+          rreadbuffer = tb;
         }
-        writeToStream(readbuffer, rowIdx, rightColumnIdx, dOut);
+        writeToStream(rreadbuffer, rowIdx, rightColumnIdx, dOut);
         // read response back
         Object result = readFromStream();
         return result;

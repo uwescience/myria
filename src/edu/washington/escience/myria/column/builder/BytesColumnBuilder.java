@@ -46,7 +46,7 @@ public final class BytesColumnBuilder extends ColumnBuilder<ByteBuffer> {
   /**
    * copy.
    * 
-   * @param numDates the actual num strings in the data
+   * @param numBB the actual num strings in the data
    * @param data the underlying data
    * */
   private BytesColumnBuilder(final ByteBuffer[] data, final int numBB) {
@@ -55,7 +55,7 @@ public final class BytesColumnBuilder extends ColumnBuilder<ByteBuffer> {
   }
 
   /*
-   * Constructs a DateColumn by deserializing the given ColumnMessage.
+   * Constructs a BytesColumn by deserializing the given ColumnMessage.
    * 
    * @param message a ColumnMessage containing the contents of this column.
    * 
@@ -67,7 +67,7 @@ public final class BytesColumnBuilder extends ColumnBuilder<ByteBuffer> {
     Preconditions.checkArgument(message.getType().ordinal() == ColumnMessage.Type.BYTES_VALUE,
         "Trying to construct Bytes from non-bytes ColumnMessage %s", message.getType());
 
-    Preconditions.checkArgument(message.hasBytesColumn(), "ColumnMessage is missing DateColumn");
+    Preconditions.checkArgument(message.hasBytesColumn(), "ColumnMessage is missing BytesColumn");
     final BytesColumnMessage BytesColumn = message.getBytesColumn();
     ByteBuffer[] newData = new ByteBuffer[numTuples];
     ByteBuffer data = BytesColumn.getData().asReadOnlyByteBuffer();
@@ -93,7 +93,7 @@ public final class BytesColumnBuilder extends ColumnBuilder<ByteBuffer> {
 
   @Override
   public Type getType() {
-    return Type.DATETIME_TYPE;
+    return Type.BYTES_TYPE;
   }
 
   @Override

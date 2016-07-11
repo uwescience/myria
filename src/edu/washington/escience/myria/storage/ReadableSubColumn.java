@@ -51,7 +51,7 @@ public final class ReadableSubColumn implements ReadableColumn {
 
   @Override
   public ByteBuffer getByteBuffer(final int row) {
-    return null; // inner.getByteBuffer(column, row);
+    return inner.getByteBuffer(column, row);
   }
 
   @Override

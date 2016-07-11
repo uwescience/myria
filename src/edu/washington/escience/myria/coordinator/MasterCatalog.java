@@ -152,7 +152,7 @@ public final class MasterCatalog {
     + "WHERE status = '" + QueryStatusEncoding.Status.ACCEPTED.toString() + "';";
   private static final String CREATE_REGISTERED_UDFS =
       "CREATE TABLE registered_udfs (\n"
-          + "    udf_name INTEGER NOT NULL, \n" 
+          + "    udf_name TEXT NOT NULL, \n" 
           + "    udf_definition TEXT NOT NULL,\n"
           + "    udf_language INTEGER,\n"
           + "    udf_binary BLOB,\n"

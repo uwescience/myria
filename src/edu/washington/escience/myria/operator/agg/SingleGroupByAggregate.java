@@ -197,6 +197,7 @@ public class SingleGroupByAggregate extends UnaryOperator {
           doubleAggState.put(groupByDouble, aggState);
         }
         break;
+
     }
     if (aggState == null) {
       throw new IllegalStateException("Aggregating values of unknown type.");
