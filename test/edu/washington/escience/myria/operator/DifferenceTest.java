@@ -51,8 +51,8 @@ public class DifferenceTest {
 
   @Test
   public void test() throws Exception {
-    BatchTupleSource left = new BatchTupleSource(leftTbb);
-    BatchTupleSource right = new BatchTupleSource(rightTbb);
+    TupleSource left = new TupleSource(leftTbb);
+    TupleSource right = new TupleSource(rightTbb);
 
     BinaryOperator diff = new Difference(left, right);
     diff.open(null);

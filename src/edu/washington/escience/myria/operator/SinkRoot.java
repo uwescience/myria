@@ -10,7 +10,7 @@ import edu.washington.escience.myria.storage.TupleBatch;
  *
  * This RootOperator is a reasonable RootOperator for master plans which are not aiming at importing data into workers.
  * */
-public class EmptySink extends RootOperator {
+public class SinkRoot extends RootOperator {
 
   /**
    *
@@ -38,7 +38,7 @@ public class EmptySink extends RootOperator {
   /**
    * @param child the child.
    * */
-  public EmptySink(final Operator child) {
+  public SinkRoot(final Operator child) {
     super(child);
     setLimit(0);
   }
@@ -48,7 +48,7 @@ public class EmptySink extends RootOperator {
    * @param limit the limit of the number of tuples this operator will absorb. If limit <= 0, all tuples will be read.
    *          Note that this is only accurate to the nearest TupleBatch over limit.
    * */
-  public EmptySink(final Operator child, final long limit) {
+  public SinkRoot(final Operator child, final long limit) {
     super(child);
     setLimit(limit);
   }

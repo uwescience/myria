@@ -17,7 +17,7 @@ import edu.washington.escience.myria.expression.StateExpression;
 import edu.washington.escience.myria.expression.VariableExpression;
 import edu.washington.escience.myria.operator.SingletonRelation;
 import edu.washington.escience.myria.operator.StatefulApply;
-import edu.washington.escience.myria.operator.BatchTupleSource;
+import edu.washington.escience.myria.operator.TupleSource;
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
 import edu.washington.escience.myria.util.TestEnvVars;
@@ -54,7 +54,7 @@ public class StatefulApplyTest {
 
     StatefulApply apply =
         new StatefulApply(
-            new BatchTupleSource(tbb), Expressions.build(), Initializers.build(), Updaters.build());
+            new TupleSource(tbb), Expressions.build(), Initializers.build(), Updaters.build());
 
     apply.open(TestEnvVars.get());
     TupleBatch result;
@@ -112,7 +112,7 @@ public class StatefulApplyTest {
 
     StatefulApply apply =
         new StatefulApply(
-            new BatchTupleSource(tbb), Expressions.build(), Initializers.build(), Updaters.build());
+            new TupleSource(tbb), Expressions.build(), Initializers.build(), Updaters.build());
 
     apply.open(TestEnvVars.get());
     TupleBatch result;
@@ -182,7 +182,7 @@ public class StatefulApplyTest {
     Expression updateExpression = new Expression("old", new VariableExpression(0));
     StatefulApply apply =
         new StatefulApply(
-            new BatchTupleSource(tbb),
+            new TupleSource(tbb),
             ImmutableList.of(emitExpression),
             ImmutableList.of(initExpression),
             ImmutableList.of(updateExpression));

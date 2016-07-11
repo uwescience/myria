@@ -36,8 +36,6 @@ import com.wordnik.swagger.annotations.ApiOperation;
 import com.wordnik.swagger.annotations.ApiResponse;
 import com.wordnik.swagger.annotations.ApiResponses;
 
-import edu.washington.escience.myria.BinaryTupleReader;
-import edu.washington.escience.myria.CsvTupleReader;
 import edu.washington.escience.myria.CsvTupleWriter;
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.JsonTupleWriter;
@@ -51,9 +49,10 @@ import edu.washington.escience.myria.api.encoding.TipsyDatasetEncoding;
 import edu.washington.escience.myria.coordinator.CatalogException;
 import edu.washington.escience.myria.io.InputStreamSource;
 import edu.washington.escience.myria.io.PipeSink;
+import edu.washington.escience.myria.operator.BinaryFileScan;
+import edu.washington.escience.myria.operator.FileScan;
 import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.operator.TipsyFileScan;
-import edu.washington.escience.myria.operator.TupleSource;
 import edu.washington.escience.myria.operator.network.partition.HowPartitioned;
 import edu.washington.escience.myria.operator.network.partition.PartitionFunction;
 import edu.washington.escience.myria.operator.network.partition.RoundRobinPartitionFunction;
@@ -333,8 +332,7 @@ public final class DatasetResource {
       throw new MyriaApiException(Status.BAD_REQUEST, "format must be 'csv', 'tsv'");
     }
 
-    Operator source =
-        new TupleSource(new CsvTupleReader(schema, delimiter), new InputStreamSource(is));
+    Operator source = new FileScan(new InputStreamSource(is), schema, delimiter);
 
     ResponseBuilder builder = Response.ok();
     HowPartitioned howPartitioned = server.getDatasetStatus(relationKey).getHowPartitioned();
@@ -420,14 +418,13 @@ public final class DatasetResource {
     ResponseBuilder builder = Response.created(datasetUri);
     return doIngest(
         dataset.relationKey,
-        new TupleSource(
-            new CsvTupleReader(
-                dataset.schema,
-                dataset.delimiter,
-                dataset.quote,
-                dataset.escape,
-                dataset.numberOfSkippedLines),
-            dataset.source),
+        new FileScan(
+            dataset.source,
+            dataset.schema,
+            dataset.delimiter,
+            dataset.quote,
+            dataset.escape,
+            dataset.numberOfSkippedLines),
         dataset.workers,
         dataset.indexes,
         dataset.overwrite,
@@ -473,11 +470,10 @@ public final class DatasetResource {
     Operator scan;
     if (MoreObjects.firstNonNull(binary, false)) {
       scan =
-          new TupleSource(
-              new BinaryTupleReader(schema, MoreObjects.firstNonNull(isLittleEndian, false)),
-              new InputStreamSource(data));
+          new BinaryFileScan(
+              schema, new InputStreamSource(data), MoreObjects.firstNonNull(isLittleEndian, false));
     } else {
-      scan = new TupleSource(new CsvTupleReader(schema, delimiter), new InputStreamSource(data));
+      scan = new FileScan(new InputStreamSource(data), schema, delimiter);
     }
 
     /* In the response, tell the client the path to the relation. */

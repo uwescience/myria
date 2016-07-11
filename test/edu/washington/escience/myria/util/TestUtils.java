@@ -30,8 +30,8 @@ import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.Column;
 import edu.washington.escience.myria.operator.DbInsert;
 import edu.washington.escience.myria.operator.EOSSource;
-import edu.washington.escience.myria.operator.EmptySink;
 import edu.washington.escience.myria.operator.Operator;
+import edu.washington.escience.myria.operator.SinkRoot;
 import edu.washington.escience.myria.operator.failures.InitFailureInjector;
 import edu.washington.escience.myria.operator.network.GenericShuffleConsumer;
 import edu.washington.escience.myria.operator.network.GenericShuffleProducer;
@@ -46,7 +46,7 @@ public final class TestUtils {
   public static class EntryComparator implements Comparator<Entry<Long, String>> {
 
     @Override
-    public int compare(final Entry<Long, String> o1, final Entry<Long, String> o2) {
+    public int compare(Entry<Long, String> o1, Entry<Long, String> o2) {
       int res = o1.getKey().compareTo(o2.getKey());
       if (res != 0) {
         return res;
@@ -88,7 +88,7 @@ public final class TestUtils {
     return random;
   }
 
-  public static void setSeed(final long seed) {
+  public static void setSeed(long seed) {
     getRandom().setSeed(seed);
   }
 
@@ -428,7 +428,7 @@ public final class TestUtils {
    * @return
    */
   public static TupleBatchBuffer generateRandomTuples(
-      final int numTuples, final int sampleSize, final boolean sorted) {
+      final int numTuples, final int sampleSize, boolean sorted) {
     final ArrayList<Entry<Long, String>> entries = new ArrayList<Entry<Long, String>>();
 
     final long[] ids = randomLong(0, sampleSize, numTuples);
@@ -470,8 +470,8 @@ public final class TestUtils {
   public static final SubQuery insertRelation(
       @Nonnull final Operator masterSource,
       @Nonnull final RelationKey dest,
-      @Nonnull final PartitionFunction pf,
-      @Nonnull final Set<Integer> workers) {
+      @Nonnull PartitionFunction pf,
+      @Nonnull Set<Integer> workers) {
     return insertRelation(
         masterSource,
         dest,
@@ -493,8 +493,8 @@ public final class TestUtils {
   public static final SubQuery insertRelation(
       @Nonnull final Operator masterSource,
       @Nonnull final RelationKey dest,
-      @Nonnull final PartitionFunction pf,
-      @Nonnull final int[] workers) {
+      @Nonnull PartitionFunction pf,
+      @Nonnull int[] workers) {
     final ExchangePairID id = ExchangePairID.newID();
     /* Master plan */
     GenericShuffleProducer sp = new GenericShuffleProducer(masterSource, id, workers, pf);
@@ -520,7 +520,7 @@ public final class TestUtils {
     /* Master plan */
     EOSSource src = new EOSSource();
     Operator fail = new InitFailureInjector(src);
-    EmptySink root = new EmptySink(fail);
+    SinkRoot root = new SinkRoot(fail);
 
     Map<Integer, SubQueryPlan> workerPlans = Maps.newHashMap();
 
@@ -530,17 +530,17 @@ public final class TestUtils {
   /**
    * Construct a SubQuery that will fail on one worker during initialization. Useful for testing failures.
    */
-  public static final SubQuery failOnFirstWorkerInit(@Nonnull final int[] workers) {
+  public static final SubQuery failOnFirstWorkerInit(@Nonnull int[] workers) {
     Preconditions.checkElementIndex(1, workers.length);
 
     /* Master plan */
-    SubQueryPlan masterPlan = new SubQueryPlan(new EmptySink(new EOSSource()));
+    SubQueryPlan masterPlan = new SubQueryPlan(new SinkRoot(new EOSSource()));
 
     /* Worker plans */
     Map<Integer, SubQueryPlan> workerPlans = Maps.newHashMap();
     /* First worker */
     workerPlans.put(
-        workers[0], new SubQueryPlan(new EmptySink(new InitFailureInjector(new EOSSource()))));
+        workers[0], new SubQueryPlan(new SinkRoot(new InitFailureInjector(new EOSSource()))));
     return new SubQuery(masterPlan, workerPlans);
   }
 
@@ -551,7 +551,7 @@ public final class TestUtils {
    * @param n the number of values in the buffer.
    * @return a {@link TupleBatchBuffer} containing the values 0 to {@code n-1}
    */
-  public static TupleBatchBuffer range(final int n) {
+  public static TupleBatchBuffer range(int n) {
     TupleBatchBuffer sourceBuffer = new TupleBatchBuffer(Schema.ofFields(Type.INT_TYPE, "val"));
     for (int i = 0; i < n; ++i) {
       sourceBuffer.putInt(0, i);

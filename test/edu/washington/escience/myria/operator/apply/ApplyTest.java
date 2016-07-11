@@ -52,7 +52,7 @@ import edu.washington.escience.myria.expression.evaluate.ConstantEvaluator;
 import edu.washington.escience.myria.expression.evaluate.ExpressionOperatorParameter;
 import edu.washington.escience.myria.expression.evaluate.GenericEvaluator;
 import edu.washington.escience.myria.operator.Apply;
-import edu.washington.escience.myria.operator.BatchTupleSource;
+import edu.washington.escience.myria.operator.TupleSource;
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
 import edu.washington.escience.myria.util.TestEnvVars;
@@ -338,7 +338,7 @@ public class ApplyTest {
       Expressions.add(expr);
     }
 
-    Apply apply = new Apply(new BatchTupleSource(tbb), Expressions.build());
+    Apply apply = new Apply(new TupleSource(tbb), Expressions.build());
 
     final int nodeId = 3;
     apply.open(TestEnvVars.get(nodeId));
@@ -517,7 +517,7 @@ public class ApplyTest {
       Expressions.add(expr);
     }
 
-    Apply apply = new Apply(new BatchTupleSource(tbb), Expressions.build());
+    Apply apply = new Apply(new TupleSource(tbb), Expressions.build());
 
     apply.open(TestEnvVars.get());
     TupleBatch result;
@@ -620,7 +620,7 @@ public class ApplyTest {
       Expressions.add(expr);
     }
 
-    Apply apply = new Apply(new BatchTupleSource(tbb), Expressions.build());
+    Apply apply = new Apply(new TupleSource(tbb), Expressions.build());
 
     apply.open(TestEnvVars.get());
     TupleBatch result;

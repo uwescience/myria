@@ -367,7 +367,8 @@ public class QueryConstruct {
         if (operator instanceof CollectConsumerEncoding
             || operator instanceof SingletonEncoding
             || operator instanceof EOSControllerEncoding
-            || operator instanceof TupleSourceEncoding
+            || operator instanceof BinaryFileScanEncoding
+            || operator instanceof FileScanEncoding
             || operator instanceof NChiladaFileScanEncoding
             || operator instanceof SeaFlowFileScanEncoding
             || operator instanceof TipsyFileScanEncoding) {

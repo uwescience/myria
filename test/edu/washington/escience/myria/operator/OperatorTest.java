@@ -78,18 +78,18 @@ public class OperatorTest {
 
   @Test
   public void testUnionAllConstructorWithNull() throws DbException {
-    BatchTupleSource[] children = new BatchTupleSource[1];
-    children[0] = new BatchTupleSource(generateRandomTuples(10, 1000, false));
+    TupleSource[] children = new TupleSource[1];
+    children[0] = new TupleSource(generateRandomTuples(10, 1000, false));
     UnionAll union = new UnionAll(null);
     union.setChildren(children);
   }
 
   @Test
   public void testUnionAllCount() throws DbException {
-    BatchTupleSource[] children = new BatchTupleSource[3];
-    children[0] = new BatchTupleSource(generateRandomTuples(12300, 5000, false));
-    children[1] = new BatchTupleSource(generateRandomTuples(4200, 2000, false));
-    children[2] = new BatchTupleSource(generateRandomTuples(19900, 5000, false));
+    TupleSource[] children = new TupleSource[3];
+    children[0] = new TupleSource(generateRandomTuples(12300, 5000, false));
+    children[1] = new TupleSource(generateRandomTuples(4200, 2000, false));
+    children[2] = new TupleSource(generateRandomTuples(19900, 5000, false));
     UnionAll union = new UnionAll(children);
     union.open(null);
     TupleBatch tb = null;
@@ -110,9 +110,9 @@ public class OperatorTest {
     randomTuples[0] = generateRandomTuples(12300, 5000, false);
     randomTuples[1] = generateRandomTuples(4200, 2000, false);
 
-    BatchTupleSource[] children = new BatchTupleSource[2];
-    children[0] = new BatchTupleSource(randomTuples[0]);
-    children[1] = new BatchTupleSource(randomTuples[1]);
+    TupleSource[] children = new TupleSource[2];
+    children[0] = new TupleSource(randomTuples[0]);
+    children[1] = new TupleSource(randomTuples[1]);
 
     UnionAll union = new UnionAll(children);
     union.open(null);
@@ -147,8 +147,8 @@ public class OperatorTest {
 
   @Test
   public void testMergeConstructorWithNull() throws DbException {
-    BatchTupleSource[] children = new BatchTupleSource[1];
-    children[0] = new BatchTupleSource(generateRandomTuples(10, 10, false));
+    TupleSource[] children = new TupleSource[1];
+    children[0] = new TupleSource(generateRandomTuples(10, 10, false));
     Merge merge = new Merge(null, null, null);
     merge.setChildren(children);
     merge.setSortedColumns(new int[] {0}, new boolean[] {true});
@@ -156,10 +156,10 @@ public class OperatorTest {
 
   @Test
   public void testMergeCount() throws DbException {
-    BatchTupleSource[] children = new BatchTupleSource[3];
-    children[0] = new BatchTupleSource(generateRandomTuples(12300, 5000, true));
-    children[1] = new BatchTupleSource(generateRandomTuples(4200, 2000, true));
-    children[2] = new BatchTupleSource(generateRandomTuples(9900, 5000, true));
+    TupleSource[] children = new TupleSource[3];
+    children[0] = new TupleSource(generateRandomTuples(12300, 5000, true));
+    children[1] = new TupleSource(generateRandomTuples(4200, 2000, true));
+    children[2] = new TupleSource(generateRandomTuples(9900, 5000, true));
     NAryOperator merge = new Merge(children, new int[] {0}, new boolean[] {true});
     merge.open(null);
     TupleBatch tb = null;
@@ -181,10 +181,10 @@ public class OperatorTest {
     randomTuples[1] = generateRandomTuples(14200, 5000, true);
     randomTuples[2] = generateRandomTuples(29900, 5000, true);
 
-    BatchTupleSource[] children = new BatchTupleSource[3];
-    children[0] = new BatchTupleSource(randomTuples[0]);
-    children[1] = new BatchTupleSource(randomTuples[1]);
-    children[2] = new BatchTupleSource(randomTuples[2]);
+    TupleSource[] children = new TupleSource[3];
+    children[0] = new TupleSource(randomTuples[0]);
+    children[1] = new TupleSource(randomTuples[1]);
+    children[2] = new TupleSource(randomTuples[2]);
 
     NAryOperator merge = new Merge(children, new int[] {0, 1}, new boolean[] {true, true});
     merge.open(null);
@@ -215,7 +215,7 @@ public class OperatorTest {
   @Test
   public void testOrderedDupElim() throws DbException {
     TupleBatchBuffer randomTuples = generateRandomTuples(52300, 5000, true);
-    BatchTupleSource child = new BatchTupleSource(randomTuples);
+    TupleSource child = new TupleSource(randomTuples);
     OrderedDupElim dupElim = new OrderedDupElim(child);
     int count = 0;
 
@@ -277,7 +277,7 @@ public class OperatorTest {
       minValue[i] = Math.min(values1[i], Math.min(values2[i], values3[i]));
     }
 
-    BatchTupleSource scan = new BatchTupleSource(input);
+    TupleSource scan = new TupleSource(input);
     StreamingStateWrapper keepmin =
         new StreamingStateWrapper(scan, new KeepAndSortOnMinValue(new int[] {0}, new int[] {1}));
     keepmin.open(null);
@@ -343,9 +343,9 @@ public class OperatorTest {
       }
     }
 
-    BatchTupleSource[] children = new BatchTupleSource[2];
-    children[0] = new BatchTupleSource(leftTbb);
-    children[1] = new BatchTupleSource(rightTbb);
+    TupleSource[] children = new TupleSource[2];
+    children[0] = new TupleSource(leftTbb);
+    children[1] = new TupleSource(rightTbb);
 
     BinaryOperator join =
         new MergeJoin(children[0], children[1], new int[] {0}, new int[] {0}, new boolean[] {true});
@@ -374,9 +374,9 @@ public class OperatorTest {
     ImmutableList.Builder<String> sb = ImmutableList.builder();
     sb.add("id").add("name");
     sb.add("id2").add("name2");
-    BatchTupleSource[] children = new BatchTupleSource[2];
-    children[0] = new BatchTupleSource(randomTuples[0]);
-    children[1] = new BatchTupleSource(randomTuples[1]);
+    TupleSource[] children = new TupleSource[2];
+    children[0] = new TupleSource(randomTuples[0]);
+    children[1] = new TupleSource(randomTuples[1]);
 
     BinaryOperator join =
         new MergeJoin(
@@ -430,9 +430,9 @@ public class OperatorTest {
     sb.addAll(schema.getColumnNames());
     sb.add("id2");
     sb.add("value2");
-    BatchTupleSource[] children = new BatchTupleSource[2];
-    children[0] = new BatchTupleSource(randomTuples[0]);
-    children[1] = new BatchTupleSource(randomTuples[1]);
+    TupleSource[] children = new TupleSource[2];
+    children[0] = new TupleSource(randomTuples[0]);
+    children[1] = new TupleSource(randomTuples[1]);
 
     BinaryOperator join =
         new MergeJoin(
@@ -472,7 +472,7 @@ public class OperatorTest {
   public void testInMemoryOrderBy() throws DbException {
     TupleBatchBuffer randomTuples = generateRandomTuples(52300, 5000, false);
 
-    BatchTupleSource child = new BatchTupleSource(randomTuples);
+    TupleSource child = new TupleSource(randomTuples);
 
     InMemoryOrderBy order =
         new InMemoryOrderBy(child, new int[] {0, 1}, new boolean[] {true, true});
@@ -507,7 +507,7 @@ public class OperatorTest {
     // cases only the results were wrong.
     TupleBatchBuffer randomTuples = generateRandomTuples(52300, 5000, false);
 
-    BatchTupleSource child = new BatchTupleSource(randomTuples);
+    TupleSource child = new TupleSource(randomTuples);
 
     InMemoryOrderBy order = new InMemoryOrderBy(child, new int[] {1}, new boolean[] {false});
     order.open(null);
@@ -567,9 +567,9 @@ public class OperatorTest {
       }
     }
 
-    BatchTupleSource[] children = new BatchTupleSource[2];
-    children[0] = new BatchTupleSource(leftTbb);
-    children[1] = new BatchTupleSource(rightTbb);
+    TupleSource[] children = new TupleSource[2];
+    children[0] = new TupleSource(leftTbb);
+    children[1] = new TupleSource(rightTbb);
 
     InMemoryOrderBy sort0 = new InMemoryOrderBy(children[0], new int[] {0}, new boolean[] {false});
     InMemoryOrderBy sort1 = new InMemoryOrderBy(children[1], new int[] {0}, new boolean[] {false});
@@ -624,9 +624,9 @@ public class OperatorTest {
       }
     }
 
-    BatchTupleSource[] children = new BatchTupleSource[2];
-    children[0] = new BatchTupleSource(leftTbb);
-    children[1] = new BatchTupleSource(rightTbb);
+    TupleSource[] children = new TupleSource[2];
+    children[0] = new TupleSource(leftTbb);
+    children[1] = new TupleSource(rightTbb);
 
     BinaryOperator join =
         new MergeJoin(

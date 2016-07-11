@@ -11,15 +11,13 @@ import org.junit.Test;
 
 import com.google.common.collect.ImmutableList;
 
-import edu.washington.escience.myria.CsvTupleReader;
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.io.ByteArraySource;
-import edu.washington.escience.myria.io.FileSource;
 import edu.washington.escience.myria.storage.TupleBatch;
 
-public class CsvTupleReaderTest {
+public class FileScanTest {
 
   /**
    * Helper function used to run tests.
@@ -86,11 +84,8 @@ public class CsvTupleReaderTest {
       final Character escape)
       throws DbException, InterruptedException {
     final String realFilename = Paths.get("testdata", "filescan", filename).toString();
-    TupleSource dataInput =
-        new TupleSource(
-            new CsvTupleReader(schema, delimiter, quote, escape, null),
-            new FileSource(realFilename));
-    return getRowCount(dataInput);
+    FileScan fileScan = new FileScan(realFilename, schema, delimiter, quote, escape, null);
+    return getRowCount(fileScan);
   }
 
   /**
@@ -101,14 +96,13 @@ public class CsvTupleReaderTest {
    * @throws DbException if the file does not match the given Schema.
    * @throws InterruptedException
    */
-  private static int getRowCount(final TupleSource dataInput)
-      throws DbException, InterruptedException {
-    dataInput.open(null);
+  private static int getRowCount(final FileScan fileScan) throws DbException, InterruptedException {
+    fileScan.open(null);
 
     int count = 0;
     TupleBatch tb = null;
-    while (!dataInput.eos()) {
-      tb = dataInput.nextReady();
+    while (!fileScan.eos()) {
+      tb = fileScan.nextReady();
       if (tb != null) {
         count += tb.numTuples();
       }
@@ -231,11 +225,10 @@ public class CsvTupleReaderTest {
       printedBytes.print('\n');
     }
     printedBytes.flush();
-    TupleSource scanBytes =
-        new TupleSource(
-            new CsvTupleReader(
-                Schema.of(ImmutableList.of(Type.INT_TYPE), ImmutableList.of("col1"))),
-            new ByteArraySource(bytes.toByteArray()));
+    FileScan scanBytes =
+        new FileScan(
+            new ByteArraySource(bytes.toByteArray()),
+            Schema.of(ImmutableList.of(Type.INT_TYPE), ImmutableList.of("col1")));
     assertEquals(2 * TupleBatch.BATCH_SIZE, getRowCount(scanBytes));
   }
 

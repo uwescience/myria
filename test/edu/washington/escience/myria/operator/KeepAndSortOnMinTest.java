@@ -43,7 +43,7 @@ public class KeepAndSortOnMinTest {
       minValue[i] = Math.min(values1[i], Math.min(values2[i], values3[i]));
     }
 
-    BatchTupleSource scan = new BatchTupleSource(input);
+    TupleSource scan = new TupleSource(input);
     StreamingStateWrapper keepmin =
         new StreamingStateWrapper(scan, new KeepAndSortOnMinValue(new int[] {0}, new int[] {1}));
     keepmin.open(null);

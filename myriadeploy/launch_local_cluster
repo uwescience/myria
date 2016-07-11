@@ -1,0 +1,4 @@
+#!/bin/bash
+REPO_ROOT=$(git rev-parse --show-toplevel)
+cp -n "$REPO_ROOT/myriadeploy/deployment.cfg.local" "$REPO_ROOT/myriadeploy/deployment.cfg"
+$JAVA_HOME/bin/java -cp "$REPO_ROOT/build/libs/myria-0.1-all.jar" edu.washington.escience.myria.daemon.MyriaDriverLauncher -runtimeClass org.apache.reef.runtime.local.client.LocalRuntimeConfiguration -configPath "$REPO_ROOT/myriadeploy" -javaLibPath "$REPO_ROOT/build/libs" -nativeLibPath "$REPO_ROOT/lib"

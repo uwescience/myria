@@ -11,6 +11,7 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import edu.washington.escience.myria.api.MyriaApiException;
 import edu.washington.escience.myria.api.encoding.QueryConstruct.ConstructArgs;
 import edu.washington.escience.myria.operator.Operator;
+import edu.washington.escience.myria.operator.SampledDbInsertTemp;
 
 /**
  * A JSON-able wrapper for the expected wire message for an operator. To add a new operator, two things need to be done.
@@ -23,6 +24,7 @@ import edu.washington.escience.myria.operator.Operator;
 @JsonSubTypes({
   @Type(name = "Aggregate", value = AggregateEncoding.class),
   @Type(name = "Apply", value = ApplyEncoding.class),
+  @Type(name = "BinaryFileScan", value = BinaryFileScanEncoding.class),
   @Type(name = "BroadcastConsumer", value = BroadcastConsumerEncoding.class),
   @Type(name = "BroadcastProducer", value = BroadcastProducerEncoding.class),
   @Type(name = "CatalogScan", value = CatalogScanEncoding.class),
@@ -36,6 +38,7 @@ import edu.washington.escience.myria.operator.Operator;
   @Type(name = "DupElim", value = DupElimEncoding.class),
   @Type(name = "Empty", value = EmptyRelationEncoding.class),
   @Type(name = "EOSController", value = EOSControllerEncoding.class),
+  @Type(name = "FileScan", value = FileScanEncoding.class),
   @Type(name = "Filter", value = FilterEncoding.class),
   @Type(name = "HyperShuffleProducer", value = HyperShuffleProducerEncoding.class),
   @Type(name = "HyperShuffleConsumer", value = HyperShuffleConsumerEncoding.class),
@@ -61,7 +64,7 @@ import edu.washington.escience.myria.operator.Operator;
   @Type(name = "SingleGroupByAggregate", value = SingleGroupByAggregateEncoding.class),
   @Type(name = "Singleton", value = SingletonEncoding.class),
   @Type(name = "CrossWithSingleton", value = CrossWithSingletonEncoding.class),
-  @Type(name = "SinkRoot", value = EmptySinkEncoding.class),
+  @Type(name = "SinkRoot", value = SinkRootEncoding.class),
   @Type(name = "Split", value = SplitEncoding.class),
   @Type(name = "StatefulApply", value = StatefulApplyEncoding.class),
   @Type(name = "SymmetricHashJoin", value = SymmetricHashJoinEncoding.class),
@@ -70,7 +73,6 @@ import edu.washington.escience.myria.operator.Operator;
   @Type(name = "TempInsert", value = TempInsertEncoding.class),
   @Type(name = "TempTableScan", value = TempTableScanEncoding.class),
   @Type(name = "TipsyFileScan", value = TipsyFileScanEncoding.class),
-  @Type(name = "TupleSource", value = TupleSourceEncoding.class),
   @Type(name = "UnionAll", value = UnionAllEncoding.class)
 })
 public abstract class OperatorEncoding<T extends Operator> extends MyriaApiEncoding {

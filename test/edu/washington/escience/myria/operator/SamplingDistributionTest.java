@@ -283,16 +283,14 @@ public class SamplingDistributionTest {
 
   private void verifyExpectedResults(
       int sampleSize, SamplingType sampleType, int[][] expectedResults) throws DbException {
-    sampOp =
-        new SamplingDistribution(new BatchTupleSource(input), sampleSize, sampleType, RANDOM_SEED);
+    sampOp = new SamplingDistribution(new TupleSource(input), sampleSize, sampleType, RANDOM_SEED);
     sampOp.open(TestEnvVars.get());
     verifyExpectedResults(sampOp, expectedResults);
   }
 
   private void verifyExpectedResults(
       float samplePct, SamplingType sampleType, int[][] expectedResults) throws DbException {
-    sampOp =
-        new SamplingDistribution(new BatchTupleSource(input), samplePct, sampleType, RANDOM_SEED);
+    sampOp = new SamplingDistribution(new TupleSource(input), samplePct, sampleType, RANDOM_SEED);
     sampOp.open(TestEnvVars.get());
     verifyExpectedResults(sampOp, expectedResults);
   }
@@ -324,24 +322,21 @@ public class SamplingDistributionTest {
 
   private void verifyPossibleDistribution(int sampleSize, SamplingType sampleType)
       throws DbException {
-    sampOp =
-        new SamplingDistribution(new BatchTupleSource(input), sampleSize, sampleType, RANDOM_SEED);
+    sampOp = new SamplingDistribution(new TupleSource(input), sampleSize, sampleType, RANDOM_SEED);
     sampOp.open(TestEnvVars.get());
     verifyPossibleDistribution(sampOp);
   }
 
   private void verifyPossibleDistribution(float samplePct, SamplingType sampleType)
       throws DbException {
-    sampOp =
-        new SamplingDistribution(new BatchTupleSource(input), samplePct, sampleType, RANDOM_SEED);
+    sampOp = new SamplingDistribution(new TupleSource(input), samplePct, sampleType, RANDOM_SEED);
     sampOp.open(TestEnvVars.get());
     verifyPossibleDistribution(sampOp);
   }
 
   /** Run through all results without doing anything. */
   private void drainOperator(int sampleSize, SamplingType sampleType) throws DbException {
-    sampOp =
-        new SamplingDistribution(new BatchTupleSource(input), sampleSize, sampleType, RANDOM_SEED);
+    sampOp = new SamplingDistribution(new TupleSource(input), sampleSize, sampleType, RANDOM_SEED);
     sampOp.open(TestEnvVars.get());
     while (!sampOp.eos()) {
       sampOp.nextReady();
@@ -349,8 +344,7 @@ public class SamplingDistributionTest {
   }
 
   private void drainOperator(float samplePct, SamplingType sampleType) throws DbException {
-    sampOp =
-        new SamplingDistribution(new BatchTupleSource(input), samplePct, sampleType, RANDOM_SEED);
+    sampOp = new SamplingDistribution(new TupleSource(input), samplePct, sampleType, RANDOM_SEED);
     sampOp.open(TestEnvVars.get());
     while (!sampOp.eos()) {
       sampOp.nextReady();
