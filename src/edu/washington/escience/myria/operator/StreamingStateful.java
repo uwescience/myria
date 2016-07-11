@@ -9,9 +9,9 @@ import edu.washington.escience.myria.Schema;
 public interface StreamingStateful {
   /**
    * set its streaming states.
-   * 
+   *
    * @param states the streaming states.
-   * */
+   */
   void setStreamingStates(final List<StreamingState> states);
 
   /** @return its states. */

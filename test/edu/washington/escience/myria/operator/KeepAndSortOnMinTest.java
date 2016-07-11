@@ -50,7 +50,7 @@ public class KeepAndSortOnMinTest {
     while (!keepmin.eos()) {
       keepmin.nextReady();
       long lastValue = -1;
-      List<TupleBatch> result = keepmin.getStreamingStates().get(0).exportState();
+      List<TupleBatch> result = keepmin.getStreamingState().exportState();
       for (TupleBatch tb : result) {
         for (int i = 0; i < tb.numTuples(); i++) {
           long value = tb.getLong(1, i);
@@ -62,7 +62,7 @@ public class KeepAndSortOnMinTest {
 
     long lastValue = -1;
     double sum = 0;
-    List<TupleBatch> result = keepmin.getStreamingStates().get(0).exportState();
+    List<TupleBatch> result = keepmin.getStreamingState().exportState();
     for (TupleBatch tb : result) {
       for (int i = 0; i < tb.numTuples(); i++) {
         long value = tb.getLong(1, i);

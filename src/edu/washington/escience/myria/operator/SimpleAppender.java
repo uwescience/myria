@@ -65,7 +65,7 @@ public final class SimpleAppender extends StreamingState {
   }
 
   @Override
-  public StreamingState newInstanceFromMyself() {
+  public StreamingState duplicate() {
     return new SimpleAppender();
   }
 }

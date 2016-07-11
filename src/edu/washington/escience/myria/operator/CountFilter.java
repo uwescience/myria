@@ -5,11 +5,11 @@ import java.util.Arrays;
 import java.util.BitSet;
 import java.util.List;
 
-import jersey.repackaged.com.google.common.base.Preconditions;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.gs.collections.api.block.procedure.primitive.IntProcedure;
 import com.gs.collections.impl.list.mutable.primitive.IntArrayList;
@@ -26,7 +26,7 @@ import edu.washington.escience.myria.util.HashUtils;
 
 /**
  * Keeps distinct tuples with their counts and only emits a tuple at the first time when its count hits the threshold.
- * */
+ */
 public final class CountFilter extends StreamingState {
 
   /** Required for Java serialization. */
@@ -34,21 +34,21 @@ public final class CountFilter extends StreamingState {
 
   /**
    * The logger for this class.
-   * */
+   */
   static final Logger LOGGER = LoggerFactory.getLogger(CountFilter.class);
 
   /**
    * Indices to unique tuples.
-   * */
+   */
   private transient IntObjectHashMap<IntArrayList> uniqueTupleIndices;
 
   /**
    * The buffer for storing unique tuples.
-   * */
+   */
   private transient MutableTupleBuffer uniqueTuples = null;
   /**
    * The count of each unique tuple.
-   * */
+   */
   private transient MutableTupleBuffer tupleCounts = null;
 
   /** threshold of the count. */
@@ -76,10 +76,10 @@ public final class CountFilter extends StreamingState {
 
   /**
    * Do duplicate elimination for tb.
-   * 
+   *
    * @param tb the TupleBatch for performing DupElim.
    * @return the duplicate eliminated TB.
-   * */
+   */
   protected TupleBatch countFilter(final TupleBatch tb) {
     final int numTuples = tb.numTuples();
     if (numTuples <= 0) {
@@ -104,7 +104,7 @@ public final class CountFilter extends StreamingState {
         for (int j : keyColIndices) {
           uniqueTuples.put(j, columns.get(j), i);
         }
-        tupleCounts.put(0, new IntArrayColumn(new int[] { 1 }, 1), 0);
+        tupleCounts.putInt(0, 1);
         tupleIndexList.add(nextIndex);
         if (threshold <= 1) {
           doCount.meet = true;
@@ -131,8 +131,8 @@ public final class CountFilter extends StreamingState {
     uniqueTupleIndices = new IntObjectHashMap<IntArrayList>();
     uniqueTuples = new MutableTupleBuffer(getSchema());
     tupleCounts =
-        new MutableTupleBuffer(Schema.of(Arrays.asList(new Type[] { Type.INT_TYPE }), Arrays
-            .asList(new String[] { "count" })));
+        new MutableTupleBuffer(
+            Schema.of(ImmutableList.of(Type.INT_TYPE), ImmutableList.of("count")));
     doCount = new CountProcedure();
   }
 
@@ -165,12 +165,12 @@ public final class CountFilter extends StreamingState {
 
   /**
    * Traverse through the list of tuples and replace old values.
-   * */
+   */
   private transient CountProcedure doCount;
 
   /**
    * Traverse through the list of tuples with the same hash code.
-   * */
+   */
   private final class CountProcedure implements IntProcedure {
 
     /** row index of the tuple. */
@@ -191,12 +191,11 @@ public final class CountFilter extends StreamingState {
         found = true;
         int oldcount = tupleCounts.getInt(0, destRow);
         if (oldcount < threshold) {
-          tupleCounts.replace(0, destRow, new IntArrayColumn(new int[] { oldcount + 1 }, 1), 0);
+          tupleCounts.replace(0, destRow, new IntArrayColumn(new int[] {oldcount + 1}, 1), 0);
           meet = (oldcount + 1 >= threshold);
         }
       }
     }
-
   };
 
   @Override
@@ -208,7 +207,7 @@ public final class CountFilter extends StreamingState {
   }
 
   @Override
-  public StreamingState newInstanceFromMyself() {
+  public StreamingState duplicate() {
     return new CountFilter(threshold, keyColIndices);
   }
 }

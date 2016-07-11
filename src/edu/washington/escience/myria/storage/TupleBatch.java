@@ -109,8 +109,12 @@ public class TupleBatch implements ReadableTable, Serializable {
         "Number of columns in data must equal the number of fields in schema");
     for (int i = 0; i < columns.size(); i++) {
       Column<?> column = columns.get(i);
-      Preconditions.checkArgument(numTuples == column.size(),
-          "Incorrect size for column %s. Expected %s tuples, but found %s tuples.", i, numTuples, column.size());
+      Preconditions.checkArgument(
+          numTuples == column.size(),
+          "Incorrect size for column %s. Expected %s tuples, but found %s tuples.",
+          i,
+          numTuples,
+          column.size());
     }
     this.numTuples = numTuples;
     this.isEOI = isEOI;
@@ -287,7 +291,8 @@ public class TupleBatch implements ReadableTable, Serializable {
     for (final int i : remainingColumns) {
       newColumns.add(columns.get(i));
     }
-    return new TupleBatch(getSchema().getSubSchema(remainingColumns), newColumns.build(), numTuples, isEOI);
+    return new TupleBatch(
+        getSchema().getSubSchema(remainingColumns), newColumns.build(), numTuples, isEOI);
   }
 
   /**

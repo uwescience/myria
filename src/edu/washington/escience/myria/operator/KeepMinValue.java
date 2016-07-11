@@ -258,7 +258,7 @@ public final class KeepMinValue extends StreamingState {
   }
 
   @Override
-  public StreamingState newInstanceFromMyself() {
+  public StreamingState duplicate() {
     return new KeepMinValue(keyColIndices, valueColIndices);
   }
 }

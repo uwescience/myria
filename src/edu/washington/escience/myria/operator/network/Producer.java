@@ -13,19 +13,10 @@ import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.MyriaConstants.FTMode;
 import edu.washington.escience.myria.Schema;
-import edu.washington.escience.myria.api.encoding.CountFilterStateEncoding;
-import edu.washington.escience.myria.api.encoding.DupElimStateEncoding;
-import edu.washington.escience.myria.api.encoding.KeepAndSortOnMinValueStateEncoding;
-import edu.washington.escience.myria.api.encoding.KeepMinValueStateEncoding;
 import edu.washington.escience.myria.api.encoding.SimpleAppenderStateEncoding;
 import edu.washington.escience.myria.api.encoding.StreamingStateEncoding;
-import edu.washington.escience.myria.operator.CountFilter;
-import edu.washington.escience.myria.operator.DupElim;
-import edu.washington.escience.myria.operator.KeepAndSortOnMinValue;
-import edu.washington.escience.myria.operator.KeepMinValue;
 import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.operator.RootOperator;
-import edu.washington.escience.myria.operator.SimpleAppender;
 import edu.washington.escience.myria.operator.StreamingState;
 import edu.washington.escience.myria.operator.StreamingStateful;
 import edu.washington.escience.myria.parallel.ExchangePairID;
@@ -43,7 +34,7 @@ import edu.washington.escience.myria.util.MyriaArrayUtils;
 /**
  * A Producer is the counterpart of a consumer. It dispatch data using IPC channels to Consumers. Like network socket,
  * Each (workerID, operatorID) pair is a logical destination.
- * */
+ */
 public abstract class Producer extends RootOperator implements StreamingStateful {
 
   /** Required for Java serialization. */
@@ -56,16 +47,16 @@ public abstract class Producer extends RootOperator implements StreamingStateful
 
   /**
    * the netty channels doing the true IPC IO.
-   * */
+   */
   private transient StreamOutputChannel<TupleBatch>[] ioChannels;
   /**
    * if the corresponding ioChannel is available to write again.
-   * */
+   */
   private transient boolean[] ioChannelsAvail;
 
   /**
    * output buffers of partitions.
-   * */
+   */
   private transient TupleBatchBuffer[] partitionBuffers;
 
   /** tried to send tuples for each channel. */
@@ -75,17 +66,17 @@ public abstract class Producer extends RootOperator implements StreamingStateful
 
   /**
    * output channel IDs.
-   * */
+   */
   private final StreamIOChannelID[] outputIDs;
 
   /**
    * localized output stream channel IDs, with self references dereferenced.
-   * */
+   */
   private transient StreamIOChannelID[] localizedOutputIDs;
 
   /**
    * if current query execution is in non-blocking mode.
-   * */
+   */
   private transient boolean nonBlockingExecution;
 
   /** number of parition, by default 1. */
@@ -99,7 +90,7 @@ public abstract class Producer extends RootOperator implements StreamingStateful
    *
    * @param child the child providing data.
    * @param oIDs operator IDs.
-   * */
+   */
   public Producer(final Operator child, final ExchangePairID[] oIDs) {
     this(
         child,
@@ -115,7 +106,7 @@ public abstract class Producer extends RootOperator implements StreamingStateful
    * @param child the child providing data.
    * @param destinationWorkerIDs worker IDs.
    *
-   * */
+   */
   public Producer(
       final Operator child, final ExchangePairID oID, final int[] destinationWorkerIDs) {
     this(
@@ -133,7 +124,7 @@ public abstract class Producer extends RootOperator implements StreamingStateful
    * @param oIDs the operator IDs.
    * @param child the child providing data.
    * @param destinationWorkerID the worker ID.
-   * */
+   */
   public Producer(
       final Operator child, final ExchangePairID[] oIDs, final int destinationWorkerID) {
     this(
@@ -150,7 +141,7 @@ public abstract class Producer extends RootOperator implements StreamingStateful
    * @param oID the operator ID.
    * @param child the child providing data.
    * @param destinationWorkerID the worker ID.
-   * */
+   */
   public Producer(final Operator child, final ExchangePairID oID, final int destinationWorkerID) {
     this(child, new ExchangePairID[] {oID}, new int[] {destinationWorkerID}, true);
   }
@@ -175,7 +166,7 @@ public abstract class Producer extends RootOperator implements StreamingStateful
    * @param destinationWorkerIDs the worker IDs.
    * @param isOne2OneMapping choosing the mode.
    *
-   * */
+   */
   public Producer(
       final Operator child,
       final ExchangePairID[] oIDs,
@@ -253,7 +244,7 @@ public abstract class Producer extends RootOperator implements StreamingStateful
    * Does all the jobs needed to create a new channel with index i.
    *
    * @param i the index of the channel
-   * */
+   */
   public void createANewChannel(final int i) {
     ioChannels[i] =
         taskResourceManager.startAStream(
@@ -294,40 +285,22 @@ public abstract class Producer extends RootOperator implements StreamingStateful
 
   @Override
   public void setStreamingStates(final List<StreamingState> states) {
-    triedToSendTuples = states;
     for (StreamingState state : states) {
       state.setAttachedOperator(this);
     }
+    triedToSendTuples = states;
   }
 
   /**
    * set backup buffers.
-   * 
+   *
    * @param stateEncoding the streaming state encoding.
-   * 
-   * */
+   *
+   */
   public void setBackupBuffer(final StreamingStateEncoding<?> stateEncoding) {
-    StreamingState state = null;
-    if (stateEncoding instanceof KeepMinValueStateEncoding) {
-      state =
-          new KeepMinValue(((KeepMinValueStateEncoding) stateEncoding).keyColIndices,
-              ((KeepMinValueStateEncoding) stateEncoding).valueColIndices);
-    } else if (stateEncoding instanceof KeepAndSortOnMinValueStateEncoding) {
-      state =
-          new KeepAndSortOnMinValue(((KeepAndSortOnMinValueStateEncoding) stateEncoding).keyColIndices,
-              ((KeepAndSortOnMinValueStateEncoding) stateEncoding).valueColIndices);
-    } else if (stateEncoding instanceof DupElimStateEncoding) {
-      state = new DupElim();
-    } else if (stateEncoding instanceof SimpleAppenderStateEncoding) {
-      state = new SimpleAppender();
-    } else {
-      state =
-          new CountFilter(((CountFilterStateEncoding) stateEncoding).threshold,
-              ((CountFilterStateEncoding) stateEncoding).keyColIndices);
-    }
     List<StreamingState> states = new ArrayList<StreamingState>();
     for (int i = 0; i < outputIDs.length; i++) {
-      states.add(i, state.newInstanceFromMyself());
+      states.add(i, stateEncoding.construct().duplicate());
     }
     setStreamingStates(states);
   }
@@ -339,7 +312,7 @@ public abstract class Producer extends RootOperator implements StreamingStateful
    * @param chIdx the channel to write
    * @param msg the message.
    * @return write future
-   * */
+   */
   protected final ChannelFuture writeMessage(final int chIdx, final TupleBatch msg) {
     StreamOutputChannel<TupleBatch> ch = ioChannels[chIdx];
     if (nonBlockingExecution) {
@@ -374,7 +347,7 @@ public abstract class Producer extends RootOperator implements StreamingStateful
    *
    * @param usingTimeout use popAny() or popAnyUsingTimeout() when poping
    * @param partitions the list of partitions as tuple batches.
-   * */
+   */
   protected final void writePartitionsIntoChannels(
       final boolean usingTimeout, final TupleBatch[] partitions) {
     writePartitionsIntoChannels(
@@ -388,7 +361,7 @@ public abstract class Producer extends RootOperator implements StreamingStateful
    *          popping
    * @param channelIndices the same as {@link GenericShuffleProducer#cellPartition}.
    * @param partitions the list of partitions as tuple batches.
-   * */
+   */
   protected final void writePartitionsIntoChannels(
       final boolean usingTimeout, final int[][] channelIndices, final TupleBatch[] partitions) {
     FTMode mode = taskResourceManager.getFragment().getLocalSubQuery().getFTMode();
@@ -481,7 +454,7 @@ public abstract class Producer extends RootOperator implements StreamingStateful
   /**
    * @param chIdx the channel to write
    * @return channel release future.
-   * */
+   */
   protected final ChannelFuture channelEnds(final int chIdx) {
     if (ioChannelsAvail[chIdx]) {
       return ioChannels[chIdx].release();
@@ -506,7 +479,7 @@ public abstract class Producer extends RootOperator implements StreamingStateful
   /**
    * @param myWorkerID for parsing self-references.
    * @return destination worker IDs.
-   * */
+   */
   public final StreamIOChannelID[] getOutputChannelIDs(final int myWorkerID) {
     StreamIOChannelID[] result = new StreamIOChannelID[outputIDs.length];
     int idx = 0;
@@ -523,14 +496,14 @@ public abstract class Producer extends RootOperator implements StreamingStateful
 
   /**
    * @return number of output channels.
-   * */
+   */
   public final int numChannels() {
     return ioChannels.length;
   }
 
   /**
    * @return The resource manager of the running task.
-   * */
+   */
   protected LocalFragmentResourceManager getTaskResourceManager() {
     return taskResourceManager;
   }
@@ -540,7 +513,7 @@ public abstract class Producer extends RootOperator implements StreamingStateful
    *
    * @param workerId the worker that changed its status.
    * @param enable enable/disable all the channels that belong to the worker.
-   * */
+   */
   public final void updateChannelAvailability(final int workerId, final boolean enable) {
     List<Integer> indices = getChannelIndicesOfAWorker(workerId);
     for (int i : indices) {
@@ -562,7 +535,7 @@ public abstract class Producer extends RootOperator implements StreamingStateful
    *
    * @param workerId the id of the worker.
    * @return the list of channel indices.
-   * */
+   */
   public final List<Integer> getChannelIndicesOfAWorker(final int workerId) {
     List<Integer> ret = new ArrayList<Integer>();
     for (int i = 0; i < numChannels(); ++i) {
@@ -589,7 +562,7 @@ public abstract class Producer extends RootOperator implements StreamingStateful
 
   /**
    * process EOS and EOI logic.
-   * */
+   */
   @Override
   protected final void checkEOSAndEOI() {
     Operator child = getChild();

@@ -26,7 +26,7 @@ public abstract class StreamingState implements Serializable {
 
   /**
    * set its attached StreamingStateful operator for inferring schema.
-   * 
+   *
    * @param op the operator that it's attached on.
    */
   public void setAttachedOperator(final StreamingStateful op) {
@@ -72,5 +72,5 @@ public abstract class StreamingState implements Serializable {
   /**
    * @return a new instance of StreamingState with all the constructor arguments copied.
    * */
-  public abstract StreamingState newInstanceFromMyself();
+  public abstract StreamingState duplicate();
 }

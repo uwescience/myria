@@ -92,14 +92,18 @@ public class QueryConstruct {
       instantiateFragmentOperators(fragment, args, allOperators);
     }
     int loopCount = 0;
-    while (setConsumerSchema(fragments, allOperators) && loopCount++ < allOperators.size()) {
+    while (setConsumerSchema(fragments, allOperators)) {
       /*
        * Do it iteratively until no new consumer has its schema to be set. Add a loop count to prevent us from having an
        * infinite loop (which should NOT happen). Since each iteration should set the schema of at least one consumer,
        * setting the threshold to be the number of operators is enough.
        */
+      loopCount++;
+      if (loopCount == allOperators.size()) {
+        break;
+      }
     }
-    Preconditions.checkArgument(loopCount < allOperators.size());
+    Preconditions.checkArgument(loopCount <= allOperators.size());
     Map<Integer, SubQueryPlan> plan = Maps.newHashMap();
     for (PlanFragmentEncoding fragment : fragments) {
       RootOperator op = instantiateFragment(fragment, args, allOperators);

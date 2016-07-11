@@ -34,6 +34,14 @@ public class StreamingStateWrapper extends UnaryOperator implements StreamingSta
     state.setAttachedOperator(this);
   }
 
+  /**
+   *
+   * @return the state.
+   */
+  public StreamingState getStreamingState() {
+    return state;
+  }
+
   @Override
   public List<StreamingState> getStreamingStates() {
     return ImmutableList.of(state);

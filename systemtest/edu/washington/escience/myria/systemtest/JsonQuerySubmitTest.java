@@ -176,7 +176,7 @@ public class JsonQuerySubmitTest extends SystemTestBase {
     assertThat(status.message).contains("Unable to find workers");
 
     conn = JsonAPIUtils.ingestData("localhost", masterDaemonPort, ingestJson);
-    if (null != conn.getErrorStream()) {
+    if (conn.getErrorStream() != null) {
       throw new IllegalStateException(getContents(conn));
     }
     assertEquals(HttpURLConnection.HTTP_CREATED, conn.getResponseCode());
@@ -192,7 +192,7 @@ public class JsonQuerySubmitTest extends SystemTestBase {
     assertTrue(data.contains(subStr));
 
     conn = JsonAPIUtils.submitQuery("localhost", masterDaemonPort, queryJson);
-    if (null != conn.getErrorStream()) {
+    if (conn.getErrorStream() != null) {
       throw new IllegalStateException(getContents(conn));
     }
     assertEquals(HttpURLConnection.HTTP_ACCEPTED, conn.getResponseCode());
@@ -216,7 +216,7 @@ public class JsonQuerySubmitTest extends SystemTestBase {
     for (String ingest : ingests) {
       File ingestFile = new File(ingest);
       HttpURLConnection conn = JsonAPIUtils.ingestData("localhost", masterDaemonPort, ingestFile);
-      if (null != conn.getErrorStream()) {
+      if (conn.getErrorStream() != null) {
         throw new IllegalStateException(getContents(conn));
       }
       assertEquals(HttpURLConnection.HTTP_CREATED, conn.getResponseCode());
@@ -230,12 +230,11 @@ public class JsonQuerySubmitTest extends SystemTestBase {
         throw new IllegalStateException(getContents(conn));
       }
       assertEquals(HttpURLConnection.HTTP_ACCEPTED, conn.getResponseCode());
-      long queryId = getQueryStatus(conn).queryId;
-      conn.disconnect();
-      while (!server.getQueryManager().queryCompleted(queryId)) {
+      while (getQueryStatus(conn).status == Status.ACCEPTED || getQueryStatus(conn).status == Status.RUNNING ) {
         Thread.sleep(100);
       }
-      assertEquals(QueryStatusEncoding.Status.SUCCESS, server.getQueryManager().getQueryStatus(queryId).status);
+      assertEquals(getQueryStatus(conn).status, Status.SUCCESS);
+      conn.disconnect();
     }
 
     for (int i = 0; i < expected.length; ++i) {
