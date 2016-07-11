@@ -195,7 +195,9 @@ public class CSVFileScanFragment extends LeafOperator {
       if (record.size() == schema.numColumns()
           && lineNumber - 1 == 0
           && partitionStartByteRange != 0) {
-        InputStreamReader startStreamReader = new InputStreamReader(partitionInputStream);
+        InputStreamReader startStreamReader =
+            new InputStreamReader(
+                source.getInputStream(partitionStartByteRange - 1, partitionEndByteRange));
         char currentChar = (char) startStreamReader.read();
         if (currentChar != '\n' && currentChar != '\r') {
           discardedRecord = true;
@@ -335,10 +337,6 @@ public class CSVFileScanFragment extends LeafOperator {
   protected void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
     buffer = new TupleBatchBuffer(getSchema());
     try {
-      // (Optimization) Read the preceding byte if this is not the first worker
-      if (partitionStartByteRange != 0) {
-        partitionStartByteRange = partitionStartByteRange - 1;
-      }
       partitionInputStream = source.getInputStream(partitionStartByteRange, partitionEndByteRange);
       parser =
           new CSVParser(

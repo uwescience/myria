@@ -9,7 +9,6 @@ import java.io.Serializable;
 import java.net.URI;
 import java.util.Objects;
 
-import javax.annotation.Nullable;
 import javax.annotation.concurrent.NotThreadSafe;
 
 import org.apache.commons.httpclient.URIException;
@@ -51,11 +50,7 @@ public class AmazonS3Source implements DataSource, Serializable {
     this(uri, null, null);
   }
 
-  @JsonCreator
-  public AmazonS3Source(
-      @JsonProperty(value = "uri", required = true) final String uri,
-      @Nullable @JsonProperty(value = "startRange", required = false) final Long startRange,
-      @Nullable @JsonProperty(value = "endRange", required = false) final Long endRange)
+  public AmazonS3Source(final String uri, final Long startRange, final Long endRange)
       throws URIException {
     s3Uri = URI.create(Objects.requireNonNull(uri, "Parameter uri to UriSource may not be null"));
     if (!s3Uri.getScheme().equals("s3")) {
