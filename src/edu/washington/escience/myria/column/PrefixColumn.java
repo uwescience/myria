@@ -1,5 +1,7 @@
 package edu.washington.escience.myria.column;
 
+import java.nio.ByteBuffer;
+
 import javax.annotation.Nonnull;
 
 import org.joda.time.DateTime;
@@ -30,11 +32,8 @@ public class PrefixColumn<T extends Comparable<?>> extends Column<T> {
    */
   public PrefixColumn(@Nonnull final Column<T> inner, final int length) {
     this.inner = inner;
-    Preconditions.checkArgument(
-        length <= inner.size(),
-        "Error: cannot take a prefix of length %s from a batch of length %s",
-        length,
-        inner.size());
+    Preconditions.checkArgument(length <= inner.size(),
+        "Error: cannot take a prefix of length %s from a batch of length %s", length, inner.size());
     numRows = length;
   }
 
@@ -46,6 +45,11 @@ public class PrefixColumn<T extends Comparable<?>> extends Column<T> {
   @Override
   public DateTime getDateTime(final int row) {
     return inner.getDateTime(Preconditions.checkElementIndex(row, numRows));
+  }
+
+  @Override
+  public ByteBuffer getByteBuffer(final int row) {
+    return inner.getByteBuffer(Preconditions.checkElementIndex(row, numRows));
   }
 
   @Override
