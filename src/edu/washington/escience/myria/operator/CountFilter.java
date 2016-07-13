@@ -9,7 +9,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.gs.collections.api.block.procedure.primitive.IntProcedure;
 import com.gs.collections.impl.list.mutable.primitive.IntArrayList;
@@ -18,7 +17,6 @@ import com.gs.collections.impl.map.mutable.primitive.IntObjectHashMap;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.Column;
-import edu.washington.escience.myria.column.IntArrayColumn;
 import edu.washington.escience.myria.storage.MutableTupleBuffer;
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleUtils;
@@ -130,9 +128,7 @@ public final class CountFilter extends StreamingState {
   public void init(final ImmutableMap<String, Object> execEnvVars) {
     uniqueTupleIndices = new IntObjectHashMap<IntArrayList>();
     uniqueTuples = new MutableTupleBuffer(getSchema());
-    tupleCounts =
-        new MutableTupleBuffer(
-            Schema.of(ImmutableList.of(Type.INT_TYPE), ImmutableList.of("count")));
+    tupleCounts = new MutableTupleBuffer(Schema.ofFields(Type.INT_TYPE, "count"));
     doCount = new CountProcedure();
   }
 
@@ -191,8 +187,9 @@ public final class CountFilter extends StreamingState {
         found = true;
         int oldcount = tupleCounts.getInt(0, destRow);
         if (oldcount < threshold) {
-          tupleCounts.replace(0, destRow, new IntArrayColumn(new int[] {oldcount + 1}, 1), 0);
-          meet = (oldcount + 1 >= threshold);
+          oldcount += 1;
+          tupleCounts.replaceInt(0, destRow, oldcount);
+          meet = (oldcount >= threshold);
         }
       }
     }

@@ -1192,7 +1192,7 @@ public class LeapFrogJoin extends NAryOperator {
       MutableTupleBuffer hashTable = tables[outputFieldMapping.get(i).table];
       int row = iterators[outputFieldMapping.get(i).table].getRowOfCurrentField();
       int rowInTB = hashTable.getTupleIndexInContainingTB(row);
-      ReadableColumn sourceColumn = hashTable.getColumns(row)[outputFieldMapping.get(i).column];
+      ReadableColumn sourceColumn = hashTable.getColumn(outputFieldMapping.get(i).column, row);
       ansTBB.put(i, sourceColumn, rowInTB);
     }
   }
