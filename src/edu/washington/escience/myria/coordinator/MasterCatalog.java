@@ -115,7 +115,7 @@ public final class MasterCatalog {
           + "    col_name TEXT,\n"
           + "    col_type TEXT NOT NULL,\n"
           + "    is_indexed INTEGER NOT NULL, \n"
-          + "    ascending_order BOOLEAN,\n"
+          + "    ascending_order INTEGER, \n"
           + "    FOREIGN KEY (user_name,program_name,relation_name) REFERENCES relations ON DELETE CASCADE);";
   /** Create an index on the relation_schema table. */
   private static final String CREATE_RELATION_SCHEMA_INDEX =
@@ -392,8 +392,8 @@ public final class MasterCatalog {
       /* Second, populate the Schema table. */
       statement =
           sqliteConnection.prepare(
-              "INSERT INTO relation_schema(user_name,program_name,relation_name,col_index,col_name,col_type,is_indexed) "
-                  + "VALUES (?,?,?,?,?,?,?);");
+              "INSERT INTO relation_schema(user_name,program_name,relation_name,col_index,col_name,col_type,is_indexed, ascending_order) "
+                  + "VALUES (?,?,?,?,?,?,?,?);");
       statement.bind(1, relation.getUserName());
       statement.bind(2, relation.getProgramName());
       statement.bind(3, relation.getRelationName());
@@ -402,6 +402,7 @@ public final class MasterCatalog {
         statement.bind(5, schema.getColumnName(i));
         statement.bind(6, schema.getColumnType(i).toString());
         statement.bind(7, 0);
+        statement.bindNull(8);
         statement.step();
         statement.reset(false);
       }
@@ -1684,11 +1685,12 @@ public final class MasterCatalog {
                     try {
                       SQLiteStatement statement =
                           sqliteConnection.prepare(
-                              "UPDATE relation_schema SET is_indexed=1 WHERE user_name=? AND program_name=? AND relation_name=? AND col_index=?;");
-                      statement.bind(1, relation.getUserName());
-                      statement.bind(2, relation.getProgramName());
-                      statement.bind(3, relation.getRelationName());
-                      statement.bind(4, indexes.get(indexID).getColumn());
+                              "UPDATE relation_schema SET is_indexed=1, ascending_order=? WHERE user_name=? AND program_name=? AND relation_name=? AND col_index=?;");
+                      statement.bind(1, indexes.get(indexID).isAscending() ? 1 : 0);
+                      statement.bind(2, relation.getUserName());
+                      statement.bind(3, relation.getProgramName());
+                      statement.bind(4, relation.getRelationName());
+                      statement.bind(5, indexes.get(indexID).getColumn());
                       statement.stepThrough();
                       statement.dispose();
                       statement = null;
@@ -1711,10 +1713,13 @@ public final class MasterCatalog {
    */
 
   public void registerFunction(
-      @Nonnull final String functionName, @Nonnull final String functionDefinition)
+      @Nonnull final String functionName,
+      @Nonnull final String functionDefinition,
+      @Nonnull final String functionOutputSchema)
       throws CatalogException {
     Objects.requireNonNull(functionName, "function name");
     Objects.requireNonNull(functionDefinition, "function definition");
+    Objects.requireNonNull(functionOutputSchema, "function output schema");
     if (isClosed) {
       throw new CatalogException("Catalog is closed.");
     }
@@ -1728,16 +1733,17 @@ public final class MasterCatalog {
                 protected Void job(final SQLiteConnection sqliteConnection)
                     throws CatalogException, SQLiteException {
                   try {
-                    deleteFunctionIfExists(sqliteConnection, functionName, false);
+                    deleteFunctionIfExists(sqliteConnection, functionName);
 
                     SQLiteStatement statement =
                         sqliteConnection.prepare(
-                            "INSERT INTO registered_functions (function_name, function_definition) VALUES (?,?);");
+                            "INSERT INTO registered_functions (function_name, function_definition, function_outputSchema) VALUES (?,?,?);");
                     statement.bind(1, functionName);
                     statement.bind(2, functionDefinition);
+                    statement.bind(3, functionOutputSchema);
                     statement.stepThrough();
                     statement.dispose();
-
+                    statement = null;
                   } catch (final SQLiteException e) {
                     throw new CatalogException(e);
                   }
@@ -1758,12 +1764,10 @@ public final class MasterCatalog {
    * @throws CatalogException if there is an error
    */
   private void deleteFunctionIfExists(
-      @Nonnull final SQLiteConnection sqliteConnection,
-      @Nonnull final String functionName,
-      final boolean isOverwrite)
+      @Nonnull final SQLiteConnection sqliteConnection, @Nonnull final String functionName)
       throws CatalogException {
     try {
-      String sql = String.format("DELETE FROM registered_functions WHERE function_name=? ");
+      String sql = String.format("DELETE FROM registered_functions WHERE function_name=?;");
       SQLiteStatement statement = sqliteConnection.prepare(sql);
       statement.bind(1, functionName);
       statement.stepThrough();

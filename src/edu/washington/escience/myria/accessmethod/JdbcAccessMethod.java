@@ -623,9 +623,7 @@ public final class JdbcAccessMethod extends AccessMethod {
       createViewPostgres(viewName, viewDefinition);
     } else {
       throw new UnsupportedOperationException(
-          "create index if not exists is not supported in "
-              + jdbcInfo.getDbms()
-              + ", implement me");
+          "create view is not supported in " + jdbcInfo.getDbms() + ", implement me");
     }
   }
 

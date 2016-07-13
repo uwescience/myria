@@ -3,9 +3,6 @@
  */
 package edu.washington.escience.myria.operator;
 
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
 import com.google.common.collect.ImmutableMap;
 
 import edu.washington.escience.myria.DbException;
@@ -17,7 +14,7 @@ import edu.washington.escience.myria.storage.TupleBatch;
 /**
  *
  */
-public class DbCreateFunction extends RootOperator {
+public class DbExecute extends RootOperator {
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
 
@@ -26,23 +23,19 @@ public class DbCreateFunction extends RootOperator {
   /** The information for the database connection. */
   private ConnectionInfo connectionInfo;
 
-  private final String functionName;
-  private final String functionDefinition;
+  private final String sqlToExecute;
 
   /**
    * @param child the source of tuples to be inserted.
    * @param relationKey the key of the table the tuples should be inserted into.
+   * @param sqlToExecute the sql command to execute
    * @param connectionInfo the parameters of the database connection.
    */
-  public DbCreateFunction(
-      final Operator child,
-      final String functionName,
-      final String functionDefinition,
-      final ConnectionInfo connectionInfo) {
+  public DbExecute(
+      final Operator child, final String sqlToExecute, final ConnectionInfo connectionInfo) {
     super(child);
     this.connectionInfo = connectionInfo;
-    this.functionName = functionName;
-    this.functionDefinition = functionDefinition;
+    this.sqlToExecute = sqlToExecute;
   }
 
   @Override
@@ -55,14 +48,8 @@ public class DbCreateFunction extends RootOperator {
     /* Open the database connection */
     accessMethod = AccessMethod.of(connectionInfo.getDbms(), connectionInfo, false);
 
-    /* Validate command */
-    Pattern pattern = Pattern.compile("(CREATE FUNCTION)([\\s\\S]*)(LANGUAGE SQL;)");
-    Matcher matcher = pattern.matcher(functionDefinition);
-
-    if (matcher.matches()) {
-      /* Run command */
-      accessMethod.runCommand(functionDefinition);
-    }
+    /* Run command */
+    accessMethod.runCommand(sqlToExecute);
   }
 
   @Override

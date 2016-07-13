@@ -451,17 +451,20 @@ public final class DatasetResource {
   @Path("/createFunction/")
   @Consumes(MediaType.APPLICATION_JSON)
   public Response createFunction(final CreateFunctionEncoding encoding) throws DbException {
-    long queryId;
+    String functionCreationResponse;
     try {
-      queryId =
+      functionCreationResponse =
           server.createFunction(
-              encoding.functionName, encoding.functionDefinition, encoding.workers);
+              encoding.functionName,
+              encoding.functionDefinition,
+              encoding.functionOutputSchema.toString(),
+              encoding.workers);
     } catch (Exception e) {
       throw new DbException();
     }
     /* Build the response to return the queryId */
     ResponseBuilder response = Response.ok();
-    return response.entity(queryId).build();
+    return response.entity(functionCreationResponse).build();
   }
 
   /**
