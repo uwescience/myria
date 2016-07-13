@@ -185,12 +185,11 @@ public final class CountFilter extends StreamingState {
     public void value(final int destRow) {
       if (TupleUtils.tupleEquals(inputTB, keyColIndices, sourceRow, uniqueTuples, destRow)) {
         found = true;
-        int oldcount = tupleCounts.getInt(0, destRow);
-        if (oldcount < threshold) {
-          oldcount += 1;
-          tupleCounts.replaceInt(0, destRow, oldcount);
-          meet = (oldcount >= threshold);
+        int newcount = tupleCounts.getInt(0, destRow) + 1;
+        if (newcount <= threshold) {
+          tupleCounts.replaceInt(0, destRow, newcount);
         }
+        meet = (newcount >= threshold);
       }
     }
   };
