@@ -262,7 +262,7 @@ public final class FileScan extends LeafOperator {
   protected ByteBuffer getFile(final String filename) throws DbException {
     Preconditions.checkNotNull(filename, "byte[] filename was null");
 
-    // LOGGER.info("filename " + filename);
+    LOGGER.info("filename " + filename);
     Path path = Paths.get(filename);
     // LOGGER.info("path " + path.toString());
 
@@ -272,7 +272,7 @@ public final class FileScan extends LeafOperator {
     } catch (IOException e) {
       throw new DbException(e);
     }
-    // LOGGER.info("size of bytebuffer written: " + data.length);
+    LOGGER.info("size of bytebuffer written: " + data.length);
     return ByteBuffer.wrap(data);
 
   }
