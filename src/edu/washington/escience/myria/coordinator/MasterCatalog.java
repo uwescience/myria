@@ -155,7 +155,7 @@ public final class MasterCatalog {
           + "';";
   private static final String CREATE_REGISTERED_FUNCTIONS =
       "CREATE TABLE registered_functions (\n"
-          + "    function_name TEXT NOT NULL, \n"
+          + "    function_name TEXT PRIMARY KEY, \n"
           + "    function_definition TEXT NOT NULL,\n"
           + "    function_outputSchema TEXT NOT NULL);";
 
