@@ -73,10 +73,11 @@ public final class BytesColumnBuilder extends ColumnBuilder<ByteBuffer> {
     ByteBuffer data = BytesColumn.getData().asReadOnlyByteBuffer();
     for (int i = 0; i < numTuples; i++) {
       // TODO: check: do I need to copy the data here?
+      // LOGGER.info("trying to copy data");
 
       newData[i] = ByteBuffer.allocate(data.capacity());
       newData[i].put(data);
-      // data;
+
     }
 
     return new BytesColumnBuilder(newData, numTuples).build();

@@ -6,6 +6,9 @@ package edu.washington.escience.myria.column.mutable;
 
 import java.nio.ByteBuffer;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.google.common.base.Preconditions;
 
 import edu.washington.escience.myria.Type;
@@ -22,6 +25,9 @@ public final class BytesMutableColumn extends MutableColumn<ByteBuffer> {
   private final ByteBuffer[] data;
   /** The number of existing rows in this column. */
   private final int position;
+  private static final Logger LOGGER = LoggerFactory.getLogger(BytesMutableColumn.class);
+
+  /** The database connection information. */
 
   /**
    * Constructs a new column.
@@ -69,11 +75,18 @@ public final class BytesMutableColumn extends MutableColumn<ByteBuffer> {
 
   @Override
   public BytesColumn toColumn() {
+    // arraycopy(Object src, int srcPos, Object dest, int destPos, int length)
+    LOGGER.info("byte array tocolumn was called!");
+    LOGGER.info("length of the bytebuffer array :" + data.length);
+
     return new BytesColumn(data.clone(), position);
   }
 
   @Override
   public BytesMutableColumn clone() {
+    LOGGER.info("byte array clone was called!");
+    LOGGER.info("length of the bytebuffer array :" + data.length);
+
     return new BytesMutableColumn(data.clone(), position);
   }
 }
