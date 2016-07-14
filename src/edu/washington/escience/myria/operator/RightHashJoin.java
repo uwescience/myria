@@ -283,16 +283,11 @@ public final class RightHashJoin extends BinaryOperator {
    */
   protected void addToAns(
       final TupleBatch cntTB, final int row, final MutableTupleBuffer hashTable, final int index) {
-    List<? extends Column<?>> tbColumns = cntTB.getDataColumns();
-    int tupleIdx = hashTable.getTupleIndexInContainingTB(index);
-    for (int i = 0; i < leftAnswerColumns.length; ++i) {
-      ans.put(i, tbColumns.get(leftAnswerColumns[i]), row);
+    for (int leftAnswerColumn : leftAnswerColumns) {
+      ans.append(cntTB, leftAnswerColumn, row);
     }
-    for (int i = 0; i < rightAnswerColumns.length; ++i) {
-      ans.put(
-          i + leftAnswerColumns.length,
-          hashTable.getColumn(rightAnswerColumns[i], index),
-          tupleIdx);
+    for (int rightAnswerColumn : rightAnswerColumns) {
+      ans.append(hashTable, rightAnswerColumn, index);
     }
   }
 

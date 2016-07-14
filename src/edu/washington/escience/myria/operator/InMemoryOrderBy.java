@@ -189,11 +189,7 @@ public final class InMemoryOrderBy extends UnaryOperator {
     Collections.sort(indexes, comparator);
 
     for (int rowIdx = 0; rowIdx < numTuples; rowIdx++) {
-      for (int columnIdx = 0; columnIdx < getSchema().numColumns(); columnIdx++) {
-        int sourceRow = indexes.get(rowIdx);
-        int tupleIdx = table.getTupleIndexInContainingTB(sourceRow);
-        ans.put(columnIdx, table.getColumn(columnIdx, sourceRow), tupleIdx);
-      }
+      ans.append(table, indexes.get(rowIdx));
     }
   }
 

@@ -111,7 +111,6 @@ public final class SymmetricHashJoin extends BinaryOperator {
     public void value(final int index) {
       if (TupleUtils.tupleEquals(
           inputTB, inputCmpColumns, row, joinAgainstHashTable, joinAgainstCmpColumns, index)) {
-
         addToAns(inputTB, row, joinAgainstHashTable, index, fromLeft);
       }
     }
@@ -427,24 +426,19 @@ public final class SymmetricHashJoin extends BinaryOperator {
       final MutableTupleBuffer hashTable,
       final int index,
       final boolean fromLeft) {
-    List<? extends Column<?>> tbColumns = cntTB.getDataColumns();
-    int tupleIdx = hashTable.getTupleIndexInContainingTB(index);
     if (fromLeft) {
-      for (int i = 0; i < leftAnswerColumns.length; ++i) {
-        ans.put(i, tbColumns.get(leftAnswerColumns[i]), row);
+      for (int leftAnswerColumn : leftAnswerColumns) {
+        ans.append(cntTB, leftAnswerColumn, row);
       }
-      for (int i = 0; i < rightAnswerColumns.length; ++i) {
-        ans.put(
-            i + leftAnswerColumns.length,
-            hashTable.getColumn(rightAnswerColumns[i], index),
-            tupleIdx);
+      for (int rightAnswerColumn : rightAnswerColumns) {
+        ans.append(hashTable, rightAnswerColumn, index);
       }
     } else {
-      for (int i = 0; i < leftAnswerColumns.length; ++i) {
-        ans.put(i, hashTable.getColumn(leftAnswerColumns[i], index), tupleIdx);
+      for (int leftAnswerColumn : leftAnswerColumns) {
+        ans.append(hashTable, leftAnswerColumn, index);
       }
-      for (int i = 0; i < rightAnswerColumns.length; ++i) {
-        ans.put(i + leftAnswerColumns.length, tbColumns.get(rightAnswerColumns[i]), row);
+      for (int rightAnswerColumn : rightAnswerColumns) {
+        ans.append(cntTB, rightAnswerColumn, row);
       }
     }
   }

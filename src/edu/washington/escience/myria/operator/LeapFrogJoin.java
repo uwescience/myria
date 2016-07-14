@@ -19,7 +19,6 @@ import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.Column;
 import edu.washington.escience.myria.storage.MutableTupleBuffer;
-import edu.washington.escience.myria.storage.ReadableColumn;
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
 import edu.washington.escience.myria.storage.TupleUtils;
@@ -1191,9 +1190,7 @@ public class LeapFrogJoin extends NAryOperator {
     for (int i = 0; i < outputFieldMapping.size(); ++i) {
       MutableTupleBuffer hashTable = tables[outputFieldMapping.get(i).table];
       int row = iterators[outputFieldMapping.get(i).table].getRowOfCurrentField();
-      int rowInTB = hashTable.getTupleIndexInContainingTB(row);
-      ReadableColumn sourceColumn = hashTable.getColumn(outputFieldMapping.get(i).column, row);
-      ansTBB.put(i, sourceColumn, rowInTB);
+      ansTBB.append(hashTable, outputFieldMapping.get(i).column, row);
     }
   }
 

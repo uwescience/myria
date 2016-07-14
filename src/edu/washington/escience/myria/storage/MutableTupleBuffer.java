@@ -131,14 +131,6 @@ public class MutableTupleBuffer implements ReadableTable, AppendableTable, Clone
     return getColumn(col, row).getDateTime(row % TupleBatch.BATCH_SIZE);
   }
 
-  /**
-   * @param row the row number
-   * @return the index of the row in the containing TB.
-   */
-  public final int getTupleIndexInContainingTB(final int row) {
-    return row % TupleBatch.BATCH_SIZE;
-  }
-
   @Override
   public final int numColumns() {
     return numColumns;
@@ -351,7 +343,7 @@ public class MutableTupleBuffer implements ReadableTable, AppendableTable, Clone
    * @param value the replacement.
    */
   public final void replaceInt(final int destColumn, final int destRow, final int value) {
-    getColumn(destColumn, destRow).replaceInt(value, destRow);
+    getColumn(destColumn, destRow).replaceInt(value, destRow % TupleBatch.BATCH_SIZE);
   }
 
   /**
@@ -360,7 +352,7 @@ public class MutableTupleBuffer implements ReadableTable, AppendableTable, Clone
    * @param value the replacement.
    */
   public final void replaceLong(final int destColumn, final int destRow, final long value) {
-    getColumn(destColumn, destRow).replaceLong(value, destRow);
+    getColumn(destColumn, destRow).replaceLong(value, destRow % TupleBatch.BATCH_SIZE);
   }
 
   /**
@@ -369,7 +361,7 @@ public class MutableTupleBuffer implements ReadableTable, AppendableTable, Clone
    * @param value the replacement.
    */
   public final void replaceFloat(final int destColumn, final int destRow, final float value) {
-    getColumn(destColumn, destRow).replaceFloat(value, destRow);
+    getColumn(destColumn, destRow).replaceFloat(value, destRow % TupleBatch.BATCH_SIZE);
   }
 
   /**
@@ -378,7 +370,7 @@ public class MutableTupleBuffer implements ReadableTable, AppendableTable, Clone
    * @param value the replacement.
    */
   public final void replaceDouble(final int destColumn, final int destRow, final double value) {
-    getColumn(destColumn, destRow).replaceDouble(value, destRow);
+    getColumn(destColumn, destRow).replaceDouble(value, destRow % TupleBatch.BATCH_SIZE);
   }
 
   /**
@@ -387,7 +379,7 @@ public class MutableTupleBuffer implements ReadableTable, AppendableTable, Clone
    * @param value the replacement.
    */
   public final void replaceString(final int destColumn, final int destRow, final String value) {
-    getColumn(destColumn, destRow).replaceString(value, destRow);
+    getColumn(destColumn, destRow).replaceString(value, destRow % TupleBatch.BATCH_SIZE);
   }
 
   /**
@@ -396,7 +388,7 @@ public class MutableTupleBuffer implements ReadableTable, AppendableTable, Clone
    * @param value the replacement.
    */
   public final void replaceDateTime(final int destColumn, final int destRow, final DateTime value) {
-    getColumn(destColumn, destRow).replaceDateTime(value, destRow);
+    getColumn(destColumn, destRow).replaceDateTime(value, destRow % TupleBatch.BATCH_SIZE);
   }
 
   /**

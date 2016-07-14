@@ -6,8 +6,6 @@ import java.util.BitSet;
 import java.util.List;
 import java.util.Objects;
 
-import net.jcip.annotations.ThreadSafe;
-
 import org.joda.time.DateTime;
 
 import com.google.common.base.Preconditions;
@@ -20,6 +18,7 @@ import edu.washington.escience.myria.column.PrefixColumn;
 import edu.washington.escience.myria.operator.network.partition.PartitionFunction;
 import edu.washington.escience.myria.proto.TransportProto.TransportMessage;
 import edu.washington.escience.myria.util.IPCUtils;
+import net.jcip.annotations.ThreadSafe;
 
 /**
  * Container class for a batch of tuples. The goal is to amortize memory management overhead.
@@ -45,7 +44,7 @@ public class TupleBatch implements ReadableTable, Serializable {
    *
    * @param schema schema of the tuples in this batch.
    * @param isEoi whether this TupleBatch is an EOI TupleBatch.
-   * */
+   */
   private TupleBatch(final Schema schema, final boolean isEoi) {
     this.schema = schema;
     numTuples = 0;
@@ -124,18 +123,15 @@ public class TupleBatch implements ReadableTable, Serializable {
    * put the tuple batch into TBB by smashing it into cells and putting them one by one.
    *
    * @param tbb the TBB buffer.
-   * */
+   */
   public final void compactInto(final TupleBatchBuffer tbb) {
     if (isEOI()) {
       /* an EOI TB has no data */
       tbb.appendTB(this);
       return;
     }
-    final int numColumns = columns.size();
     for (int i = 0; i < numTuples; i++) {
-      for (int column = 0; column < numColumns; column++) {
-        tbb.put(column, columns.get(column), i);
-      }
+      tbb.append(this, i);
     }
   }
 
@@ -249,7 +245,7 @@ public class TupleBatch implements ReadableTable, Serializable {
    * @return an array of TBs. The length of the array is the same as the number of partitions. If no tuple presents in a
    *         partition, say the i'th partition, the i'th element in the result array is null.
    * @param pf the partition function.
-   * */
+   */
   public final TupleBatch[] partition(final PartitionFunction pf) {
     TupleBatch[] result = new TupleBatch[pf.numPartition()];
     if (isEOI) {
@@ -298,7 +294,7 @@ public class TupleBatch implements ReadableTable, Serializable {
   /**
    * @param rows a BitSet flagging the rows to be removed.
    * @return a new TB with the specified rows removed.
-   * */
+   */
   public final TupleBatch filterOut(final BitSet rows) {
     BitSet inverted = (BitSet) rows.clone();
     inverted.flip(0, numTuples);
@@ -332,7 +328,7 @@ public class TupleBatch implements ReadableTable, Serializable {
 
   /**
    * @return a TransportMessage encoding the TupleBatch.
-   * */
+   */
   public final TransportMessage toTransportMessage() {
     return IPCUtils.normalDataMessage(columns, numTuples);
   }
@@ -342,14 +338,14 @@ public class TupleBatch implements ReadableTable, Serializable {
    *
    * @param schema schema.
    * @return EOI TB for the schema.
-   * */
+   */
   public static final TupleBatch eoiTupleBatch(final Schema schema) {
     return new TupleBatch(schema, true);
   }
 
   /**
    * @return if the TupleBatch is an EOI.
-   * */
+   */
   public final boolean isEOI() {
     return isEOI;
   }
