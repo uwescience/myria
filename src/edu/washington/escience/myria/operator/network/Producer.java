@@ -1,5 +1,6 @@
 package edu.washington.escience.myria.operator.network;
 
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
@@ -39,6 +40,7 @@ public abstract class Producer extends RootOperator {
 
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
+  private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(Producer.class);
 
   /**
    * The worker this operator is located at.
@@ -92,11 +94,7 @@ public abstract class Producer extends RootOperator {
    * @param oIDs operator IDs.
    * */
   public Producer(final Operator child, final ExchangePairID[] oIDs) {
-    this(
-        child,
-        oIDs,
-        MyriaArrayUtils.arrayFillAndReturn(new int[oIDs.length], IPCConnectionPool.SELF_IPC_ID),
-        true);
+    this(child, oIDs, MyriaArrayUtils.arrayFillAndReturn(new int[oIDs.length], IPCConnectionPool.SELF_IPC_ID), true);
   }
 
   /**
@@ -107,15 +105,9 @@ public abstract class Producer extends RootOperator {
    * @param destinationWorkerIDs worker IDs.
    *
    * */
-  public Producer(
-      final Operator child, final ExchangePairID oID, final int[] destinationWorkerIDs) {
-    this(
-        child,
-        (ExchangePairID[])
-            MyriaArrayUtils.arrayFillAndReturn(
-                new ExchangePairID[destinationWorkerIDs.length], oID),
-        destinationWorkerIDs,
-        true);
+  public Producer(final Operator child, final ExchangePairID oID, final int[] destinationWorkerIDs) {
+    this(child, (ExchangePairID[]) MyriaArrayUtils.arrayFillAndReturn(new ExchangePairID[destinationWorkerIDs.length],
+        oID), destinationWorkerIDs, true);
   }
 
   /**
@@ -125,13 +117,8 @@ public abstract class Producer extends RootOperator {
    * @param child the child providing data.
    * @param destinationWorkerID the worker ID.
    * */
-  public Producer(
-      final Operator child, final ExchangePairID[] oIDs, final int destinationWorkerID) {
-    this(
-        child,
-        oIDs,
-        MyriaArrayUtils.arrayFillAndReturn(
-            new int[oIDs.length], Integer.valueOf(destinationWorkerID)),
+  public Producer(final Operator child, final ExchangePairID[] oIDs, final int destinationWorkerID) {
+    this(child, oIDs, MyriaArrayUtils.arrayFillAndReturn(new int[oIDs.length], Integer.valueOf(destinationWorkerID)),
         true);
   }
 
@@ -143,7 +130,7 @@ public abstract class Producer extends RootOperator {
    * @param destinationWorkerID the worker ID.
    * */
   public Producer(final Operator child, final ExchangePairID oID, final int destinationWorkerID) {
-    this(child, new ExchangePairID[] {oID}, new int[] {destinationWorkerID}, true);
+    this(child, new ExchangePairID[] { oID }, new int[] { destinationWorkerID }, true);
   }
 
   /**
@@ -167,10 +154,7 @@ public abstract class Producer extends RootOperator {
    * @param isOne2OneMapping choosing the mode.
    *
    * */
-  public Producer(
-      final Operator child,
-      final ExchangePairID[] oIDs,
-      final int[] destinationWorkerIDs,
+  public Producer(final Operator child, final ExchangePairID[] oIDs, final int[] destinationWorkerIDs,
       final boolean isOne2OneMapping) {
     super(child);
     if (isOne2OneMapping) {
@@ -212,8 +196,7 @@ public abstract class Producer extends RootOperator {
   @Override
   public final void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
     taskResourceManager =
-        (LocalFragmentResourceManager)
-            execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_FRAGMENT_RESOURCE_MANAGER);
+        (LocalFragmentResourceManager) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_FRAGMENT_RESOURCE_MANAGER);
     partitionBuffers = new TupleBatchBuffer[numOfPartition];
     for (int i = 0; i < numOfPartition; i++) {
       partitionBuffers[i] = new TupleBatchBuffer(getSchema());
@@ -224,8 +207,7 @@ public abstract class Producer extends RootOperator {
     localizedOutputIDs = new StreamIOChannelID[outputIDs.length];
     for (int i = 0; i < outputIDs.length; i++) {
       if (outputIDs[i].getRemoteID() == IPCConnectionPool.SELF_IPC_ID) {
-        localizedOutputIDs[i] =
-            new StreamIOChannelID(outputIDs[i].getStreamID(), taskResourceManager.getNodeId());
+        localizedOutputIDs[i] = new StreamIOChannelID(outputIDs[i].getStreamID(), taskResourceManager.getNodeId());
       } else {
         localizedOutputIDs[i] = outputIDs[i];
       }
@@ -236,8 +218,7 @@ public abstract class Producer extends RootOperator {
       triedToSendTuples.get(i).init(execEnvVars);
     }
     nonBlockingExecution =
-        (execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_EXECUTION_MODE)
-            == QueryExecutionMode.NON_BLOCKING);
+        (execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_EXECUTION_MODE) == QueryExecutionMode.NON_BLOCKING);
   }
 
   /**
@@ -247,26 +228,19 @@ public abstract class Producer extends RootOperator {
    * */
   public void createANewChannel(final int i) {
     ioChannels[i] =
-        taskResourceManager.startAStream(
-            localizedOutputIDs[i].getRemoteID(), localizedOutputIDs[i].getStreamID());
-    ioChannels[i]
-        .addListener(
-            StreamOutputChannel.OUTPUT_DISABLED,
-            new IPCEventListener() {
-              @Override
-              public void triggered(final IPCEvent event) {
-                taskResourceManager.getFragment().notifyOutputDisabled(localizedOutputIDs[i]);
-              }
-            });
-    ioChannels[i]
-        .addListener(
-            StreamOutputChannel.OUTPUT_RECOVERED,
-            new IPCEventListener() {
-              @Override
-              public void triggered(final IPCEvent event) {
-                taskResourceManager.getFragment().notifyOutputEnabled(localizedOutputIDs[i]);
-              }
-            });
+        taskResourceManager.startAStream(localizedOutputIDs[i].getRemoteID(), localizedOutputIDs[i].getStreamID());
+    ioChannels[i].addListener(StreamOutputChannel.OUTPUT_DISABLED, new IPCEventListener() {
+      @Override
+      public void triggered(final IPCEvent event) {
+        taskResourceManager.getFragment().notifyOutputDisabled(localizedOutputIDs[i]);
+      }
+    });
+    ioChannels[i].addListener(StreamOutputChannel.OUTPUT_RECOVERED, new IPCEventListener() {
+      @Override
+      public void triggered(final IPCEvent event) {
+        taskResourceManager.getFragment().notifyOutputEnabled(localizedOutputIDs[i]);
+      }
+    });
     ioChannelsAvail[i] = true;
   }
 
@@ -290,8 +264,7 @@ public abstract class Producer extends RootOperator {
    * @param keyColIndices the same as the one in KeepAndSortOnMinValue
    * @param valueColindices the same as the one in KeepAndSortOnMinValue
    */
-  public void setBackupBufferAsPrioritizedMin(
-      final int[] keyColIndices, final int[] valueColIndices) {
+  public void setBackupBufferAsPrioritizedMin(final int[] keyColIndices, final int[] valueColIndices) {
     triedToSendTuples = new ArrayList<StreamingState>();
     for (int i = 0; i < outputIDs.length; i++) {
       triedToSendTuples.add(i, new KeepAndSortOnMinValue(keyColIndices, valueColIndices));
@@ -329,6 +302,16 @@ public abstract class Producer extends RootOperator {
     StreamOutputChannel<TupleBatch> ch = ioChannels[chIdx];
     if (nonBlockingExecution) {
       numTuplesWrittenToChannels += msg.numTuples();
+      LOGGER.info("number of columns in producer " + msg.numColumns());
+      int i = msg.numColumns();
+
+      if (i == 2) {
+        LOGGER.info("size of the mask ");
+        ByteBuffer a = msg.getByteBuffer(1, 0);
+        LOGGER.info("capacity " + a.capacity());
+        LOGGER.info("position " + a.position());
+
+      }
       return ch.write(msg);
     } else {
       int sleepTime = 1;
@@ -360,10 +343,8 @@ public abstract class Producer extends RootOperator {
    * @param usingTimeout use popAny() or popAnyUsingTimeout() when poping
    * @param partitions the list of partitions as tuple batches.
    * */
-  protected final void writePartitionsIntoChannels(
-      final boolean usingTimeout, final TupleBatch[] partitions) {
-    writePartitionsIntoChannels(
-        usingTimeout, MyriaArrayUtils.create2DVerticalIndex(numChannels()), partitions);
+  protected final void writePartitionsIntoChannels(final boolean usingTimeout, final TupleBatch[] partitions) {
+    writePartitionsIntoChannels(usingTimeout, MyriaArrayUtils.create2DVerticalIndex(numChannels()), partitions);
   }
 
   /**
@@ -374,8 +355,8 @@ public abstract class Producer extends RootOperator {
    * @param channelIndices the same as {@link GenericShuffleProducer#cellPartition}.
    * @param partitions the list of partitions as tuple batches.
    * */
-  protected final void writePartitionsIntoChannels(
-      final boolean usingTimeout, final int[][] channelIndices, final TupleBatch[] partitions) {
+  protected final void writePartitionsIntoChannels(final boolean usingTimeout, final int[][] channelIndices,
+      final TupleBatch[] partitions) {
     FTMode mode = taskResourceManager.getFragment().getLocalSubQuery().getFTMode();
 
     if (totallyLocal) {

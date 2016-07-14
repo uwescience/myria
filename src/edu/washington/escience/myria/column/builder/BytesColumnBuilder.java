@@ -4,6 +4,7 @@ import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.List;
 import java.util.Objects;
 
 import com.almworks.sqlite4java.SQLiteException;
@@ -31,6 +32,7 @@ public final class BytesColumnBuilder extends ColumnBuilder<ByteBuffer> {
 
   /** Number of elements in this column. */
   private int numBB;
+  private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(BytesColumnBuilder.class);
 
   /**
    * If the builder has built the column.
@@ -69,14 +71,16 @@ public final class BytesColumnBuilder extends ColumnBuilder<ByteBuffer> {
 
     Preconditions.checkArgument(message.hasBytesColumn(), "ColumnMessage is missing BytesColumn");
     final BytesColumnMessage BytesColumn = message.getBytesColumn();
+
     ByteBuffer[] newData = new ByteBuffer[numTuples];
-    ByteBuffer data = BytesColumn.getData().asReadOnlyByteBuffer();
+    byte[] data = BytesColumn.getData().toByteArray();
+    List<Integer> startIndices = BytesColumn.getStartIndicesList();
+    List<Integer> endtIndices = BytesColumn.getEndIndicesList();
+    LOGGER.info("number of tuples " + numTuples);
     for (int i = 0; i < numTuples; i++) {
       // TODO: check: do I need to copy the data here?
-      // LOGGER.info("trying to copy data");
-
-      newData[i] = ByteBuffer.allocate(data.capacity());
-      newData[i].put(data);
+      newData[i] = ByteBuffer.wrap(data);
+      LOGGER.info("length of the byte  array " + data.length);
 
     }
 

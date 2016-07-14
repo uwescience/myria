@@ -4,6 +4,7 @@ import java.util.BitSet;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.nio.ByteBuffer;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -186,6 +187,15 @@ public class Consumer extends LeafOperator {
       TupleBatch ttbb = tb.getPayload();
       if (ttbb != null) {
         ttbb = ExchangeTupleBatch.wrap(ttbb, tb.getRemoteID());
+        int i = ttbb.numColumns();
+        if (i==2)
+        {
+          LOGGER.info( "size of the mask ");
+           ByteBuffer a =  ttbb.getByteBuffer(1, 0);
+           LOGGER.info("capacity " + a.capacity());
+           LOGGER.info("position " +a.position());
+        }
+       LOGGER.info("number of tuples: "+ i);
       }
 
       if (ttbb == null) {
@@ -284,6 +294,7 @@ public class Consumer extends LeafOperator {
       result = inputBuffer.poll(timeout, TimeUnit.MILLISECONDS);
     } else {
       result = inputBuffer.take();
+
     }
 
     return result;
