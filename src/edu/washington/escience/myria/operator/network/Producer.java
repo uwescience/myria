@@ -13,6 +13,8 @@ import com.google.common.collect.ImmutableMap;
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.MyriaConstants.FTMode;
+import edu.washington.escience.myria.Schema;
+import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.operator.DupElim;
 import edu.washington.escience.myria.operator.KeepAndSortOnMinValue;
 import edu.washington.escience.myria.operator.KeepMinValue;
@@ -304,12 +306,15 @@ public abstract class Producer extends RootOperator {
       numTuplesWrittenToChannels += msg.numTuples();
       LOGGER.info("number of columns in producer " + msg.numColumns());
       int i = msg.numColumns();
+      Schema schema = msg.getSchema();
+      for (int j = 0; j < i; j++) {
+        Type t = schema.getColumnType(j);
+        if (t == Type.BYTES_TYPE) {
+          ByteBuffer a = msg.getByteBuffer(1, 0);
+          LOGGER.info("capacity " + a.capacity());
+          LOGGER.info("position " + a.position());
 
-      if (i == 2) {
-        LOGGER.info("size of the mask ");
-        ByteBuffer a = msg.getByteBuffer(1, 0);
-        LOGGER.info("capacity " + a.capacity());
-        LOGGER.info("position " + a.position());
+        }
 
       }
       return ch.write(msg);
