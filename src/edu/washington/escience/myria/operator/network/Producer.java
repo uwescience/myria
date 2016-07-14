@@ -1,6 +1,5 @@
 package edu.washington.escience.myria.operator.network;
 
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
@@ -13,8 +12,6 @@ import com.google.common.collect.ImmutableMap;
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.MyriaConstants.FTMode;
-import edu.washington.escience.myria.Schema;
-import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.operator.DupElim;
 import edu.washington.escience.myria.operator.KeepAndSortOnMinValue;
 import edu.washington.escience.myria.operator.KeepMinValue;
@@ -304,19 +301,19 @@ public abstract class Producer extends RootOperator {
     StreamOutputChannel<TupleBatch> ch = ioChannels[chIdx];
     if (nonBlockingExecution) {
       numTuplesWrittenToChannels += msg.numTuples();
-      LOGGER.info("number of columns in producer " + msg.numColumns());
-      int i = msg.numColumns();
-      Schema schema = msg.getSchema();
-      for (int j = 0; j < i; j++) {
-        Type t = schema.getColumnType(j);
-        if (t == Type.BYTES_TYPE) {
-          ByteBuffer a = msg.getByteBuffer(1, 0);
-          LOGGER.info("capacity " + a.capacity());
-          LOGGER.info("position " + a.position());
-
-        }
-
-      }
+      // LOGGER.info("number of columns in producer " + msg.numColumns());
+      // int i = msg.numColumns();
+      // Schema schema = msg.getSchema();
+      // for (int j = 0; j < i; j++) {
+      // Type t = schema.getColumnType(j);
+      // if (t == Type.BYTES_TYPE) {
+      // // ByteBuffer a = msg.getByteBuffer(1, 0);
+      // // LOGGER.info("capacity " + a.capacity());
+      // // LOGGER.info("position " + a.position());
+      //
+      // }
+      //
+      // }
       return ch.write(msg);
     } else {
       int sleepTime = 1;
