@@ -160,9 +160,7 @@ public final class SQLiteAccessMethod extends AccessMethod {
                     break;
                   case BYTES_TYPE:
                     ByteBuffer bb = tupleBatch.getByteBuffer(col, row);
-                    byte[] data = new byte[bb.remaining()];
-                    bb.get(data);
-                    statement.bind(col + 1, data);
+                    statement.bind(col + 1, bb.array());
                 }
               }
               statement.step();
