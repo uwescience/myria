@@ -967,18 +967,16 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
       partitionSize = fileSize / workersArray.length;
     }
     Map<Integer, SubQueryPlan> workerPlans = new HashMap<>();
-    int workerCounterID = 1;
-    for (int workerID : workersArray) {
-      boolean isLastWorker = workerCounterID == workersArray.length;
-      long startRange = ((partitionSize) * (workerCounterID - 1));
+    for (int workerID = 1; workerID <= workersArray.length; workerID++) {
+      boolean isLastWorker = workerID == workersArray.length;
+      long startRange = ((partitionSize) * (workerID - 1));
       long endRange;
       if (isLastWorker) {
         endRange = fileSize - 1;
       } else {
-        endRange = partitionSize * (workerCounterID) - 1;
+        endRange = partitionSize * (workerID) - 1;
       }
 
-      LOGGER.warn("RANGES " + startRange + " " + endRange);
       CSVFileScanFragment scanFragment =
           new CSVFileScanFragment(
               s3Source,
@@ -990,8 +988,9 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
               quote,
               escape,
               numberOfSkippedLines);
-      workerPlans.put(workerID, new SubQueryPlan(new DbInsert(scanFragment, relationKey, true)));
-      workerCounterID++;
+      workerPlans.put(
+          workersArray[workerID - 1],
+          new SubQueryPlan(new DbInsert(scanFragment, relationKey, true)));
     }
 
     ListenableFuture<Query> qf;

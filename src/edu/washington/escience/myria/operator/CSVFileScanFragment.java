@@ -236,7 +236,7 @@ public class CSVFileScanFragment extends LeafOperator {
          * we have read the entire file (again, this is for the case where a single worker might be reading a single
          * large row that was split among other workers)
          */
-        if (record.size() == schema.numColumns() && onLastRow && !isLastWorker) {
+        if (onLastRow && !finishedReadingLastRow && !isLastWorker) {
           long movingEndByte = adjustedEndByteRange;
           long characterPositionAtBeginningOfRecord = record.getCharacterPosition();
           boolean newLineFound = false;
@@ -274,6 +274,7 @@ public class CSVFileScanFragment extends LeafOperator {
               dataChar = trailingEndInputStream.read();
             }
             trailingEndInputStream.close();
+            byteOverlap *= 2;
           }
         } else if (record.size() == schema.numColumns() && onLastRow && isLastWorker) {
           /*
@@ -283,35 +284,10 @@ public class CSVFileScanFragment extends LeafOperator {
         }
 
         /*
-         * This is the case when we are missing data for a worker. We simply request more bytes into the stream.
-         * Although we are on the last row at this point, we don't mark it as finished unless we reach the max size of
-         * the file
-         */
-        if (record.size() < schema.numColumns() && !isLastWorker) {
-          long characterPositionAtBeginningOfRecord = record.getCharacterPosition();
-          InputStream overlapStream =
-              source.getInputStream(
-                  adjustedEndByteRange + 1,
-                  Math.min(adjustedEndByteRange + byteOverlap, maxByteRange));
-          partitionInputStream = new SequenceInputStream(partitionInputStream, overlapStream);
-          BufferedReader reader = new BufferedReader(new InputStreamReader(partitionInputStream));
-          reader.skip(characterPositionAtBeginningOfRecord);
-          parser =
-              new CSVParser(
-                  reader, CSVFormat.newFormat(delimiter).withQuote(quote).withEscape(escape), 0, 0);
-          iterator = parser.iterator();
-          record = iterator.next();
-          byteOverlap *= 2;
-          adjustedEndByteRange += byteOverlap;
-          if (Math.min(adjustedEndByteRange + byteOverlap, maxByteRange) == maxByteRange) {
-            finishedReadingLastRow = true;
-          }
-        }
-        /*
          * At this point, we've exhausted all other cases and check for two conditions. 1) The record is not discarded
          * and 2) If the we are on the last row, we need to make sure we've finished reading the entire row
          */
-        else if (((!onLastRow) || (onLastRow && finishedReadingLastRow)) && !discardedRecord) {
+        if (((!onLastRow) || (onLastRow && finishedReadingLastRow)) && !discardedRecord) {
           for (int column = 0; column < schema.numColumns(); ++column) {
             String cell = record.get(column);
             try {
