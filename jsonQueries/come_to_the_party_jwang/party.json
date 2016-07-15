@@ -1,0 +1,193 @@
+{
+    "fragments": [
+        {
+            "operators": [
+                {
+                    "argOperatorId": 10,
+                    "opId": 1,
+                    "opType": "Consumer"
+                },
+                {
+                    "argOperatorId": 21,
+                    "opId": 2,
+                    "opType": "Consumer"
+                },
+                {
+                    "argChildren": [1, 2],
+                    "opId": 3,
+                    "opType": "UnionAll"
+                },
+                {
+                    "argChild": 3,
+                    "opId": 4,
+                    "opType": "EOSController"
+                }
+            ],
+            "overrideWorkers": [
+                "1"
+            ]
+        },
+        {
+            "operators": [
+                {
+                    "opId": 5,
+                    "opType": "TableScan",
+                    "relationKey": {
+                        "programName": "party",
+                        "relationName": "organizer",
+                        "userName": "jwang"
+                    }
+                },
+                {
+                    "argChild": 5,
+                    "argPf": {
+                        "index": "0",
+                        "type": "SingleFieldHash"
+                    },
+                    "opId": 6,
+                    "opType": "ShuffleProducer"
+                }
+            ]
+        },
+        {
+            "operators": [
+                {
+                    "argOperatorId": 6,
+                    "opId": 7,
+                    "opType": "ShuffleConsumer"
+                },
+                {
+                    "argOperatorId": 22,
+                    "opId": 8,
+                    "opType": "LocalMultiwayConsumer"
+                },
+                {
+                    "argOperatorId": 4,
+                    "opId": 9,
+                    "opType": "Consumer"
+                },
+                {
+                    "relationKey": {
+                        "programName": "party",
+                        "relationName": "attend",
+                        "userName": "jwang"
+                    },
+                    "argEosControllerInput": 9,
+                    "argInitialInput": 7,
+                    "argState":
+                    {
+                        "type": "DupElim"
+                    },
+                    "argIterationInput": 8,
+                    "argSelfIdbId": "0",
+                    "opId": 10,
+                    "opType": "IDBController"
+                },
+                {
+                    "argChild": 10,
+                    "opId": 11,
+                    "opType": "LocalMultiwayProducer"
+                }
+            ]
+        },
+        {
+            "operators": [
+                {
+                    "opId": 12,
+                    "opType": "TableScan",
+                    "relationKey": {
+                        "programName": "party",
+                        "relationName": "friend",
+                        "userName": "jwang"
+                    }
+                },
+                {
+                    "argChild": 12,
+                    "argPf": {
+                        "index": "0",
+                        "type": "SingleFieldHash"
+                    },
+                    "opId": 13,
+                    "opType": "ShuffleProducer"
+                }
+            ]
+        },
+        {
+            "operators": [
+                {
+                    "argOperatorId": 13,
+                    "opId": 14,
+                    "opType": "ShuffleConsumer"
+                },
+                {
+                    "argOperatorId": 11,
+                    "opId": 15,
+                    "opType": "LocalMultiwayConsumer"
+                },
+                {
+                    "argChild1": 14,
+                    "argChild2": 15,
+                    "argColumns1": [0],
+                    "argColumns2": [0],
+                    "argSelect1": [1],
+                    "argSelect2": [],
+                    "opId": 16,
+                    "argOrder": "ALTER",
+                    "opType": "SymmetricHashJoin"
+                },
+                {
+                    "argChild": 16,
+                    "argPf": {
+                        "index": "0",
+                        "type": "SingleFieldHash"
+                    },
+                    "opId": 17,
+                    "opType": "ShuffleProducer"
+                }
+            ]
+        },
+        {
+            "operators": [
+                {
+                    "opId": 18,
+                    "opType": "Empty",
+					"schema" : {
+						"columnTypes" : ["LONG_TYPE"],
+						"columnNames" : ["p"]
+					}
+                },
+                {
+                    "argOperatorId": 17,
+                    "opId": 19,
+                    "opType": "ShuffleConsumer"
+                },
+                {
+                    "argOperatorId": 4,
+                    "opId": 20,
+                    "opType": "Consumer"
+                },
+                {
+                    "argEosControllerInput": 20,
+                    "argInitialInput": 18,
+                    "argState":
+                    {
+                        "type": "CountFilter",
+						"keyColIndices": [0],
+						"threshold": 3
+                    },
+                    "argIterationInput": 19,
+                    "argSelfIdbId": "1",
+                    "opId": 21,
+                    "opType": "IDBController"
+                },
+                {
+                    "argChild": 21,
+                    "opId": 22,
+                    "opType": "LocalMultiwayProducer"
+                }
+            ]
+        }
+    ],
+    "logicalRa": "",
+    "rawQuery": "cntfriends(Y, count<X>) <- attend(X), friend(X, Y); attend(X) <- organizer(X); attend(Y) <- cntfriends(Y, N), N >= 3"
+}

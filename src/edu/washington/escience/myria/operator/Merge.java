@@ -156,7 +156,7 @@ public final class Merge extends NAryOperator {
       Integer smallestTb = heap.poll();
       if (smallestTb != null) {
         Integer positionInSmallestTb = childRowIndexes.get(smallestTb);
-        ans.put(childBatches.get(smallestTb), positionInSmallestTb);
+        ans.append(childBatches.get(smallestTb), positionInSmallestTb);
 
         // reset tb or advance position pointer
         if (positionInSmallestTb == childBatches.get(smallestTb).numTuples() - 1) {

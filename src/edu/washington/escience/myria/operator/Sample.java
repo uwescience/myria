@@ -124,7 +124,7 @@ public class Sample extends BinaryOperator {
       }
       while (curSampIdx < sampleIndices.length
           && sampleIndices[curSampIdx] < tuplesSeen + tb.numTuples()) {
-        ans.put(tb, sampleIndices[curSampIdx] - tuplesSeen);
+        ans.append(tb, sampleIndices[curSampIdx] - tuplesSeen);
         curSampIdx++;
       }
       tuplesSeen += tb.numTuples();

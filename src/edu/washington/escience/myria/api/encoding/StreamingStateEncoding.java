@@ -11,6 +11,7 @@ import edu.washington.escience.myria.operator.StreamingState;
   @Type(value = DupElimStateEncoding.class, name = "DupElim"),
   @Type(value = KeepMinValueStateEncoding.class, name = "KeepMinValue"),
   @Type(value = KeepAndSortOnMinValueStateEncoding.class, name = "KeepAndSortOnMinValue"),
+  @Type(value = CountFilterStateEncoding.class, name = "CountFilter"),
   @Type(value = SimpleAppenderStateEncoding.class, name = "SimpleAppender")
 })
 public abstract class StreamingStateEncoding<T extends StreamingState> extends MyriaApiEncoding {

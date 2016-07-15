@@ -32,7 +32,7 @@ import edu.washington.escience.myria.storage.TupleBatchBuffer;
  * An IDB in a Datalog program is a relation that will be updated. In general, it can be treated as a non-constant
  * relation in a query. An IDBController maintains the state of an IDB: it takes tuples in, does aggregation, updates
  * its internal state, and outputs delta. It also reports to the EOSController to help it determine termination.
- * */
+ */
 public class IDBController extends Operator implements StreamingStateful, DbWriter {
 
   /** Required for Java serialization. */
@@ -44,52 +44,52 @@ public class IDBController extends Operator implements StreamingStateful, DbWrit
 
   /**
    * Initial IDB input.
-   * */
+   */
   private Operator initialIDBInput;
 
   /**
    * input from iteration.
-   * */
+   */
   private Operator iterationInput;
 
   /**
    * the Consumer who is responsible for receiving EOS notification from the EOSController.
-   * */
+   */
   private Consumer eosControllerInput;
 
   /**
    * The workerID where the EOSController is running.
-   * */
+   */
   private final int controllerWorkerID;
 
   /**
    * The operator ID to which the EOI report should be sent.
-   * */
+   */
   private final ExchangePairID controllerOpID;
 
   /**
    * The index of this IDBController. This is to differentiate the IDBController operators in the same worker. Note that
    * this number is the index, it must start from 0 and to (The number of IDBController operators in a worker -1)
-   * */
+   */
   private final int selfIDBIdx;
 
   /**
    * Indicating if the initial input is ended.
-   * */
+   */
   private transient boolean initialInputEnded;
 
   /**
    * Indicating if the number of tuples received from either the initialInput child or the iteration input child is 0
    * since last EOI.
-   * */
+   */
   private transient boolean emptyDelta;
   /**
    * For IPC communication. Specifically, for doing EOI report.
-   * */
+   */
   private transient LocalFragmentResourceManager resourceManager;
   /**
    * The IPC channel for EOI report.
-   * */
+   */
   private transient StreamOutputChannel<TupleBatch> eoiReportChannel;
 
   /** The state. */
@@ -118,17 +118,17 @@ public class IDBController extends Operator implements StreamingStateful, DbWrit
 
   /**
    * The index of the initialIDBInput in children array.
-   * */
+   */
   public static final int CHILDREN_IDX_INITIAL_IDB_INPUT = 0;
 
   /**
    * The index of the iterationInput in children array.
-   * */
+   */
   public static final int CHILDREN_IDX_ITERATION_INPUT = 1;
 
   /**
    * The index of the eosControllerInput in children array.
-   * */
+   */
   public static final int CHILDREN_IDX_EOS_CONTROLLER_INPUT = 2;
 
   /**
@@ -139,7 +139,7 @@ public class IDBController extends Operator implements StreamingStateful, DbWrit
    * @param iterationInput see the corresponding field comment.
    * @param eosControllerInput see the corresponding field comment.
    * @param state the internal state.
-   * */
+   */
   public IDBController(
       final int selfIDBIdx,
       final ExchangePairID controllerOpID,
@@ -168,7 +168,7 @@ public class IDBController extends Operator implements StreamingStateful, DbWrit
    * @param eosControllerInput see the corresponding field comment.
    * @param state the internal state.
    * @param sync if it's sync or async.
-   * */
+   */
   public IDBController(
       final int selfIDBIdx,
       final ExchangePairID controllerOpID,
@@ -188,8 +188,7 @@ public class IDBController extends Operator implements StreamingStateful, DbWrit
     this.initialIDBInput = initialIDBInput;
     this.iterationInput = iterationInput;
     this.eosControllerInput = eosControllerInput;
-    this.state = state;
-    this.state.setAttachedOperator(this);
+    setStreamingStates(ImmutableList.of(state));
     this.sync = sync;
   }
 
@@ -249,7 +248,7 @@ public class IDBController extends Operator implements StreamingStateful, DbWrit
       bufferedIterTBs.add(tb);
     }
     if (iterationInput.eoi() && !bufferCleared) {
-      StreamingState tmpState = state.newInstanceFromMyself();
+      StreamingState tmpState = state.duplicate();
       tmpState.setAttachedOperator(this);
       tmpState.init(null);
       for (TupleBatch tb1 : bufferedIterTBs) {
@@ -320,16 +319,24 @@ public class IDBController extends Operator implements StreamingStateful, DbWrit
   }
 
   @Override
-  public final Schema generateSchema() {
-    if (!(initialIDBInput instanceof EmptyRelation)) {
+  public final Schema getInputSchema() {
+    if (initialIDBInput != null && !(initialIDBInput instanceof EmptyRelation)) {
       return initialIDBInput.getSchema();
     }
-    return iterationInput.getSchema();
+    if (iterationInput != null && !(iterationInput instanceof EmptyRelation)) {
+      return iterationInput.getSchema();
+    }
+    return null;
+  }
+
+  @Override
+  public final Schema generateSchema() {
+    return state.getSchema();
   }
 
   /**
    * the schema of EOI report.
-   * */
+   */
   public static final Schema EOI_REPORT_SCHEMA;
 
   static {
@@ -405,24 +412,33 @@ public class IDBController extends Operator implements StreamingStateful, DbWrit
 
   /**
    * @return the operator ID of the EOI receiving Consumer of the EOSController.
-   * */
+   */
   public final ExchangePairID getControllerOperatorID() {
     return controllerOpID;
   }
 
   /**
    * @return the workerID where the EOSController is running.
-   * */
+   */
   public final int getControllerWorkerID() {
     return controllerWorkerID;
   }
 
   @Override
-  public void setStreamingState(final StreamingState state) {
-    this.state = state;
+  public void setStreamingStates(final List<StreamingState> states) {
+    state = states.get(0);
+    state.setAttachedOperator(this);
   }
 
   @Override
+  public List<StreamingState> getStreamingStates() {
+    return ImmutableList.of(state);
+  }
+
+  /**
+   *
+   * @return the state.
+   */
   public StreamingState getStreamingState() {
     return state;
   }

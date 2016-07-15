@@ -18,7 +18,6 @@ import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.Column;
 import edu.washington.escience.myria.parallel.QueryExecutionMode;
 import edu.washington.escience.myria.storage.MutableTupleBuffer;
-import edu.washington.escience.myria.storage.ReadableColumn;
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
 import edu.washington.escience.myria.storage.TupleUtils;
@@ -74,7 +73,7 @@ public final class SymmetricHashJoin extends BinaryOperator {
 
   /**
    * Traverse through the list of tuples with the same hash code.
-   * */
+   */
   private final class JoinProcedure implements IntProcedure {
 
     /** serialization id. */
@@ -82,7 +81,7 @@ public final class SymmetricHashJoin extends BinaryOperator {
 
     /**
      * Hash table.
-     * */
+     */
     private MutableTupleBuffer joinAgainstHashTable;
 
     /**
@@ -92,27 +91,26 @@ public final class SymmetricHashJoin extends BinaryOperator {
 
     /**
      * the columns to compare against.
-     * */
+     */
     private int[] joinAgainstCmpColumns;
     /**
      * row index of the tuple.
-     * */
+     */
     private int row;
 
     /**
      * input TupleBatch.
-     * */
+     */
     private TupleBatch inputTB;
     /**
      * if the tuple which is comparing against the list of tuples with the same hash code is from left child.
-     * */
+     */
     private boolean fromLeft;
 
     @Override
     public void value(final int index) {
       if (TupleUtils.tupleEquals(
           inputTB, inputCmpColumns, row, joinAgainstHashTable, joinAgainstCmpColumns, index)) {
-
         addToAns(inputTB, row, joinAgainstHashTable, index, fromLeft);
       }
     }
@@ -120,7 +118,7 @@ public final class SymmetricHashJoin extends BinaryOperator {
 
   /**
    * Traverse through the list of tuples with the same hash code.
-   * */
+   */
   private final class ReplaceProcedure implements IntProcedure {
 
     /** serialization id. */
@@ -128,21 +126,21 @@ public final class SymmetricHashJoin extends BinaryOperator {
 
     /**
      * Hash table.
-     * */
+     */
     private MutableTupleBuffer hashTable;
 
     /**
      * the columns to compare against.
-     * */
+     */
     private int[] keyColumns;
     /**
      * row index of the tuple.
-     * */
+     */
     private int row;
 
     /**
      * input TupleBatch.
-     * */
+     */
     private TupleBatch inputTB;
 
     /** if found a replacement. */
@@ -162,12 +160,12 @@ public final class SymmetricHashJoin extends BinaryOperator {
 
   /**
    * Traverse through the list of tuples.
-   * */
+   */
   private transient JoinProcedure doJoin;
 
   /**
    * Traverse through the list of tuples and replace old values.
-   * */
+   */
   private transient ReplaceProcedure doReplace;
 
   /** Whether the last child polled was the left child. */
@@ -428,24 +426,19 @@ public final class SymmetricHashJoin extends BinaryOperator {
       final MutableTupleBuffer hashTable,
       final int index,
       final boolean fromLeft) {
-    List<? extends Column<?>> tbColumns = cntTB.getDataColumns();
-    ReadableColumn[] hashTblColumns = hashTable.getColumns(index);
-    int tupleIdx = hashTable.getTupleIndexInContainingTB(index);
     if (fromLeft) {
-      for (int i = 0; i < leftAnswerColumns.length; ++i) {
-        ans.put(i, tbColumns.get(leftAnswerColumns[i]), row);
+      for (int leftAnswerColumn : leftAnswerColumns) {
+        ans.append(cntTB, leftAnswerColumn, row);
       }
-
-      for (int i = 0; i < rightAnswerColumns.length; ++i) {
-        ans.put(i + leftAnswerColumns.length, hashTblColumns[rightAnswerColumns[i]], tupleIdx);
+      for (int rightAnswerColumn : rightAnswerColumns) {
+        ans.append(hashTable, rightAnswerColumn, index);
       }
     } else {
-      for (int i = 0; i < leftAnswerColumns.length; ++i) {
-        ans.put(i, hashTblColumns[leftAnswerColumns[i]], tupleIdx);
+      for (int leftAnswerColumn : leftAnswerColumns) {
+        ans.append(hashTable, leftAnswerColumn, index);
       }
-
-      for (int i = 0; i < rightAnswerColumns.length; ++i) {
-        ans.put(i + leftAnswerColumns.length, tbColumns.get(rightAnswerColumns[i]), row);
+      for (int rightAnswerColumn : rightAnswerColumns) {
+        ans.append(cntTB, rightAnswerColumn, row);
       }
     }
   }
@@ -753,7 +746,7 @@ public final class SymmetricHashJoin extends BinaryOperator {
    * @param hashTable1IndicesLocal hash table 1 indices local
    * @param hashCode the hashCode of the tb.
    * @param useSetSemantics if need to update the hash table using set semantics.
-   * */
+   */
   private void addToHashTable(
       final TupleBatch tb,
       final int row,

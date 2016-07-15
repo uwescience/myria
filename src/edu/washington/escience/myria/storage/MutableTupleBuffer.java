@@ -14,7 +14,6 @@ import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.Column;
 import edu.washington.escience.myria.column.builder.ColumnBuilder;
 import edu.washington.escience.myria.column.builder.ColumnFactory;
-import edu.washington.escience.myria.column.builder.DateTimeColumnBuilder;
 import edu.washington.escience.myria.column.builder.WritableColumn;
 import edu.washington.escience.myria.column.mutable.MutableColumn;
 import edu.washington.escience.myria.util.MyriaUtils;
@@ -54,7 +53,7 @@ public class MutableTupleBuffer implements ReadableTable, AppendableTable, Clone
 
   /**
    * clear this TBB.
-   * */
+   */
   public final void clear() {
     columnsReady.clear();
     currentBuildingColumns = null;
@@ -93,141 +92,43 @@ public class MutableTupleBuffer implements ReadableTable, AppendableTable, Clone
 
   @Override
   @Deprecated
-  public final Object getObject(final int colIndex, final int rowIndex)
-      throws IndexOutOfBoundsException {
-    int tupleBatchIndex = rowIndex / TupleBatch.BATCH_SIZE;
-    int tupleIndex = rowIndex % TupleBatch.BATCH_SIZE;
-    if (tupleBatchIndex > readyTuples.size()
-        || tupleBatchIndex == readyTuples.size() && tupleIndex >= currentInProgressTuples) {
-      throw new IndexOutOfBoundsException();
-    }
-    if (tupleBatchIndex < readyTuples.size()) {
-      return readyTuples.get(tupleBatchIndex)[colIndex].getObject(tupleIndex);
-    }
-    return currentBuildingColumns[colIndex].getObject(tupleIndex);
+  public final Object getObject(final int col, final int row) {
+    return getColumn(col, row).getObject(row % TupleBatch.BATCH_SIZE);
   }
 
   @Override
-  public final boolean getBoolean(final int column, final int row) {
-    int tupleBatchIndex = row / TupleBatch.BATCH_SIZE;
-    int tupleIndex = row % TupleBatch.BATCH_SIZE;
-    if (tupleBatchIndex > readyTuples.size()
-        || tupleBatchIndex == readyTuples.size() && tupleIndex >= currentInProgressTuples) {
-      throw new IndexOutOfBoundsException();
-    }
-    if (tupleBatchIndex < readyTuples.size()) {
-      return readyTuples.get(tupleBatchIndex)[column].getBoolean(tupleIndex);
-    }
-    return currentBuildingColumns[column].getBoolean(tupleIndex);
+  public final boolean getBoolean(final int col, final int row) {
+    return getColumn(col, row).getBoolean(row % TupleBatch.BATCH_SIZE);
   }
 
   @Override
-  public final double getDouble(final int column, final int row) {
-    int tupleBatchIndex = row / TupleBatch.BATCH_SIZE;
-    int tupleIndex = row % TupleBatch.BATCH_SIZE;
-    if (tupleBatchIndex > readyTuples.size()
-        || tupleBatchIndex == readyTuples.size() && tupleIndex >= currentInProgressTuples) {
-      throw new IndexOutOfBoundsException();
-    }
-    if (tupleBatchIndex < readyTuples.size()) {
-      return readyTuples.get(tupleBatchIndex)[column].getDouble(tupleIndex);
-    }
-    return currentBuildingColumns[column].getDouble(tupleIndex);
+  public final double getDouble(final int col, final int row) {
+    return getColumn(col, row).getDouble(row % TupleBatch.BATCH_SIZE);
   }
 
   @Override
-  public final float getFloat(final int column, final int row) {
-    int tupleBatchIndex = row / TupleBatch.BATCH_SIZE;
-    int tupleIndex = row % TupleBatch.BATCH_SIZE;
-    if (tupleBatchIndex > readyTuples.size()
-        || tupleBatchIndex == readyTuples.size() && tupleIndex >= currentInProgressTuples) {
-      throw new IndexOutOfBoundsException();
-    }
-    if (tupleBatchIndex < readyTuples.size()) {
-      return readyTuples.get(tupleBatchIndex)[column].getFloat(tupleIndex);
-    }
-    return currentBuildingColumns[column].getFloat(tupleIndex);
+  public final float getFloat(final int col, final int row) {
+    return getColumn(col, row).getFloat(row % TupleBatch.BATCH_SIZE);
   }
 
   @Override
-  public final long getLong(final int column, final int row) {
-    int tupleBatchIndex = row / TupleBatch.BATCH_SIZE;
-    int tupleIndex = row % TupleBatch.BATCH_SIZE;
-    if (tupleBatchIndex > readyTuples.size()
-        || tupleBatchIndex == readyTuples.size() && tupleIndex >= currentInProgressTuples) {
-      throw new IndexOutOfBoundsException();
-    }
-    if (tupleBatchIndex < readyTuples.size()) {
-      return readyTuples.get(tupleBatchIndex)[column].getLong(tupleIndex);
-    }
-    return currentBuildingColumns[column].getLong(tupleIndex);
+  public final long getLong(final int col, final int row) {
+    return getColumn(col, row).getLong(row % TupleBatch.BATCH_SIZE);
   }
 
   @Override
-  public final int getInt(final int column, final int row) {
-    int tupleBatchIndex = row / TupleBatch.BATCH_SIZE;
-    int tupleIndex = row % TupleBatch.BATCH_SIZE;
-    if (tupleBatchIndex > readyTuples.size()
-        || tupleBatchIndex == readyTuples.size() && tupleIndex >= currentInProgressTuples) {
-      throw new IndexOutOfBoundsException();
-    }
-    if (tupleBatchIndex < readyTuples.size()) {
-      return readyTuples.get(tupleBatchIndex)[column].getInt(tupleIndex);
-    }
-    return currentBuildingColumns[column].getInt(tupleIndex);
+  public final int getInt(final int col, final int row) {
+    return getColumn(col, row).getInt(row % TupleBatch.BATCH_SIZE);
   }
 
   @Override
-  public final String getString(final int column, final int row) {
-    int tupleBatchIndex = row / TupleBatch.BATCH_SIZE;
-    int tupleIndex = row % TupleBatch.BATCH_SIZE;
-    if (tupleBatchIndex > readyTuples.size()
-        || tupleBatchIndex == readyTuples.size() && tupleIndex >= currentInProgressTuples) {
-      throw new IndexOutOfBoundsException();
-    }
-    if (tupleBatchIndex < readyTuples.size()) {
-      return readyTuples.get(tupleBatchIndex)[column].getString(tupleIndex);
-    }
-    return currentBuildingColumns[column].getString(tupleIndex);
+  public final String getString(final int col, final int row) {
+    return getColumn(col, row).getString(row % TupleBatch.BATCH_SIZE);
   }
 
   @Override
-  public final DateTime getDateTime(final int column, final int row) {
-    int tupleBatchIndex = row / TupleBatch.BATCH_SIZE;
-    int tupleIndex = row % TupleBatch.BATCH_SIZE;
-    if (tupleBatchIndex > readyTuples.size()
-        || tupleBatchIndex == readyTuples.size() && tupleIndex >= currentInProgressTuples) {
-      throw new IndexOutOfBoundsException();
-    }
-    if (tupleBatchIndex < readyTuples.size()) {
-      return readyTuples.get(tupleBatchIndex)[column].getDateTime(tupleIndex);
-    }
-    return ((DateTimeColumnBuilder) (currentBuildingColumns[column])).getDateTime(tupleIndex);
-  }
-
-  /**
-   * @param row the row number
-   * @return the index of the row in the containing TB.
-   * */
-  public final int getTupleIndexInContainingTB(final int row) {
-    return row % TupleBatch.BATCH_SIZE;
-  }
-
-  /**
-   * @param row the row number
-   * @return the columns
-   */
-  public ReadableColumn[] getColumns(final int row) {
-    int tupleBatchIndex = row / TupleBatch.BATCH_SIZE;
-    int tupleIndex = row % TupleBatch.BATCH_SIZE;
-
-    if (tupleBatchIndex < readyTuples.size()) {
-      return readyTuples.get(tupleBatchIndex);
-    } else if (tupleBatchIndex == readyTuples.size() && tupleIndex < currentInProgressTuples) {
-      return currentBuildingColumns;
-    } else {
-      throw new IndexOutOfBoundsException();
-    }
+  public final DateTime getDateTime(final int col, final int row) {
+    return getColumn(col, row).getDateTime(row % TupleBatch.BATCH_SIZE);
   }
 
   @Override
@@ -413,6 +314,84 @@ public class MutableTupleBuffer implements ReadableTable, AppendableTable, Clone
   }
 
   /**
+   * @param row the row index.
+   */
+  private void checkRowIndex(final int row) {
+    if (row >= numTuples()) {
+      throw new IndexOutOfBoundsException();
+    }
+  }
+
+  /**
+   * @param column the column index.
+   * @param row the row index.
+   * @return a Replaceable Column that stores the given field.
+   */
+  public final ReplaceableColumn getColumn(final int column, final int row) {
+    checkRowIndex(row);
+    int tupleBatchIndex = row / TupleBatch.BATCH_SIZE;
+    if (tupleBatchIndex < readyTuples.size()) {
+      return readyTuples.get(tupleBatchIndex)[column];
+    } else {
+      return currentBuildingColumns[column];
+    }
+  }
+
+  /**
+   * @param destColumn the destination column.
+   * @param destRow the row.
+   * @param value the replacement.
+   */
+  public final void replaceInt(final int destColumn, final int destRow, final int value) {
+    getColumn(destColumn, destRow).replaceInt(value, destRow % TupleBatch.BATCH_SIZE);
+  }
+
+  /**
+   * @param destColumn the destination column.
+   * @param destRow the row.
+   * @param value the replacement.
+   */
+  public final void replaceLong(final int destColumn, final int destRow, final long value) {
+    getColumn(destColumn, destRow).replaceLong(value, destRow % TupleBatch.BATCH_SIZE);
+  }
+
+  /**
+   * @param destColumn the destination column.
+   * @param destRow the row.
+   * @param value the replacement.
+   */
+  public final void replaceFloat(final int destColumn, final int destRow, final float value) {
+    getColumn(destColumn, destRow).replaceFloat(value, destRow % TupleBatch.BATCH_SIZE);
+  }
+
+  /**
+   * @param destColumn the destination column.
+   * @param destRow the row.
+   * @param value the replacement.
+   */
+  public final void replaceDouble(final int destColumn, final int destRow, final double value) {
+    getColumn(destColumn, destRow).replaceDouble(value, destRow % TupleBatch.BATCH_SIZE);
+  }
+
+  /**
+   * @param destColumn the destination column.
+   * @param destRow the row.
+   * @param value the replacement.
+   */
+  public final void replaceString(final int destColumn, final int destRow, final String value) {
+    getColumn(destColumn, destRow).replaceString(value, destRow % TupleBatch.BATCH_SIZE);
+  }
+
+  /**
+   * @param destColumn the destination column.
+   * @param destRow the row.
+   * @param value the replacement.
+   */
+  public final void replaceDateTime(final int destColumn, final int destRow, final DateTime value) {
+    getColumn(destColumn, destRow).replaceDateTime(value, destRow % TupleBatch.BATCH_SIZE);
+  }
+
+  /**
    * Replace the specified value to the specified destination column in this TupleBuffer from the source column.
    *
    * @param destColumn which column in this TB the value will be inserted.
@@ -422,20 +401,9 @@ public class MutableTupleBuffer implements ReadableTable, AppendableTable, Clone
    */
   public final void replace(
       final int destColumn, final int destRow, final Column<?> sourceColumn, final int sourceRow) {
-    checkPutIndex(destColumn);
-    int tupleBatchIndex = destRow / TupleBatch.BATCH_SIZE;
+    checkRowIndex(destRow);
     int tupleIndex = destRow % TupleBatch.BATCH_SIZE;
-    if (tupleBatchIndex > readyTuples.size()
-        || tupleBatchIndex == readyTuples.size() && tupleIndex >= currentInProgressTuples) {
-      throw new IndexOutOfBoundsException();
-    }
-    ReplaceableColumn dest;
-    if (tupleBatchIndex < readyTuples.size()) {
-      dest = readyTuples.get(tupleBatchIndex)[destColumn];
-    } else {
-      dest = currentBuildingColumns[destColumn];
-    }
-
+    ReplaceableColumn dest = getColumn(destColumn, destRow);
     switch (dest.getType()) {
       case BOOLEAN_TYPE:
         dest.replaceBoolean(sourceColumn.getBoolean(sourceRow), tupleIndex);
@@ -485,7 +453,7 @@ public class MutableTupleBuffer implements ReadableTable, AppendableTable, Clone
    * Build the in progress columns. The builders' states are untouched. They can keep building.
    *
    * @return the built in progress columns.
-   * */
+   */
   private List<Column<?>> getInProgressColumns() {
     List<Column<?>> newColumns = new ArrayList<Column<?>>(currentBuildingColumns.length);
     for (ColumnBuilder<?> cb : currentBuildingColumns) {

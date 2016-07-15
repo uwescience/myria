@@ -15,21 +15,21 @@ public abstract class StreamingState implements Serializable {
   private static final long serialVersionUID = 1L;
 
   /** the operator that it belongs to. */
-  private Operator op;
+  private StreamingStateful op;
 
   /**
-   * @return the operator that it belongs to.
+   * @return the StreamingStateful operator that it belongs to.
    */
-  protected Operator getOp() {
+  protected StreamingStateful getOp() {
     return op;
   }
 
   /**
-   * set its attached operator for inferring schema.
+   * set its attached StreamingStateful operator for inferring schema.
    *
    * @param op the operator that it's attached on.
    */
-  public void setAttachedOperator(final Operator op) {
+  public void setAttachedOperator(final StreamingStateful op) {
     this.op = op;
   }
 
@@ -72,5 +72,5 @@ public abstract class StreamingState implements Serializable {
   /**
    * @return a new instance of StreamingState with all the constructor arguments copied.
    * */
-  public abstract StreamingState newInstanceFromMyself();
+  public abstract StreamingState duplicate();
 }

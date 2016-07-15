@@ -12,7 +12,6 @@ import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.Column;
 import edu.washington.escience.myria.storage.MutableTupleBuffer;
-import edu.washington.escience.myria.storage.ReadableColumn;
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
 
@@ -190,12 +189,7 @@ public final class InMemoryOrderBy extends UnaryOperator {
     Collections.sort(indexes, comparator);
 
     for (int rowIdx = 0; rowIdx < numTuples; rowIdx++) {
-      for (int columnIdx = 0; columnIdx < getSchema().numColumns(); columnIdx++) {
-        int sourceRow = indexes.get(rowIdx);
-        int tupleIdx = table.getTupleIndexInContainingTB(sourceRow);
-        ReadableColumn hashTblColumn = table.getColumns(sourceRow)[columnIdx];
-        ans.put(columnIdx, hashTblColumn, tupleIdx);
-      }
+      ans.append(table, indexes.get(rowIdx));
     }
   }
 

@@ -1,0 +1,17 @@
+{
+  "relationKey" : {
+    "userName" : "jwang",
+    "programName" : "party",
+    "relationName" : "organizer"
+  },
+  "schema" : {
+    "columnTypes" : ["LONG_TYPE"],
+    "columnNames" : ["p"]
+  },
+  "source" : {
+    "dataType" : "Bytes",
+	"bytes": "MjAKNwo0OAo0CjM3Cg=="
+  },
+  "overwrite": true,
+  "delimiter": " "
+}

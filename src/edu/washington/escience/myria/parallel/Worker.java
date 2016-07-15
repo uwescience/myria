@@ -83,23 +83,21 @@ import edu.washington.escience.myria.util.concurrent.RenamingThreadFactory;
 import edu.washington.escience.myria.util.concurrent.ThreadAffinityFixedRoundRobinExecutionPool;
 
 /**
- * Workers do the real query execution. A query received by the server will be pre-processed and
- * then dispatched to the workers.
+ * Workers do the real query execution. A query received by the server will be pre-processed and then dispatched to the
+ * workers.
  *
  * To execute a query on a worker, 4 steps are proceeded:
  *
- * 1) A worker receive an Operator instance as its execution plan. The worker then stores the plan
- * and does some pre-processing, e.g. initializes the data structures which are needed during the
- * execution of the plan.
+ * 1) A worker receive an Operator instance as its execution plan. The worker then stores the plan and does some
+ * pre-processing, e.g. initializes the data structures which are needed during the execution of the plan.
  *
- * 2) Each worker sends back to the server a message (it's id) to notify the server that the query
- * plan has been successfully received. And then each worker waits for the server to send the
- * "start" message.
+ * 2) Each worker sends back to the server a message (it's id) to notify the server that the query plan has been
+ * successfully received. And then each worker waits for the server to send the "start" message.
  *
  * 3) Each worker executes its query plan after "start" is received.
  *
- * 4) After the query plan finishes, each worker removes the query plan and related data structures,
- * and then waits for next query plan
+ * 4) After the query plan finishes, each worker removes the query plan and related data structures, and then waits for
+ * next query plan
  *
  */
 /**
@@ -116,8 +114,8 @@ public final class Worker implements Task, TaskMessageSource {
   /**
    * @param memento the memento object passed down by the driver.
    * @return the user defined return value
-   * @throws Exception whenever the Task encounters an unsolved issue. This Exception will be thrown
-   *         at the Driver's event handler.
+   * @throws Exception whenever the Task encounters an unsolved issue. This Exception will be thrown at the Driver's
+   *           event handler.
    */
   @Override
   public byte[] call(@SuppressWarnings("unused") final byte[] memento) throws Exception {
@@ -188,12 +186,12 @@ public final class Worker implements Task, TaskMessageSource {
 
   /**
    * Query related command from master.
-   * */
+   */
   static final class QueryCommand {
     /**
      * @param q the target query.
      * @param queryMsg the command message.
-     * */
+     */
     public QueryCommand(final WorkerSubQuery q, final QueryMessage queryMsg) {
       this.q = q;
       this.queryMsg = queryMsg;
@@ -201,12 +199,12 @@ public final class Worker implements Task, TaskMessageSource {
 
     /**
      * the target query.
-     * */
+     */
     private final WorkerSubQuery q;
 
     /**
      * the command message.
-     * */
+     */
     private final QueryMessage queryMsg;
   }
   /**
@@ -305,7 +303,7 @@ public final class Worker implements Task, TaskMessageSource {
       }
       final ControlMessage controlM = m.getControlMessage();
       LOGGER.info("Control message received: {}", controlM);
-      int workerId = controlM.getWorkerId();
+      final int workerId = controlM.getWorkerId();
       Lock workerLock = workerAddRemoveLock.get(workerId);
       workerLock.lock();
       try {
@@ -443,8 +441,8 @@ public final class Worker implements Task, TaskMessageSource {
   private volatile OrderedMemoryAwareThreadPoolExecutor pipelineExecutor;
 
   /**
-   * Current working directory. It's the logical root of the worker. All the data the worker and the
-   * operators running on the worker can access should be put under this directory.
+   * Current working directory. It's the logical root of the worker. All the data the worker and the operators running
+   * on the worker can access should be put under this directory.
    */
   private final String workingDirectory;
 

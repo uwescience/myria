@@ -224,23 +224,6 @@ public class TupleBatchBuffer implements AppendableTable {
   }
 
   /**
-   * @param another TBB.
-   */
-  public final void unionAll(final TupleBatchBuffer another) {
-    readyTuples.addAll(another.readyTuples);
-    readyTuplesNum += another.getReadyTuplesNum();
-    if (another.currentInProgressTuples > 0) {
-      for (int row = 0; row < another.currentInProgressTuples; row++) {
-        int column = 0;
-        for (final Column<?> c : another.getInProgressColumns()) {
-          put(column, c, row);
-          column++;
-        }
-      }
-    }
-  }
-
-  /**
    * @return num columns.
    */
   @Override
@@ -375,7 +358,7 @@ public class TupleBatchBuffer implements AppendableTable {
    * @param sourceColumn the column from which data will be retrieved.
    * @param sourceRow the row in the source column from which data will be retrieved.
    */
-  public final void put(
+  private final void appendFromColumn(
       final int destColumn, final ReadableColumn sourceColumn, final int sourceRow) {
     TupleUtils.copyValue(sourceColumn, sourceRow, this, destColumn);
   }
@@ -383,13 +366,47 @@ public class TupleBatchBuffer implements AppendableTable {
   /**
    * Append the referenced row from the source {@link TupleBatch} to this {@link TupleBatchBuffer}.
    *
-   * @param sourceBatch the {@link TupleBatch} from which data will be retrieved.
-   * @param sourceRow the row in the source column from which data will be retrieved.
+   * @param tb the source tuple batch.
+   * @param row the row index.
    */
-  public final void put(final TupleBatch sourceBatch, final int sourceRow) {
-    List<? extends Column<?>> sourceColumns = sourceBatch.getDataColumns();
-    for (int col = 0; col < sourceColumns.size(); ++col) {
-      put(col, sourceColumns.get(col), sourceRow);
+  public final void append(final TupleBatch tb, final int row) {
+    for (int col = 0; col < tb.numColumns(); ++col) {
+      append(tb, col, row);
+    }
+  }
+
+  /**
+   * Append the referenced value from the source {@link TupleBatch} to this {@link TupleBatchBuffer}.
+   *
+   * @param tb the source tuple batch.
+   * @param col the col index.
+   * @param row the row index.
+   */
+  public final void append(final TupleBatch tb, final int col, final int row) {
+    appendFromColumn(columnsReady.nextClearBit(0), tb.getDataColumns().get(col), row);
+  }
+
+  /**
+   * Append the referenced value from the source {@link MutableTupleBuffer} to this {@link TupleBatchBuffer}.
+   *
+   * @param tuples the source tuple buffer.
+   * @param col the column index.
+   * @param row the row index.
+   */
+  public final void append(final MutableTupleBuffer tuples, final int col, final int row) {
+    appendFromColumn(
+        columnsReady.nextClearBit(0), tuples.getColumn(col, row), row % TupleBatch.BATCH_SIZE);
+  }
+
+  /**
+   * Append the referenced row from the source {@link MutableTupleBuffer} to this {@link TupleBatchBuffer}.
+   *
+   * @param tuples the source tuple buffer.
+   * @param row the row index.
+   */
+  public final void append(final MutableTupleBuffer tuples, final int row) {
+    for (int col = 0; col < tuples.numColumns(); ++col) {
+      append(tuples, col, row);
     }
   }
 
