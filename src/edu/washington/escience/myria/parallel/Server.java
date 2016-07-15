@@ -33,8 +33,6 @@ import javax.annotation.Nullable;
 import javax.inject.Inject;
 
 import org.apache.commons.httpclient.URIException;
-import org.apache.commons.io.FilenameUtils;
-
 import org.apache.commons.lang.text.StrSubstitutor;
 import org.apache.reef.tang.Configuration;
 import org.apache.reef.tang.Injector;
@@ -939,13 +937,11 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
       @Nullable final Character quote,
       @Nullable final Character escape,
       @Nullable final Integer numberOfSkippedLines,
-      final String S3URI,
+      final AmazonS3Source s3Source,
       final Set<Integer> workersToIngest)
       throws URIException, DbException, InterruptedException {
     /* Figure out the workers we will use */
-
     Set<Integer> actualWorkers = workersToIngest;
-    AmazonS3Source s3Source = new AmazonS3Source(S3URI);
     long fileSize = s3Source.getFileSize();
 
     /* Determine the number of workers to ingest and the partition size */
@@ -970,17 +966,19 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
       workersArray = MyriaUtils.integerSetToIntArray(actualWorkers);
       partitionSize = fileSize / workersArray.length;
     }
-
     Map<Integer, SubQueryPlan> workerPlans = new HashMap<>();
     int workerCounterID = 1;
     for (int workerID : workersArray) {
       boolean isLastWorker = workerCounterID == workersArray.length;
       long startRange = ((partitionSize) * (workerCounterID - 1));
-      if (workerCounterID != 1) {
-        startRange++;
+      long endRange;
+      if (isLastWorker) {
+        endRange = fileSize - 1;
+      } else {
+        endRange = partitionSize * (workerCounterID) - 1;
       }
-      long endRange = startRange + partitionSize;
 
+      LOGGER.warn("RANGES " + startRange + " " + endRange);
       CSVFileScanFragment scanFragment =
           new CSVFileScanFragment(
               s3Source,

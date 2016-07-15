@@ -57,14 +57,19 @@ public class CSVFileScanFragment extends LeafOperator {
   private transient TupleBatchBuffer buffer;
   /** Which line of the file the scanner is currently on. */
   private long lineNumber = 0;
+  private long byteOverlap = MyriaConstants.BYTE_OVERLAP_PARALLEL_INGEST;
 
   private final boolean isLastWorker;
+  private final long maxByteRange;
+  private final long partitionStartByteRange;
+  private final long partitionEndByteRange;
 
-  private long byteOverlap = MyriaConstants.BYTE_OVERLAP_PARALLEL_INGEST;
-  private long partitionStartByteRange;
-  private long partitionEndByteRange;
-
+  private long adjustedStartByteRange;
+  private long adjustedEndByteRange;
   private InputStream partitionInputStream;
+  private CSVRecord record;
+  private boolean onLastRow;
+  private boolean finishedReadingLastRow;
 
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
@@ -159,20 +164,21 @@ public class CSVFileScanFragment extends LeafOperator {
 
     this.delimiter = MoreObjects.firstNonNull(delimiter, CSVFormat.DEFAULT.getDelimiter());
     this.quote = MoreObjects.firstNonNull(quote, CSVFormat.DEFAULT.getQuoteCharacter());
-    this.escape = escape != null ? escape : CSVFormat.DEFAULT.getEscapeCharacter();
+    this.escape = escape;
     this.numberOfSkippedLines = MoreObjects.firstNonNull(numberOfSkippedLines, 0);
 
     this.partitionStartByteRange = partitionStartByteRange;
     this.partitionEndByteRange = partitionEndByteRange;
     this.isLastWorker = isLastWorker;
+
+    maxByteRange = ((AmazonS3Source) source).getFileSize();
+    onLastRow = false;
+    finishedReadingLastRow = false;
   }
 
   @Override
   protected TupleBatch fetchNextReady() throws IOException, DbException {
     long lineNumberBegin = lineNumber;
-    boolean fixingStartByte = false;
-    boolean onLastRow = false;
-
     boolean discardedRecord = false;
 
     while ((buffer.numTuples() < TupleBatch.BATCH_SIZE)) {
@@ -181,142 +187,184 @@ public class CSVFileScanFragment extends LeafOperator {
       if (parser.isClosed()) {
         break;
       }
+
+      if (!onLastRow) {
+        record = iterator.next();
+      }
+
       try {
         if (!iterator.hasNext()) {
-          parser.close();
-          break;
+          onLastRow = true;
         }
-      } catch (final RuntimeException e) {
-        throw new DbException("Error parsing row " + lineNumber, e);
+      } catch (Exception e) {
       }
-      CSVRecord record = iterator.next();
-      // This covers the case where the first row of a worker matches the schema. We only want to read this row if the
-      // previous character is '\n' or '\r'
-      if (record.size() == schema.numColumns()
-          && lineNumber - 1 == 0
-          && partitionStartByteRange != 0) {
-        InputStreamReader startStreamReader =
-            new InputStreamReader(
-                source.getInputStream(partitionStartByteRange - 1, partitionEndByteRange));
-        char currentChar = (char) startStreamReader.read();
-        if (currentChar != '\n' && currentChar != '\r') {
-          discardedRecord = true;
-        }
-      }
-      // This covers the case where the last row matches the schema's number of columns. We need to ensure that we read
-      // the entire row completely
-      else if (record.size() == schema.numColumns() && !iterator.hasNext() && !isLastWorker) {
-        long movingEndByte = partitionEndByteRange;
-        long bytePositionAtBeginningOfRecord = record.getCharacterPosition();
-        boolean newLineFound = false;
-        while (!newLineFound) {
-          movingEndByte += MyriaConstants.BYTE_OVERLAP_PARALLEL_INGEST;
-          // Create a stream to look for the new line
-          InputStream trailingEndInputStream =
-              source.getInputStream(partitionEndByteRange, movingEndByte);
-          InputStreamReader startStreamReader = new InputStreamReader(trailingEndInputStream);
-          int dataChar = startStreamReader.read();
-          while (dataChar != -1) {
-            char currentChar = (char) dataChar;
-            if (currentChar == '\n' || currentChar == '\r') {
-              newLineFound = true;
-              // Re-initialize the parser with the last row only
-              InputStream beginningOfRecord =
-                  source.getInputStream(bytePositionAtBeginningOfRecord, partitionEndByteRange);
-              InputStream concatenateEndOfRecord =
-                  source.getInputStream(partitionEndByteRange + 1, movingEndByte);
-              partitionInputStream =
-                  new SequenceInputStream(beginningOfRecord, concatenateEndOfRecord);
-              parser =
-                  new CSVParser(
-                      new BufferedReader(new InputStreamReader(partitionInputStream)),
-                      CSVFormat.newFormat(delimiter).withQuote(quote).withEscape(escape),
-                      bytePositionAtBeginningOfRecord,
-                      0);
-              iterator = parser.iterator();
-              onLastRow = true;
-              record = iterator.next();
+
+      if (record != null) {
+        /*
+         * Here, we read the first byte of the stream if this is not the first worker. This is simply an optimization.
+         * If the previous character is not a new line, we discard the line.
+         */
+        if (lineNumber - 1 == 0 && partitionStartByteRange != 0) {
+          char currentChar = (char) partitionInputStream.read();
+          if (currentChar != '\n' && currentChar != '\r') {
+            discardedRecord = true;
+            /*
+             * This handles closes the stream in corner cases in which a worker might only have a fragment of a tuple as
+             * its entire partition. Since the server makes sure to provide workers a partition with a minimum size,
+             * this case could only happen with very large rows.
+             */
+            if (onLastRow) {
+              parser.close();
               break;
             }
-            dataChar = startStreamReader.read();
+          } else {
+            /*
+             * This handles the case in which the splitting occurs in the middle of \r\n.
+             */
+            currentChar = (char) partitionInputStream.read();
+            if (currentChar == '\n') {
+              discardedRecord = true;
+            } else {
+              partitionInputStream =
+                  source.getInputStream(adjustedStartByteRange, adjustedEndByteRange);
+            }
           }
-          startStreamReader.close();
         }
-      }
-      // This is a partial fragment, columns are missing and we need to read more bytes
-      if (record.size() < schema.numColumns()) {
-        if (lineNumber - 1 != 0 && !isLastWorker) {
-          onLastRow = true;
-          long bytePositionAtBeginningOfRecord = record.getCharacterPosition();
-          if (!fixingStartByte) {
-            fixingStartByte = true;
-            partitionStartByteRange += bytePositionAtBeginningOfRecord;
+
+        /*
+         * Here, if we are on the last row, we make sure to read the entire row until we either hit a new line or until
+         * we have read the entire file (again, this is for the case where a single worker might be reading a single
+         * large row that was split among other workers)
+         */
+        if (record.size() == schema.numColumns() && onLastRow && !isLastWorker) {
+          long movingEndByte = adjustedEndByteRange;
+          long characterPositionAtBeginningOfRecord = record.getCharacterPosition();
+          boolean newLineFound = false;
+          while (!newLineFound) {
+            movingEndByte += byteOverlap;
+            InputStream trailingEndInputStream =
+                source.getInputStream(
+                    adjustedEndByteRange + 1, Math.min(movingEndByte, maxByteRange));
+            int dataChar = trailingEndInputStream.read();
+            while (dataChar != -1) {
+              char currentChar = (char) dataChar;
+              if (currentChar == '\n'
+                  || currentChar == '\r'
+                  || Math.min(movingEndByte, maxByteRange) == maxByteRange) {
+                newLineFound = true;
+                partitionInputStream =
+                    new SequenceInputStream(
+                        partitionInputStream,
+                        source.getInputStream(
+                            adjustedEndByteRange + 1, Math.min(movingEndByte, maxByteRange)));
+                BufferedReader reader =
+                    new BufferedReader(new InputStreamReader(partitionInputStream));
+                reader.skip(characterPositionAtBeginningOfRecord);
+                parser =
+                    new CSVParser(
+                        reader,
+                        CSVFormat.newFormat(delimiter).withQuote(quote).withEscape(escape),
+                        0,
+                        0);
+                iterator = parser.iterator();
+                record = iterator.next();
+                finishedReadingLastRow = true;
+                break;
+              }
+              dataChar = trailingEndInputStream.read();
+            }
+            trailingEndInputStream.close();
           }
-          partitionEndByteRange += byteOverlap;
+        } else if (record.size() == schema.numColumns() && onLastRow && isLastWorker) {
+          /*
+           * If we are on the last worker, just mark it as finished.
+           */
+          finishedReadingLastRow = true;
+        }
+
+        /*
+         * This is the case when we are missing data for a worker. We simply request more bytes into the stream.
+         * Although we are on the last row at this point, we don't mark it as finished unless we reach the max size of
+         * the file
+         */
+        if (record.size() < schema.numColumns() && !isLastWorker) {
+          long characterPositionAtBeginningOfRecord = record.getCharacterPosition();
           InputStream overlapStream =
-              source.getInputStream(partitionStartByteRange, partitionEndByteRange);
+              source.getInputStream(
+                  adjustedEndByteRange + 1,
+                  Math.min(adjustedEndByteRange + byteOverlap, maxByteRange));
           partitionInputStream = new SequenceInputStream(partitionInputStream, overlapStream);
+          BufferedReader reader = new BufferedReader(new InputStreamReader(partitionInputStream));
+          reader.skip(characterPositionAtBeginningOfRecord);
           parser =
               new CSVParser(
-                  new BufferedReader(new InputStreamReader(partitionInputStream)),
-                  CSVFormat.newFormat(delimiter).withQuote(quote).withEscape(escape));
+                  reader, CSVFormat.newFormat(delimiter).withQuote(quote).withEscape(escape), 0, 0);
           iterator = parser.iterator();
+          record = iterator.next();
           byteOverlap *= 2;
-        } else {
-          discardedRecord = true;
-        }
-      } else if (!discardedRecord) {
-        for (int column = 0; column < schema.numColumns(); ++column) {
-          String cell = record.get(column);
-          try {
-            switch (schema.getColumnType(column)) {
-              case BOOLEAN_TYPE:
-                if (Floats.tryParse(cell) != null) {
-                  buffer.putBoolean(column, Floats.tryParse(cell) != 0);
-                } else if (BooleanUtils.toBoolean(cell)) {
-                  buffer.putBoolean(column, Boolean.parseBoolean(cell));
-                }
-                break;
-              case DOUBLE_TYPE:
-                buffer.putDouble(column, Double.parseDouble(cell));
-                break;
-              case FLOAT_TYPE:
-                buffer.putFloat(column, Float.parseFloat(cell));
-                break;
-              case INT_TYPE:
-                buffer.putInt(column, Integer.parseInt(cell));
-                break;
-              case LONG_TYPE:
-                buffer.putLong(column, Long.parseLong(cell));
-                break;
-              case STRING_TYPE:
-                buffer.putString(column, cell);
-                break;
-              case DATETIME_TYPE:
-                buffer.putDateTime(column, DateTimeUtils.parse(cell));
-                break;
-            }
-          } catch (final IllegalArgumentException e) {
-            throw new DbException(
-                "Error parsing column "
-                    + column
-                    + " of row "
-                    + lineNumber
-                    + ", expected type: "
-                    + schema.getColumnType(column)
-                    + ", scanned value: "
-                    + cell,
-                e);
+          adjustedEndByteRange += byteOverlap;
+          if (Math.min(adjustedEndByteRange + byteOverlap, maxByteRange) == maxByteRange) {
+            finishedReadingLastRow = true;
           }
+        }
+        /*
+         * At this point, we've exhausted all other cases and check for two conditions. 1) The record is not discarded
+         * and 2) If the we are on the last row, we need to make sure we've finished reading the entire row
+         */
+        else if (((!onLastRow) || (onLastRow && finishedReadingLastRow)) && !discardedRecord) {
+          for (int column = 0; column < schema.numColumns(); ++column) {
+            String cell = record.get(column);
+            try {
+              switch (schema.getColumnType(column)) {
+                case BOOLEAN_TYPE:
+                  if (Floats.tryParse(cell) != null) {
+                    buffer.putBoolean(column, Floats.tryParse(cell) != 0);
+                  } else if (BooleanUtils.toBoolean(cell)) {
+                    buffer.putBoolean(column, Boolean.parseBoolean(cell));
+                  }
+                  break;
+                case DOUBLE_TYPE:
+                  buffer.putDouble(column, Double.parseDouble(cell));
+                  break;
+                case FLOAT_TYPE:
+                  buffer.putFloat(column, Float.parseFloat(cell));
+                  break;
+                case INT_TYPE:
+                  buffer.putInt(column, Integer.parseInt(cell));
+                  break;
+                case LONG_TYPE:
+                  buffer.putLong(column, Long.parseLong(cell));
+                  break;
+                case STRING_TYPE:
+                  buffer.putString(column, cell);
+                  break;
+                case DATETIME_TYPE:
+                  buffer.putDateTime(column, DateTimeUtils.parse(cell));
+                  break;
+              }
+            } catch (final IllegalArgumentException e) {
+              throw new DbException(
+                  "Error parsing column "
+                      + column
+                      + " of row "
+                      + lineNumber
+                      + ", expected type: "
+                      + schema.getColumnType(column)
+                      + ", scanned value: "
+                      + cell,
+                  e);
+            }
+          }
+          /*
+           * Once we finish reading the last row, we close the parser
+           */
           if (onLastRow) {
             parser.close();
           }
         }
+        LOGGER.debug("Scanned {} input lines", lineNumber - lineNumberBegin);
       }
     }
-
-    LOGGER.debug("Scanned {} input lines", lineNumber - lineNumberBegin);
-
     return buffer.popAny();
   }
 
@@ -337,10 +385,18 @@ public class CSVFileScanFragment extends LeafOperator {
   protected void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
     buffer = new TupleBatchBuffer(getSchema());
     try {
-      partitionInputStream = source.getInputStream(partitionStartByteRange, partitionEndByteRange);
+      /* Optimization : if not the first worker, read the previous byte */
+      adjustedStartByteRange = partitionStartByteRange;
+      if (partitionStartByteRange != 0) {
+        adjustedStartByteRange -= 1;
+      }
+      adjustedEndByteRange = partitionEndByteRange;
+      partitionInputStream = source.getInputStream(adjustedStartByteRange, adjustedEndByteRange);
       parser =
           new CSVParser(
-              new BufferedReader(new InputStreamReader(partitionInputStream)),
+              new BufferedReader(
+                  new InputStreamReader(
+                      source.getInputStream(adjustedStartByteRange, adjustedEndByteRange))),
               CSVFormat.newFormat(delimiter).withQuote(quote).withEscape(escape));
       iterator = parser.iterator();
       for (int i = 0; i < numberOfSkippedLines; i++) {

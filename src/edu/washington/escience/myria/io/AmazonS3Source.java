@@ -44,13 +44,13 @@ public class AmazonS3Source implements DataSource, Serializable {
   private final String bucket;
   private final String key;
 
-  @JsonCreator
-  public AmazonS3Source(@JsonProperty(value = "uri", required = true) final String uri)
-      throws URIException {
-    this(uri, null, null);
-  }
+  private Long fileSize;
 
-  public AmazonS3Source(final String uri, final Long startRange, final Long endRange)
+  @JsonCreator
+  public AmazonS3Source(
+      @JsonProperty(value = "s3Uri", required = true) final String uri,
+      @JsonProperty(value = "startRange") final Long startRange,
+      @JsonProperty(value = "endRange") final Long endRange)
       throws URIException {
     s3Uri = URI.create(Objects.requireNonNull(uri, "Parameter uri to UriSource may not be null"));
     if (!s3Uri.getScheme().equals("s3")) {
@@ -61,8 +61,8 @@ public class AmazonS3Source implements DataSource, Serializable {
     bucket = removedScheme.substring(0, removedScheme.indexOf('/'));
     key = removedScheme.substring(removedScheme.indexOf('/') + 1);
 
-    this.startRange = MoreObjects.firstNonNull(new Long(0), startRange);
-    this.endRange = MoreObjects.firstNonNull(getFileSize(), endRange);
+    this.startRange = MoreObjects.firstNonNull(startRange, new Long(0));
+    this.endRange = MoreObjects.firstNonNull(endRange, getFileSize());
   }
 
   public AmazonS3Client getS3Client() {
@@ -75,12 +75,15 @@ public class AmazonS3Source implements DataSource, Serializable {
   }
 
   public Long getFileSize() {
-    return getS3Client().getObjectMetadata(bucket, key).getContentLength();
+    if (fileSize == null) {
+      fileSize = getS3Client().getObjectMetadata(bucket, key).getContentLength();
+    }
+    return fileSize;
   }
 
-  public InputStream getInputStream(final long start, final long end) throws IOException {
-    setStartRange(start);
-    setEndRange(end);
+  public InputStream getInputStream(final long startByte, final long endByte) throws IOException {
+    setStartRange(startByte);
+    setEndRange(endByte);
     return getInputStream();
   }
 
