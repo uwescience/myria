@@ -224,9 +224,6 @@ public class CSVFileScanFragment extends LeafOperator {
             currentChar = (char) partitionInputStream.read();
             if (currentChar == '\n') {
               discardedRecord = true;
-            } else {
-              partitionInputStream =
-                  source.getInputStream(adjustedStartByteRange, adjustedEndByteRange);
             }
           }
         }
@@ -237,28 +234,30 @@ public class CSVFileScanFragment extends LeafOperator {
          * large row that was split among other workers)
          */
         if (onLastRow && !finishedReadingLastRow && !isLastWorker) {
-          long movingEndByte = adjustedEndByteRange;
+          long movingEndByte = adjustedEndByteRange + 1;
           long characterPositionAtBeginningOfRecord = record.getCharacterPosition();
           boolean newLineFound = false;
           while (!newLineFound) {
-            movingEndByte += byteOverlap;
+            // In order to find the new line character, we use SequenceInputStream to pipe in more bytes
             InputStream trailingEndInputStream =
                 source.getInputStream(
-                    adjustedEndByteRange + 1, Math.min(movingEndByte, maxByteRange));
-            int dataChar = trailingEndInputStream.read();
+                    movingEndByte, Math.min(movingEndByte + byteOverlap, maxByteRange));
+            movingEndByte += byteOverlap;
+            partitionInputStream =
+                new SequenceInputStream(partitionInputStream, trailingEndInputStream);
+            int dataChar = partitionInputStream.read();
             while (dataChar != -1) {
               char currentChar = (char) dataChar;
               if (currentChar == '\n'
                   || currentChar == '\r'
                   || Math.min(movingEndByte, maxByteRange) == maxByteRange) {
                 newLineFound = true;
-                partitionInputStream =
-                    new SequenceInputStream(
-                        partitionInputStream,
-                        source.getInputStream(
-                            adjustedEndByteRange + 1, Math.min(movingEndByte, maxByteRange)));
+                // Reading from the source from the beginning again since we only have the character offset information
+                InputStream completePartitionStream =
+                    source.getInputStream(
+                        adjustedStartByteRange, Math.min(movingEndByte, maxByteRange));
                 BufferedReader reader =
-                    new BufferedReader(new InputStreamReader(partitionInputStream));
+                    new BufferedReader(new InputStreamReader(completePartitionStream));
                 reader.skip(characterPositionAtBeginningOfRecord);
                 parser =
                     new CSVParser(
@@ -271,9 +270,9 @@ public class CSVFileScanFragment extends LeafOperator {
                 finishedReadingLastRow = true;
                 break;
               }
-              dataChar = trailingEndInputStream.read();
+              dataChar = partitionInputStream.read();
             }
-            trailingEndInputStream.close();
+            partitionInputStream.close();
             byteOverlap *= 2;
           }
         } else if (record.size() == schema.numColumns() && onLastRow && isLastWorker) {
@@ -370,9 +369,7 @@ public class CSVFileScanFragment extends LeafOperator {
       partitionInputStream = source.getInputStream(adjustedStartByteRange, adjustedEndByteRange);
       parser =
           new CSVParser(
-              new BufferedReader(
-                  new InputStreamReader(
-                      source.getInputStream(adjustedStartByteRange, adjustedEndByteRange))),
+              new BufferedReader(new InputStreamReader(partitionInputStream)),
               CSVFormat.newFormat(delimiter).withQuote(quote).withEscape(escape));
       iterator = parser.iterator();
       for (int i = 0; i < numberOfSkippedLines; i++) {
