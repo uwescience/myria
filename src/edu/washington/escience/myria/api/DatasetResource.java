@@ -455,9 +455,9 @@ public final class DatasetResource {
     try {
       functionCreationResponse =
           server.createFunction(
-              encoding.functionName,
-              encoding.functionDefinition,
-              encoding.functionOutputSchema.toString(),
+              encoding.name,
+              encoding.definition,
+              encoding.outputSchema.toString(),
               encoding.workers);
     } catch (Exception e) {
       throw new DbException();
