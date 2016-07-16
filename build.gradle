@@ -277,6 +277,8 @@ shadowJar {
   /* Apache license files will cause weird issues on case-insensitive filesystems like Mac HFS */
   exclude "LICENSE", "META-INF/*.RSA", "META-INF/*.SF","META-INF/*.DSA", "META-INF/license"
   transform(ApacheLicenseResourceTransformer)
+  /* merge service descriptors to avoid Hadoop FileSystem services shadowing each other */
+  mergeServiceFiles()
   /* Some of our deps conflict with old versions in Hadoop distro */
   relocate 'com.google.common', 'myriadeps.com.google.common'
   relocate 'javax.ws.rs', 'myriadeps.javax.ws.rs'
