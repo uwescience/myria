@@ -1100,11 +1100,16 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
 
   /**
    * Create a function and register it in the catalog
+   *
+   * @param name the name of the function
+   * @param definition the function definition (must be postgres specific)
+   * @param outputSchema the output schema of the function
+   * @return the status of the function
    */
   public String createFunction(
-      final String functionName,
-      final String functionDefinition,
-      final String functionOutputSchema,
+      final String name,
+      final String definition,
+      final String outputSchema,
       final Set<Integer> workers)
       throws DbException, InterruptedException {
     String response = "Created Function";
@@ -1113,14 +1118,14 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
       actualWorkers = getWorkers().keySet();
     }
 
-    /* Validate the command */
+    /* Postgres specific syntax - Validate the command */
     Pattern pattern = Pattern.compile("(CREATE FUNCTION)([\\s\\S]*)(LANGUAGE SQL;)");
-    Matcher matcher = pattern.matcher(functionDefinition);
+    Matcher matcher = pattern.matcher(definition);
 
     if (matcher.matches()) {
       /* Add a replace statement */
       String modifiedReplaceFunction =
-          functionDefinition.replace("CREATE FUNCTION", "CREATE OR REPLACE FUNCTION");
+          definition.replace("CREATE FUNCTION", "CREATE OR REPLACE FUNCTION");
 
       /* Create the function */
       try {
@@ -1150,7 +1155,7 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
 
       /* Register the function to the catalog */
       try {
-        catalog.registerFunction(functionName, functionDefinition, functionOutputSchema);
+        catalog.registerFunction(name, definition, outputSchema);
       } catch (CatalogException e) {
         throw new DbException(e);
       }

@@ -115,7 +115,7 @@ public final class MasterCatalog {
           + "    col_name TEXT,\n"
           + "    col_type TEXT NOT NULL,\n"
           + "    is_indexed INTEGER NOT NULL, \n"
-          + "    ascending_order INTEGER, \n"
+          + "    is_ascending_index INTEGER, \n"
           + "    FOREIGN KEY (user_name,program_name,relation_name) REFERENCES relations ON DELETE CASCADE);";
   /** Create an index on the relation_schema table. */
   private static final String CREATE_RELATION_SCHEMA_INDEX =
@@ -1713,13 +1713,13 @@ public final class MasterCatalog {
    */
 
   public void registerFunction(
-      @Nonnull final String functionName,
-      @Nonnull final String functionDefinition,
-      @Nonnull final String functionOutputSchema)
+      @Nonnull final String name,
+      @Nonnull final String definition,
+      @Nonnull final String outputSchema)
       throws CatalogException {
-    Objects.requireNonNull(functionName, "function name");
-    Objects.requireNonNull(functionDefinition, "function definition");
-    Objects.requireNonNull(functionOutputSchema, "function output schema");
+    Objects.requireNonNull(name, "function name");
+    Objects.requireNonNull(definition, "function definition");
+    Objects.requireNonNull(outputSchema, "function output schema");
     if (isClosed) {
       throw new CatalogException("Catalog is closed.");
     }
@@ -1733,14 +1733,12 @@ public final class MasterCatalog {
                 protected Void job(final SQLiteConnection sqliteConnection)
                     throws CatalogException, SQLiteException {
                   try {
-                    deleteFunctionIfExists(sqliteConnection, functionName);
-
                     SQLiteStatement statement =
                         sqliteConnection.prepare(
-                            "INSERT INTO registered_functions (function_name, function_definition, function_outputSchema) VALUES (?,?,?);");
-                    statement.bind(1, functionName);
-                    statement.bind(2, functionDefinition);
-                    statement.bind(3, functionOutputSchema);
+                            "INSERT OR REPLACE INTO registered_functions (function_name, function_definition, function_outputSchema) VALUES (?,?,?);");
+                    statement.bind(1, name);
+                    statement.bind(2, definition);
+                    statement.bind(3, outputSchema);
                     statement.stepThrough();
                     statement.dispose();
                     statement = null;
@@ -1752,28 +1750,6 @@ public final class MasterCatalog {
               })
           .get();
     } catch (InterruptedException | ExecutionException e) {
-      throw new CatalogException(e);
-    }
-  }
-
-  /**
-   * Delete the specified function from the catalog, if it exists.
-   *
-   * @param sqliteConnection the connection to the SQLite database
-   * @param functionName the function to be deleted.
-   * @throws CatalogException if there is an error
-   */
-  private void deleteFunctionIfExists(
-      @Nonnull final SQLiteConnection sqliteConnection, @Nonnull final String functionName)
-      throws CatalogException {
-    try {
-      String sql = String.format("DELETE FROM registered_functions WHERE function_name=?;");
-      SQLiteStatement statement = sqliteConnection.prepare(sql);
-      statement.bind(1, functionName);
-      statement.stepThrough();
-      statement.dispose();
-      statement = null;
-    } catch (final SQLiteException e) {
       throw new CatalogException(e);
     }
   }

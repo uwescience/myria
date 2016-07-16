@@ -11,8 +11,8 @@ import edu.washington.escience.myria.Schema;
  *
  */
 public class CreateFunctionEncoding extends MyriaApiEncoding {
-  @Required public String functionName;
-  @Required public String functionDefinition;
-  @Required public Schema functionOutputSchema;
+  @Required public String name;
+  @Required public String definition;
+  @Required public Schema outputSchema;
   public Set<Integer> workers;
 }
