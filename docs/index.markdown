@@ -8,9 +8,9 @@ section: 1
 
 # Myria Local Installation
 
-### 1. Preparation
+## 1. Preparation
 
-#### Install Java 8
+### Install Java 8
 
 Make sure `JAVA_HOME` points to the JDK 8 home directory on your machine.
 
@@ -22,7 +22,7 @@ $ echo $JAVA_HOME
 /Library/Java/JavaVirtualMachines/jdk1.8.0_40.jdk/Contents/Home
 ```
 
-#### Install SQLite
+### Install SQLite
 
 Myria normally uses PostgreSQL as its local storage engine for production deployments, but can use [SQLite](http://www.sqlite.org/) instead in development mode. SQLite is pre-installed on many systems, but if not, most package managers support SQLite, e.g. Homebrew on the Mac:
 
@@ -30,38 +30,38 @@ Myria normally uses PostgreSQL as its local storage engine for production deploy
 brew install sqlite3
 ```
 
-### 2. Setting up a local MyriaX deployment
+## 2. Setting up a local MyriaX deployment
 
-#### Download and build Myria
+### Download and build Myria
 
 Ensure that `git` is installed and run `git clone https://github.com/uwescience/myria`,
 which creates a directory `myria` with the `master` branch checked out.
 
 To build the Myria jars, run `./gradlew clean shadowJar check` from within the `myria` directory. This creates a single build artifact, `build/libs/myria-0.1-all.jar`, which is deployed in the next step. Make sure this file exists before continuing.
 
-#### (Optional) Copy and edit the deployment configuration file
+### Copy and edit the deployment configuration file
 
 A MyriaX deployment needs a deployment configuration file, always at `myriadeploy/deployment.cfg`. It specifies the details of the
 deployment, such as the worker hostnames and port numbers.
 The `myriadeploy` directory contains some example configuration files.
-For local deployment, you should use the example file `deployment.cfg.local`, which creates a local cluster with one coordinator process and two worker processes, and uses SQLite as the storage backend. You can also make your own changes to this file. If you don't want to make any changes, the `launch_local_cluster` command will automatically copy it to the right location.
+In this doc, we will be using the example file `deployment.cfg.local` as a starting point, which creates a deployment with one coordinator process and two worker processes, and uses SQLite as the storage backend. You can also make your own changes to it.
 
-If you want to make changes to the local configuration file, copy it to the standard location:
+Copy the example config file to the standard location:
 
 ```
 cp myriadeploy/deployment.cfg.local myriadeploy/deployment.cfg
 ```
 
-Make any changes you want to `myriadeploy/deployment.cfg`, and then proceed to the next step.
+Make any changes you want to the config file, and then proceed to the next step.
 
-### 3. Running the cluster
+## 3. Running the cluster
 
-#### Launch the cluster
+### Launch the cluster
 
-To start the coordinator and worker processes, execute the following command from the `myriadeploy` directory:
+To start the master and worker processes, execute the following command:
 
 ```
-./launch_local_cluster
+java -cp ./build/libs/myria-0.1-all.jar edu.washington.escience.myria.daemon.MyriaDriverLauncher -runtimeClass org.apache.reef.runtime.local.client.LocalRuntimeConfiguration -configPath './myriadeploy' -javaLibPath './build/libs' -nativeLibPath './lib'
 ```
 
 You should see log output like the following:
@@ -77,7 +77,7 @@ INFO  2016-07-08 14:39:36,530 [org.apache.reef.wake.remote.impl.OrderedRemoteRec
 INFO  2016-07-08 14:39:36,532 [org.apache.reef.wake.remote.impl.OrderedRemoteReceiverStage_Pull-pool-2-thread-2] MyriaDriverLauncher$JobMessageHandler - Message from Myria driver: All 2 workers running, ready for queries...
 ```
 
-#### Check the cluster status
+### Check the cluster status
 
 Query which workers the master knows about.
 
@@ -93,7 +93,7 @@ $ curl localhost:8753/workers/alive
 [1,2]
 ```
 
-### 4. Using the REST API
+## 4. Using the REST API
 
 To execute queries, we send requests to the coordinator using the coordinator's REST API.
 The coordinator takes query plans in JSON format as input.
@@ -102,7 +102,7 @@ We illustrate the basic functionality using examples in the directory
 `jsonQueries/getting_started`. The  `jsonQueries` directory contains additional examples.
 The documentation of the full set of REST APIs can be found [here](http://docs.myriarest.apiary.io/).
 
-#### Ingest a dataset
+### Ingest a dataset
 
 To ingest tables that are not very large, we can send the data directly to the coordinator through the REST API.
 Here we use `ingest_smallTable.json` as the example.
@@ -121,7 +121,7 @@ To ingest a large dataset in parallel, one way is to use the `load` function in
 [MyriaL](http://myria.cs.washington.edu/docs/myrial.html), which generates a parallel ingest query plan automatically.
 You can also use it to ingest data from a URL, such as a location in HDFS or S3.
 
-#### Run a query
+### Run a query
 
     curl -i -XPOST localhost:8753/query -H "Content-type: application/json"  -d @./global_join.json
 
@@ -135,7 +135,7 @@ This query writes results back to the backend storage in a relation called `smal
 You should be able to find the resulting tables in your SQLite databases (using the `sqlite3` command-line tool). The table name is specified in the 
 `DbInsert` operator, which you can modify.
 
-#### Download a dataset
+### Download a dataset
 
     curl localhost:8753/dataset/user-jwang/program-global_join/relation-smallTable_join_smallTable/data
 
@@ -145,9 +145,9 @@ This will download the table `smallTable_join_smallTable` in CSV format. JSON an
 
     curl 'localhost:8753/dataset/user-jwang/program-global_join/relation-smallTable_join_smallTable/data?format=tsv'
 
-### 5. Using the MyriaWeb interface
+## 5. Using the MyriaWeb interface
 
-#### Install the Google App Engine SDK
+### Install the Google App Engine SDK
 
 Download and install the [Google App Engine SDK](https://cloud.google.com/appengine/downloads#Google_App_Engine_SDK_for_Python). Make sure the development server exists in your `PATH`:
 
@@ -156,7 +156,7 @@ $ which dev_appserver.py
 /usr/local/bin/dev_appserver.py
 ```
 
-#### Download and install `myria-web`
+### Download and install `myria-web`
 
 Clone the `myria-web` repository:
 
@@ -182,16 +182,14 @@ INFO     2016-07-08 22:57:28,892 dispatcher.py:197] Starting module "default" ru
 INFO     2016-07-08 22:57:28,895 admin_server.py:118] Starting admin server at: http://localhost:8000
 ```
 
-If you have a port conflict with the default port `8080`, you can specify an alternative port:
-
-```
-dev_appserver.py --port <MY_CUSTOM_PORT> ./appengine
-```
-
-####  Launch the MyriaWeb interface
+###  Launch the MyriaWeb interface
 
 Point your browser to <http://localhost:8080>. Try running the sample queries in the "Examples" tab of the right-hand pane. Click on the "Datasets" menu of the navigation bar and try downloading a dataset.
 
-### 6. Shutting down the cluster
+## 6. Shutting down the cluster
 
-To shut down the cluster, simply kill the process you started in step 3 (`launch_local_cluster`). All child processes, including the coordinator and worker processes, will be automatically terminated.
+To shut down the master and worker processes, simply kill the Java process you started in step 3. All child processes, including the master and worker processes, will be automatically terminated.
+
+# Questions and issues
+
+If you run into a bug or limitation in Myria, feel free to [create a new issue](https://github.com/uwescience/myria/issues). For general questions, you can email the [Myria users list](mailto:myria-users@cs.washington.edu).
