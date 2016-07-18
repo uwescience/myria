@@ -1,158 +1,108 @@
 ---
 layout: default
-title: Local Installation
+title: Myria Local Installation
 group: "docs"
 weight: 1
-section: 2
+section: 1
 ---
 
-# MyriaX Engine
-
-## Local Installation
+# Myria Local Installation
 
 ### 1. Preparation
 
-#### Java Version
+#### Install Java 8
 
-Make sure `java -version` shows `7` on your machine.
+Make sure `JAVA_HOME` points to the JDK 8 home directory on your machine.
 
-If not, you can put Java 7 in your directory, and let your `PATH` include it **before** the default `PATH`:
+If not, [install JDK 8](http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html) and set `JAVA_HOME` accordingly. On the Mac, you should set `JAVA_HOME` to the output of `/usr/libexec/java_home -v 1.8`:
 
-    export PATH=(path_to_java7_bin_folder):$PATH
+```
+$ export JAVA_HOME=$(/usr/libexec/java_home -v 1.8)
+$ echo $JAVA_HOME
+/Library/Java/JavaVirtualMachines/jdk1.8.0_40.jdk/Contents/Home
+```
 
-#### Passwordless SSH
+#### Install SQLite
 
-You need to be able to do `ssh localhost` without typing your password.
+Myria normally uses PostgreSQL as its local storage engine for production deployments, but can use [SQLite](http://www.sqlite.org/) instead in development mode. SQLite is pre-installed on many systems, but if not, most package managers support SQLite, e.g. Homebrew on the Mac:
 
- - Start SSH Server on your machine to enable remote login. Instructions
-for how to do this can be found [here](http://osxdaily.com/2011/09/30/remote-login-ssh-server-mac-os-x/) for Mac
-and [here](https://help.ubuntu.com/community/SSH/OpenSSH/Configuring) for Ubuntu.
-
- - Setting up keys. If you have not setup keys before, the easiest way to do it is as follows:
-
-    `ssh-keygen`
-
-    `ssh-copy-id username@localhost`
-
-Use default settings. You may need to install `ssh-copy-id` if you don't have it on your machine.
-Instructions for setting up keys without installing ssh-copy-id can be found [here](http://osxdaily.com/2012/05/25/how-to-set-up-a-password-less-ssh-login/).
-
-To test, run `ssh localhost`.
-
-#### Storage
-
-You need to install [SQLite](http://www.sqlite.org/), which is already pre-installed on many systems.
-For data storage, MyriaX uses existing single-node relational database management systems.
-You can still use SQLite, but the preferred system is [PostgreSQL](http://www.postgresql.org/).
-Myria currently uses Postgres 9.4, and installation instructions can be founded [here](http://www.postgresql.org/download/).
+```
+brew install sqlite3
+```
 
 ### 2. Setting up a local MyriaX deployment
 
-#### Download and Build Myria
+#### Download and build Myria
 
-We suggest that you use `git` because you may want to switch between branches later, although GitHub also offers a ZIP file of the master branch.
-To do that, install `git` and run `git clone https://github.com/uwescience/myria`,
-which creates a directory `myria` with the master branch inside.
+Ensure that `git` is installed and run `git clone https://github.com/uwescience/myria`,
+which creates a directory `myria` with the `master` branch checked out.
 
-To build the Myria jars, run `./gradlew jar` from within the `myria` directory,.
+To build the Myria jars, run `./gradlew clean shadowJar check` from within the `myria` directory. This creates a single build artifact, `build/libs/myria-0.1-all.jar`, which is deployed in the next step. Make sure this file exists before continuing.
 
-Note: if it is not a fresh installation (e.g. you just switched from another branch),
-you may need to run `./gradlew clean` before `./gradlew jar`. This is for cleaning different versions of Java libraries.
+#### (Optional) Copy and edit the deployment configuration file
 
-If the build succeeded, you should be able to see jars in `build/libs` including `myria-0.1.jar`.
-
-#### Deployment configuration file
-
-A MyriaX deployment needs a deployment config file. It specifies the details of the
-deployment to start with, such as the worker hostnames and port numbers.
+A MyriaX deployment needs a deployment configuration file, always at `myriadeploy/deployment.cfg`. It specifies the details of the
+deployment, such as the worker hostnames and port numbers.
 The `myriadeploy` directory contains some example configuration files.
-In this doc, we will be using `deployment.cfg.local` as a starting point, which creates
-a deployment with one coordinator process and two worker processes, and uses
-SQLite as the storage backend. You can also make your own changes to it.
+For local deployment, you should use the example file `deployment.cfg.local`, which creates a local cluster with one coordinator process and two worker processes, and uses SQLite as the storage backend. You can also make your own changes to this file. If you don't want to make any changes, the `launch_local_cluster` command will automatically copy it to the right location.
 
-If you want to use [PostgreSQL](www.postgresql.org),
-`deployment.cfg.postgres` shows how to set up the configuration file.
-You need to take these additional steps:
+If you want to make changes to the local configuration file, copy it to the standard location:
 
-- Create a `uwdb` role in all your Postgres instances which Myria will use to manage the
-tables stored in Postgres.
-    ```sql
-    create role uwdb;
-    alter role uwdb with login;
-    ```
+```
+cp myriadeploy/deployment.cfg.local myriadeploy/deployment.cfg
+```
 
-- Create Postgres databases. Important: If you have multiple workers
-on the same machine, they need to use different Postgres databases
-(but they can share the same Postgres server instance). For example,
-the configuration in `deployment.cfg.postgres` needs both Postgres
-databases `myria1` and `myria2` on both worker machines:
-    ```sql
-    createdb myria1;
-    createdb myria2;
-    ```
-You can replace `myria1` and `myria2` with your own databases.
-
-- (Optional) Should you wish Myria to connect via an alternate port, add the
-following key/value pair to the `[deployment]` section of your Myria deployment file:
-    ```
-    database_port = [custom_port_number]
-    ```
+Make any changes you want to `myriadeploy/deployment.cfg`, and then proceed to the next step.
 
 ### 3. Running the cluster
 
-#### Setup the working directories and catalogs
-
-Before we can launch the cluster and run queries, we need to setup the catalog and
-the working directories. These initialization steps are automated and executed by the `setup_cluster.py` script.
-
-To initialize (or re-initialize) a new Myria cluster configuration, execute the following command:
-
-    ./setup_cluster.py deployment.cfg.local --clean-catalog
-
-This will create the catalog and the working directories in `/tmp/myria/twoNodeLocalParallel".
-Notice that this **overwrites** the catalogs: all information about previously ingested relations will be removed.
-If you only want to update the jars without losing information in the catalog, run:
-
-    ./setup_cluster.py deployment.cfg.local
-
 #### Launch the cluster
 
-To start the master and the worker processes, execute the following command
+To start the coordinator and worker processes, execute the following command from the `myriadeploy` directory:
 
-    ./launch_cluster.sh deployment.cfg.local
+```
+./launch_local_cluster
+```
 
-This command will output things like the following:
+You should see log output like the following:
 
-    starting master
-    ...
-    Waiting for the master to be up...
-
-If everything is okay, it will start the workers:
-
-    starting workers
-    2 = localhost
-    1 = localhost
+```
+INFO: REEF Version: 0.15.0
+INFO  2016-07-08 14:39:15,859 [main] MyriaDriverLauncher - Submitting Myria driver to REEF...
+INFO  2016-07-08 14:39:17,789 [org.apache.reef.wake.remote.impl.OrderedRemoteReceiverStage_Pull-pool-2-thread-1] MyriaDriverLauncher$RunningJobHandler - Myria driver is running...
+INFO  2016-07-08 14:39:26,525 [org.apache.reef.wake.remote.impl.OrderedRemoteReceiverStage_Pull-pool-2-thread-2] MyriaDriverLauncher$JobMessageHandler - Message from Myria driver: Worker 0 ready
+INFO  2016-07-08 14:39:26,527 [org.apache.reef.wake.remote.impl.OrderedRemoteReceiverStage_Pull-pool-2-thread-2] MyriaDriverLauncher$JobMessageHandler - Message from Myria driver: Master is running, starting 2 workers...
+INFO  2016-07-08 14:39:31,528 [org.apache.reef.wake.remote.impl.OrderedRemoteReceiverStage_Pull-pool-2-thread-2] MyriaDriverLauncher$JobMessageHandler - Message from Myria driver: Worker 2 ready
+INFO  2016-07-08 14:39:36,530 [org.apache.reef.wake.remote.impl.OrderedRemoteReceiverStage_Pull-pool-2-thread-2] MyriaDriverLauncher$JobMessageHandler - Message from Myria driver: Worker 1 ready
+INFO  2016-07-08 14:39:36,532 [org.apache.reef.wake.remote.impl.OrderedRemoteReceiverStage_Pull-pool-2-thread-2] MyriaDriverLauncher$JobMessageHandler - Message from Myria driver: All 2 workers running, ready for queries...
+```
 
 #### Check the cluster status
 
-- Query which workers the master knows about.
+Query which workers the master knows about.
 
-    curl -i localhost:8753/workers
+```
+$ curl localhost:8753/workers
+{"1":"localhost:9001","2":"localhost:9002"}
+```
 
-- Query which workers are alive. They better match what's in `deployment.cfg.local`!
+Query which workers are alive. They should match the output of the previous command!
 
-    curl -i localhost:8753/workers/alive
+```
+$ curl localhost:8753/workers/alive
+[1,2]
+```
 
-### 4. Using the cluster
+### 4. Using the REST API
 
 To execute queries, we send requests to the coordinator using the coordinator's REST API.
 The coordinator takes query plans in JSON format as input.
 
 We illustrate the basic functionality using examples in the directory
 `jsonQueries/getting_started`. The  `jsonQueries` directory contains additional examples.
-The documentation of the full set of REST APIs can be founded [here](http://docs.myriarest.apiary.io/).
+The documentation of the full set of REST APIs can be found [here](http://docs.myriarest.apiary.io/).
 
-#### Ingest some data.
+#### Ingest a dataset
 
 To ingest tables that are not very large, we can send the data directly to the coordinator through the REST API.
 Here we use `ingest_smallTable.json` as the example.
@@ -161,71 +111,87 @@ As specified in `ingest_smallTable.json`, it ingests the text file `smallTable` 
     "columnTypes" : ["LONG_TYPE", "LONG_TYPE"],
     "columnNames" : ["col1", "col2"]
 
-To ingest it:
+To ingest the file (you will need to change the path to your source data file in `ingest_smallTable.json`):
 
+    cd jsonQueries/getting_started
+    vi ./ingest_smallTable.json
     curl -i -XPOST localhost:8753/dataset -H "Content-type: application/json"  -d @./ingest_smallTable.json
 
-You may need to change the path to your source data file in `ingest_smallTable.json`.
-
 To ingest a large dataset in parallel, one way is to use the `load` function in
-[MyriaL](http://myria.cs.washington.edu/docs/myriaql.html), which generates a parallel ingest query plan automatically.
-You can also use it to ingest data from an URL, for example, a location in HDFS or S3.
+[MyriaL](http://myria.cs.washington.edu/docs/myrial.html), which generates a parallel ingest query plan automatically.
+You can also use it to ingest data from a URL, such as a location in HDFS or S3.
 
-#### Run a query.
+#### Run a query
 
     curl -i -XPOST localhost:8753/query -H "Content-type: application/json"  -d @./global_join.json
 
-The Datalog expression of this query is specified in `global_join.json`. The SQL equivalence is:
+The Datalog expression of this query is specified in `global_join.json`. The SQL equivalent is:
 
-    Select t1.col1, t2.col2
-    From smallTable as t1, smallTable as t2
-    Where t1.col2 = t2.col1;
+    SELECT t1.col1, t2.col2
+    FROM smallTable AS t1, smallTable AS t2
+    WHERE t1.col2 = t2.col1;
 
 This query writes results back to the backend storage in a relation called `smallTable_join_smallTable`.
-You should be able to find the resulting tables in your databases. The table name is specified in the 
+You should be able to find the resulting tables in your SQLite databases (using the `sqlite3` command-line tool). The table name is specified in the 
 `DbInsert` operator, which you can modify.
 
-#### Download a dataset.
+#### Download a dataset
 
-    curl -i localhost:8753/dataset/user-jwang/program-global_join/relation-smallTable_join_smallTable/data
+    curl localhost:8753/dataset/user-jwang/program-global_join/relation-smallTable_join_smallTable/data
 
-This will download the table `smallTable_join_smallTable` in CSV format. JSON and TSV are also supported, to do that, specify the format as the following:
+This will download the table `smallTable_join_smallTable` in CSV format. JSON and TSV are also supported:
 
-    curl -i localhost:8753/dataset/user-jwang/program-global_join/relation-smallTable_join_smallTable/data?format=json
+    curl 'localhost:8753/dataset/user-jwang/program-global_join/relation-smallTable_join_smallTable/data?format=json'
 
-### 5. Shutdown the cluster
+    curl 'localhost:8753/dataset/user-jwang/program-global_join/relation-smallTable_join_smallTable/data?format=tsv'
 
-Shutdown the whole cluster via the REST API:
+### 5. Using the MyriaWeb interface
 
-    curl -i localhost:8753/server/shutdown
+#### Install the Google App Engine SDK
 
-This will shutdown everything, including the master and all the workers.
+Download and install the [Google App Engine SDK](https://cloud.google.com/appengine/downloads#Google_App_Engine_SDK_for_Python). Make sure the development server exists in your `PATH`:
 
-If there was an error in any query, ingesting data, etc., then the cluster might freeze and
-most commands that involve workers (e.g., queries, ingestion, and shutdown) would not work. You can
-force-quit all machines:
+```
+$ which dev_appserver.py
+/usr/local/bin/dev_appserver.py
+```
 
-    ./stop_all_by_force deployment.cfg.local
+#### Download and install `myria-web`
 
-This will go to all the nodes, find the master/worker processes under your username, and kill them. Alternatively, you can also restart the cluster with the following REST call:
+Clone the `myria-web` repository:
 
-    curl -i localhost:8753/server/restart
+```
+git clone https://github.com/uwescience/myria-web
+```
 
-## Using a shared-nothing cluster
+Set up the `myria-web` application:
 
-To use a shared-nothing cluster to run MyriaX instead of your local
-machine, specify the cluster configuration, including the machine names,
-port numbers, working directories, database names, etc, in your
-`deployment.cfg` file.
-See `deployment.cfg.sample` for an example.
+```
+cd myria-web
+git submodule update --init --recursive
+pushd submodules/raco
+python setup.py install
+popd
+```
+Launch the `myria-web` application:
 
-Similar to local installation, make sure you have: Java 7,
-passwordless SSH from the master machine(s) to all the worker
-machine(s), Postgres users and databases created on your worker
-machine(s) on your cluster.
+```
+$ dev_appserver.py ./appengine                                                                                                                                                        
+INFO     2016-07-08 22:57:28,888 api_server.py:204] Starting API server at: http://localhost:61792
+INFO     2016-07-08 22:57:28,892 dispatcher.py:197] Starting module "default" running at: http://localhost:8080
+INFO     2016-07-08 22:57:28,895 admin_server.py:118] Starting admin server at: http://localhost:8000
+```
 
+If you have a port conflict with the default port `8080`, you can specify an alternative port:
 
-## Questions, issues, problems
+```
+dev_appserver.py --port <MY_CUSTOM_PORT> ./appengine
+```
 
-Welcome to check our [GitHub issues page](https://github.com/uwescience/myria/issues) and post your problems there. We will take care of them!
+####  Launch the MyriaWeb interface
 
+Point your browser to <http://localhost:8080>. Try running the sample queries in the "Examples" tab of the right-hand pane. Click on the "Datasets" menu of the navigation bar and try downloading a dataset.
+
+### 6. Shutting down the cluster
+
+To shut down the cluster, simply kill the process you started in step 3 (`launch_local_cluster`). All child processes, including the coordinator and worker processes, will be automatically terminated.
