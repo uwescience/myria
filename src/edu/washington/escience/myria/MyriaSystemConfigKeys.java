@@ -65,13 +65,21 @@ public final class MyriaSystemConfigKeys {
 
   public static final String USERNAME = "username";
 
-  public static final String NUMBER_VCORES = "container.vcores.number";
+  public static final String MASTER_NUMBER_VCORES = "container.master.vcores.number";
 
-  public static final String MEMORY_QUOTA_GB = "container.memory.size.gb";
+  public static final String WORKER_NUMBER_VCORES = "container.worker.vcores.number";
 
-  public static final String JVM_HEAP_SIZE_MAX_GB = "jvm.heap.size.max.gb";
+  public static final String MASTER_MEMORY_QUOTA_GB = "container.master.memory.size.gb";
 
-  public static final String JVM_HEAP_SIZE_MIN_GB = "jvm.heap.size.min.gb";
+  public static final String WORKER_MEMORY_QUOTA_GB = "container.worker.memory.size.gb";
+
+  public static final String MASTER_JVM_HEAP_SIZE_MAX_GB = "jvm.master.heap.size.max.gb";
+
+  public static final String WORKER_JVM_HEAP_SIZE_MAX_GB = "jvm.worker.heap.size.max.gb";
+
+  public static final String MASTER_JVM_HEAP_SIZE_MIN_GB = "jvm.master.heap.size.min.gb";
+
+  public static final String WORKER_JVM_HEAP_SIZE_MIN_GB = "jvm.worker.heap.size.min.gb";
 
   public static final String DEPLOYMENT_CONF_FILE = "deployment.cfg";
 

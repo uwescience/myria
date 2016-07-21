@@ -1,16 +1,14 @@
 /*
- * Licensed to the Apache Software Foundation (ASF) under one or more contributor license
- * agreements. See the NOTICE file distributed with this work for additional information regarding
- * copyright ownership. The ASF licenses this file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance with the License. You may obtain a
- * copy of the License at
+ * Licensed to the Apache Software Foundation (ASF) under one or more contributor license agreements. See the NOTICE
+ * file distributed with this work for additional information regarding copyright ownership. The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with the
+ * License. You may obtain a copy of the License at
  *
  * http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing, software distributed under the License
- * is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
- * or implied. See the License for the specific language governing permissions and limitations under
- * the License.
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations under the License.
  */
 package edu.washington.escience.myria.tools;
 
@@ -43,10 +41,18 @@ public final class MyriaGlobalConfigurationModule extends ConfigurationModuleBui
   public static final OptionalParameter<String> SSL_KEYSTORE_PASSWORD = new OptionalParameter<>();
   public static final OptionalParameter<Boolean> ENABLE_DEBUG = new OptionalParameter<>();
   public static final RequiredParameter<String> WORKER_CONF = new RequiredParameter<>();
-  public static final OptionalParameter<Integer> NUMBER_VCORES = new OptionalParameter<>();
-  public static final OptionalParameter<Float> MEMORY_QUOTA_GB = new OptionalParameter<>();
-  public static final OptionalParameter<Float> JVM_HEAP_SIZE_MIN_GB = new OptionalParameter<>();
-  public static final OptionalParameter<Float> JVM_HEAP_SIZE_MAX_GB = new OptionalParameter<>();
+  public static final OptionalParameter<Integer> MASTER_NUMBER_VCORES = new OptionalParameter<>();
+  public static final OptionalParameter<Integer> WORKER_NUMBER_VCORES = new OptionalParameter<>();
+  public static final OptionalParameter<Float> MASTER_MEMORY_QUOTA_GB = new OptionalParameter<>();
+  public static final OptionalParameter<Float> WORKER_MEMORY_QUOTA_GB = new OptionalParameter<>();
+  public static final OptionalParameter<Float> MASTER_JVM_HEAP_SIZE_MIN_GB =
+      new OptionalParameter<>();
+  public static final OptionalParameter<Float> WORKER_JVM_HEAP_SIZE_MIN_GB =
+      new OptionalParameter<>();
+  public static final OptionalParameter<Float> MASTER_JVM_HEAP_SIZE_MAX_GB =
+      new OptionalParameter<>();
+  public static final OptionalParameter<Float> WORKER_JVM_HEAP_SIZE_MAX_GB =
+      new OptionalParameter<>();
   public static final OptionalParameter<String> JVM_OPTIONS = new OptionalParameter<>();
   public static final OptionalParameter<Integer> FLOW_CONTROL_WRITE_BUFFER_HIGH_MARK_BYTES =
       new OptionalParameter<>();
@@ -84,10 +90,14 @@ public final class MyriaGlobalConfigurationModule extends ConfigurationModuleBui
           .bindNamedParameter(SslKeystorePassword.class, SSL_KEYSTORE_PASSWORD)
           .bindNamedParameter(EnableDebug.class, ENABLE_DEBUG)
           .bindSetEntry(WorkerConf.class, WORKER_CONF)
-          .bindNamedParameter(NumberVCores.class, NUMBER_VCORES)
-          .bindNamedParameter(MemoryQuotaGB.class, MEMORY_QUOTA_GB)
-          .bindNamedParameter(JvmHeapSizeMinGB.class, JVM_HEAP_SIZE_MIN_GB)
-          .bindNamedParameter(JvmHeapSizeMaxGB.class, JVM_HEAP_SIZE_MAX_GB)
+          .bindNamedParameter(MasterNumberVCores.class, MASTER_NUMBER_VCORES)
+          .bindNamedParameter(WorkerNumberVCores.class, WORKER_NUMBER_VCORES)
+          .bindNamedParameter(MasterMemoryQuotaGB.class, MASTER_MEMORY_QUOTA_GB)
+          .bindNamedParameter(WorkerMemoryQuotaGB.class, WORKER_MEMORY_QUOTA_GB)
+          .bindNamedParameter(MasterJvmHeapSizeMinGB.class, MASTER_JVM_HEAP_SIZE_MIN_GB)
+          .bindNamedParameter(WorkerJvmHeapSizeMinGB.class, WORKER_JVM_HEAP_SIZE_MIN_GB)
+          .bindNamedParameter(MasterJvmHeapSizeMaxGB.class, MASTER_JVM_HEAP_SIZE_MAX_GB)
+          .bindNamedParameter(WorkerJvmHeapSizeMaxGB.class, WORKER_JVM_HEAP_SIZE_MAX_GB)
           .bindSetEntry(JvmOptions.class, JVM_OPTIONS)
           .bindNamedParameter(
               FlowControlWriteBufferHighMarkBytes.class, FLOW_CONTROL_WRITE_BUFFER_HIGH_MARK_BYTES)
@@ -147,17 +157,29 @@ public final class MyriaGlobalConfigurationModule extends ConfigurationModuleBui
   @NamedParameter
   public class WorkerConf implements Name<Set<String>> {}
 
-  @NamedParameter(default_value = "2")
-  public class NumberVCores implements Name<Integer> {}
+  @NamedParameter(default_value = "1")
+  public class MasterNumberVCores implements Name<Integer> {}
 
-  @NamedParameter(default_value = "2.0")
-  public class MemoryQuotaGB implements Name<Float> {}
+  @NamedParameter(default_value = "2")
+  public class WorkerNumberVCores implements Name<Integer> {}
 
   @NamedParameter(default_value = "1.0")
-  public class JvmHeapSizeMinGB implements Name<Float> {}
+  public class MasterMemoryQuotaGB implements Name<Float> {}
 
   @NamedParameter(default_value = "2.0")
-  public class JvmHeapSizeMaxGB implements Name<Float> {}
+  public class WorkerMemoryQuotaGB implements Name<Float> {}
+
+  @NamedParameter(default_value = "0.9")
+  public class MasterJvmHeapSizeMinGB implements Name<Float> {}
+
+  @NamedParameter(default_value = "0.9")
+  public class WorkerJvmHeapSizeMinGB implements Name<Float> {}
+
+  @NamedParameter(default_value = "0.9")
+  public class MasterJvmHeapSizeMaxGB implements Name<Float> {}
+
+  @NamedParameter(default_value = "1.8")
+  public class WorkerJvmHeapSizeMaxGB implements Name<Float> {}
 
   @NamedParameter(default_values = {"-XX:+UseG1GC"})
   public class JvmOptions implements Name<Set<String>> {}

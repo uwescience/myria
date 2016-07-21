@@ -33,16 +33,24 @@ rest_port = 8753
 4 = capella.cs.washington.edu:9092:/disk2/myria:myria2
 
 [runtime]
+# Uncomment to set number of virtual CPU cores used by the master process
+#container.master.vcores.number = 1
 # Uncomment to set number of virtual CPU cores used by the worker processes
-# container.vcores.number = 2
+#container.worker.vcores.number = 2
+# Uncomment to set the minimum heap size of the master processes
+#jvm.master.heap.size.min.gb = 0.9
 # Uncomment to set the minimum heap size of the worker processes
-# jvm.heap.size.min.gb = 1
+#jvm.worker.heap.size.min.gb = 0.9
+# Uncomment to set the maximum heap size of the master processes
+#jvm.master.heap.size.max.gb = 0.9
 # Uncomment to set the maximum heap size of the worker processes
-# jvm.heap.size.max.gb = 2
-# Uncomment to set the requested container memory
-# container.memory.size.gb = 2
+#jvm.worker.heap.size.max.gb = 1.8
+# Uncomment to set the master container memory limit
+#container.master.memory.size.gb = 1
+# Uncomment to set the worker container memory limit
+#container.worker.memory.size.gb = 2
 # Uncomment to set other JVM options, separate them with space
-# jvm.options = -XX:+UseG1GC
+#jvm.options = -XX:+UseG1GC
 
 [persist]
 persist_uri = hdfs://vega.cs.washington.edu:8020

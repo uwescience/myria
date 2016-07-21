@@ -134,23 +134,43 @@ public final class MyriaConfigurationParser {
     conf =
         setOptional(
             conf,
-            MyriaGlobalConfigurationModule.NUMBER_VCORES,
-            getOptional(parser, "runtime", MyriaSystemConfigKeys.NUMBER_VCORES));
+            MyriaGlobalConfigurationModule.MASTER_NUMBER_VCORES,
+            getOptional(parser, "runtime", MyriaSystemConfigKeys.MASTER_NUMBER_VCORES));
     conf =
         setOptional(
             conf,
-            MyriaGlobalConfigurationModule.MEMORY_QUOTA_GB,
-            getOptional(parser, "runtime", MyriaSystemConfigKeys.MEMORY_QUOTA_GB));
+            MyriaGlobalConfigurationModule.WORKER_NUMBER_VCORES,
+            getOptional(parser, "runtime", MyriaSystemConfigKeys.WORKER_NUMBER_VCORES));
     conf =
         setOptional(
             conf,
-            MyriaGlobalConfigurationModule.JVM_HEAP_SIZE_MIN_GB,
-            getOptional(parser, "runtime", MyriaSystemConfigKeys.JVM_HEAP_SIZE_MIN_GB));
+            MyriaGlobalConfigurationModule.MASTER_MEMORY_QUOTA_GB,
+            getOptional(parser, "runtime", MyriaSystemConfigKeys.MASTER_MEMORY_QUOTA_GB));
     conf =
         setOptional(
             conf,
-            MyriaGlobalConfigurationModule.JVM_HEAP_SIZE_MAX_GB,
-            getOptional(parser, "runtime", MyriaSystemConfigKeys.JVM_HEAP_SIZE_MAX_GB));
+            MyriaGlobalConfigurationModule.WORKER_MEMORY_QUOTA_GB,
+            getOptional(parser, "runtime", MyriaSystemConfigKeys.WORKER_MEMORY_QUOTA_GB));
+    conf =
+        setOptional(
+            conf,
+            MyriaGlobalConfigurationModule.MASTER_JVM_HEAP_SIZE_MIN_GB,
+            getOptional(parser, "runtime", MyriaSystemConfigKeys.MASTER_JVM_HEAP_SIZE_MIN_GB));
+    conf =
+        setOptional(
+            conf,
+            MyriaGlobalConfigurationModule.WORKER_JVM_HEAP_SIZE_MIN_GB,
+            getOptional(parser, "runtime", MyriaSystemConfigKeys.WORKER_JVM_HEAP_SIZE_MIN_GB));
+    conf =
+        setOptional(
+            conf,
+            MyriaGlobalConfigurationModule.MASTER_JVM_HEAP_SIZE_MAX_GB,
+            getOptional(parser, "runtime", MyriaSystemConfigKeys.MASTER_JVM_HEAP_SIZE_MAX_GB));
+    conf =
+        setOptional(
+            conf,
+            MyriaGlobalConfigurationModule.WORKER_JVM_HEAP_SIZE_MAX_GB,
+            getOptional(parser, "runtime", MyriaSystemConfigKeys.WORKER_JVM_HEAP_SIZE_MAX_GB));
     conf =
         setOptional(
             conf,
