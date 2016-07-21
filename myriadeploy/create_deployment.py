@@ -8,9 +8,10 @@ from itertools import groupby
 
 
 def get_deployment(path, coordinator_hostname, worker_hostnames, persist_uri,
-                    name='myria', rest_port=8753, database_type='postgresql',
-                   database_port=5432, heap=None, cores=None, debug=False,
-                   database_username=None, database_password=None,
+                   name='myria', rest_port=8753, database_type='postgresql',
+                   database_port=5432, heap_mem_fraction=None, master_mem=None,
+                   worker_mem=None, master_cores=None, worker_cores=None,
+                   debug=False, database_username=None, database_password=None,
                    coordinator_port=9001, worker_ports=None,
                    worker_base_port=8001, worker_directories=None,
                    worker_databases=None):
@@ -18,7 +19,8 @@ def get_deployment(path, coordinator_hostname, worker_hostnames, persist_uri,
     return (_get_header(path, name, rest_port, database_type, database_port,
                         debug, database_username, database_password) +
             _get_coordinator(coordinator_hostname, coordinator_port) +
-            _get_runtime(heap, cores) +
+            _get_runtime(heap_mem_fraction, master_mem,
+                         worker_mem, master_cores, worker_cores) +
             _get_workers(worker_hostnames, worker_ports, worker_base_port,
                          worker_directories, worker_databases) +
             _get_persist(persist_uri)
@@ -54,16 +56,28 @@ def _get_coordinator(hostname, port=9001):
            '0 = {}:{}\n\n'.format(hostname, port)
 
 
-def _get_runtime(heap=None, cores=None):
+def _get_runtime(heap_mem_fraction=None, master_mem=None, worker_mem=None,
+                 master_cores=None, worker_cores=None):
     """ Generates the runtime section of a Myria deployment file """
     runtime = '[runtime]\n'
-    if heap:
-        runtime += 'container.memory.size.gb = %s\n' % heap
-        runtime += 'jvm.heap.size.min.gb = %s\n' % heap
-        runtime += 'jvm.heap.size.max.gb = %s\n' % heap
-    if cores:
-        runtime += 'container.vcores.number = %s\n' % cores
-    if not heap and not cores:
+    if master_mem:
+        runtime += 'container.master.memory.size.gb = %s\n' % master_mem
+        runtime += 'jvm.master.heap.size.min.gb = %s\n' % (
+            master_mem * heap_mem_fraction)
+        runtime += 'jvm.master.heap.size.max.gb = %s\n' % (
+            master_mem * heap_mem_fraction)
+    if worker_mem:
+        runtime += 'container.worker.memory.size.gb = %s\n' % worker_mem
+        runtime += 'jvm.worker.heap.size.min.gb = %s\n' % (
+            worker_mem * heap_mem_fraction)
+        runtime += 'jvm.worker.heap.size.max.gb = %s\n' % (
+            worker_mem * heap_mem_fraction)
+    if master_cores:
+        runtime += 'container.master.vcores.number = %s\n' % master_cores
+    if worker_cores:
+        runtime += 'container.worker.vcores.number = %s\n' % worker_cores
+    if not master_mem and not worker_mem \
+            and not master_cores and not worker_cores:
         runtime += '# No runtime options specified\n'
     return runtime + '\n'
 
@@ -90,10 +104,12 @@ def _get_workers(hostnames, ports=None, base_port=8001,
 
     return workers
 
+
 def _get_persist(uri):
     """ Generates the persistence section of a Myria deployment file """
     return '[persist]\n' \
            'persist_uri = {}\n\n'.format(uri)
+
 
 def main(argv):
     """ Argument parsing wrapper for generating a Myria deployment file """
@@ -108,7 +124,6 @@ def main(argv):
     parser.add_argument(
         'worker_hostnames', metavar='workers', type=str, nargs='+',
         help='One or more worker hostnames')
-
     parser.add_argument(
         '--name', type=str, default='myria',
         help='Name identifying this installation')
@@ -147,9 +162,20 @@ def main(argv):
         default=None, help='One or more worker database names '
                            '(default is [--name])')
     parser.add_argument(
-        '--container-memory-size-gb', type=float, dest='heap', help='Java VM maximum heap size in GB (e.g., "1.5")')
+        '--master-cores-number', type=int, dest='master_cores',
+        help='CPUs allocated to the master (e.g., "2")')
     parser.add_argument(
-        '--container-vcores-number', type=int, dest='cores', help='CPUs allocated to a container (e.g., "2")')
+        '--worker-cores-number', type=int, dest='worker_cores',
+        help='CPUs allocated to each worker (e.g., "2")')
+    parser.add_argument(
+        '--master-memory-size-gb', type=float, dest='master_mem',
+        help='Memory in GB allocated to the master (e.g., "2.0")')
+    parser.add_argument(
+        '--worker-memory-size-gb', type=float, dest='worker_mem',
+        help='Memory in GB allocated to each worker (e.g., "2.0")')
+    parser.add_argument(
+        '--heap-memory-fraction', type=float, dest='heap_mem_fraction',
+        help='Fraction of container memory used by JVM heap (e.g., "0.9")')
     parser.add_argument(
         '--persist-uri', dest='persist_uri', type=str,
         help='URI of persistence endpoint')
