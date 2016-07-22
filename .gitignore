@@ -10,6 +10,9 @@ build
 englink-log4j.log
 /bin
 
+### Eclipse ###
+.settings/
+
 ### Intellij ###
 *.iml
 .idea/
