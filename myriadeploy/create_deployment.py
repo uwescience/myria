@@ -9,17 +9,17 @@ from itertools import groupby
 
 def get_deployment(path, coordinator_hostname, worker_hostnames, persist_uri,
                    name='myria', rest_port=8753, database_type='postgresql',
-                   database_port=5432, heap_mem_fraction=None, master_mem=None,
-                   worker_mem=None, master_cores=None, worker_cores=None,
-                   debug=False, database_username=None, database_password=None,
-                   coordinator_port=9001, worker_ports=None,
-                   worker_base_port=8001, worker_directories=None,
-                   worker_databases=None):
+                   database_port=5432, heap_mem_fraction=None, driver_mem=None,
+                   master_mem=None, worker_mem=None, master_cores=None,
+                   worker_cores=None, debug=False, database_username=None,
+                   database_password=None, coordinator_port=9001,
+                   worker_ports=None, worker_base_port=8001,
+                   worker_directories=None, worker_databases=None):
     """ Generates a Myria deployment file with the given configuration """
     return (_get_header(path, name, rest_port, database_type, database_port,
                         debug, database_username, database_password) +
             _get_coordinator(coordinator_hostname, coordinator_port) +
-            _get_runtime(heap_mem_fraction, master_mem,
+            _get_runtime(heap_mem_fraction, driver_mem, master_mem,
                          worker_mem, master_cores, worker_cores) +
             _get_workers(worker_hostnames, worker_ports, worker_base_port,
                          worker_directories, worker_databases) +
@@ -56,10 +56,12 @@ def _get_coordinator(hostname, port=9001):
            '0 = {}:{}\n\n'.format(hostname, port)
 
 
-def _get_runtime(heap_mem_fraction=None, master_mem=None, worker_mem=None,
-                 master_cores=None, worker_cores=None):
+def _get_runtime(heap_mem_fraction=None, driver_mem=None, master_mem=None,
+                 worker_mem=None, master_cores=None, worker_cores=None):
     """ Generates the runtime section of a Myria deployment file """
     runtime = '[runtime]\n'
+    if driver_mem:
+        runtime += 'container.driver.memory.size.gb = %s\n' % driver_mem
     if master_mem:
         runtime += 'container.master.memory.size.gb = %s\n' % master_mem
         runtime += 'jvm.master.heap.size.min.gb = %s\n' % (
@@ -167,6 +169,9 @@ def main(argv):
     parser.add_argument(
         '--worker-cores-number', type=int, dest='worker_cores',
         help='CPUs allocated to each worker (e.g., "2")')
+    parser.add_argument(
+        '--driver-memory-size-gb', type=float, dest='driver_mem',
+        help='Memory in GB allocated to the driver (e.g., "0.25")')
     parser.add_argument(
         '--master-memory-size-gb', type=float, dest='master_mem',
         help='Memory in GB allocated to the master (e.g., "2.0")')
