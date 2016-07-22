@@ -43,6 +43,7 @@ public final class MyriaGlobalConfigurationModule extends ConfigurationModuleBui
   public static final RequiredParameter<String> WORKER_CONF = new RequiredParameter<>();
   public static final OptionalParameter<Integer> MASTER_NUMBER_VCORES = new OptionalParameter<>();
   public static final OptionalParameter<Integer> WORKER_NUMBER_VCORES = new OptionalParameter<>();
+  public static final OptionalParameter<Float> DRIVER_MEMORY_QUOTA_GB = new OptionalParameter<>();
   public static final OptionalParameter<Float> MASTER_MEMORY_QUOTA_GB = new OptionalParameter<>();
   public static final OptionalParameter<Float> WORKER_MEMORY_QUOTA_GB = new OptionalParameter<>();
   public static final OptionalParameter<Float> MASTER_JVM_HEAP_SIZE_MIN_GB =
@@ -92,6 +93,7 @@ public final class MyriaGlobalConfigurationModule extends ConfigurationModuleBui
           .bindSetEntry(WorkerConf.class, WORKER_CONF)
           .bindNamedParameter(MasterNumberVCores.class, MASTER_NUMBER_VCORES)
           .bindNamedParameter(WorkerNumberVCores.class, WORKER_NUMBER_VCORES)
+          .bindNamedParameter(DriverMemoryQuotaGB.class, DRIVER_MEMORY_QUOTA_GB)
           .bindNamedParameter(MasterMemoryQuotaGB.class, MASTER_MEMORY_QUOTA_GB)
           .bindNamedParameter(WorkerMemoryQuotaGB.class, WORKER_MEMORY_QUOTA_GB)
           .bindNamedParameter(MasterJvmHeapSizeMinGB.class, MASTER_JVM_HEAP_SIZE_MIN_GB)
@@ -162,6 +164,9 @@ public final class MyriaGlobalConfigurationModule extends ConfigurationModuleBui
 
   @NamedParameter(default_value = "2")
   public class WorkerNumberVCores implements Name<Integer> {}
+
+  @NamedParameter(default_value = "0.25")
+  public class DriverMemoryQuotaGB implements Name<Float> {}
 
   @NamedParameter(default_value = "1.0")
   public class MasterMemoryQuotaGB implements Name<Float> {}

@@ -144,6 +144,11 @@ public final class MyriaConfigurationParser {
     conf =
         setOptional(
             conf,
+            MyriaGlobalConfigurationModule.DRIVER_MEMORY_QUOTA_GB,
+            getOptional(parser, "runtime", MyriaSystemConfigKeys.DRIVER_MEMORY_QUOTA_GB));
+    conf =
+        setOptional(
+            conf,
             MyriaGlobalConfigurationModule.MASTER_MEMORY_QUOTA_GB,
             getOptional(parser, "runtime", MyriaSystemConfigKeys.MASTER_MEMORY_QUOTA_GB));
     conf =

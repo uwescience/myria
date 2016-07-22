@@ -1,6 +1,8 @@
 package edu.washington.escience.myria.daemon;
 
 import java.io.IOException;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
@@ -37,12 +39,14 @@ import org.apache.reef.tang.formats.CommandLine;
 import org.apache.reef.tang.formats.ConfigurationModule;
 import org.apache.reef.util.Optional;
 import org.apache.reef.wake.EventHandler;
+import org.apache.reef.wake.remote.address.LocalAddressProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.coordinator.ConfigFileException;
 import edu.washington.escience.myria.tools.MyriaConfigurationParser;
+import edu.washington.escience.myria.tools.MyriaGlobalConfigurationModule;
 
 @Unit
 public final class MyriaDriverLauncher {
@@ -102,10 +106,16 @@ public final class MyriaDriverLauncher {
    * @throws IOException
    */
   private final static Configuration getDriverConf(
-      final String[] libPaths, final String[] filePaths) throws IOException {
+      final String driverHostName,
+      final int driverMemoryMB,
+      final String[] libPaths,
+      final String[] filePaths)
+      throws IOException {
     ConfigurationModule driverConf =
         DriverConfiguration.CONF
             .set(DriverConfiguration.DRIVER_IDENTIFIER, "MyriaDriver")
+            .set(DriverConfiguration.DRIVER_NODE, driverHostName)
+            .set(DriverConfiguration.DRIVER_MEMORY, driverMemoryMB)
             .set(DriverConfiguration.ON_DRIVER_STARTED, MyriaDriver.StartHandler.class)
             .set(DriverConfiguration.ON_DRIVER_STOP, MyriaDriver.StopHandler.class)
             .set(
@@ -166,6 +176,36 @@ public final class MyriaDriverLauncher {
     }
   }
 
+  private static String getMasterHost(final Configuration conf) throws InjectionException {
+    final Injector injector = Tang.Factory.getTang().newInjector(conf);
+    LocalAddressProvider addressProvider = injector.getInstance(LocalAddressProvider.class);
+    final String masterHost =
+        injector.getNamedInstance(MyriaGlobalConfigurationModule.MasterHost.class);
+    // REEF (org.apache.reef.wake.remote.address.HostnameBasedLocalAddressProvider) will
+    // unpredictably pick a local DNS name or IP address instead of "localhost" or 127.0.0.1
+    String reefMasterHost = masterHost;
+    if (masterHost.equals("localhost") || masterHost.equals("127.0.0.1")) {
+      try {
+        reefMasterHost = InetAddress.getByName(addressProvider.getLocalAddress()).getHostName();
+        LOGGER.info(
+            "Original host: {}, HostnameBasedLocalAddressProvider returned {}",
+            masterHost,
+            reefMasterHost);
+      } catch (final UnknownHostException e) {
+        LOGGER.warn("Failed to get canonical hostname for host {}", masterHost);
+      }
+    }
+    return reefMasterHost;
+  }
+
+  private static int getDriverMemory(final Configuration conf) throws InjectionException {
+    final Injector injector = Tang.Factory.getTang().newInjector(conf);
+    final float driverMemoryGB =
+        injector.getNamedInstance(MyriaGlobalConfigurationModule.DriverMemoryQuotaGB.class);
+    final int driverMemoryMB = (int) (driverMemoryGB * 1024);
+    return driverMemoryMB;
+  }
+
   /**
    * Launch the Myria driver.
    *
@@ -201,9 +241,15 @@ public final class MyriaDriverLauncher {
         tang.newConfigurationBuilder()
             .bindNamedParameter(SerializedGlobalConf.class, serializedGlobalConf)
             .build();
+    String driverHostName = getMasterHost(globalConf);
+    int driverMemoryMB = getDriverMemory(globalConf);
     final Configuration driverConf =
         Configurations.merge(
-            getDriverConf(new String[] {javaLibPath}, new String[] {nativeLibPath}),
+            getDriverConf(
+                driverHostName,
+                driverMemoryMB,
+                new String[] {javaLibPath},
+                new String[] {nativeLibPath}),
             globalConfWrapper);
 
     return tang.newInjector(getRuntimeConf(runtimeClassName), getClientConf())
@@ -279,8 +325,7 @@ public final class MyriaDriverLauncher {
   public static final class NativeLibPath implements Name<String> {}
 
   /**
-   * Serialized Myria global configuration (which itself contains serialized configuration for each
-   * worker).
+   * Serialized Myria global configuration (which itself contains serialized configuration for each worker).
    */
   @NamedParameter(doc = "serialized Myria global configuration")
   public static final class SerializedGlobalConf implements Name<String> {}

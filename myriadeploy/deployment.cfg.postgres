@@ -45,6 +45,8 @@ rest_port = 8753
 #jvm.master.heap.size.max.gb = 0.9
 # Uncomment to set the maximum heap size of the worker processes
 #jvm.worker.heap.size.max.gb = 1.8
+# Uncomment to set the driver container memory limit
+#container.driver.memory.size.gb = 0.25
 # Uncomment to set the master container memory limit
 #container.master.memory.size.gb = 1
 # Uncomment to set the worker container memory limit

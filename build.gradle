@@ -109,9 +109,9 @@ ext.jerseyVersion = "2.14"
 ext.swaggerVersion = "2.11"
 ext.swaggerMinorVersion = "1.3.11"
 ext.jmxetricsVersion = "1.0.8"
-ext.reefVersion = "0.15.0"
+/* ext.reefVersion = "0.15.0" */
 /* for local or development REEF builds */
-/* ext.reefVersion = "0.16.0-SNAPSHOT" */
+ext.reefVersion = "0.16.0-SNAPSHOT"
 ext.hadoopVersion = "2.7.2"
 
 dependencies {

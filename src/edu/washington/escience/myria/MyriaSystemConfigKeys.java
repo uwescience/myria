@@ -69,6 +69,8 @@ public final class MyriaSystemConfigKeys {
 
   public static final String WORKER_NUMBER_VCORES = "container.worker.vcores.number";
 
+  public static final String DRIVER_MEMORY_QUOTA_GB = "container.driver.memory.size.gb";
+
   public static final String MASTER_MEMORY_QUOTA_GB = "container.master.memory.size.gb";
 
   public static final String WORKER_MEMORY_QUOTA_GB = "container.worker.memory.size.gb";
