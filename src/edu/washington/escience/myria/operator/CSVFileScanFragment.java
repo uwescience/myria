@@ -205,7 +205,9 @@ public class CSVFileScanFragment extends LeafOperator {
          * If the previous character is not a new line, we discard the line.
          */
         if (lineNumber - 1 == 0 && partitionStartByteRange != 0) {
-          char currentChar = (char) partitionInputStream.read();
+          char currentChar =
+              (char)
+                  source.getInputStream(adjustedStartByteRange - 1, adjustedStartByteRange).read();
           if (currentChar != '\n' && currentChar != '\r') {
             discardedRecord = true;
             /*
@@ -221,7 +223,11 @@ public class CSVFileScanFragment extends LeafOperator {
             /*
              * This handles the case in which the splitting occurs in the middle of \r\n.
              */
-            currentChar = (char) partitionInputStream.read();
+            currentChar =
+                (char)
+                    source
+                        .getInputStream(adjustedStartByteRange, adjustedStartByteRange + 1)
+                        .read();
             if (currentChar == '\n') {
               discardedRecord = true;
             }
@@ -360,11 +366,7 @@ public class CSVFileScanFragment extends LeafOperator {
   protected void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
     buffer = new TupleBatchBuffer(getSchema());
     try {
-      /* Optimization : if not the first worker, read the previous byte */
       adjustedStartByteRange = partitionStartByteRange;
-      if (partitionStartByteRange != 0) {
-        adjustedStartByteRange -= 1;
-      }
       adjustedEndByteRange = partitionEndByteRange;
       partitionInputStream = source.getInputStream(adjustedStartByteRange, adjustedEndByteRange);
       parser =
