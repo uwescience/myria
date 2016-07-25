@@ -165,7 +165,7 @@ public final class MyriaGlobalConfigurationModule extends ConfigurationModuleBui
   @NamedParameter(default_value = "2")
   public class WorkerNumberVCores implements Name<Integer> {}
 
-  @NamedParameter(default_value = "0.25")
+  @NamedParameter(default_value = "0.5")
   public class DriverMemoryQuotaGB implements Name<Float> {}
 
   @NamedParameter(default_value = "1.0")
