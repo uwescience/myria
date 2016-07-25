@@ -25,6 +25,7 @@ import org.apache.reef.client.JobMessage;
 import org.apache.reef.client.LauncherStatus;
 import org.apache.reef.client.REEF;
 import org.apache.reef.client.RunningJob;
+import org.apache.reef.runtime.yarn.client.YarnClientConfiguration;
 import org.apache.reef.tang.Configuration;
 import org.apache.reef.tang.Configurations;
 import org.apache.reef.tang.Injector;
@@ -88,6 +89,10 @@ public final class MyriaDriverLauncher {
           NoSuchFieldException, SecurityException {
     final Class<?> runtimeClass = Class.forName(runtimeClassName);
     ConfigurationModule cm = (ConfigurationModule) runtimeClass.getField("CONF").get(null);
+    // need to allow some room for non-heap memory in the Driver
+    if (cm.equals(YarnClientConfiguration.CONF)) {
+      cm.set(YarnClientConfiguration.JVM_HEAP_SLACK, "0.1");
+    }
     return cm.build();
   }
 
