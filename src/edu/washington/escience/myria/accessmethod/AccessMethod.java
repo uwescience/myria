@@ -189,6 +189,23 @@ public abstract class AccessMethod {
       throws DbException;
 
   /**
+   * Creates a view
+   *
+   * @param viewName
+   * @param viewDefinition
+   * @throws DbException
+   */
+  public abstract void createView(String viewName, String viewDefinition) throws DbException;
+
+  /**
+   * Executes a command on the underlying database
+   *
+   * @param command
+   * @throws DbException
+   */
+  public abstract void runCommand(String command) throws DbException;
+
+  /**
    * Holds a reference to a column and whether it is ascending or descending.
    */
   public static final class IndexRef implements Serializable {

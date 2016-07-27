@@ -11,7 +11,6 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import edu.washington.escience.myria.api.MyriaApiException;
 import edu.washington.escience.myria.api.encoding.QueryConstruct.ConstructArgs;
 import edu.washington.escience.myria.operator.Operator;
-import edu.washington.escience.myria.operator.SampledDbInsertTemp;
 
 /**
  * A JSON-able wrapper for the expected wire message for an operator. To add a new operator, two things need to be done.
@@ -34,6 +33,9 @@ import edu.washington.escience.myria.operator.SampledDbInsertTemp;
   @Type(name = "Counter", value = CounterEncoding.class),
   @Type(name = "DbInsert", value = DbInsertEncoding.class),
   @Type(name = "DbQueryScan", value = QueryScanEncoding.class),
+  @Type(name = "DbCreateIndex", value = CreateIndexEncoding.class),
+  @Type(name = "DbCreateView", value = CreateViewEncoding.class),
+  @Type(name = "DbCreateFunction", value = CreateFunctionEncoding.class),
   @Type(name = "Difference", value = DifferenceEncoding.class),
   @Type(name = "DupElim", value = DupElimEncoding.class),
   @Type(name = "Empty", value = EmptyRelationEncoding.class),

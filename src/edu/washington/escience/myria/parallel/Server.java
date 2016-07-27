@@ -24,6 +24,8 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -86,7 +88,10 @@ import edu.washington.escience.myria.io.DataSink;
 import edu.washington.escience.myria.io.UriSink;
 import edu.washington.escience.myria.operator.Apply;
 import edu.washington.escience.myria.operator.DataOutput;
+import edu.washington.escience.myria.operator.DbCreateIndex;
+import edu.washington.escience.myria.operator.DbCreateView;
 import edu.washington.escience.myria.operator.DbDelete;
+import edu.washington.escience.myria.operator.DbExecute;
 import edu.washington.escience.myria.operator.DbInsert;
 import edu.washington.escience.myria.operator.DbQueryScan;
 import edu.washington.escience.myria.operator.DuplicateTBGenerator;
@@ -1003,6 +1008,161 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
     }
 
     return getDatasetStatus(relationKey);
+  }
+
+  /**
+   * Create indexes and add the metadata to the catalog
+   */
+  public long addIndexesToRelation(
+      final RelationKey relationKey, final Schema schema, final List<IndexRef> indexes)
+      throws DbException, InterruptedException {
+    long queryID;
+    /* Add indexes to relations */
+    try {
+      Map<Integer, SubQueryPlan> workerPlans = new HashMap<>();
+      for (Integer workerId : getWorkersForRelation(relationKey, null)) {
+        workerPlans.put(
+            workerId,
+            new SubQueryPlan(
+                new DbCreateIndex(
+                    EmptyRelation.of(catalog.getSchema(relationKey)),
+                    relationKey,
+                    schema,
+                    indexes,
+                    null)));
+      }
+      ListenableFuture<Query> qf =
+          queryManager.submitQuery(
+              "add indexes to " + relationKey.toString(),
+              "add indexes to  " + relationKey.toString(),
+              "add indexes to " + relationKey.toString(getDBMS()),
+              new SubQueryPlan(new SinkRoot(new EOSSource())),
+              workerPlans);
+      try {
+        queryID = qf.get().getQueryId();
+      } catch (ExecutionException e) {
+        throw new DbException("Error executing query", e.getCause());
+      }
+    } catch (CatalogException e) {
+      throw new DbException(e);
+    }
+
+    /* Add index to catalog */
+    try {
+      catalog.markIndexesInCatalog(relationKey, indexes);
+    } catch (CatalogException e) {
+      throw new DbException(e);
+    }
+
+    return queryID;
+  }
+
+  /**
+   * Create a view
+   */
+  public long createView(
+      final String viewName, final String viewDefinition, final Set<Integer> workers)
+      throws DbException, InterruptedException {
+    long queryID;
+    Set<Integer> actualWorkers = workers;
+    if (workers == null) {
+      actualWorkers = getWorkers().keySet();
+    }
+
+    /* Create the view */
+    try {
+      Map<Integer, SubQueryPlan> workerPlans = new HashMap<>();
+      for (Integer workerId : actualWorkers) {
+        workerPlans.put(
+            workerId,
+            new SubQueryPlan(
+                new DbCreateView(
+                    EmptyRelation.of(Schema.EMPTY_SCHEMA), viewName, viewDefinition, null)));
+      }
+      ListenableFuture<Query> qf =
+          queryManager.submitQuery(
+              "create view",
+              "create view",
+              "create view",
+              new SubQueryPlan(new SinkRoot(new EOSSource())),
+              workerPlans);
+      try {
+        queryID = qf.get().getQueryId();
+      } catch (ExecutionException e) {
+        throw new DbException("Error executing query", e.getCause());
+      }
+    } catch (CatalogException e) {
+      throw new DbException(e);
+    }
+
+    return queryID;
+  }
+
+  /**
+   * Create a function and register it in the catalog
+   *
+   * @param name the name of the function
+   * @param definition the function definition (must be postgres specific)
+   * @param outputSchema the output schema of the function
+   * @return the status of the function
+   */
+  public String createFunction(
+      final String name,
+      final String definition,
+      final String outputSchema,
+      final Set<Integer> workers)
+      throws DbException, InterruptedException {
+    String response = "Created Function";
+    Set<Integer> actualWorkers = workers;
+    if (workers == null) {
+      actualWorkers = getWorkers().keySet();
+    }
+
+    /* Postgres specific syntax - Validate the command */
+    Pattern pattern = Pattern.compile("(CREATE FUNCTION)([\\s\\S]*)(LANGUAGE SQL;)");
+    Matcher matcher = pattern.matcher(definition);
+
+    if (matcher.matches()) {
+      /* Add a replace statement */
+      String modifiedReplaceFunction =
+          definition.replace("CREATE FUNCTION", "CREATE OR REPLACE FUNCTION");
+
+      /* Create the function */
+      try {
+        Map<Integer, SubQueryPlan> workerPlans = new HashMap<>();
+        for (Integer workerId : actualWorkers) {
+          workerPlans.put(
+              workerId,
+              new SubQueryPlan(
+                  new DbExecute(
+                      EmptyRelation.of(Schema.EMPTY_SCHEMA), modifiedReplaceFunction, null)));
+        }
+        ListenableFuture<Query> qf =
+            queryManager.submitQuery(
+                "create function",
+                "create function",
+                "create function",
+                new SubQueryPlan(new SinkRoot(new EOSSource())),
+                workerPlans);
+        try {
+          qf.get().getQueryId();
+        } catch (ExecutionException e) {
+          throw new DbException("Error executing query", e.getCause());
+        }
+      } catch (CatalogException e) {
+        throw new DbException(e);
+      }
+
+      /* Register the function to the catalog */
+      try {
+        catalog.registerFunction(name, definition, outputSchema);
+      } catch (CatalogException e) {
+        throw new DbException(e);
+      }
+    } else {
+      response = "Function is not valid";
+    }
+    return response;
   }
 
   /**

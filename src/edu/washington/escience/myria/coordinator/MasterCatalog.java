@@ -43,6 +43,7 @@ import edu.washington.escience.myria.MyriaConstants.ProfilingMode;
 import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
+import edu.washington.escience.myria.accessmethod.AccessMethod.IndexRef;
 import edu.washington.escience.myria.accessmethod.SQLiteTupleBatchIterator;
 import edu.washington.escience.myria.api.MyriaJsonMapperProvider;
 import edu.washington.escience.myria.api.encoding.DatasetStatus;
@@ -113,6 +114,8 @@ public final class MasterCatalog {
           + "    col_index INTEGER NOT NULL,\n"
           + "    col_name TEXT,\n"
           + "    col_type TEXT NOT NULL,\n"
+          + "    is_indexed INTEGER NOT NULL, \n"
+          + "    is_ascending_index INTEGER, \n"
           + "    FOREIGN KEY (user_name,program_name,relation_name) REFERENCES relations ON DELETE CASCADE);";
   /** Create an index on the relation_schema table. */
   private static final String CREATE_RELATION_SCHEMA_INDEX =
@@ -150,6 +153,12 @@ public final class MasterCatalog {
           + "WHERE status = '"
           + QueryStatusEncoding.Status.ACCEPTED.toString()
           + "';";
+  private static final String CREATE_REGISTERED_FUNCTIONS =
+      "CREATE TABLE registered_functions (\n"
+          + "    function_name TEXT PRIMARY KEY, \n"
+          + "    function_definition TEXT NOT NULL,\n"
+          + "    function_outputSchema TEXT NOT NULL);";
+
   /** CREATE TABLE statements @formatter:on */
 
   /**
@@ -208,6 +217,7 @@ public final class MasterCatalog {
                     sqliteConnection.exec(CREATE_STORED_RELATIONS_INDEX);
                     sqliteConnection.exec(CREATE_SHARDS);
                     sqliteConnection.exec(CREATE_SHARDS_INDEX);
+                    sqliteConnection.exec(CREATE_REGISTERED_FUNCTIONS);
                     sqliteConnection.exec("END TRANSACTION");
                   } catch (final SQLiteException e) {
                     sqliteConnection.exec("ROLLBACK TRANSACTION");
@@ -382,8 +392,8 @@ public final class MasterCatalog {
       /* Second, populate the Schema table. */
       statement =
           sqliteConnection.prepare(
-              "INSERT INTO relation_schema(user_name,program_name,relation_name,col_index,col_name,col_type) "
-                  + "VALUES (?,?,?,?,?,?);");
+              "INSERT INTO relation_schema(user_name,program_name,relation_name,col_index,col_name,col_type,is_indexed, ascending_order) "
+                  + "VALUES (?,?,?,?,?,?,?,?);");
       statement.bind(1, relation.getUserName());
       statement.bind(2, relation.getProgramName());
       statement.bind(3, relation.getRelationName());
@@ -391,6 +401,8 @@ public final class MasterCatalog {
         statement.bind(4, i);
         statement.bind(5, schema.getColumnName(i));
         statement.bind(6, schema.getColumnType(i).toString());
+        statement.bind(7, 0);
+        statement.bindNull(8);
         statement.step();
         statement.reset(false);
       }
@@ -1632,6 +1644,101 @@ public final class MasterCatalog {
                     statement.bind(1, relation.getUserName());
                     statement.bind(2, relation.getProgramName());
                     statement.bind(3, relation.getRelationName());
+                    statement.stepThrough();
+                    statement.dispose();
+                    statement = null;
+                  } catch (final SQLiteException e) {
+                    throw new CatalogException(e);
+                  }
+                  return null;
+                }
+              })
+          .get();
+    } catch (InterruptedException | ExecutionException e) {
+      throw new CatalogException(e);
+    }
+  }
+
+  /*
+   * Mark indexes in the catalog
+   */
+
+  public void markIndexesInCatalog(
+      @Nonnull final RelationKey relation, @Nonnull final List<IndexRef> indexes)
+      throws CatalogException {
+    Objects.requireNonNull(relation, "relation");
+    Objects.requireNonNull(indexes, "indexes");
+    if (isClosed) {
+      throw new CatalogException("Catalog is closed.");
+    }
+
+    /* Do the work */
+    for (int i = 0; i < indexes.size(); i++) {
+      final int indexID = i;
+      try {
+        queue
+            .execute(
+                new SQLiteJob<Void>() {
+                  @Override
+                  protected Void job(final SQLiteConnection sqliteConnection)
+                      throws CatalogException, SQLiteException {
+                    try {
+                      SQLiteStatement statement =
+                          sqliteConnection.prepare(
+                              "UPDATE relation_schema SET is_indexed=1, ascending_order=? WHERE user_name=? AND program_name=? AND relation_name=? AND col_index=?;");
+                      statement.bind(1, indexes.get(indexID).isAscending() ? 1 : 0);
+                      statement.bind(2, relation.getUserName());
+                      statement.bind(3, relation.getProgramName());
+                      statement.bind(4, relation.getRelationName());
+                      statement.bind(5, indexes.get(indexID).getColumn());
+                      statement.stepThrough();
+                      statement.dispose();
+                      statement = null;
+
+                    } catch (final SQLiteException e) {
+                      throw new CatalogException(e);
+                    }
+                    return null;
+                  }
+                })
+            .get();
+      } catch (InterruptedException | ExecutionException e) {
+        throw new CatalogException(e);
+      }
+    }
+  }
+
+  /*
+   * Register a function in the catalog
+   */
+
+  public void registerFunction(
+      @Nonnull final String name,
+      @Nonnull final String definition,
+      @Nonnull final String outputSchema)
+      throws CatalogException {
+    Objects.requireNonNull(name, "function name");
+    Objects.requireNonNull(definition, "function definition");
+    Objects.requireNonNull(outputSchema, "function output schema");
+    if (isClosed) {
+      throw new CatalogException("Catalog is closed.");
+    }
+
+    /* Do the work */
+    try {
+      queue
+          .execute(
+              new SQLiteJob<Void>() {
+                @Override
+                protected Void job(final SQLiteConnection sqliteConnection)
+                    throws CatalogException, SQLiteException {
+                  try {
+                    SQLiteStatement statement =
+                        sqliteConnection.prepare(
+                            "INSERT OR REPLACE INTO registered_functions (function_name, function_definition, function_outputSchema) VALUES (?,?,?);");
+                    statement.bind(1, name);
+                    statement.bind(2, definition);
+                    statement.bind(3, outputSchema);
                     statement.stepThrough();
                     statement.dispose();
                     statement = null;

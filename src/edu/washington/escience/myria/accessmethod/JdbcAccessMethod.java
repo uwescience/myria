@@ -617,6 +617,40 @@ public final class JdbcAccessMethod extends AccessMethod {
     execute(statement);
   }
 
+  @Override
+  public void createView(final String viewName, final String viewDefinition) throws DbException {
+    if (jdbcInfo.getDbms().equals(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL)) {
+      createViewPostgres(viewName, viewDefinition);
+    } else {
+      throw new UnsupportedOperationException(
+          "create view is not supported in " + jdbcInfo.getDbms() + ", implement me");
+    }
+  }
+
+  /**
+   * Create a view in postgres if no view with the same name exists
+   *
+   * @param viewName the name of the views
+   * @param viewDefinition the view to be created
+   * @throws DbException if there is an error in the DBMS.
+   */
+  public void createViewPostgres(final String viewName, final String viewDefinition)
+      throws DbException {
+    String statement =
+        Joiner.on(' ').join("CREATE OR REPLACE VIEW", viewName, "AS", viewDefinition, ";");
+    execute(statement);
+  }
+
+  @Override
+  public void runCommand(final String command) throws DbException {
+    if (jdbcInfo.getDbms().equals(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL)) {
+      execute(command);
+    } else {
+      throw new UnsupportedOperationException(
+          "run command is not supported in " + jdbcInfo.getDbms() + ", implement me");
+    }
+  }
+
   /**
    * Returns the quoted name of the given relation for use in SQL statements.
    *

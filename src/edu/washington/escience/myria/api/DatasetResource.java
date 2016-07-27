@@ -43,6 +43,9 @@ import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.TupleWriter;
 import edu.washington.escience.myria.accessmethod.AccessMethod.IndexRef;
+import edu.washington.escience.myria.api.encoding.CreateFunctionEncoding;
+import edu.washington.escience.myria.api.encoding.CreateIndexEncoding;
+import edu.washington.escience.myria.api.encoding.CreateViewEncoding;
 import edu.washington.escience.myria.api.encoding.DatasetEncoding;
 import edu.washington.escience.myria.api.encoding.DatasetStatus;
 import edu.washington.escience.myria.api.encoding.TipsyDatasetEncoding;
@@ -402,6 +405,66 @@ public final class DatasetResource {
     /* Build the response to return the queryId */
     ResponseBuilder response = Response.ok();
     return response.entity(queryId).build();
+  }
+
+  /**
+   * Creates an index based on the DbCreateIndexEncoding
+   */
+  @POST
+  @Path("/createIndex/")
+  @Consumes(MediaType.APPLICATION_JSON)
+  public Response createIndex(final CreateIndexEncoding encoding) throws DbException {
+    long queryId;
+    try {
+      Schema relationSchema = server.getSchema(encoding.relationKey);
+      queryId = server.addIndexesToRelation(encoding.relationKey, relationSchema, encoding.indexes);
+    } catch (Exception e) {
+      throw new DbException();
+    }
+    /* Build the response to return the queryId */
+    ResponseBuilder response = Response.ok();
+    return response.entity(queryId).build();
+  }
+
+  /**
+   * Creates an view based on the DbCreateViewEncoding
+   */
+  @POST
+  @Path("/createView/")
+  @Consumes(MediaType.APPLICATION_JSON)
+  public Response createView(final CreateViewEncoding encoding) throws DbException {
+    long queryId;
+    try {
+      queryId = server.createView(encoding.viewName, encoding.viewDefinition, encoding.workers);
+    } catch (Exception e) {
+      throw new DbException();
+    }
+    /* Build the response to return the queryId */
+    ResponseBuilder response = Response.ok();
+    return response.entity(queryId).build();
+  }
+
+  /**
+   * Creates an function based on DbCreateFunctionEncoding
+   */
+  @POST
+  @Path("/createFunction/")
+  @Consumes(MediaType.APPLICATION_JSON)
+  public Response createFunction(final CreateFunctionEncoding encoding) throws DbException {
+    String functionCreationResponse;
+    try {
+      functionCreationResponse =
+          server.createFunction(
+              encoding.name,
+              encoding.definition,
+              encoding.outputSchema.toString(),
+              encoding.workers);
+    } catch (Exception e) {
+      throw new DbException();
+    }
+    /* Build the response to return the queryId */
+    ResponseBuilder response = Response.ok();
+    return response.entity(functionCreationResponse).build();
   }
 
   /**
