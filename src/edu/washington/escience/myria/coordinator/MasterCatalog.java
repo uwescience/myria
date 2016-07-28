@@ -392,7 +392,7 @@ public final class MasterCatalog {
       /* Second, populate the Schema table. */
       statement =
           sqliteConnection.prepare(
-              "INSERT INTO relation_schema(user_name,program_name,relation_name,col_index,col_name,col_type,is_indexed, ascending_order) "
+              "INSERT INTO relation_schema(user_name,program_name,relation_name,col_index,col_name,col_type,is_indexed,is_ascending_index) "
                   + "VALUES (?,?,?,?,?,?,?,?);");
       statement.bind(1, relation.getUserName());
       statement.bind(2, relation.getProgramName());
@@ -1685,7 +1685,7 @@ public final class MasterCatalog {
                     try {
                       SQLiteStatement statement =
                           sqliteConnection.prepare(
-                              "UPDATE relation_schema SET is_indexed=1, ascending_order=? WHERE user_name=? AND program_name=? AND relation_name=? AND col_index=?;");
+                              "UPDATE relation_schema SET is_indexed=1, is_ascending_index=? WHERE user_name=? AND program_name=? AND relation_name=? AND col_index=?;");
                       statement.bind(1, indexes.get(indexID).isAscending() ? 1 : 0);
                       statement.bind(2, relation.getUserName());
                       statement.bind(3, relation.getProgramName());
