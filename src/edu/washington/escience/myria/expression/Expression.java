@@ -21,20 +21,17 @@ public class Expression implements Serializable {
   /**
    * Name of the column that the result will be written to.
    */
-  @JsonProperty
-  private final String outputName;
+  @JsonProperty private final String outputName;
 
   /**
    * The java expression to be evaluated.
    */
-  @JsonProperty
-  private String javaExpression;
+  @JsonProperty private String javaExpression;
 
   /**
    * Expression encoding reference is needed to get the output type.
    */
-  @JsonProperty
-  private final ExpressionOperator rootExpressionOperator;
+  @JsonProperty private final ExpressionOperator rootExpressionOperator;
 
   /**
    * Variable name of result.
@@ -125,14 +122,29 @@ public class Expression implements Serializable {
       if (isMultivalued()) {
         String primitiveTypeName = getOutputType(parameters).toJavaType().getName();
         appendExpression =
-            new StringBuilder(primitiveTypeName).append("[] results = ").append(getJavaExpression(parameters)).append(
-                ";\n").append(COUNT).append(".appendInt(results.length);\n").append(
-                "for (int i = 0; i < results.length; ++i) {\n").append(RESULT).append(".put").append(
-                getOutputType(parameters).getName()).append("(").append(COL).append(", results[i]);\n}").toString();
+            new StringBuilder(primitiveTypeName)
+                .append("[] results = ")
+                .append(getJavaExpression(parameters))
+                .append(";\n")
+                .append(COUNT)
+                .append(".appendInt(results.length);\n")
+                .append("for (int i = 0; i < results.length; ++i) {\n")
+                .append(RESULT)
+                .append(".put")
+                .append(getOutputType(parameters).getName())
+                .append("(")
+                .append(COL)
+                .append(", results[i]);\n}")
+                .toString();
       } else {
         appendExpression =
-            new StringBuilder(RESULT).append(".append").append(getOutputType(parameters).getName()).append("(").append(
-                getJavaExpression(parameters)).append(")").toString();
+            new StringBuilder(RESULT)
+                .append(".append")
+                .append(getOutputType(parameters).getName())
+                .append("(")
+                .append(getJavaExpression(parameters))
+                .append(")")
+                .toString();
       }
     }
     return appendExpression;
@@ -185,7 +197,7 @@ public class Expression implements Serializable {
   /**
    * An expression is "multivalued" when it has a primitive array return type. This is a requirement for being used in
    * the FlatteningApply operator.
-   * 
+   *
    * @return if the root expression has a primitive array return type
    */
   public boolean isMultivalued() {

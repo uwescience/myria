@@ -20,7 +20,7 @@ public class SplitExpression extends BinaryExpression {
 
   /**
    * Takes the string to be split and the regex to split it on.
-   * 
+   *
    * @param left the left operand (index of string column).
    * @param right the right operand (regular expression string).
    */
@@ -36,8 +36,13 @@ public class SplitExpression extends BinaryExpression {
 
   @Override
   public String getJavaString(final ExpressionOperatorParameter parameters) {
-    return new StringBuilder("java.util.regex.Pattern.compile(").append(getRight().getJavaString(parameters)).append(
-        ")").append(".split(").append(getLeft().getJavaString(parameters)).append(", -1)").toString();
+    return new StringBuilder("java.util.regex.Pattern.compile(")
+        .append(getRight().getJavaString(parameters))
+        .append(")")
+        .append(".split(")
+        .append(getLeft().getJavaString(parameters))
+        .append(", -1)")
+        .toString();
   }
 
   @Override

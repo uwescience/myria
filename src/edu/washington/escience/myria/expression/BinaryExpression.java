@@ -225,19 +225,29 @@ public abstract class BinaryExpression extends ExpressionOperator {
   /**
    * A function that could be used as the default type checker for a binary expression where each operand must be of a
    * specified type.
-   * 
+   *
    * @param leftExpectedType expected type of left operand
    * @param rightExpectedType expected type of right operand
    * @param parameters parameters that are needed to determine the output type
    */
-  protected final void checkOperandTypes(final Type leftExpectedType, final Type rightExpectedType,
+  protected final void checkOperandTypes(
+      final Type leftExpectedType,
+      final Type rightExpectedType,
       final ExpressionOperatorParameter parameters) {
     Type leftType = getLeft().getOutputType(parameters);
     Type rightType = getRight().getOutputType(parameters);
-    Preconditions.checkArgument(leftType == leftExpectedType, "%s cannot handle left child [%s] of Type %s", getClass()
-        .getSimpleName(), getLeft(), leftType);
-    Preconditions.checkArgument(rightType == rightExpectedType, "%s cannot handle right child [%s] of Type %s",
-        getClass().getSimpleName(), getRight(), rightType);
+    Preconditions.checkArgument(
+        leftType == leftExpectedType,
+        "%s cannot handle left child [%s] of Type %s",
+        getClass().getSimpleName(),
+        getLeft(),
+        leftType);
+    Preconditions.checkArgument(
+        rightType == rightExpectedType,
+        "%s cannot handle right child [%s] of Type %s",
+        getClass().getSimpleName(),
+        getRight(),
+        rightType);
   }
 
   /**

@@ -30,10 +30,26 @@ public class FlatteningApplyTest {
 
   @Test
   public void testApply() throws DbException {
-        Schema.ofFields("int_count", Type.INT_TYPE, "ignore_1", Type.FLOAT_TYPE, "joined_ints", Type.STRING_TYPE,
+    final Schema schema =
+        Schema.ofFields(
+            "int_count",
+            Type.INT_TYPE,
+            "ignore_1",
+            Type.FLOAT_TYPE,
+            "joined_ints",
+            Type.STRING_TYPE,
+            "ignore_2",
+            Type.BOOLEAN_TYPE);
     final Schema expectedResultSchema =
-        Schema.ofFields("int_count", Type.INT_TYPE, "joined_ints", Type.STRING_TYPE, "int_values", Type.INT_TYPE,
-            "joined_ints_splits", Type.STRING_TYPE);
+        Schema.ofFields(
+            "int_count",
+            Type.INT_TYPE,
+            "joined_ints",
+            Type.STRING_TYPE,
+            "int_values",
+            Type.INT_TYPE,
+            "joined_ints_splits",
+            Type.STRING_TYPE);
     final TupleBatchBuffer input = new TupleBatchBuffer(schema);
 
     StringBuilder sb = new StringBuilder();
@@ -46,19 +62,22 @@ public class FlatteningApplyTest {
     final String joinedInts = sb.toString();
 
     input.putInt(0, COUNTER_MAX);
-    input.putString(1, joinedInts);
+    input.putFloat(1, 1.0f);
+    input.putString(2, joinedInts);
+    input.putBoolean(3, true);
     ImmutableList.Builder<Expression> Expressions = ImmutableList.builder();
 
     ExpressionOperator countColIdx = new VariableExpression(0);
     ExpressionOperator counter = new CounterExpression(countColIdx);
     Expressions.add(new Expression("int_values", counter));
 
-    ExpressionOperator splitColIdx = new VariableExpression(1);
+    ExpressionOperator splitColIdx = new VariableExpression(2);
     ExpressionOperator regex = new ConstantExpression(SEPARATOR);
     ExpressionOperator split = new SplitExpression(splitColIdx, regex);
     Expressions.add(new Expression("joined_ints_splits", split));
 
-    FlatteningApply apply = new FlatteningApply(new TupleSource(input), Expressions.build(), ImmutableList.of(0, 2));
+    FlatteningApply apply =
+        new FlatteningApply(new TupleSource(input), Expressions.build(), ImmutableList.of(0, 2));
     apply.open(TestEnvVars.get());
     int rowIdx = 0;
     while (!apply.eos()) {

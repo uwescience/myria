@@ -22,6 +22,10 @@ public interface FlatteningExpressionEvalInterface {
    * @param result a table storing evaluation results
    * @param colIdx the column in {@link result} to write results to
    */
-  void evaluate(final ReadableTable tb, final int rowId, final WritableColumn count, final AppendableTable result,
+  void evaluate(
+      final ReadableTable tb,
+      final int rowId,
+      final WritableColumn count,
+      final AppendableTable result,
       final int colIdx);
 }
