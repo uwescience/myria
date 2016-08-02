@@ -32,8 +32,11 @@ public class PrefixColumn<T extends Comparable<?>> extends Column<T> {
    */
   public PrefixColumn(@Nonnull final Column<T> inner, final int length) {
     this.inner = inner;
-    Preconditions.checkArgument(length <= inner.size(),
-        "Error: cannot take a prefix of length %s from a batch of length %s", length, inner.size());
+    Preconditions.checkArgument(
+        length <= inner.size(),
+        "Error: cannot take a prefix of length %s from a batch of length %s",
+        length,
+        inner.size());
     numRows = length;
   }
 

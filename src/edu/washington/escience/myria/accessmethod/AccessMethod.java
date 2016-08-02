@@ -190,7 +190,7 @@ public abstract class AccessMethod {
 
   /**
    * Creates a view
-   * 
+   *
    * @param viewName
    * @param viewQuery
    * @throws DbException
@@ -199,7 +199,7 @@ public abstract class AccessMethod {
 
   /**
    * Runs a sql command
-   * 
+   *
    * @param command
    * @throws DbException
    */

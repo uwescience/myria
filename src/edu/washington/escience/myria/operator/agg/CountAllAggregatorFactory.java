@@ -23,7 +23,8 @@ public final class CountAllAggregatorFactory implements AggregatorFactory {
   }
 
   @Override
-  public Aggregator get(final Schema inputSchema, final PythonFunctionRegistrar pyFuncReg) throws DbException {
+  public Aggregator get(final Schema inputSchema, final PythonFunctionRegistrar pyFuncReg)
+      throws DbException {
     return get(inputSchema);
   }
 }

@@ -159,8 +159,12 @@ public abstract class Column<T extends Comparable<?>> implements ReadableColumn,
       }
     }
     /* Note that we do *not* build the inner class. We pass its builder instead. */
-    final BooleanColumnMessage.Builder inner = BooleanColumnMessage.newBuilder().setData(bytes.toByteString());
-    return ColumnMessage.newBuilder().setType(ColumnMessage.Type.BOOLEAN).setBooleanColumn(inner).build();
+    final BooleanColumnMessage.Builder inner =
+        BooleanColumnMessage.newBuilder().setData(bytes.toByteString());
+    return ColumnMessage.newBuilder()
+        .setType(ColumnMessage.Type.BOOLEAN)
+        .setBooleanColumn(inner)
+        .build();
   }
 
   /**
@@ -177,7 +181,10 @@ public abstract class Column<T extends Comparable<?>> implements ReadableColumn,
     dataBytes.flip();
     final DateTimeColumnMessage.Builder inner =
         DateTimeColumnMessage.newBuilder().setData(ByteString.copyFrom(dataBytes));
-    return ColumnMessage.newBuilder().setType(ColumnMessage.Type.DATETIME).setDateColumn(inner).build();
+    return ColumnMessage.newBuilder()
+        .setType(ColumnMessage.Type.DATETIME)
+        .setDateColumn(inner)
+        .build();
   }
 
   /**
@@ -211,8 +218,10 @@ public abstract class Column<T extends Comparable<?>> implements ReadableColumn,
     bb.flip();
     inner.setData(ByteString.copyFrom(bb));
 
-    return ColumnMessage.newBuilder().setType(ColumnMessage.Type.BYTES).setBytesColumn(inner).build();
-
+    return ColumnMessage.newBuilder()
+        .setType(ColumnMessage.Type.BYTES)
+        .setBytesColumn(inner)
+        .build();
   }
 
   /**
@@ -227,8 +236,12 @@ public abstract class Column<T extends Comparable<?>> implements ReadableColumn,
       dataBytes.putDouble(column.getDouble(i));
     }
     dataBytes.flip();
-    final DoubleColumnMessage.Builder inner = DoubleColumnMessage.newBuilder().setData(ByteString.copyFrom(dataBytes));
-    return ColumnMessage.newBuilder().setType(ColumnMessage.Type.DOUBLE).setDoubleColumn(inner).build();
+    final DoubleColumnMessage.Builder inner =
+        DoubleColumnMessage.newBuilder().setData(ByteString.copyFrom(dataBytes));
+    return ColumnMessage.newBuilder()
+        .setType(ColumnMessage.Type.DOUBLE)
+        .setDoubleColumn(inner)
+        .build();
   }
 
   /**
@@ -243,8 +256,12 @@ public abstract class Column<T extends Comparable<?>> implements ReadableColumn,
       dataBytes.putFloat(column.getFloat(i));
     }
     dataBytes.flip();
-    final FloatColumnMessage.Builder inner = FloatColumnMessage.newBuilder().setData(ByteString.copyFrom(dataBytes));
-    return ColumnMessage.newBuilder().setType(ColumnMessage.Type.FLOAT).setFloatColumn(inner).build();
+    final FloatColumnMessage.Builder inner =
+        FloatColumnMessage.newBuilder().setData(ByteString.copyFrom(dataBytes));
+    return ColumnMessage.newBuilder()
+        .setType(ColumnMessage.Type.FLOAT)
+        .setFloatColumn(inner)
+        .build();
   }
 
   /**
@@ -259,7 +276,8 @@ public abstract class Column<T extends Comparable<?>> implements ReadableColumn,
       dataBytes.putInt(column.getInt(i));
     }
     dataBytes.flip();
-    final IntColumnMessage.Builder inner = IntColumnMessage.newBuilder().setData(ByteString.copyFrom(dataBytes));
+    final IntColumnMessage.Builder inner =
+        IntColumnMessage.newBuilder().setData(ByteString.copyFrom(dataBytes));
     return ColumnMessage.newBuilder().setType(ColumnMessage.Type.INT).setIntColumn(inner).build();
   }
 
@@ -275,7 +293,8 @@ public abstract class Column<T extends Comparable<?>> implements ReadableColumn,
       dataBytes.putLong(column.getLong(i));
     }
     dataBytes.flip();
-    final LongColumnMessage.Builder inner = LongColumnMessage.newBuilder().setData(ByteString.copyFrom(dataBytes));
+    final LongColumnMessage.Builder inner =
+        LongColumnMessage.newBuilder().setData(ByteString.copyFrom(dataBytes));
     return ColumnMessage.newBuilder().setType(ColumnMessage.Type.LONG).setLongColumn(inner).build();
   }
 
@@ -314,7 +333,8 @@ public abstract class Column<T extends Comparable<?>> implements ReadableColumn,
    * @param validIndices the valid indices in the column.
    * @return a ColumnMessage with an appropriate member.
    */
-  protected static ColumnMessage defaultProto(final Column<?> column, final ImmutableIntArray validIndices) {
+  protected static ColumnMessage defaultProto(
+      final Column<?> column, final ImmutableIntArray validIndices) {
     BitSet filter = new BitSet(column.size());
     for (int i = 0; i < column.size(); ++i) {
       filter.set(validIndices.get(i));
@@ -340,7 +360,9 @@ public abstract class Column<T extends Comparable<?>> implements ReadableColumn,
       startP = endP;
     }
     inner.setData(ByteString.copyFromUtf8(sb.toString()));
-    return ColumnMessage.newBuilder().setType(ColumnMessage.Type.STRING).setStringColumn(inner).build();
+    return ColumnMessage.newBuilder()
+        .setType(ColumnMessage.Type.STRING)
+        .setStringColumn(inner)
+        .build();
   }
-
 }

@@ -10,7 +10,7 @@ import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.Schema;
 
 /**
- * 
+ *
  */
 public class FunctionStatus {
   /**
@@ -23,32 +23,29 @@ public class FunctionStatus {
    * @param lang language of the function.
    */
   @JsonCreator
-  public FunctionStatus(@JsonProperty("name") final String name, @JsonProperty("inputSchema") final String inputSchema,
-      @JsonProperty("outputType") final String outputType, @JsonProperty("text") final String text,
+  public FunctionStatus(
+      @JsonProperty("name") final String name,
+      @JsonProperty("inputSchema") final String inputSchema,
+      @JsonProperty("outputType") final String outputType,
+      @JsonProperty("text") final String text,
       @JsonProperty("lang") final MyriaConstants.FunctionLanguage lang) {
     this.name = name;
     this.outputType = outputType;
     this.inputSchema = inputSchema;
     this.text = text;
     this.lang = lang;
-
   }
 
   /** The name identifying the function. */
-  @JsonProperty
-  private final String name;
+  @JsonProperty private final String name;
   /** The {@link Schema} of the output tuples to the function. */
-  @JsonProperty
-  private final String outputType;
+  @JsonProperty private final String outputType;
   /** The {@link Schema} of the input tuples to the function. */
-  @JsonProperty
-  private final String inputSchema;
+  @JsonProperty private final String inputSchema;
   /** The text of the function */
-  @JsonProperty
-  private final String text;
+  @JsonProperty private final String text;
   /** The text of the function */
-  @JsonProperty
-  private final MyriaConstants.FunctionLanguage lang;
+  @JsonProperty private final MyriaConstants.FunctionLanguage lang;
 
   // @JsonProperty public URI uri;
 
@@ -86,5 +83,4 @@ public class FunctionStatus {
   public MyriaConstants.FunctionLanguage getLanguage() {
     return lang;
   }
-
 }

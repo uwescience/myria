@@ -16,25 +16,25 @@ import edu.washington.escience.myria.expression.evaluate.ExpressionOperatorParam
  */
 public class ConstantExpression extends ZeroaryExpression {
   /** logger for this class. */
-  private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(ConstantExpression.class);
+  private static final org.slf4j.Logger LOGGER =
+      org.slf4j.LoggerFactory.getLogger(ConstantExpression.class);
 
   /***/
   private static final long serialVersionUID = 1L;
 
   /** The type of this object. */
-  @JsonProperty
-  private final Type valueType;
+  @JsonProperty private final Type valueType;
 
   /** The value of this object. */
-  @JsonProperty
-  private final String value;
+  @JsonProperty private final String value;
 
   /**
    * @param type the type of this object.
    * @param value the value of this constant.
    */
   @JsonCreator
-  public ConstantExpression(@JsonProperty("valueType") final Type type, @JsonProperty("value") final String value) {
+  public ConstantExpression(
+      @JsonProperty("valueType") final Type type, @JsonProperty("value") final String value) {
     valueType = type;
     if (type == Type.LONG_TYPE && value.toUpperCase().indexOf('L') == -1) {
       this.value = value + 'L';
@@ -129,7 +129,6 @@ public class ConstantExpression extends ZeroaryExpression {
         return '\"' + StringEscapeUtils.escapeJava(value) + '\"';
       case BYTES_TYPE:
         return value;
-
     }
     throw new UnsupportedOperationException("using constant value of type " + valueType);
   }

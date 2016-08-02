@@ -130,8 +130,13 @@ public final class FileScan extends LeafOperator {
    * @param escape An optional escape character.
    * @param numberOfSkippedLines number of lines to be skipped.
    */
-  public FileScan(final String filename, final Schema schema, @Nullable final Character delimiter,
-      @Nullable final Character quote, @Nullable final Character escape, @Nullable final Integer numberOfSkippedLines) {
+  public FileScan(
+      final String filename,
+      final Schema schema,
+      @Nullable final Character delimiter,
+      @Nullable final Character quote,
+      @Nullable final Character escape,
+      @Nullable final Integer numberOfSkippedLines) {
     this(new FileSource(filename), schema, delimiter, quote, escape, numberOfSkippedLines);
   }
 
@@ -148,8 +153,13 @@ public final class FileScan extends LeafOperator {
    * @param escape An optional escape character.
    * @param numberOfSkippedLines number of lines to be skipped (number of lines in header).
    */
-  public FileScan(final DataSource source, final Schema schema, @Nullable final Character delimiter,
-      @Nullable final Character quote, @Nullable final Character escape, @Nullable final Integer numberOfSkippedLines) {
+  public FileScan(
+      final DataSource source,
+      final Schema schema,
+      @Nullable final Character delimiter,
+      @Nullable final Character quote,
+      @Nullable final Character escape,
+      @Nullable final Integer numberOfSkippedLines) {
     this.source = Preconditions.checkNotNull(source, "source");
     this.schema = Preconditions.checkNotNull(schema, "schema");
 
@@ -188,8 +198,14 @@ public final class FileScan extends LeafOperator {
       CSVRecord record = iterator.next();
 
       if (record.size() != schema.numColumns()) {
-        throw new DbException("Error parsing row " + lineNumber + ": Found " + record.size()
-            + " column(s) but expected " + schema.numColumns() + " column(s).");
+        throw new DbException(
+            "Error parsing row "
+                + lineNumber
+                + ": Found "
+                + record.size()
+                + " column(s) but expected "
+                + schema.numColumns()
+                + " column(s).");
       }
       for (int column = 0; column < schema.numColumns(); ++column) {
         String cell = record.get(column);
@@ -198,8 +214,8 @@ public final class FileScan extends LeafOperator {
             case BOOLEAN_TYPE:
               if (Floats.tryParse(cell) != null) {
                 buffer.putBoolean(column, Floats.tryParse(cell) != 0);
-              } else if (BooleanUtils.toBoolean(cell)) {
-                buffer.putBoolean(column, Boolean.parseBoolean(cell));
+              } else {
+                buffer.putBoolean(column, BooleanUtils.toBoolean(cell));
               }
               break;
             case DOUBLE_TYPE:
@@ -221,12 +237,20 @@ public final class FileScan extends LeafOperator {
               buffer.putDateTime(column, DateTimeUtils.parse(cell));
               break;
             case BYTES_TYPE:
-              buffer.putByteBuffer(column, getFile(cell));// read filename
+              buffer.putByteBuffer(column, getFile(cell)); // read filename
               break;
           }
         } catch (final IllegalArgumentException e) {
-          throw new DbException("Error parsing column " + column + " of row " + lineNumber + ", expected type: "
-              + schema.getColumnType(column) + ", scanned value: " + cell, e);
+          throw new DbException(
+              "Error parsing column "
+                  + column
+                  + " of row "
+                  + lineNumber
+                  + ", expected type: "
+                  + schema.getColumnType(column)
+                  + ", scanned value: "
+                  + cell,
+              e);
         }
       }
     }
@@ -246,8 +270,9 @@ public final class FileScan extends LeafOperator {
     buffer = new TupleBatchBuffer(getSchema());
     try {
       parser =
-          new CSVParser(new BufferedReader(new InputStreamReader(source.getInputStream())), CSVFormat.newFormat(
-              delimiter).withQuote(quote).withEscape(escape));
+          new CSVParser(
+              new BufferedReader(new InputStreamReader(source.getInputStream())),
+              CSVFormat.newFormat(delimiter).withQuote(quote).withEscape(escape));
       iterator = parser.iterator();
       for (int i = 0; i < numberOfSkippedLines; i++) {
         iterator.next();
@@ -274,6 +299,5 @@ public final class FileScan extends LeafOperator {
     }
     LOGGER.info("size of bytebuffer written: " + data.length);
     return ByteBuffer.wrap(data);
-
   }
 }

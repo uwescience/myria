@@ -20,8 +20,7 @@ public final class MyriaUtils {
   /**
    * Utility classes should not be instantiated.
    */
-  private MyriaUtils() {
-  }
+  private MyriaUtils() {}
 
   /**
    * Get the only element in single-element list.
@@ -124,8 +123,12 @@ public final class MyriaUtils {
       if (oldV == null) {
         dest.put(newK, newV);
       } else {
-        Preconditions.checkArgument(oldV.equals(newV), "New value %s for key %s does not match old value %s", newV,
-            newK, oldV);
+        Preconditions.checkArgument(
+            oldV.equals(newV),
+            "New value %s for key %s does not match old value %s",
+            newV,
+            newK,
+            oldV);
       }
     }
   }
@@ -161,6 +164,7 @@ public final class MyriaUtils {
       // allow initialization with a null object -- needed for bytebuffer.
       return o;
     }
-    throw new IllegalArgumentException("Object of type " + o.getClass() + " is not a valid Myria type");
+    throw new IllegalArgumentException(
+        "Object of type " + o.getClass() + " is not a valid Myria type");
   }
 }

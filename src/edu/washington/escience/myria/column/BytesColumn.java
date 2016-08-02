@@ -12,7 +12,7 @@ import com.google.common.base.Preconditions;
 import edu.washington.escience.myria.Type;
 
 /**
- * 
+ *
  */
 public class BytesColumn extends Column<ByteBuffer> {
   /**
@@ -35,7 +35,6 @@ public class BytesColumn extends Column<ByteBuffer> {
   public ByteBuffer getByteBuffer(final int row) {
     Preconditions.checkElementIndex(row, position);
     return data[row];
-
   }
 
   @Override
@@ -52,5 +51,4 @@ public class BytesColumn extends Column<ByteBuffer> {
   public int size() {
     return position;
   }
-
 }

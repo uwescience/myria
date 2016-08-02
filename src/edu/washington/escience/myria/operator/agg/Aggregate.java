@@ -82,7 +82,8 @@ public final class Aggregate extends UnaryOperator {
   protected void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
     Preconditions.checkState(getSchema() != null, "unable to determine schema in init");
 
-    aggregators = AggUtils.allocateAggs(factories, getChild().getSchema(), getPythonFunctionRegistrar());
+    aggregators =
+        AggUtils.allocateAggs(factories, getChild().getSchema(), getPythonFunctionRegistrar());
     aggregatorStates = AggUtils.allocateAggStates(aggregators);
     aggBuffer = new TupleBatchBuffer(getSchema());
   }
@@ -101,7 +102,8 @@ public final class Aggregate extends UnaryOperator {
     final ImmutableList.Builder<String> gNames = ImmutableList.builder();
 
     try {
-      for (Aggregator agg : AggUtils.allocateAggs(factories, inputSchema, getPythonFunctionRegistrar())) {
+      for (Aggregator agg :
+          AggUtils.allocateAggs(factories, inputSchema, getPythonFunctionRegistrar())) {
         Schema s = agg.getResultSchema();
         gTypes.addAll(s.getColumnTypes());
         gNames.addAll(s.getColumnNames());

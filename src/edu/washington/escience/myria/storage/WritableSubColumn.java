@@ -85,5 +85,4 @@ public final class WritableSubColumn implements WritableColumn {
     inner.putByteBuffer(column, value);
     return this;
   }
-
 }

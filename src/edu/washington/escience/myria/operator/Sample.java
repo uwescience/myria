@@ -17,8 +17,7 @@ import edu.washington.escience.myria.storage.TupleBatchBuffer;
 import edu.washington.escience.myria.util.SamplingType;
 
 /**
- * Takes in some sampling parameters from the left child and uses that to sample
- * tuples from the right child.
+ * Takes in some sampling parameters from the left child and uses that to sample tuples from the right child.
  */
 public class Sample extends BinaryOperator {
   /** Required for Java serialization. */
@@ -31,7 +30,7 @@ public class Sample extends BinaryOperator {
   private int sampleSize;
 
   /** Random generator used for index selection. */
-  private Random rand;
+  private final Random rand;
 
   /** The type of sampling to perform. */
   private SamplingType sampleType;
@@ -52,17 +51,13 @@ public class Sample extends BinaryOperator {
   private int curSampIdx = 0;
 
   /**
-   * Instantiate a Sample operator using sampling info from the left operator
-   * and the stream from the right operator.
+   * Instantiate a Sample operator using sampling info from the left operator and the stream from the right operator.
    *
-   * @param left
-   *          inputs a (WorkerID, StreamSize, SampleSize, SampleType) tuple.
-   * @param right
-   *          tuples that will be sampled from.
-   * @param randomSeed
-   *          value to seed the random generator with. null if no specified seed
+   * @param left inputs a (WorkerID, StreamSize, SampleSize, SampleType) tuple.
+   * @param right tuples that will be sampled from.
+   * @param randomSeed value to seed the random generator with. null if no specified seed
    */
-  public Sample(final Operator left, final Operator right, Long randomSeed) {
+  public Sample(final Operator left, final Operator right, final Long randomSeed) {
     super(left, right);
     rand = new Random();
     if (randomSeed != null) {
@@ -124,7 +119,7 @@ public class Sample extends BinaryOperator {
       }
       while (curSampIdx < sampleIndices.length
           && sampleIndices[curSampIdx] < tuplesSeen + tb.numTuples()) {
-        ans.put(tb, sampleIndices[curSampIdx] - tuplesSeen);
+        ans.append(tb, sampleIndices[curSampIdx] - tuplesSeen);
         curSampIdx++;
       }
       tuplesSeen += tb.numTuples();
@@ -136,7 +131,7 @@ public class Sample extends BinaryOperator {
   }
 
   /** Helper function to extract sampling information from a TupleBatch. */
-  private void extractSamplingInfo(TupleBatch tb) throws Exception {
+  private void extractSamplingInfo(final TupleBatch tb) throws Exception {
     Preconditions.checkArgument(tb != null);
 
     int workerID;
@@ -190,13 +185,11 @@ public class Sample extends BinaryOperator {
   /**
    * Generates a sorted array of random numbers to be taken as samples.
    *
-   * @param populationSize
-   *          size of the population that will be sampled from.
-   * @param sampleSize
-   *          number of samples to draw from the population.
+   * @param populationSize size of the population that will be sampled from.
+   * @param sampleSize number of samples to draw from the population.
    * @return a sorted array of indices.
    */
-  private int[] generateIndicesWR(int populationSize, int sampleSize) {
+  private int[] generateIndicesWR(final int populationSize, final int sampleSize) {
     int[] indices = new int[sampleSize];
     for (int i = 0; i < sampleSize; i++) {
       indices[i] = rand.nextInt(populationSize);
@@ -206,17 +199,14 @@ public class Sample extends BinaryOperator {
   }
 
   /**
-   * Generates a sorted array of unique random numbers to be taken as samples.
-   * The implementation uses Floyd's algorithm. For an explanation:
-   * www.nowherenearithaca.com/2013/05/robert-floyds-tiny-and-beautiful.html
+   * Generates a sorted array of unique random numbers to be taken as samples. The implementation uses Floyd's
+   * algorithm. For an explanation: www.nowherenearithaca.com/2013/05/robert-floyds-tiny-and-beautiful.html
    *
-   * @param populationSize
-   *          size of the population that will be sampled from.
-   * @param sampleSize
-   *          number of samples to draw from the population.
+   * @param populationSize size of the population that will be sampled from.
+   * @param sampleSize number of samples to draw from the population.
    * @return a sorted array of indices.
    */
-  private int[] generateIndicesWoR(int populationSize, int sampleSize) {
+  private int[] generateIndicesWoR(final int populationSize, final int sampleSize) {
     Set<Integer> indices = new HashSet<>(sampleSize);
     for (int i = populationSize - sampleSize; i < populationSize; i++) {
       int idx = rand.nextInt(i + 1);

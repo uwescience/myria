@@ -12,7 +12,7 @@ import edu.washington.escience.myria.accessmethod.ConnectionInfo;
 import edu.washington.escience.myria.storage.TupleBatch;
 
 /**
- * 
+ *
  */
 public class DbCreateView extends RootOperator {
   /** Required for Java serialization. */
@@ -26,7 +26,10 @@ public class DbCreateView extends RootOperator {
   private final String viewName;
   private final String viewQuery;
 
-  public DbCreateView(final Operator child, final String viewName, final String viewQuery,
+  public DbCreateView(
+      final Operator child,
+      final String viewName,
+      final String viewQuery,
       final ConnectionInfo connectionInfo) {
     super(child);
     this.connectionInfo = connectionInfo;
@@ -38,7 +41,8 @@ public class DbCreateView extends RootOperator {
   protected void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
     /* Retrieve connection information from the environment variables, if not already set */
     if (connectionInfo == null && execEnvVars != null) {
-      connectionInfo = (ConnectionInfo) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_DATABASE_CONN_INFO);
+      connectionInfo =
+          (ConnectionInfo) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_DATABASE_CONN_INFO);
     }
     /* Open the database connection */
     accessMethod = AccessMethod.of(connectionInfo.getDbms(), connectionInfo, false);
@@ -48,15 +52,11 @@ public class DbCreateView extends RootOperator {
   }
 
   @Override
-  protected void consumeTuples(final TupleBatch tuples) throws DbException {
-  }
+  protected void consumeTuples(final TupleBatch tuples) throws DbException {}
 
   @Override
-  protected void childEOS() throws DbException {
-  }
+  protected void childEOS() throws DbException {}
 
   @Override
-  protected void childEOI() throws DbException {
-  }
-
+  protected void childEOI() throws DbException {}
 }

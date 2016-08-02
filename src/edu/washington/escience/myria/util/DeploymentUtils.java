@@ -114,6 +114,7 @@ public final class DeploymentUtils {
     jvmOptions.add("-Djava.util.logging.config.file=logging.properties");
     jvmOptions.add("-Dlog4j.configuration=log4j.properties");
     jvmOptions.add("-Djava.library.path=" + workingDir + "/" + "sqlite4java-392");
+
     String gangliaMasterHost =
         config.getOptional("deployment", MyriaSystemConfigKeys.GANGLIA_MASTER_HOST);
     if (gangliaMasterHost != null) {
@@ -301,6 +302,7 @@ public final class DeploymentUtils {
     args.add("cd " + workerDir + ";");
     args.add("nohup java -ea");
     args.add("-cp " + classpath);
+    // args.add(" -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=65007");
     args.addAll(jvmOptions);
     args.add("edu.washington.escience.myria.parallel.Worker");
     args.add("--workingDir " + workerDir);
@@ -330,11 +332,13 @@ public final class DeploymentUtils {
     System.err.println(MyriaConstants.MASTER_ID + " = " + address);
     String masterDir = workingDir + "/" + "master";
     String classpath = String.format("'%s/conf:%s/libs/*'", workingDir, workingDir);
+
     List<String> args = new ArrayList<>();
     args.add("mkdir -p " + masterDir + ";");
     args.add("cd " + masterDir + ";");
     args.add("nohup java -ea");
     args.add("-cp " + classpath);
+    // args.add(" -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=65007");
     args.addAll(jvmOptions);
     args.add("edu.washington.escience.myria.daemon.MasterDaemon");
     args.add(workingDir);

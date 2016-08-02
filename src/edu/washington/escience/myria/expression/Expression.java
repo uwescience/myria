@@ -21,25 +21,27 @@ public class Expression implements Serializable {
   /**
    * Name of the column that the result will be written to.
    */
-  @JsonProperty
-  private final String outputName;
+  @JsonProperty private final String outputName;
 
   /**
    * The java expression to be evaluated.
    */
-  @JsonProperty
-  private String javaExpression;
+  @JsonProperty private String javaExpression;
 
   /**
    * Expression encoding reference is needed to get the output type.
    */
-  @JsonProperty
-  private final ExpressionOperator rootExpressionOperator;
+  @JsonProperty private final ExpressionOperator rootExpressionOperator;
 
   /**
    * Variable name of result.
    */
   public static final String RESULT = "result";
+  /*
+   * Variable name of result count.
+   */
+  public static final String COUNT = "count";
+
   /**
    * Variable name of input tuple batch.
    */
@@ -48,8 +50,12 @@ public class Expression implements Serializable {
    * Variable name of row index.
    */
   public static final String ROW = "row";
+  /*
+   * Variable name of row index.
+   */
+  public static final String COL = "col";
   /**
-   * Variable name of state.
+   * /** Variable name of state.
    */
   public static final String STATE = "state";
 
@@ -111,9 +117,42 @@ public class Expression implements Serializable {
    * @param parameters parameters that are needed to create the java expression
    * @return the Java form of this expression that also writes the results to a {@link ColumnBuilder}.
    */
+  /**
+   * @param parameters parameters that are needed to create the java expression
+   * @return the Java form of this expression that also writes the results to a {@link ColumnBuilder}.
+   */
   public String getJavaExpressionWithAppend(final ExpressionOperatorParameter parameters) {
-    return new StringBuilder(RESULT).append(".append").append(getOutputType(parameters).getName()).append("(").append(
-        getJavaExpression(parameters)).append(")").toString();
+    String appendExpression = rootExpressionOperator.getJavaExpressionWithAppend(parameters);
+    if (appendExpression == null) {
+      if (isMultivalued()) {
+        String primitiveTypeName = getOutputType(parameters).toJavaType().getName();
+        appendExpression =
+            new StringBuilder(primitiveTypeName)
+                .append("[] results = ")
+                .append(getJavaExpression(parameters))
+                .append(";\n")
+                .append(COUNT)
+                .append(".appendInt(results.length);\n")
+                .append("for (int i = 0; i < results.length; ++i) {\n")
+                .append(RESULT)
+                .append(".put")
+                .append(getOutputType(parameters).getName())
+                .append("(")
+                .append(COL)
+                .append(", results[i]);\n}")
+                .toString();
+      } else {
+        appendExpression =
+            new StringBuilder(RESULT)
+                .append(".append")
+                .append(getOutputType(parameters).getName())
+                .append("(")
+                .append(getJavaExpression(parameters))
+                .append(")")
+                .toString();
+      }
+    }
+    return appendExpression;
   }
 
   /**
@@ -155,7 +194,8 @@ public class Expression implements Serializable {
    * @return if this expression evaluates to a constant
    */
   public boolean isConstant() {
-    return !hasOperator(VariableExpression.class) && !hasOperator(StateExpression.class)
+    return !hasOperator(VariableExpression.class)
+        && !hasOperator(StateExpression.class)
         && !hasOperator(RandomExpression.class);
   }
 
@@ -167,6 +207,15 @@ public class Expression implements Serializable {
    */
   public boolean isRegisteredUDF() {
     return hasOperator(PyUDFExpression.class);
+  }
 
+  /**
+   * An expression is "multivalued" when it has a primitive array return type. This is a requirement for being used in
+   * the FlatteningApply operator.
+   *
+   * @return if the root expression has a primitive array return type
+   */
+  public boolean isMultivalued() {
+    return rootExpressionOperator.hasArrayOutputType();
   }
 }

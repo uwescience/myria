@@ -9,23 +9,19 @@ import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.expression.evaluate.ExpressionOperatorParameter;
 
 /**
- * 
+ *
  */
 public class PyUDFExpression extends BinaryExpression {
   /***/
   private static final long serialVersionUID = 1L;
-  private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(PyUDFExpression.class);
 
   /** The name of the python function. */
-  @JsonProperty
-  private final String name;
-  @JsonProperty
-  private final Type outputType;
+  @JsonProperty private final String name;
 
-  // private int leftColumnIdx;
-  // private int rightColumnIdx;
-  // private boolean bLeftState;
-  // private boolean bRightState;
+  /**
+   * Output Type of python function.
+   */
+  @JsonProperty private final Type outputType;
 
   /**
    * This is not really unused, it's used automagically by Jackson deserialization.
@@ -36,20 +32,27 @@ public class PyUDFExpression extends BinaryExpression {
     outputType = Type.BYTES_TYPE;
   }
 
-  public PyUDFExpression(final ExpressionOperator left, final ExpressionOperator right, final String name,
+  /**
+   * Python function expression
+   *
+   * @param left the left operand.
+   * @param right the right operand.
+   * @param Type - output Type of the python function
+   * @param name - name of the python function in the catalog
+   */
+  public PyUDFExpression(
+      final ExpressionOperator left,
+      final ExpressionOperator right,
+      final String name,
       final Type outputType) {
     super(left, right);
     this.name = name;
     this.outputType = outputType;
-
   }
 
   @Override
   public Type getOutputType(final ExpressionOperatorParameter parameters) {
-    // look at the output schema of from the expressionOperatorParameter?
-
     return outputType;
-
   }
 
   /**
@@ -59,6 +62,9 @@ public class PyUDFExpression extends BinaryExpression {
     return name;
   }
 
+  /**
+   * @return the output Type for this python expression.
+   */
   public Type getOutput() {
     return outputType;
   }
@@ -68,5 +74,4 @@ public class PyUDFExpression extends BinaryExpression {
   public String getJavaString(final ExpressionOperatorParameter parameters) {
     return "";
   }
-
 }

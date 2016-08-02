@@ -86,7 +86,8 @@ public class TupleBatchBuffer implements AppendableTable {
    */
   private void checkPutIndex(final int column) {
     Preconditions.checkElementIndex(column, numColumns);
-    Preconditions.checkState(!columnsReady.get(column),
+    Preconditions.checkState(
+        !columnsReady.get(column),
         "need to fill up one row of TupleBatchBuffer before starting new one");
   }
 
@@ -129,7 +130,8 @@ public class TupleBatchBuffer implements AppendableTable {
    * @return true if any tuples were added.
    */
   private boolean finishBatch() {
-    Preconditions.checkState(numColumnsReady == 0, "Cannot finish a batch with partially-completed tuples");
+    Preconditions.checkState(
+        numColumnsReady == 0, "Cannot finish a batch with partially-completed tuples");
     if (currentInProgressTuples == 0) {
       return false;
     }
@@ -220,23 +222,6 @@ public class TupleBatchBuffer implements AppendableTable {
    */
   public final boolean hasFilledTB() {
     return readyTuples.size() > 0;
-  }
-
-  /**
-   * @param another TBB.
-   */
-  public final void unionAll(final TupleBatchBuffer another) {
-    readyTuples.addAll(another.readyTuples);
-    readyTuplesNum += another.getReadyTuplesNum();
-    if (another.currentInProgressTuples > 0) {
-      for (int row = 0; row < another.currentInProgressTuples; row++) {
-        int column = 0;
-        for (final Column<?> c : another.getInProgressColumns()) {
-          put(column, c, row);
-          column++;
-        }
-      }
-    }
   }
 
   /**
@@ -342,14 +327,24 @@ public class TupleBatchBuffer implements AppendableTable {
    * @param rightAnswerColumns an array that specifies which columns from the right tuple batch
    *
    */
-  public final void put(final TupleBatch leftTb, final int leftIdx, final int[] leftAnswerColumns,
-      final TupleBatch rightTb, final int rightIdx, final int[] rightAnswerColumns) {
+  public final void put(
+      final TupleBatch leftTb,
+      final int leftIdx,
+      final int[] leftAnswerColumns,
+      final TupleBatch rightTb,
+      final int rightIdx,
+      final int[] rightAnswerColumns) {
     for (int i = 0; i < leftAnswerColumns.length; ++i) {
-      TupleUtils.copyValue(leftTb.getDataColumns().get(leftAnswerColumns[i]), leftIdx, currentBuildingColumns.get(i));
+      TupleUtils.copyValue(
+          leftTb.getDataColumns().get(leftAnswerColumns[i]),
+          leftIdx,
+          currentBuildingColumns.get(i));
     }
     for (int i = 0; i < rightAnswerColumns.length; ++i) {
-      TupleUtils.copyValue(rightTb.getDataColumns().get(rightAnswerColumns[i]), rightIdx, currentBuildingColumns.get(i
-          + leftAnswerColumns.length));
+      TupleUtils.copyValue(
+          rightTb.getDataColumns().get(rightAnswerColumns[i]),
+          rightIdx,
+          currentBuildingColumns.get(i + leftAnswerColumns.length));
     }
     currentInProgressTuples++;
     if (currentInProgressTuples == TupleBatch.BATCH_SIZE) {
@@ -364,20 +359,55 @@ public class TupleBatchBuffer implements AppendableTable {
    * @param sourceColumn the column from which data will be retrieved.
    * @param sourceRow the row in the source column from which data will be retrieved.
    */
-  public final void put(final int destColumn, final ReadableColumn sourceColumn, final int sourceRow) {
+  public final void appendFromColumn(
+      final int destColumn, final ReadableColumn sourceColumn, final int sourceRow) {
     TupleUtils.copyValue(sourceColumn, sourceRow, this, destColumn);
   }
 
   /**
    * Append the referenced row from the source {@link TupleBatch} to this {@link TupleBatchBuffer}.
    *
-   * @param sourceBatch the {@link TupleBatch} from which data will be retrieved.
-   * @param sourceRow the row in the source column from which data will be retrieved.
+   * @param tb the source tuple batch.
+   * @param row the row index.
    */
-  public final void put(final TupleBatch sourceBatch, final int sourceRow) {
-    List<? extends Column<?>> sourceColumns = sourceBatch.getDataColumns();
-    for (int col = 0; col < sourceColumns.size(); ++col) {
-      put(col, sourceColumns.get(col), sourceRow);
+  public final void append(final TupleBatch tb, final int row) {
+    for (int col = 0; col < tb.numColumns(); ++col) {
+      append(tb, col, row);
+    }
+  }
+
+  /**
+   * Append the referenced value from the source {@link TupleBatch} to this {@link TupleBatchBuffer}.
+   *
+   * @param tb the source tuple batch.
+   * @param col the col index.
+   * @param row the row index.
+   */
+  public final void append(final TupleBatch tb, final int col, final int row) {
+    appendFromColumn(columnsReady.nextClearBit(0), tb.getDataColumns().get(col), row);
+  }
+
+  /**
+   * Append the referenced value from the source {@link MutableTupleBuffer} to this {@link TupleBatchBuffer}.
+   *
+   * @param tuples the source tuple buffer.
+   * @param col the column index.
+   * @param row the row index.
+   */
+  public final void append(final MutableTupleBuffer tuples, final int col, final int row) {
+    appendFromColumn(
+        columnsReady.nextClearBit(0), tuples.getColumn(col, row), row % TupleBatch.BATCH_SIZE);
+  }
+
+  /**
+   * Append the referenced row from the source {@link MutableTupleBuffer} to this {@link TupleBatchBuffer}.
+   *
+   * @param tuples the source tuple buffer.
+   * @param row the row index.
+   */
+  public final void append(final MutableTupleBuffer tuples, final int row) {
+    for (int col = 0; col < tuples.numColumns(); ++col) {
+      append(tuples, col, row);
     }
   }
 
@@ -424,13 +454,6 @@ public class TupleBatchBuffer implements AppendableTable {
   }
 
   @Override
-  public final void putByteBuffer(final int column, final ByteBuffer value) {
-    checkPutIndex(column);
-    currentBuildingColumns.get(column).appendByteBuffer(value);
-    columnPut(column);
-  }
-
-  @Override
   @Deprecated
   public void putObject(final int column, final Object value) {
     checkPutIndex(column);
@@ -442,6 +465,13 @@ public class TupleBatchBuffer implements AppendableTable {
   public final void putString(final int column, final String value) {
     checkPutIndex(column);
     currentBuildingColumns.get(column).appendString(value);
+    columnPut(column);
+  }
+
+  @Override
+  public final void putByteBuffer(final int column, final ByteBuffer value) {
+    checkPutIndex(column);
+    currentBuildingColumns.get(column).appendByteBuffer(value);
     columnPut(column);
   }
 

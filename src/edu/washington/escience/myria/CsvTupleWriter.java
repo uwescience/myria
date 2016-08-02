@@ -76,7 +76,6 @@ public class CsvTupleWriter implements TupleWriter {
         } else {
           row[j] = tuples.getObject(j, i).toString();
         }
-
       }
       csvPrinter.printRecord((Object[]) row);
     }
@@ -103,6 +102,5 @@ public class CsvTupleWriter implements TupleWriter {
     FileChannel wChannel = new FileOutputStream(file, append).getChannel();
     wChannel.write(bb);
     wChannel.close();
-
   }
 }

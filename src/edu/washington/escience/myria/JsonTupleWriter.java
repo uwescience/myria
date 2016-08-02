@@ -212,7 +212,8 @@ public class JsonTupleWriter implements TupleWriter {
       } else {
         output.write("{");
       }
-      output.write("\"error\":\"There was an error. Investigate the query status to see the message\"}]");
+      output.write(
+          "\"error\":\"There was an error. Investigate the query status to see the message\"}]");
       output.flush();
     } finally {
       output.close();

@@ -48,8 +48,11 @@ public class ConcatColumn<T extends Comparable<?>> extends Column<T> {
    */
   public void addColumn(final Column<?> column) {
     Preconditions.checkState(!readOnly, "Cannot add more data to a read only concat column");
-    Preconditions.checkArgument(column.getType() == getType(), "cannot append a type %s to a column of type %s", column
-        .getType(), getType());
+    Preconditions.checkArgument(
+        column.getType() == getType(),
+        "cannot append a type %s to a column of type %s",
+        column.getType(),
+        getType());
     if (column instanceof ConcatColumn) {
       for (Column<?> c : ((ConcatColumn<?>) column).columnIds.values()) {
         addColumn(c);

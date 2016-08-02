@@ -45,8 +45,7 @@ public class PostgresBinaryTupleWriter implements TupleWriter {
    * No-op
    */
   @Override
-  public void writeColumnHeaders(final List<String> columnNames) throws IOException {
-  }
+  public void writeColumnHeaders(final List<String> columnNames) throws IOException {}
 
   /**
    * Converts the given java seconds to postgresql seconds. The conversion is valid for any year 100 BC onwards.

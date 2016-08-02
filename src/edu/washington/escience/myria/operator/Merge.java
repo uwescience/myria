@@ -17,7 +17,7 @@ import edu.washington.escience.myria.storage.TupleUtils;
 
 /**
  * Merges the sorted output of a set of operators.
- * */
+ */
 public final class Merge extends NAryOperator {
 
   /** Required for Java serialization. */
@@ -87,7 +87,7 @@ public final class Merge extends NAryOperator {
    * @param sortedColumns the indexes of columns that tuples are ordered by in the input
    * @param ascending true for each column that is ordered ascending
    *
-   * */
+   */
   public Merge(final Operator[] children, final int[] sortedColumns, final boolean[] ascending) {
     super(children);
 
@@ -156,7 +156,7 @@ public final class Merge extends NAryOperator {
       Integer smallestTb = heap.poll();
       if (smallestTb != null) {
         Integer positionInSmallestTb = childRowIndexes.get(smallestTb);
-        ans.put(childBatches.get(smallestTb), positionInSmallestTb);
+        ans.append(childBatches.get(smallestTb), positionInSmallestTb);
 
         // reset tb or advance position pointer
         if (positionInSmallestTb == childBatches.get(smallestTb).numTuples() - 1) {

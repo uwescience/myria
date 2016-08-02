@@ -73,9 +73,11 @@ public final class DupElimRefOnly extends UnaryOperator {
         case STRING_TYPE:
           return tb.getString(colIndx, rowIndx1).equals(another.tb.getString(colIndx, rowIndx2));
         case DATETIME_TYPE:
-          return tb.getDateTime(colIndx, rowIndx1).equals(another.tb.getDateTime(colIndx, rowIndx2));
+          return tb.getDateTime(colIndx, rowIndx1)
+              .equals(another.tb.getDateTime(colIndx, rowIndx2));
         case BYTES_TYPE:
-          return tb.getByteBuffer(colIndx, rowIndx1).equals(another.tb.getByteBuffer(colIndx, rowIndx2));
+          return tb.getByteBuffer(colIndx, rowIndx1)
+              .equals(another.tb.getByteBuffer(colIndx, rowIndx2));
       }
       return false;
     }
@@ -122,8 +124,7 @@ public final class DupElimRefOnly extends UnaryOperator {
   }
 
   @Override
-  protected void cleanup() throws DbException {
-  }
+  protected void cleanup() throws DbException {}
 
   /**
    * Do duplicate elimination for the tb.

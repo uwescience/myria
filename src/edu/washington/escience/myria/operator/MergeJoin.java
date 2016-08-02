@@ -299,14 +299,11 @@ public final class MergeJoin extends BinaryOperator {
                 leftTb, leftCompareIndx, leftRow, rightTb, rightCompareIndx, rightRow, ascending)
             == 0);
 
-    for (int i = 0; i < leftAnswerColumns.length; ++i) {
-      ans.put(i, leftTb.getDataColumns().get(leftAnswerColumns[i]), leftRow);
+    for (int leftAnswerColumn : leftAnswerColumns) {
+      ans.append(leftTb, leftAnswerColumn, leftRow);
     }
-    for (int i = 0; i < rightAnswerColumns.length; ++i) {
-      ans.put(
-          i + leftAnswerColumns.length,
-          rightTb.getDataColumns().get(rightAnswerColumns[i]),
-          rightRow);
+    for (int rightAnswerColumn : rightAnswerColumns) {
+      ans.append(rightTb, rightAnswerColumn, rightRow);
     }
   }
 

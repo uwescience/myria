@@ -105,7 +105,10 @@ public class Consumer extends LeafOperator {
    * @param workerIDs {@link Consumer#sourceWorkers}
    * */
   public Consumer(final Schema schema, final ExchangePairID operatorID, final int[] workerIDs) {
-    this(schema, operatorID, MyriaArrayUtils.checkSet(org.apache.commons.lang3.ArrayUtils.toObject(workerIDs)));
+    this(
+        schema,
+        operatorID,
+        MyriaArrayUtils.checkSet(org.apache.commons.lang3.ArrayUtils.toObject(workerIDs)));
   }
 
   /**
@@ -113,7 +116,8 @@ public class Consumer extends LeafOperator {
    * @param operatorID {@link Consumer#operatorID}
    * @param workerIDs {@link Consumer#sourceWorkers}
    * */
-  public Consumer(final Schema schema, final ExchangePairID operatorID, final Set<Integer> workerIDs) {
+  public Consumer(
+      final Schema schema, final ExchangePairID operatorID, final Set<Integer> workerIDs) {
     this.operatorID = operatorID;
     this.schema = schema;
     sourceWorkers = ImmutableSet.copyOf(workerIDs);
@@ -148,9 +152,11 @@ public class Consumer extends LeafOperator {
     }
 
     taskResourceManager =
-        (LocalFragmentResourceManager) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_FRAGMENT_RESOURCE_MANAGER);
+        (LocalFragmentResourceManager)
+            execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_FRAGMENT_RESOURCE_MANAGER);
     nonBlockingExecution =
-        (QueryExecutionMode) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_EXECUTION_MODE) == QueryExecutionMode.NON_BLOCKING;
+        (QueryExecutionMode) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_EXECUTION_MODE)
+            == QueryExecutionMode.NON_BLOCKING;
 
     inputBuffer = taskResourceManager.getInputBuffer(this);
   }
@@ -180,7 +186,6 @@ public class Consumer extends LeafOperator {
       TupleBatch ttbb = tb.getPayload();
       if (ttbb != null) {
         ttbb = ExchangeTupleBatch.wrap(ttbb, tb.getRemoteID());
-
       }
 
       if (ttbb == null) {
@@ -213,7 +218,8 @@ public class Consumer extends LeafOperator {
     if (taskResourceManager.getFragment().getLocalSubQuery().getFTMode().equals(FTMode.ABANDON)) {
       Set<Integer> expectingWorkers = new HashSet<Integer>();
       expectingWorkers.addAll(sourceWorkers);
-      expectingWorkers.removeAll(taskResourceManager.getFragment().getLocalSubQuery().getMissingWorkers());
+      expectingWorkers.removeAll(
+          taskResourceManager.getFragment().getLocalSubQuery().getMissingWorkers());
       numExpecting = expectingWorkers.size();
     }
 
@@ -278,7 +284,6 @@ public class Consumer extends LeafOperator {
       result = inputBuffer.poll(timeout, TimeUnit.MILLISECONDS);
     } else {
       result = inputBuffer.take();
-
     }
 
     return result;

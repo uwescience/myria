@@ -13,6 +13,9 @@ import java.util.regex.Pattern;
 
 import net.jcip.annotations.Immutable;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.almworks.sqlite4java.SQLiteConstants;
 import com.almworks.sqlite4java.SQLiteException;
 import com.almworks.sqlite4java.SQLiteStatement;
@@ -31,6 +34,7 @@ public final class Schema implements Serializable {
 
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
+  private static final Logger LOGGER = LoggerFactory.getLogger(Schema.class);
 
   /** The regular expression specifying what names are valid. */
   public static final String VALID_NAME_REGEX = "^[a-zA-Z_]\\w*$";
@@ -98,6 +102,10 @@ public final class Schema implements Serializable {
           break;
         case java.sql.Types.TIMESTAMP:
           columnTypes.add(Type.DATETIME_TYPE);
+          break;
+        case java.sql.Types.BLOB:
+          LOGGER.info("this was called!");
+          columnTypes.add(Type.BYTES_TYPE);
           break;
         default:
           throw new UnsupportedOperationException(

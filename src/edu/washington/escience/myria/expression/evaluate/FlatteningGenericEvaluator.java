@@ -4,7 +4,7 @@ import java.lang.reflect.InvocationTargetException;
 
 import org.codehaus.commons.compiler.CompileException;
 import org.codehaus.commons.compiler.CompilerFactoryFactory;
-import org.codehaus.commons.compiler.IExpressionEvaluator;
+import org.codehaus.commons.compiler.IScriptEvaluator;
 
 import com.google.common.base.Preconditions;
 
@@ -16,26 +16,23 @@ import edu.washington.escience.myria.column.builder.ColumnBuilder;
 import edu.washington.escience.myria.column.builder.ColumnFactory;
 import edu.washington.escience.myria.column.builder.WritableColumn;
 import edu.washington.escience.myria.expression.Expression;
-import edu.washington.escience.myria.expression.ExpressionOperator;
-import edu.washington.escience.myria.expression.VariableExpression;
-import edu.washington.escience.myria.operator.Apply;
-import edu.washington.escience.myria.operator.StatefulApply;
+import edu.washington.escience.myria.storage.AppendableTable;
 import edu.washington.escience.myria.storage.ReadableTable;
 import edu.washington.escience.myria.storage.TupleBatch;
 
 /**
- * An Expression evaluator for generic expressions. Used in {@link Apply} and {@link StatefulApply}.
+ * An Expression evaluator for generic expressions. Used in {@link FlatteningApply}.
  */
-public class GenericEvaluator extends Evaluator {
+public class FlatteningGenericEvaluator extends Evaluator {
 
   /** logger for this class. */
   private static final org.slf4j.Logger LOGGER =
-      org.slf4j.LoggerFactory.getLogger(GenericEvaluator.class);
+      org.slf4j.LoggerFactory.getLogger(FlatteningGenericEvaluator.class);
 
   /**
    * Expression evaluator.
    */
-  private ExpressionEvalInterface evaluator;
+  private FlatteningExpressionEvalInterface evaluator;
 
   /**
    * Default constructor.
@@ -43,7 +40,7 @@ public class GenericEvaluator extends Evaluator {
    * @param expression the expression for the evaluator
    * @param parameters parameters that are passed to the expression
    */
-  public GenericEvaluator(
+  public FlatteningGenericEvaluator(
       final Expression expression, final ExpressionOperatorParameter parameters) {
     super(expression, parameters);
   }
@@ -60,25 +57,28 @@ public class GenericEvaluator extends Evaluator {
         "This expression does not need to be compiled.");
 
     String javaExpression = getJavaExpressionWithAppend();
-    IExpressionEvaluator se;
+    IScriptEvaluator se;
     try {
-      se = CompilerFactoryFactory.getDefaultCompilerFactory().newExpressionEvaluator();
+      se = CompilerFactoryFactory.getDefaultCompilerFactory().newScriptEvaluator();
     } catch (Exception e) {
       LOGGER.error("Could not create expression evaluator", e);
       throw new DbException("Could not create expression evaluator", e);
     }
 
-    se.setExpressionType(Void.TYPE);
     se.setDefaultImports(MyriaConstants.DEFAULT_JANINO_IMPORTS);
 
     try {
       evaluator =
-          (ExpressionEvalInterface)
+          (FlatteningExpressionEvalInterface)
               se.createFastEvaluator(
                   javaExpression,
-                  ExpressionEvalInterface.class,
+                  FlatteningExpressionEvalInterface.class,
                   new String[] {
-                    Expression.TB, Expression.ROW, Expression.RESULT, Expression.STATE
+                    Expression.TB,
+                    Expression.ROW,
+                    Expression.COUNT,
+                    Expression.RESULT,
+                    Expression.COL
                   });
     } catch (CompileException e) {
       LOGGER.error("Error when compiling expression {}: {}", javaExpression, e);
@@ -88,25 +88,25 @@ public class GenericEvaluator extends Evaluator {
 
   /**
    * Evaluates the {@link #getJavaExpressionWithAppend()} using the {@link #evaluator}. Prefer to use
-   * {@link #evaluateColumn(TupleBatch)} as it can copy data without evaluating the expression.
+   * {@link #evaluateColumn(TupleBatch)} since it can evaluate an entire TupleBatch at a time for better locality.
    *
    * @param tb a tuple batch
-   * @param rowIdx the row that should be used for input data
-   * @param result the column that the result should be appended to
-   * @param state additional state that affects the computation
+   * @param rowIdx index of the row that should be used for input data
+   * @param result the table storing the result
+   * @param colIdx index of the column that the result should be appended to
    * @throws InvocationTargetException exception thrown from janino
-   * @throws DbException
    */
   public void eval(
       final ReadableTable tb,
       final int rowIdx,
-      final WritableColumn result,
-      final ReadableTable state)
-      throws InvocationTargetException, DbException {
+      final WritableColumn count,
+      final AppendableTable result,
+      final int colIdx)
+      throws InvocationTargetException {
     Preconditions.checkArgument(
         evaluator != null, "Call compile first or copy the data if it is the same in the input.");
     try {
-      evaluator.evaluate(tb, rowIdx, result, state);
+      evaluator.evaluate(tb, rowIdx, count, result, colIdx);
     } catch (Exception e) {
       LOGGER.error(getJavaExpressionWithAppend(), e);
       throw e;
@@ -122,28 +122,20 @@ public class GenericEvaluator extends Evaluator {
   }
 
   /**
-   * Evaluate an expression over an entire TupleBatch and return the column of results. This method cannot take state
-   * into consideration.
+   * Evaluate an expression over an entire TupleBatch, appending results to {@link #result} and returning a column of
+   * result counts.
    *
    * @param tb the tuples to be input to this expression
-   * @return a column containing the result of evaluating this expression on the entire TupleBatch
+   * @param result a (single-column) table containing evaluation results
+   * @return a column containing the number of results from evaluating this expression on each row of {@link #tb}
    * @throws InvocationTargetException exception thrown from janino
-   * @throws DbException
    */
-  public Column<?> evaluateColumn(final TupleBatch tb)
-      throws InvocationTargetException, DbException {
-    ExpressionOperator op = getExpression().getRootExpressionOperator();
-    /* This expression just copies an input column. */
-    if (isCopyFromInput()) {
-      return tb.getDataColumns().get(((VariableExpression) op).getColumnIdx());
+  public Column<?> evaluateColumn(final TupleBatch tb, final AppendableTable result)
+      throws InvocationTargetException {
+    ColumnBuilder<?> count = ColumnFactory.allocateColumn(Type.INT_TYPE);
+    for (int rowIdx = 0; rowIdx < tb.numTuples(); ++rowIdx) {
+      eval(tb, rowIdx, count, result, 0);
     }
-
-    Type type = getOutputType();
-    ColumnBuilder<?> ret = ColumnFactory.allocateColumn(type);
-    for (int row = 0; row < tb.numTuples(); ++row) {
-      /** We already have an object, so we're not using the wrong version of put. Remove the warning. */
-      eval(tb, row, ret, null);
-    }
-    return ret.build();
+    return count.build();
   }
 }

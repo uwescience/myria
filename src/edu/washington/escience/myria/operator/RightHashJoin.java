@@ -16,7 +16,6 @@ import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.Column;
 import edu.washington.escience.myria.storage.MutableTupleBuffer;
-import edu.washington.escience.myria.storage.ReadableColumn;
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
 import edu.washington.escience.myria.storage.TupleUtils;
@@ -66,7 +65,7 @@ public final class RightHashJoin extends BinaryOperator {
 
   /**
    * Traverse through the list of tuples with the same hash code.
-   * */
+   */
   private final class JoinProcedure implements IntProcedure {
 
     /** serial version id. */
@@ -74,7 +73,7 @@ public final class RightHashJoin extends BinaryOperator {
 
     /**
      * Hash table.
-     * */
+     */
     private MutableTupleBuffer joinAgainstHashTable;
 
     /**
@@ -84,16 +83,16 @@ public final class RightHashJoin extends BinaryOperator {
 
     /**
      * the columns to compare against.
-     * */
+     */
     private int[] joinAgainstCmpColumns;
     /**
      * row index of the tuple.
-     * */
+     */
     private int row;
 
     /**
      * input TupleBatch.
-     * */
+     */
     private TupleBatch inputTB;
 
     @Override
@@ -107,7 +106,7 @@ public final class RightHashJoin extends BinaryOperator {
 
   /**
    * Traverse through the list of tuples.
-   * */
+   */
   private transient JoinProcedure doJoin;
 
   /**
@@ -284,16 +283,11 @@ public final class RightHashJoin extends BinaryOperator {
    */
   protected void addToAns(
       final TupleBatch cntTB, final int row, final MutableTupleBuffer hashTable, final int index) {
-    List<? extends Column<?>> tbColumns = cntTB.getDataColumns();
-    ReadableColumn[] hashTblColumns = hashTable.getColumns(index);
-    int tupleIdx = hashTable.getTupleIndexInContainingTB(index);
-
-    for (int i = 0; i < leftAnswerColumns.length; ++i) {
-      ans.put(i, tbColumns.get(leftAnswerColumns[i]), row);
+    for (int leftAnswerColumn : leftAnswerColumns) {
+      ans.append(cntTB, leftAnswerColumn, row);
     }
-
-    for (int i = 0; i < rightAnswerColumns.length; ++i) {
-      ans.put(i + leftAnswerColumns.length, hashTblColumns[rightAnswerColumns[i]], tupleIdx);
+    for (int rightAnswerColumn : rightAnswerColumns) {
+      ans.append(hashTable, rightAnswerColumn, index);
     }
   }
 
@@ -449,7 +443,7 @@ public final class RightHashJoin extends BinaryOperator {
    * @param hashTable the target hash table
    * @param hashTable1IndicesLocal hash table 1 indices local
    * @param hashCode the hashCode of the tb.
-   * */
+   */
   private void addToHashTable(
       final TupleBatch tb,
       final int row,

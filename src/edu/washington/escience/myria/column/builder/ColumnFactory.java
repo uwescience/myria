@@ -74,7 +74,8 @@ public final class ColumnFactory {
    * @param numTuples num tuples in the column message
    * @return a Column of the appropriate type and contents.
    */
-  public static Column<?> columnFromColumnMessage(final ColumnMessage message, final int numTuples) {
+  public static Column<?> columnFromColumnMessage(
+      final ColumnMessage message, final int numTuples) {
     switch (message.getType()) {
       case BOOLEAN:
         return BooleanColumnBuilder.buildFromProtobuf(message, numTuples);
@@ -92,7 +93,6 @@ public final class ColumnFactory {
         return DateTimeColumnBuilder.buildFromProtobuf(message, numTuples);
       case BYTES:
         return BytesColumnBuilder.buildFromProtobuf(message, numTuples);
-
     }
     return null;
   }

@@ -18,8 +18,8 @@ import edu.washington.escience.myria.storage.ReplaceableColumn;
  * @param <T> type of the objects in this column.
  *
  */
-public abstract class MutableColumn<T extends Comparable<?>> implements Cloneable, ReadableColumn, ReplaceableColumn,
-    Serializable {
+public abstract class MutableColumn<T extends Comparable<?>>
+    implements Cloneable, ReadableColumn, ReplaceableColumn, Serializable {
 
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;

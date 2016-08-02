@@ -75,7 +75,7 @@ public final class TupleRangeSource extends LeafOperator {
           tbb.putString(0, String.valueOf(currentValue));
           break;
         case BYTES_TYPE:
-          tbb.putByteBuffer(0, ByteBuffer.allocate(Long.SIZE / Byte.SIZE).putLong(currentValue));
+          tbb.putByteBuffer(0, ByteBuffer.allocate(Long.SIZE / Byte.SIZE).put((byte) currentValue));
           break;
       }
       currentValue++;

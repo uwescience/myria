@@ -74,7 +74,8 @@ public final class JdbcAccessMethod extends AccessMethod {
   }
 
   @Override
-  public void connect(final ConnectionInfo connectionInfo, final Boolean readOnly) throws DbException {
+  public void connect(final ConnectionInfo connectionInfo, final Boolean readOnly)
+      throws DbException {
     Objects.requireNonNull(connectionInfo, "connectionInfo");
 
     jdbcConnection = null;
@@ -83,7 +84,8 @@ public final class JdbcAccessMethod extends AccessMethod {
       DriverManager.setLoginTimeout(5);
       /* Make sure JDBC driver is loaded */
       Class.forName(jdbcInfo.getDriverClass());
-      jdbcConnection = DriverManager.getConnection(jdbcInfo.getConnectionString(), jdbcInfo.getProperties());
+      jdbcConnection =
+          DriverManager.getConnection(jdbcInfo.getConnectionString(), jdbcInfo.getProperties());
     } catch (ClassNotFoundException e) {
       LOGGER.error(e.getMessage(), e);
       throw new DbException(e);
@@ -113,13 +115,17 @@ public final class JdbcAccessMethod extends AccessMethod {
    * @param tupleBatch the tuples to be inserted.
    * @throws DbException if there is an error.
    */
-  private void postgresCopyInsert(final RelationKey relationKey, final Schema schema, final TupleBatch tupleBatch)
+  private void postgresCopyInsert(
+      final RelationKey relationKey, final Schema schema, final TupleBatch tupleBatch)
       throws DbException {
     // Use the postgres COPY command which is much faster
     try {
       CopyManager cpManager = ((PGConnection) jdbcConnection).getCopyAPI();
       StringBuilder copyString =
-          new StringBuilder().append("COPY ").append(quote(relationKey)).append(" FROM STDIN WITH BINARY");
+          new StringBuilder()
+              .append("COPY ")
+              .append(quote(relationKey))
+              .append(" FROM STDIN WITH BINARY");
       CopyIn copyIn = cpManager.copyIn(copyString.toString());
 
       TupleWriter tw = new PostgresBinaryTupleWriter();
@@ -128,8 +134,11 @@ public final class JdbcAccessMethod extends AccessMethod {
       tw.done();
 
       long inserted = copyIn.getHandledRowCount();
-      Preconditions.checkState(inserted == tupleBatch.numTuples(),
-          "Error: inserted a batch of size %s but only actually inserted %s rows", tupleBatch.numTuples(), inserted);
+      Preconditions.checkState(
+          inserted == tupleBatch.numTuples(),
+          "Error: inserted a batch of size %s but only actually inserted %s rows",
+          tupleBatch.numTuples(),
+          inserted);
     } catch (final SQLException e) {
       throw ErrorUtils.mergeSQLException(e);
     } catch (final IOException e) {
@@ -139,7 +148,8 @@ public final class JdbcAccessMethod extends AccessMethod {
   }
 
   @Override
-  public void tupleBatchInsert(final RelationKey relationKey, final TupleBatch tupleBatch) throws DbException {
+  public void tupleBatchInsert(final RelationKey relationKey, final TupleBatch tupleBatch)
+      throws DbException {
     LOGGER.debug("Inserting batch of size {}", tupleBatch.numTuples());
     Objects.requireNonNull(jdbcConnection, "jdbcConnection");
 
@@ -159,7 +169,7 @@ public final class JdbcAccessMethod extends AccessMethod {
         /*
          * TODO - should we do a VACUUM now? The bad rows will not be visible to the DB, however, so the write did not
          * partially happen.
-         * 
+         *
          * http://www.postgresql.org/docs/9.2/static/sql-copy.html
          */
       }
@@ -176,7 +186,8 @@ public final class JdbcAccessMethod extends AccessMethod {
                 statement.setBoolean(col + 1, tupleBatch.getBoolean(col, row));
                 break;
               case DATETIME_TYPE:
-                statement.setTimestamp(col + 1, new Timestamp(tupleBatch.getDateTime(col, row).getMillis()));
+                statement.setTimestamp(
+                    col + 1, new Timestamp(tupleBatch.getDateTime(col, row).getMillis()));
                 break;
               case DOUBLE_TYPE:
                 statement.setDouble(col + 1, tupleBatch.getDouble(col, row));
@@ -210,8 +221,8 @@ public final class JdbcAccessMethod extends AccessMethod {
   }
 
   @Override
-  public Iterator<TupleBatch> tupleBatchIteratorFromQuery(final String queryString, final Schema schema)
-      throws DbException {
+  public Iterator<TupleBatch> tupleBatchIteratorFromQuery(
+      final String queryString, final Schema schema) throws DbException {
     Objects.requireNonNull(jdbcConnection, "jdbcConnection");
     try {
       PreparedStatement statement;
@@ -230,7 +241,9 @@ public final class JdbcAccessMethod extends AccessMethod {
          * http://dev.mysql.com/doc/refman/5.0/en/connector-j-reference-implementation-notes.html
          */
         statement =
-            jdbcConnection.prepareStatement(queryString, java.sql.ResultSet.TYPE_FORWARD_ONLY,
+            jdbcConnection.prepareStatement(
+                queryString,
+                java.sql.ResultSet.TYPE_FORWARD_ONLY,
                 java.sql.ResultSet.CONCUR_READ_ONLY);
         statement.setFetchSize(Integer.MIN_VALUE);
       } else {
@@ -256,8 +269,7 @@ public final class JdbcAccessMethod extends AccessMethod {
   }
 
   @Override
-  public void init() throws DbException {
-  }
+  public void init() throws DbException {}
 
   @Override
   public void execute(final String ddlCommand) throws DbException {
@@ -273,7 +285,8 @@ public final class JdbcAccessMethod extends AccessMethod {
   }
 
   @Override
-  public void createTableIfNotExists(final RelationKey relationKey, final Schema schema) throws DbException {
+  public void createTableIfNotExists(final RelationKey relationKey, final Schema schema)
+      throws DbException {
     Objects.requireNonNull(jdbcConnection, "jdbcConnection");
     Objects.requireNonNull(jdbcInfo, "jdbcInfo");
     Objects.requireNonNull(relationKey, "relationKey");
@@ -289,7 +302,8 @@ public final class JdbcAccessMethod extends AccessMethod {
    * @param schema the relation schema
    * @throws DbException if anything goes wrong
    */
-  public void createUnloggedTableIfNotExists(final RelationKey relationKey, final Schema schema) throws DbException {
+  public void createUnloggedTableIfNotExists(final RelationKey relationKey, final Schema schema)
+      throws DbException {
     Objects.requireNonNull(jdbcConnection, "jdbcConnection");
     Objects.requireNonNull(jdbcInfo, "jdbcInfo");
     Objects.requireNonNull(relationKey, "relationKey");
@@ -332,7 +346,8 @@ public final class JdbcAccessMethod extends AccessMethod {
   }
 
   @Override
-  public String createIfNotExistsStatementFromSchema(final Schema schema, final RelationKey relationKey) {
+  public String createIfNotExistsStatementFromSchema(
+      final Schema schema, final RelationKey relationKey) {
     return createIfNotExistsStatementFromSchema(schema, relationKey, false);
   }
 
@@ -342,8 +357,8 @@ public final class JdbcAccessMethod extends AccessMethod {
    * @param unlogged whether to create an unlogged table
    * @return the insert statement string
    */
-  private String createIfNotExistsStatementFromSchema(final Schema schema, final RelationKey relationKey,
-      final boolean unlogged) {
+  private String createIfNotExistsStatementFromSchema(
+      final Schema schema, final RelationKey relationKey, final boolean unlogged) {
     switch (jdbcInfo.getDbms()) {
       case MyriaConstants.STORAGE_SYSTEM_MYSQL:
       case MyriaConstants.STORAGE_SYSTEM_POSTGRESQL:
@@ -352,11 +367,12 @@ public final class JdbcAccessMethod extends AccessMethod {
       case MyriaConstants.STORAGE_SYSTEM_MONETDB:
         throw new UnsupportedOperationException("MonetDB cannot CREATE TABLE IF NOT EXISTS");
       default:
-        throw new UnsupportedOperationException("Don't know whether DBMS " + jdbcInfo.getDbms()
-            + " can CREATE TABLE IF NOT EXISTS");
+        throw new UnsupportedOperationException(
+            "Don't know whether DBMS " + jdbcInfo.getDbms() + " can CREATE TABLE IF NOT EXISTS");
     }
 
-    Preconditions.checkArgument(!unlogged || jdbcInfo.getDbms().equals(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL),
+    Preconditions.checkArgument(
+        !unlogged || jdbcInfo.getDbms().equals(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL),
         "Can only create unlogged table in Postgres");
     String unloggedString = "";
     if (unlogged) {
@@ -364,13 +380,19 @@ public final class JdbcAccessMethod extends AccessMethod {
     }
 
     final StringBuilder sb = new StringBuilder();
-    sb.append("CREATE ").append(unloggedString).append("TABLE IF NOT EXISTS ").append(quote(relationKey)).append(" (");
+    sb.append("CREATE ")
+        .append(unloggedString)
+        .append("TABLE IF NOT EXISTS ")
+        .append(quote(relationKey))
+        .append(" (");
     for (int i = 0; i < schema.numColumns(); ++i) {
       if (i > 0) {
         sb.append(", ");
       }
-      sb.append(quote(schema.getColumnName(i))).append(" ").append(
-          typeToDbmsType(schema.getColumnType(i), jdbcInfo.getDbms())).append(" NOT NULL");
+      sb.append(quote(schema.getColumnName(i)))
+          .append(" ")
+          .append(typeToDbmsType(schema.getColumnType(i), jdbcInfo.getDbms()))
+          .append(" NOT NULL");
     }
     sb.append(");");
     return sb.toString();
@@ -412,12 +434,14 @@ public final class JdbcAccessMethod extends AccessMethod {
       case BYTES_TYPE:
         return "BYTEA";
       default:
-        throw new UnsupportedOperationException("Type " + type + " is not supported by DBMS " + dbms);
+        throw new UnsupportedOperationException(
+            "Type " + type + " is not supported by DBMS " + dbms);
     }
   }
 
   @Override
-  public void dropAndRenameTables(final RelationKey oldRelation, final RelationKey newRelation) throws DbException {
+  public void dropAndRenameTables(final RelationKey oldRelation, final RelationKey newRelation)
+      throws DbException {
     Objects.requireNonNull(oldRelation, "oldRelation");
     Objects.requireNonNull(newRelation, "newRelation");
     final String oldName = quote(oldRelation);
@@ -433,7 +457,8 @@ public final class JdbcAccessMethod extends AccessMethod {
         execute("ALTER TABLE " + newName + " RENAME TO " + oldName);
         break;
       default:
-        throw new UnsupportedOperationException("Don't know how to rename tables for DBMS " + jdbcInfo.getDbms());
+        throw new UnsupportedOperationException(
+            "Don't know how to rename tables for DBMS " + jdbcInfo.getDbms());
     }
   }
 
@@ -448,8 +473,8 @@ public final class JdbcAccessMethod extends AccessMethod {
         execute("DROP TABLE IF EXISTS " + quote(relationKey) + " CASCADE");
         break;
       default:
-        throw new UnsupportedOperationException("Don't know whether " + jdbcInfo.getDbms()
-            + " can DROP IF EXISTS...CASCADE a table");
+        throw new UnsupportedOperationException(
+            "Don't know whether " + jdbcInfo.getDbms() + " can DROP IF EXISTS...CASCADE a table");
     }
   }
 
@@ -463,8 +488,8 @@ public final class JdbcAccessMethod extends AccessMethod {
       case MyriaConstants.STORAGE_SYSTEM_MONETDB:
         throw new UnsupportedOperationException("MonetDB cannot DROP IF EXISTS tables");
       default:
-        throw new UnsupportedOperationException("Don't know whether " + jdbcInfo.getDbms()
-            + " can DROP IF EXISTS a table");
+        throw new UnsupportedOperationException(
+            "Don't know whether " + jdbcInfo.getDbms() + " can DROP IF EXISTS a table");
     }
   }
 
@@ -495,7 +520,8 @@ public final class JdbcAccessMethod extends AccessMethod {
       }
     }
 
-    RelationKey indexRelationKey = RelationKey.of(relationKey.getUserName(), indexProgramName, name.toString());
+    RelationKey indexRelationKey =
+        RelationKey.of(relationKey.getUserName(), indexProgramName, name.toString());
     return indexRelationKey;
   }
 
@@ -530,7 +556,8 @@ public final class JdbcAccessMethod extends AccessMethod {
   }
 
   @Override
-  public void createIndexes(final RelationKey relationKey, final Schema schema, final List<List<IndexRef>> indexes)
+  public void createIndexes(
+      final RelationKey relationKey, final Schema schema, final List<List<IndexRef>> indexes)
       throws DbException {
     Objects.requireNonNull(relationKey, "relationKey");
     Objects.requireNonNull(schema, "schema");
@@ -547,7 +574,8 @@ public final class JdbcAccessMethod extends AccessMethod {
   }
 
   @Override
-  public void createIndexIfNotExists(final RelationKey relationKey, final Schema schema, final List<IndexRef> index)
+  public void createIndexIfNotExists(
+      final RelationKey relationKey, final Schema schema, final List<IndexRef> index)
       throws DbException {
     Objects.requireNonNull(relationKey, "relationKey");
     Objects.requireNonNull(schema, "schema");
@@ -556,8 +584,10 @@ public final class JdbcAccessMethod extends AccessMethod {
     if (jdbcInfo.getDbms().equals(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL)) {
       createIndexIfNotExistPostgres(relationKey, schema, index);
     } else {
-      throw new UnsupportedOperationException("create index if not exists is not supported in " + jdbcInfo.getDbms()
-          + ", implement me");
+      throw new UnsupportedOperationException(
+          "create index if not exists is not supported in "
+              + jdbcInfo.getDbms()
+              + ", implement me");
     }
   }
 
@@ -569,8 +599,9 @@ public final class JdbcAccessMethod extends AccessMethod {
    * @param index the index to be created; each entry is a list of column indices.
    * @throws DbException if there is an error in the DBMS.
    */
-  public void createIndexIfNotExistPostgres(final RelationKey relationKey, final Schema schema,
-      final List<IndexRef> index) throws DbException {
+  public void createIndexIfNotExistPostgres(
+      final RelationKey relationKey, final Schema schema, final List<IndexRef> index)
+      throws DbException {
     Objects.requireNonNull(index, "index");
 
     String sourceTableName = quote(relationKey);
@@ -579,33 +610,51 @@ public final class JdbcAccessMethod extends AccessMethod {
     String indexColumns = getIndexColumns(schema, index);
 
     String statement =
-        Joiner.on(' ').join("DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_class WHERE relkind = 'i' AND relname=",
-            indexNameSingleQuote, ") THEN CREATE INDEX", indexName, "ON", sourceTableName, indexColumns,
-            "; END IF; END$$;");
+        Joiner.on(' ')
+            .join(
+                "DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_class WHERE relkind = 'i' AND relname=",
+                indexNameSingleQuote,
+                ") THEN CREATE INDEX",
+                indexName,
+                "ON",
+                sourceTableName,
+                indexColumns,
+                "; END IF; END$$;");
     execute(statement);
   }
 
   @Override
-  public void createViewIfNotExists(final String viewName, final String viewQuery) throws DbException {
+  public void createViewIfNotExists(final String viewName, final String viewQuery)
+      throws DbException {
     if (jdbcInfo.getDbms().equals(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL)) {
       createViewIfNotExistPostgres(viewName, viewQuery);
     } else {
-      throw new UnsupportedOperationException("create index if not exists is not supported in " + jdbcInfo.getDbms()
-          + ", implement me");
+      throw new UnsupportedOperationException(
+          "create index if not exists is not supported in "
+              + jdbcInfo.getDbms()
+              + ", implement me");
     }
   }
 
   /**
    * Create a view in postgres if no view with the same name exists
-   * 
+   *
    * @param viewName the name of the views
    * @param viewQuery the view to be created
    * @throws DbException if there is an error in the DBMS.
    */
-  public void createViewIfNotExistPostgres(final String viewName, final String viewQuery) throws DbException {
+  public void createViewIfNotExistPostgres(final String viewName, final String viewQuery)
+      throws DbException {
     String statement =
-        Joiner.on(' ').join("DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_class WHERE relkind = 'v' AND relname='",
-            viewName, "') THEN CREATE OR REPLACE VIEW", viewName, "AS", viewQuery, "; END IF; END$$;");
+        Joiner.on(' ')
+            .join(
+                "DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_class WHERE relkind = 'v' AND relname='",
+                viewName,
+                "') THEN CREATE OR REPLACE VIEW",
+                viewName,
+                "AS",
+                viewQuery,
+                "; END IF; END$$;");
     execute(statement);
   }
 
@@ -614,14 +663,14 @@ public final class JdbcAccessMethod extends AccessMethod {
     if (jdbcInfo.getDbms().equals(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL)) {
       execute(command);
     } else {
-      throw new UnsupportedOperationException("run sql command is not supported in " + jdbcInfo.getDbms()
-          + ", implement me");
+      throw new UnsupportedOperationException(
+          "run sql command is not supported in " + jdbcInfo.getDbms() + ", implement me");
     }
   }
 
   /**
    * Run arbitrary DDLs on Postgres
-   * 
+   *
    * @param relationKey the table on which the indexes will be created.
    * @param schema the Schema of the data in the table.
    * @param runDDL the DDL to run on Postgres
@@ -658,7 +707,8 @@ public final class JdbcAccessMethod extends AccessMethod {
         quote = '\"';
         break;
       default:
-        throw new UnsupportedOperationException("Don't know how to quote DBMS " + jdbcInfo.getDbms());
+        throw new UnsupportedOperationException(
+            "Don't know how to quote DBMS " + jdbcInfo.getDbms());
     }
     return new StringBuilder().append(quote).append(column).append(quote).toString();
   }
