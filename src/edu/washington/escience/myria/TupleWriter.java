@@ -5,6 +5,10 @@ import java.io.OutputStream;
 import java.io.Serializable;
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.annotation.JsonSubTypes.Type;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+
 import edu.washington.escience.myria.storage.ReadableTable;
 
 /**
@@ -22,6 +26,16 @@ import edu.washington.escience.myria.storage.ReadableTable;
  *
  *
  */
+@JsonTypeInfo(
+  use = JsonTypeInfo.Id.NAME,
+  include = JsonTypeInfo.As.PROPERTY,
+  property = "writerType"
+)
+@JsonSubTypes({
+  @Type(name = "CSV", value = CsvTupleWriter.class),
+  @Type(name = "Json", value = JsonTupleWriter.class),
+  @Type(name = "PostgresBinary", value = PostgresBinaryTupleWriter.class)
+})
 public interface TupleWriter extends Serializable {
   /**
    * This will initialize the {@link TupleWriter} {@link java.io.OutputStream}.
