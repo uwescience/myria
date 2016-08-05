@@ -24,6 +24,8 @@ rest_port = 8753
 #
 # if workingDir is empty, use the path in [deployment].
 # if databaseName is empty, use the database_name in [deployment].
+# When using Postgres, each worker must have its own Postgres database.
+# Each node should have its own local Postgres instance.
 1 = aldebaran.cs.washington.edu:9001::worker_1_db     # use default path (path in deployment)
 2 = aldebaran.cs.washington.edu:9002:/disk2/myria:worker_2_db
 3 = aldebaran.cs.washington.edu:9003:/disk3/myria:    # use default db_name (database_name in deployment)

@@ -27,6 +27,8 @@ rest_port = 8753
 #
 # if workingDir is empty, use the path in [deployment].
 # if databaseName is empty, use the database_name in [deployment].
+# When using Postgres, each worker must have its own Postgres database.
+# Each node should have its own local Postgres instance.
 1 = regulus.cs.washington.edu:9091
 2 = capella.cs.washington.edu:9091
 3 = regulus.cs.washington.edu:9092:/disk2/myria:myria2
