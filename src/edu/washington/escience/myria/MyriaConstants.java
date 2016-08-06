@@ -130,7 +130,7 @@ public final class MyriaConstants {
   /**
    * JDBC username.
    */
-  public static final String STORAGE_JDBC_USERNAME = "uwdb";
+  public static final String STORAGE_JDBC_USERNAME = "pguser";
 
   /**
    * MonetDB storage.

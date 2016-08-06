@@ -543,8 +543,13 @@ public final class Worker implements Task, TaskMessageSource {
 
     this.injector = injector;
     myID = workerID;
-    final String subDir = FilenameUtils.concat("workers", myID + "");
-    workingDirectory = FilenameUtils.concat(rootPath, subDir);
+    if (databaseSystem.equals(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL)) {
+      // TX-E1: interpret workingDirectory as password file
+      workingDirectory = rootPath;
+    } else {
+      final String subDir = FilenameUtils.concat("workers", myID + "");
+      workingDirectory =  FilenameUtils.concat(rootPath, subDir);
+    }
     controlMessageQueue = new LinkedBlockingQueue<ControlMessage>();
     queryQueue = new LinkedBlockingQueue<QueryCommand>();
     activeQueries = new ConcurrentHashMap<>();

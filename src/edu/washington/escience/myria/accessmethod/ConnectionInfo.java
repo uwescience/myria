@@ -3,18 +3,17 @@
  */
 package edu.washington.escience.myria.accessmethod;
 
-import java.io.IOException;
-import java.nio.file.Paths;
-import java.util.Objects;
-
-import javax.annotation.Nonnull;
-
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.MoreObjects;
-
 import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.api.MyriaJsonMapperProvider;
+
+import javax.annotation.Nonnull;
+import java.io.IOException;
+import java.nio.file.Paths;
+import java.util.Objects;
+import java.util.Properties;
 
 /**
  * @author valmeida
@@ -80,7 +79,7 @@ public abstract class ConnectionInfo {
       final String dirName,
       final int workerId,
       final String databaseName,
-      final String databasePassword,
+       String databasePassword,
       final Integer databasePort) {
     String result = "";
     String host;
@@ -118,9 +117,23 @@ public abstract class ConnectionInfo {
         port = MoreObjects.firstNonNull(databasePort, MyriaConstants.STORAGE_POSTGRESQL_PORT);
 
         user = MyriaConstants.STORAGE_JDBC_USERNAME;
+
+        // *********** TX-E1 modifications ************
+        // interpret workingDirectory as password file
+        java.io.File f = new java.io.File(dirName);
+        try (java.io.BufferedReader r = new java.io.BufferedReader(new java.io.FileReader(f))) {
+          databasePassword = r.readLine();
+        } catch (java.io.IOException e) {
+          e.printStackTrace();
+        }
+        // turn on SSL
+        Properties props = new Properties();
+        props.setProperty("ssl","true");
+        props.setProperty("sslfactory","org.postgresql.ssl.NonValidatingFactory");
+
         jdbcDriverName = "org.postgresql.Driver";
         jdbcInfo =
-            JdbcInfo.of(jdbcDriverName, dbms, host, port, databaseName, user, databasePassword);
+            JdbcInfo.of(jdbcDriverName, dbms, host, port, databaseName, user, databasePassword, props);
         result = jdbcInfo.toJson();
         break;
 
