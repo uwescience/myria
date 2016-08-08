@@ -19,6 +19,7 @@ import java.util.concurrent.locks.Lock;
 
 import javax.inject.Inject;
 
+import org.apache.hadoop.mapreduce.v2.api.records.TaskState;
 import org.apache.reef.driver.client.JobMessageObserver;
 import org.apache.reef.driver.context.ActiveContext;
 import org.apache.reef.driver.context.ContextConfiguration;
@@ -53,7 +54,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableTable;
 import com.google.common.collect.Sets;
@@ -61,6 +61,8 @@ import com.google.common.util.concurrent.Striped;
 import com.google.protobuf.InvalidProtocolBufferException;
 
 import edu.washington.escience.myria.MyriaConstants;
+import edu.washington.escience.myria.api.MyriaDriverApiServer;
+import edu.washington.escience.myria.coordinator.ConfigFileException;
 import edu.washington.escience.myria.parallel.Server;
 import edu.washington.escience.myria.parallel.SocketInfo;
 import edu.washington.escience.myria.parallel.Worker;
@@ -81,9 +83,11 @@ public final class MyriaDriver {
   private final EvaluatorRequestor requestor;
   private final JVMProcessFactory jvmProcessFactory;
   private final JobMessageObserver launcher;
-  private final Configuration globalConf;
-  private final Injector globalConfInjector;
-  private final ImmutableMap<Integer, Configuration> workerConfs;
+  private Configuration globalConf;
+  private Injector globalConfInjector;
+  private ConcurrentMap<Integer, Configuration> workerConfs;
+  private final MyriaDriverApiServer driverApiServer;
+  String serializedGlobalConf;
   /**
    * This is a workaround for the fact that YARN (and therefore REEF) doesn't allow you to associate an identifier with
    * a container request, so we can't tell which EvaluatorRequest an AllocatedEvaluator corresponds to. Therefore, we
@@ -93,12 +97,12 @@ public final class MyriaDriver {
   private final ConcurrentMap<Integer, RunningTask> tasksByWorkerId;
   private final ConcurrentMap<Integer, ActiveContext> contextsByWorkerId;
   private final ConcurrentMap<Integer, AllocatedEvaluator> evaluatorsByWorkerId;
-  private final AtomicInteger numberWorkersPending;
+  private AtomicInteger numberWorkersPending;
   private final ConcurrentMap<Integer, WorkerAckHandler> addWorkerAckHandlers;
   private final ConcurrentMap<Integer, WorkerAckHandler> removeWorkerAckHandlers;
   private final ConcurrentMap<Integer, CoordinatorAckHandler> addCoordinatorAckHandlers;
   private final ConcurrentMap<Integer, CoordinatorAckHandler> removeCoordinatorAckHandlers;
-  private final ExecutorService transitionExecutor;
+  private ExecutorService transitionExecutor;
 
   private static final int WORKER_ACK_TIMEOUT_MILLIS = 5000;
   static final String DRIVER_PING_MSG = "PING";
@@ -138,8 +142,8 @@ public final class MyriaDriver {
     FAILED_TASK_PENDING_TASK_FAILED_ACK
   };
 
-  private final Striped<Lock> workerStateTransitionLocks;
-  private final ConcurrentMap<Integer, TaskState> workerStates;
+  private Striped<Lock> workerStateTransitionLocks;
+  private ConcurrentMap<Integer, TaskState> workerStates;
 
   private enum TaskStateEvent {
     EVALUATOR_SUBMITTED,
@@ -173,7 +177,7 @@ public final class MyriaDriver {
     }
   }
 
-  private final ImmutableTable<TaskState, TaskStateEvent, TaskStateTransition> taskStateTransitions;
+  private ImmutableTable<TaskState, TaskStateEvent, TaskStateTransition> taskStateTransitions;
 
   @SuppressWarnings("unchecked")
   private ImmutableTable<TaskState, TaskStateEvent, TaskStateTransition>
@@ -420,6 +424,8 @@ public final class MyriaDriver {
     this.addressProvider = addressProvider;
     this.jvmProcessFactory = jvmProcessFactory;
     this.launcher = launcher;
+    this.driverApiServer = new MyriaDriverApiServer(this);
+    this.serializedGlobalConf = serializedGlobalConf;
     globalConf = new AvroConfigurationSerializer().fromString(serializedGlobalConf);
     globalConfInjector = Tang.Factory.getTang().newInjector(globalConf);
     workerConfs = initializeWorkerConfs();
@@ -462,18 +468,19 @@ public final class MyriaDriver {
     return reefMasterHost;
   }
 
-  private ImmutableMap<Integer, Configuration> initializeWorkerConfs()
-      throws InjectionException, BindException, IOException {
-    final ImmutableMap.Builder<Integer, Configuration> workerConfsBuilder =
-        new ImmutableMap.Builder<>();
-    final Set<String> serializedWorkerConfs =
+  private ConcurrentMap<Integer, Configuration> initializeWorkerConfs()
+      throws InjectionException, BindException, IOException, ConfigFileException {
+    ConcurrentMap<Integer, Configuration> workerConfsBuilder =
+        new ConcurrentHashMap<Integer, Configuration>();
+    Set<String> serializedWorkerConfs =
         globalConfInjector.getNamedInstance(MyriaGlobalConfigurationModule.WorkerConf.class);
+
     final ConfigurationSerializer serializer = new AvroConfigurationSerializer();
     for (final String serializedWorkerConf : serializedWorkerConfs) {
       final Configuration workerConf = serializer.fromString(serializedWorkerConf);
       workerConfsBuilder.put(getIdFromWorkerConf(workerConf), workerConf);
     }
-    return workerConfsBuilder.build();
+    return workerConfsBuilder;
   }
 
   private Integer getIdFromWorkerConf(final Configuration workerConf) throws InjectionException {
@@ -505,6 +512,20 @@ public final class MyriaDriver {
     workerStates.put(MyriaConstants.MASTER_ID, TaskState.PENDING_EVALUATOR_REQUEST);
     for (final Integer workerId : workerConfs.keySet()) {
       workerStates.put(workerId, TaskState.PENDING_EVALUATOR_REQUEST);
+    }
+    return workerStates;
+  }
+
+  private ConcurrentMap<Integer, TaskState> initializeSingleWorker(int w) {
+    final ConcurrentMap<Integer, TaskState> workerStates =
+        new ConcurrentHashMap<>(workerConfs.size() + 1);
+    workerStates.put(MyriaConstants.MASTER_ID, TaskState.READY);
+    for (final Integer workerId : workerConfs.keySet()) {
+      if (workerId != w) {
+        workerStates.put(workerId, TaskState.READY);
+      } else {
+        workerStates.put(workerId, TaskState.PENDING_EVALUATOR_REQUEST);
+      }
     }
     return workerStates;
   }
@@ -846,6 +867,35 @@ public final class MyriaDriver {
     doTransition(workerId, TaskStateEvent.TASK_FAILED_ACK, ackedWorkers);
   }
 
+  public int fakeAdditionalWorker()
+      throws BindException, IOException, InjectionException, InterruptedException,
+          ConfigFileException {
+    Configuration revisedConfig =
+        MyriaDriverLauncher.getMyriaGlobalConf(
+            "/Users/jortiz16/Documents/myria-add-worker/myria/myriadeploy");
+    serializedGlobalConf = new AvroConfigurationSerializer().toString(revisedConfig);
+    globalConf = new AvroConfigurationSerializer().fromString(serializedGlobalConf);
+    globalConfInjector = Tang.Factory.getTang().newInjector(globalConf);
+    workerConfs = initializeWorkerConfs();
+    numberWorkersPending = new AtomicInteger(1);
+
+    workerStates = initializeSingleWorker(3);
+    state = DriverState.PREPARING_WORKERS;
+
+    taskStateTransitions = initializeTaskStateTransitions();
+
+    workerStateTransitionLocks = Striped.lock(workerConfs.size() + 1);
+
+    transitionExecutor.shutdown();
+    transitionExecutor =
+        Executors.newFixedThreadPool(
+            workerConfs.size() + 1, new RenamingThreadFactory("WorkerTransitionThreadPool"));
+
+    requestWorkerEvaluator(3);
+
+    return 0;
+  }
+
   private void notifyWorkerOnFailure(final int workerId, final int workerToNotifyId) {
     // we should never get here on coordinator failure
     Preconditions.checkArgument(workerId != MyriaConstants.MASTER_ID);
@@ -1001,7 +1051,8 @@ public final class MyriaDriver {
       state = DriverState.PREPARING_MASTER;
       try {
         launchMaster();
-      } catch (final InjectionException e) {
+        driverApiServer.start();
+      } catch (final Exception e) {
         throw new RuntimeException(e);
       }
     }
@@ -1016,6 +1067,11 @@ public final class MyriaDriver {
       LOGGER.info("Driver stopped at {}", stopTime);
       for (final RunningTask task : tasksByWorkerId.values()) {
         task.getActiveContext().close();
+      }
+      try {
+        driverApiServer.stop();
+      } catch (Exception e) {
+        throw new RuntimeException(e);
       }
     }
   }

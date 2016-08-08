@@ -156,7 +156,7 @@ public final class MyriaDriverLauncher {
    * @param configPath path to directory of containing configuration files
    * @return Configuration object.
    */
-  private static Configuration getMyriaGlobalConf(final String configPath)
+  public static Configuration getMyriaGlobalConf(final String configPath)
       throws IOException, BindException, ConfigFileException {
     final String configFile = FilenameUtils.concat(configPath, MyriaConstants.DEPLOYMENT_CONF_FILE);
     return MyriaConfigurationParser.loadConfiguration(configFile);
