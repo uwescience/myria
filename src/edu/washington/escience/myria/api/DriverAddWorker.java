@@ -17,6 +17,8 @@ import org.apache.reef.tang.exceptions.InjectionException;
 import org.slf4j.LoggerFactory;
 
 import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
+import com.amazonaws.regions.Region;
+import com.amazonaws.regions.Regions;
 import com.amazonaws.services.ec2.AmazonEC2Client;
 import com.amazonaws.services.ec2.model.InstanceStateChange;
 import com.amazonaws.services.ec2.model.StartInstancesRequest;
@@ -57,21 +59,19 @@ public class DriverAddWorker {
     /* Build the response to return the queryId */
 
     //Call some worker from Amazon here and start it
-    StartInstancesRequest request = new StartInstancesRequest().withInstanceIds("ID HERE");
-    AmazonEC2Client client = new AmazonEC2Client(new DefaultAWSCredentialsProviderChain());
-    StartInstancesResult startInstancesResult = client.startInstances(request);
-
-    List<InstanceStateChange> listStates = startInstancesResult.getStartingInstances();
     while (true) {
-      LOGGER.warn("IN LOOP");
+     StartInstancesRequest request = new StartInstancesRequest().withInstanceIds("ID HERE");
+	 AmazonEC2Client client = new AmazonEC2Client(new DefaultAWSCredentialsProviderChain());
+	 client.setRegion(Region.getRegion(Regions.US_WEST_2));
+	 StartInstancesResult startInstancesResult = client.startInstances(request);
+	 List<InstanceStateChange> listStates = startInstancesResult.getStartingInstances();
       boolean isDone = false;
       for (InstanceStateChange l : listStates) {
         LOGGER.warn("STATUS " + l.getCurrentState().getName());
-        if (l.getCurrentState().getName() == "Running") {
+        if (l.getCurrentState().getName().equals("running")) {
           isDone = true;
         }
       }
-
       if (isDone) {
         break;
       }
