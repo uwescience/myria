@@ -60,11 +60,11 @@ public class DriverAddWorker {
 
     //Call some worker from Amazon here and start it
     while (true) {
-     StartInstancesRequest request = new StartInstancesRequest().withInstanceIds("ID HERE");
-	 AmazonEC2Client client = new AmazonEC2Client(new DefaultAWSCredentialsProviderChain());
-	 client.setRegion(Region.getRegion(Regions.US_WEST_2));
-	 StartInstancesResult startInstancesResult = client.startInstances(request);
-	 List<InstanceStateChange> listStates = startInstancesResult.getStartingInstances();
+      StartInstancesRequest request = new StartInstancesRequest().withInstanceIds("ID HERE");
+      AmazonEC2Client client = new AmazonEC2Client(new DefaultAWSCredentialsProviderChain());
+      client.setRegion(Region.getRegion(Regions.US_WEST_2));
+      StartInstancesResult startInstancesResult = client.startInstances(request);
+      List<InstanceStateChange> listStates = startInstancesResult.getStartingInstances();
       boolean isDone = false;
       for (InstanceStateChange l : listStates) {
         LOGGER.warn("STATUS " + l.getCurrentState().getName());
