@@ -1,22 +1,24 @@
 package edu.washington.escience.myria.operator;
 
-import static org.junit.Assert.assertEquals;
+import com.google.common.collect.ImmutableList;
+import edu.washington.escience.myria.DbException;
+import edu.washington.escience.myria.Schema;
+import edu.washington.escience.myria.Type;
+import edu.washington.escience.myria.io.ByteArraySource;
+import edu.washington.escience.myria.io.FileSource;
+import edu.washington.escience.myria.storage.TupleBatch;
+import org.junit.Test;
 
+import java.io.ByteArrayOutputStream;
+import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.util.Arrays;
 
-import org.junit.Test;
-
-import com.google.common.collect.ImmutableList;
-
-import edu.washington.escience.myria.DbException;
-import edu.washington.escience.myria.Schema;
-import edu.washington.escience.myria.Type;
-import edu.washington.escience.myria.io.FileSource;
-import edu.washington.escience.myria.storage.TupleBatch;
+import static org.junit.Assert.assertEquals;
 
 /**
  * To test BinaryFileScan, and it is based on the code from FileScanTest
@@ -108,46 +110,70 @@ public class BinaryFileScanTest {
     assertEquals(1291, getRowCount(bfs));
   }
 
+  @Test
+  public void testGenerateReadBinary() throws Exception {
+    Schema schema = new Schema(ImmutableList.of(  // one of each
+        Type.BOOLEAN_TYPE, Type.DOUBLE_TYPE, Type.FLOAT_TYPE, Type.INT_TYPE,
+        Type.LONG_TYPE, Type.STRING_TYPE
+    ));
+    byte[] buf;
+    {
+      ByteArrayOutputStream bos = new ByteArrayOutputStream(1000);
+      DataOutputStream stream = new DataOutputStream(bos);
+      generateBinaryData(stream, schema.getColumnTypes().toArray(new Type[0]), 10);
+      stream.close();
+      buf = bos.toByteArray();
+    }
+
+    BinaryFileScan bfs = new BinaryFileScan(schema, new ByteArraySource(buf));
+    assertEquals(10, getRowCount(bfs));
+  }
+
   /**
-   * Generates a binary file with the given file name, type array and the number of row.
-   *
-   * @param filename The filename to create.
-   * @param typeAr The type array.
-   * @param row The number of row.
+   * Generates a binary file with the given file name, type array and the number of rows.
    */
   @SuppressWarnings("unused")
-  private void generateBinaryFile(String filename, Type[] typeAr, int row) {
-    try {
-      RandomAccessFile raf = new RandomAccessFile(filename, "rw");
-      for (int i = 0; i < row; i++) {
-        for (Type element : typeAr) {
-          switch (element) {
-            case BOOLEAN_TYPE:
-              raf.writeBoolean(true);
-              break;
-            case DOUBLE_TYPE:
-              raf.writeDouble(i);
-              break;
-            case FLOAT_TYPE:
-              raf.writeFloat(i);
-              break;
-            case INT_TYPE:
-              raf.writeInt(i);
-              break;
-            case LONG_TYPE:
-              raf.writeLong(i);
-              break;
-            default:
-              throw new UnsupportedOperationException(
-                  "can only write fix length field to bin file");
-          }
+  private void generateBinaryFile(String filename, Type[] typeAr, int numrows) {
+    try (DataOutputStream raf = new DataOutputStream(new FileOutputStream(filename))) {
+      generateBinaryData(raf, typeAr, numrows);
+    } catch (IOException e) {
+      throw new RuntimeException("", e);
+    }
+  }
+
+  /**
+   * Write binary data to a stream, for given types and number of rows.
+   *
+   * @param stream The data stream to write data to. Does not close the stream.
+   */
+  @SuppressWarnings("unused")
+  private void generateBinaryData(DataOutputStream stream, Type[] typeAr, int numrows) throws IOException {
+    for (int i = 0; i < numrows; i++) {
+      for (Type element : typeAr) {
+        switch (element) {
+          case BOOLEAN_TYPE:
+            stream.writeBoolean(true);
+            break;
+          case DOUBLE_TYPE:
+            stream.writeDouble(i);
+            break;
+          case FLOAT_TYPE:
+            stream.writeFloat(i);
+            break;
+          case INT_TYPE:
+            stream.writeInt(i);
+            break;
+          case LONG_TYPE:
+            stream.writeLong(i);
+            break;
+          case STRING_TYPE:
+            stream.writeUTF("string"+i);
+            break;
+          default:
+            throw new UnsupportedOperationException(
+                "can only write fix length field to bin file");
         }
       }
-      raf.close();
-    } catch (FileNotFoundException e) {
-      e.printStackTrace();
-    } catch (IOException e) {
-      e.printStackTrace();
     }
   }
 
