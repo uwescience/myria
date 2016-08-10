@@ -1,24 +1,22 @@
 package edu.washington.escience.myria.daemon;
 
-import java.io.IOException;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
-import java.nio.charset.StandardCharsets;
-import java.util.List;
-import java.util.Queue;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.locks.Lock;
-
-import javax.inject.Inject;
-
+import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.ImmutableTable;
+import com.google.common.collect.Sets;
+import com.google.common.util.concurrent.Striped;
+import com.google.protobuf.InvalidProtocolBufferException;
+import edu.washington.escience.myria.MyriaConstants;
+import edu.washington.escience.myria.parallel.Server;
+import edu.washington.escience.myria.parallel.SocketInfo;
+import edu.washington.escience.myria.parallel.Worker;
+import edu.washington.escience.myria.proto.ControlProto.ControlMessage;
+import edu.washington.escience.myria.proto.TransportProto.TransportMessage;
+import edu.washington.escience.myria.tools.MyriaGlobalConfigurationModule;
+import edu.washington.escience.myria.tools.MyriaWorkerConfigurationModule;
+import edu.washington.escience.myria.util.IPCUtils;
+import edu.washington.escience.myria.util.concurrent.RenamingThreadFactory;
 import org.apache.reef.driver.client.JobMessageObserver;
 import org.apache.reef.driver.context.ActiveContext;
 import org.apache.reef.driver.context.ContextConfiguration;
@@ -52,24 +50,23 @@ import org.apache.reef.wake.time.event.StopTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.ImmutableTable;
-import com.google.common.collect.Sets;
-import com.google.common.util.concurrent.Striped;
-import com.google.protobuf.InvalidProtocolBufferException;
-
-import edu.washington.escience.myria.MyriaConstants;
-import edu.washington.escience.myria.parallel.Server;
-import edu.washington.escience.myria.parallel.SocketInfo;
-import edu.washington.escience.myria.parallel.Worker;
-import edu.washington.escience.myria.proto.ControlProto.ControlMessage;
-import edu.washington.escience.myria.proto.TransportProto.TransportMessage;
-import edu.washington.escience.myria.tools.MyriaGlobalConfigurationModule;
-import edu.washington.escience.myria.tools.MyriaWorkerConfigurationModule;
-import edu.washington.escience.myria.util.IPCUtils;
-import edu.washington.escience.myria.util.concurrent.RenamingThreadFactory;
+import javax.inject.Inject;
+import java.io.IOException;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+import java.nio.charset.StandardCharsets;
+import java.util.List;
+import java.util.Queue;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.Lock;
 
 /**
  * Driver for Myria API server/master. Each worker (including master) is mapped to an Evaluator and a persistent Task.
@@ -524,17 +521,17 @@ public final class MyriaDriver {
         (int)
             (1024
                 * globalConfInjector.getNamedInstance(
-                    MyriaGlobalConfigurationModule.WorkerMemoryQuotaGB.class));
+                MyriaGlobalConfigurationModule.WorkerMemoryQuotaGB.class));
     final int numberVCores =
         globalConfInjector.getNamedInstance(
             MyriaGlobalConfigurationModule.WorkerNumberVCores.class);
-    LOGGER.info(
-        "Requesting evaluator for worker {} with {} vcores, {} MB memory.",
-        workerId,
-        numberVCores,
-        jvmMemoryQuotaMB);
     final Configuration workerConf = workerConfs.get(workerId);
     final String hostname = getHostFromWorkerConf(workerConf);
+    LOGGER.info(
+        "Requesting evaluator for worker {} with {} vcores, {} MB memory on host {}.",
+        workerId,
+        numberVCores,
+        jvmMemoryQuotaMB, hostname);
     final EvaluatorRequest workerRequest =
         EvaluatorRequest.newBuilder()
             .setNumber(1)
@@ -551,14 +548,13 @@ public final class MyriaDriver {
         (int)
             (1024
                 * globalConfInjector.getNamedInstance(
-                    MyriaGlobalConfigurationModule.MasterMemoryQuotaGB.class));
+                MyriaGlobalConfigurationModule.MasterMemoryQuotaGB.class));
     final int numberVCores =
         globalConfInjector.getNamedInstance(
             MyriaGlobalConfigurationModule.MasterNumberVCores.class);
     LOGGER.info(
-        "Requesting master evaluator with {} vcores, {} MB memory.",
-        numberVCores,
-        jvmMemoryQuotaMB);
+        "Requesting master evaluator with {} vcores, {} MB memory on masterHost {}.",
+        numberVCores, jvmMemoryQuotaMB, masterHost);
     final EvaluatorRequest masterRequest =
         EvaluatorRequest.newBuilder()
             .setNumber(1)
