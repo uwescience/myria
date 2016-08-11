@@ -610,6 +610,10 @@ public final class DatasetResource {
       Thread.currentThread().interrupt();
       return Response.status(Status.SERVICE_UNAVAILABLE).entity("Interrupted").build();
     }
+    if (status == null)
+      throw new MyriaApiException(
+          Status.INTERNAL_SERVER_ERROR,
+          "Cannot get metadata for the ingested dataset, check if the ingestion has failed.");
 
     /* In the response, tell the client the path to the relation. */
     URI datasetUri = getCanonicalResourcePath(uriInfo, relationKey);
