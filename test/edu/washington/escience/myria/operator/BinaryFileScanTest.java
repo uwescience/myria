@@ -112,10 +112,15 @@ public class BinaryFileScanTest {
 
   @Test
   public void testGenerateReadBinary() throws Exception {
-    Schema schema = new Schema(ImmutableList.of(  // one of each
-        Type.BOOLEAN_TYPE, Type.DOUBLE_TYPE, Type.FLOAT_TYPE, Type.INT_TYPE,
-        Type.LONG_TYPE, Type.STRING_TYPE
-    ));
+    Schema schema =
+        new Schema(
+            ImmutableList.of( // one of each
+                Type.BOOLEAN_TYPE,
+                Type.DOUBLE_TYPE,
+                Type.FLOAT_TYPE,
+                Type.INT_TYPE,
+                Type.LONG_TYPE,
+                Type.STRING_TYPE));
     byte[] buf;
     {
       ByteArrayOutputStream bos = new ByteArrayOutputStream(1000);
@@ -147,7 +152,8 @@ public class BinaryFileScanTest {
    * @param stream The data stream to write data to. Does not close the stream.
    */
   @SuppressWarnings("unused")
-  private void generateBinaryData(DataOutputStream stream, Type[] typeAr, int numrows) throws IOException {
+  private void generateBinaryData(DataOutputStream stream, Type[] typeAr, int numrows)
+      throws IOException {
     for (int i = 0; i < numrows; i++) {
       for (Type element : typeAr) {
         switch (element) {
@@ -167,11 +173,10 @@ public class BinaryFileScanTest {
             stream.writeLong(i);
             break;
           case STRING_TYPE:
-            stream.writeUTF("string"+i);
+            stream.writeUTF("string" + i);
             break;
           default:
-            throw new UnsupportedOperationException(
-                "can only write fix length field to bin file");
+            throw new UnsupportedOperationException("can only write fix length field to bin file");
         }
       }
     }

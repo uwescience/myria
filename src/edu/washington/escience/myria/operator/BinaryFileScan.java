@@ -91,7 +91,7 @@ public class BinaryFileScan extends LeafOperator {
               break;
             default:
               throw new UnsupportedOperationException(
-                  "BinaryFileScan does not support the type "+schema.getColumnType(count));
+                  "BinaryFileScan does not support the type " + schema.getColumnType(count));
           }
           building = true;
         }
