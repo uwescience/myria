@@ -965,7 +965,7 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
    * @throws DbException if there is an error
    * @throws InterruptedException interrupted
    */
-  public DatasetStatus deleteDataset(final RelationKey relationKey)
+  public void deleteDataset(final RelationKey relationKey)
       throws DbException, InterruptedException {
 
     /* Mark the relation as is_deleted */
@@ -1006,8 +1006,6 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
     } catch (CatalogException e) {
       throw new DbException(e);
     }
-
-    return getDatasetStatus(relationKey);
   }
 
   /**
