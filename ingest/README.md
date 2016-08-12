@@ -31,9 +31,17 @@ except that there seems to be trouble communicating the delimiter character to t
 Included are some scripts that were used in a genomics/oceanography data ingest scenario.
 You may find it easier to start with these and modify them to suit your needs.
 
-The first is for ingesting a single file: [ingest_myria.sh](ingest_myria.sh).
-The second is for ingseting a directory of files, each one as an individual relation: [ingest_directory.sh](ingest_directory.sh).
-The third generates a MyriaL query that unions together all the dataests that match a search term: [combine_tables.sh](combine_tables.sh).
-The fourth is for ingesting from S3: [ingest_from_s3.sh](ingest_from_s3.sh).
+[ingest_myria.sh](ingest_myria.sh) ingests a single file.
 
+[ingest_directory.sh](ingest_directory.sh) ingests a directory of files, each one as an individual relation.
+
+[combine_tables.sh](combine_tables.sh) generates a MyriaL query that unions together all the dataests that match a search term. It performs the union in batches of 100 relations, for stability. You can change the batch size in the script.
+
+[ingest_from_s3.sh](ingest_from_s3.sh) ingests from S3.
+
+[list_tables.sh](list_tables.sh) lists tables in a Myria instance that match a prefix and suffix.
+
+[delete_tables.sh](delete_tables.sh) deletes (!) tables in a Myria instance that match a prefix and suffix.
+
+[deletetemp.py](deletetemp.py) deletes temporary tables and other crud from the Postgreses in a Myria instance that are left around from failed queries or failed ingests. This is tested on Amazon.
 

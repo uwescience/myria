@@ -29,6 +29,11 @@ if [ "$#" -lt "3" ]; then
   _usage
 fi
 
+binary=false
+if [[ "$@" = *-binary* ]]; then 
+	binary=true
+fi
+
 # Check pre-requisite
 command -v jsawk >/dev/null 2>&1 || { echo >&2 "I require 'jsawk' but it's not installed. Aborting."; exit 1; }
 
@@ -64,13 +69,14 @@ else
 	echo '{ "columnTypes": ["STRING_TYPE", "LONG_TYPE"], "columnNames": ["kmer", "cnt"] }' > "$TDIR/schema.json"
 	printf ',' > "$TDIR/delimiter.json"
 	echo 'true' > "$TDIR/overwrite.json"
-	
+
 	java $@ < "$InputFile" \
 		| curl -i -XPOST "$MyriaHostAndPort"/dataset -H "Content-type: multipart/form-data" \
 						-F "relationKey=@$TDIR/relationKey.json; type=application/json" \
 						-F "schema=@$TDIR/schema.json; type=application/json" \
 						-F "delimiter=," \
 						-F "overwrite=$force" \
+						-F "binary=$binary" \
 						-F "data=@-; type=application/octet-stream"
 
 fi
