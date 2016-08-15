@@ -614,9 +614,14 @@ public class LeapFrogJoin extends NAryOperator {
 
   @Override
   protected Schema generateSchema() {
+    Operator[] children = getChildren();
+    for (Operator child : children) {
+      if (child.getSchema() == null) {
+        return null;
+      }
+    }
     ImmutableList.Builder<Type> types = ImmutableList.builder();
     ImmutableList.Builder<String> names = ImmutableList.builder();
-    Operator[] children = getChildren();
     for (int i = 0; i < outputFieldMapping.size(); ++i) {
       types.add(
           children[outputFieldMapping.get(i).table]
