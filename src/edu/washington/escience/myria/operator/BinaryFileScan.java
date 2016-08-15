@@ -1,5 +1,13 @@
 package edu.washington.escience.myria.operator;
 
+import com.google.common.collect.ImmutableMap;
+import com.google.common.io.LittleEndianDataInputStream;
+import edu.washington.escience.myria.DbException;
+import edu.washington.escience.myria.Schema;
+import edu.washington.escience.myria.io.DataSource;
+import edu.washington.escience.myria.storage.TupleBatch;
+import edu.washington.escience.myria.storage.TupleBatchBuffer;
+
 import java.io.BufferedInputStream;
 import java.io.DataInput;
 import java.io.DataInputStream;
@@ -8,15 +16,6 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Objects;
-
-import com.google.common.collect.ImmutableMap;
-import com.google.common.io.LittleEndianDataInputStream;
-
-import edu.washington.escience.myria.DbException;
-import edu.washington.escience.myria.Schema;
-import edu.washington.escience.myria.io.DataSource;
-import edu.washington.escience.myria.storage.TupleBatch;
-import edu.washington.escience.myria.storage.TupleBatchBuffer;
 
 /**
  * Reads data from binary file. This class is written base on the code from FileScan.java
@@ -72,23 +71,27 @@ public class BinaryFileScan extends LeafOperator {
       while (buffer.numTuples() < TupleBatch.BATCH_SIZE) {
         for (int count = 0; count < schema.numColumns(); ++count) {
           switch (schema.getColumnType(count)) {
+            case BOOLEAN_TYPE:
+              buffer.putBoolean(count, dataInput.readBoolean());
+              break;
             case DOUBLE_TYPE:
               buffer.putDouble(count, dataInput.readDouble());
               break;
             case FLOAT_TYPE:
-              float readFloat = dataInput.readFloat();
-              buffer.putFloat(count, readFloat);
+              buffer.putFloat(count, dataInput.readFloat());
               break;
             case INT_TYPE:
               buffer.putInt(count, dataInput.readInt());
               break;
             case LONG_TYPE:
-              long readLong = dataInput.readLong();
-              buffer.putLong(count, readLong);
+              buffer.putLong(count, dataInput.readLong());
+              break;
+            case STRING_TYPE:
+              buffer.putString(count, dataInput.readUTF());
               break;
             default:
               throw new UnsupportedOperationException(
-                  "BinaryFileScan only support reading fixed width type from the binary file.");
+                  "BinaryFileScan does not support the type " + schema.getColumnType(count));
           }
           building = true;
         }

@@ -1,22 +1,9 @@
 package edu.washington.escience.myria.operator;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.util.Iterator;
-
-import javax.annotation.Nullable;
-
-import org.apache.commons.csv.CSVFormat;
-import org.apache.commons.csv.CSVParser;
-import org.apache.commons.csv.CSVRecord;
-import org.apache.commons.lang.BooleanUtils;
-
 import com.google.common.base.MoreObjects;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.primitives.Floats;
-
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.io.DataSource;
@@ -24,6 +11,16 @@ import edu.washington.escience.myria.io.FileSource;
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
 import edu.washington.escience.myria.util.DateTimeUtils;
+import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.CSVParser;
+import org.apache.commons.csv.CSVRecord;
+import org.apache.commons.lang.BooleanUtils;
+
+import javax.annotation.Nullable;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.util.Iterator;
 
 /**
  * Reads data from a file. For CSV files, the default parser follows the RFC 4180 (http://tools.ietf.org/html/rfc4180).
@@ -208,11 +205,10 @@ public final class FileScan extends LeafOperator {
         try {
           switch (schema.getColumnType(column)) {
             case BOOLEAN_TYPE:
-              if (Floats.tryParse(cell) != null) {
-                buffer.putBoolean(column, Floats.tryParse(cell) != 0);
-              } else if (BooleanUtils.toBoolean(cell)) {
+              Float f = Floats.tryParse(cell);
+              if (f != null) buffer.putBoolean(column, f != 0);
+              else if (BooleanUtils.toBoolean(cell))
                 buffer.putBoolean(column, Boolean.parseBoolean(cell));
-              }
               break;
             case DOUBLE_TYPE:
               buffer.putDouble(column, Double.parseDouble(cell));
