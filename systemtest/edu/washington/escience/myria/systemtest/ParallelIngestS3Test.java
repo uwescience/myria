@@ -586,4 +586,59 @@ public class ParallelIngestS3Test extends SystemTestBase {
     assertEquals(2, server.getDatasetStatus(relationKeyCoordinatorIngest).getNumTuples());
     diffHelperMethod(relationKeyParallelIngest, relationKeyCoordinatorIngest, fileSchema);
   }
+
+  @Test
+  public void blankFile() throws Exception {
+    String fileAddress = "s3://myria-test/BlankFile.csv";
+    Schema fileSchema = Schema.ofFields("x", Type.INT_TYPE, "w", Type.STRING_TYPE);
+
+    /* Ingest in parallel */
+    RelationKey relationKeyParallelIngest = RelationKey.of("public", "adhoc", "blank_parallel");
+    server.parallelIngestDataset(relationKeyParallelIngest, fileSchema, ',', null, null, 0, new AmazonS3Source(
+        fileAddress, null, null), server.getAliveWorkers());
+    assertEquals(0, server.getDatasetStatus(relationKeyParallelIngest).getNumTuples());
+  }
+
+  @Test
+  public void quoteAtEnd() throws Exception {
+    String fileAddress = "s3://myria-test/quoteEnd.csv";
+    Schema fileSchema =
+        Schema.ofFields("a", Type.INT_TYPE, "b", Type.INT_TYPE, "c", Type.INT_TYPE, "d", Type.INT_TYPE, "w",
+            Type.STRING_TYPE);
+
+    /* Ingest in parallel */
+    RelationKey relationKeyParallelIngest = RelationKey.of("public", "adhoc", "quote_end_parallel");
+    server.parallelIngestDataset(relationKeyParallelIngest, fileSchema, ',', null, null, 0, new AmazonS3Source(
+        fileAddress, null, null), server.getAliveWorkers());
+    assertEquals(4, server.getDatasetStatus(relationKeyParallelIngest).getNumTuples());
+
+    /* Ingest the through the coordinator */
+    RelationKey relationKeyCoordinatorIngest = RelationKey.of("public", "adhoc", "quote_end_coordinator");
+    server.ingestDataset(relationKeyCoordinatorIngest, server.getAliveWorkers(), null, new FileScan(new UriSource(
+        fileAddress), fileSchema, ',', null, null, 0), new RoundRobinPartitionFunction(workerIDs.length));
+    assertEquals(4, server.getDatasetStatus(relationKeyCoordinatorIngest).getNumTuples());
+    diffHelperMethod(relationKeyParallelIngest, relationKeyCoordinatorIngest, fileSchema);
+
+  }
+
+  @Test
+  public void quoteAtBeginning() throws Exception {
+    String fileAddress = "s3://myria-test/quoteStart.csv";
+    Schema fileSchema =
+        Schema.ofFields("w", Type.STRING_TYPE, "a", Type.INT_TYPE, "b", Type.INT_TYPE, "c", Type.INT_TYPE, "d",
+            Type.INT_TYPE);
+
+    /* Ingest in parallel */
+    RelationKey relationKeyParallelIngest = RelationKey.of("public", "adhoc", "quote_start_parallel");
+    server.parallelIngestDataset(relationKeyParallelIngest, fileSchema, ',', '"', null, 0, new AmazonS3Source(
+        fileAddress, null, null), server.getAliveWorkers());
+    assertEquals(4, server.getDatasetStatus(relationKeyParallelIngest).getNumTuples());
+
+    /* Ingest the through the coordinator */
+    RelationKey relationKeyCoordinatorIngest = RelationKey.of("public", "adhoc", "quote_end_coordinator");
+    server.ingestDataset(relationKeyCoordinatorIngest, server.getAliveWorkers(), null, new FileScan(new UriSource(
+        fileAddress), fileSchema, ',', null, null, 0), new RoundRobinPartitionFunction(workerIDs.length));
+    assertEquals(4, server.getDatasetStatus(relationKeyCoordinatorIngest).getNumTuples());
+    diffHelperMethod(relationKeyParallelIngest, relationKeyCoordinatorIngest, fileSchema);
+  }
 }

@@ -633,7 +633,7 @@ public final class DatasetResource {
    * @throws URIException
    */
   @POST
-  @Path("/ParallelIngest")
+  @Path("/parallelIngest")
   @Consumes(MediaType.APPLICATION_JSON)
   public Response parallelIngest(final ParallelDatasetEncoding dataset)
       throws DbException, URIException, InterruptedException {
@@ -647,7 +647,8 @@ public final class DatasetResource {
             dataset.escape,
             dataset.numberOfSkippedLines,
             dataset.s3Source,
-            dataset.workers);
+            dataset.workers,
+            dataset.partitionFunction);
 
     /* In the response, tell the client the path to the relation. */
     URI datasetUri = getCanonicalResourcePath(uriInfo, dataset.relationKey);

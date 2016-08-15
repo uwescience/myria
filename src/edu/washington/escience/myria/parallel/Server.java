@@ -938,7 +938,8 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
       @Nullable final Character escape,
       @Nullable final Integer numberOfSkippedLines,
       final AmazonS3Source s3Source,
-      final Set<Integer> workersToIngest)
+      final Set<Integer> workersToIngest,
+      final PartitionFunction partitionFunction)
       throws URIException, DbException, InterruptedException {
     /* Figure out the workers we will use */
     Set<Integer> actualWorkers = workersToIngest;
@@ -969,12 +970,12 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
     Map<Integer, SubQueryPlan> workerPlans = new HashMap<>();
     for (int workerID = 1; workerID <= workersArray.length; workerID++) {
       boolean isLastWorker = workerID == workersArray.length;
-      long startRange = ((partitionSize) * (workerID - 1));
+      long startRange = partitionSize * (workerID - 1);
       long endRange;
       if (isLastWorker) {
         endRange = fileSize - 1;
       } else {
-        endRange = partitionSize * (workerID) - 1;
+        endRange = (partitionSize * workerID) - 1;
       }
 
       CSVFileScanFragment scanFragment =
@@ -1012,6 +1013,7 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
       throw new DbException("Error executing query", e.getCause());
     }
 
+    updateHowPartitioned(relationKey, new HowPartitioned(partitionFunction, workersArray));
     return getDatasetStatus(relationKey);
   }
 
