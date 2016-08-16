@@ -39,29 +39,29 @@ which creates a directory `myria` with the `master` branch checked out.
 
 To build the Myria jars, run `./gradlew clean shadowJar check` from within the `myria` directory. This creates a single build artifact, `build/libs/myria-0.1-all.jar`, which is deployed in the next step. Make sure this file exists before continuing.
 
-### Copy and edit the deployment configuration file
+### (Optional) Copy and edit the deployment configuration file
 
 A MyriaX deployment needs a deployment configuration file, always at `myriadeploy/deployment.cfg`. It specifies the details of the
 deployment, such as the worker hostnames and port numbers.
 The `myriadeploy` directory contains some example configuration files.
-In this doc, we will be using the example file `deployment.cfg.local` as a starting point, which creates a deployment with one coordinator process and two worker processes, and uses SQLite as the storage backend. You can also make your own changes to it.
+For local deployment, you should use the example file `deployment.cfg.local`, which creates a local cluster with one coordinator process and two worker processes, and uses SQLite as the storage backend. You can also make your own changes to this file. If you don't want to make any changes, the `launch_local_cluster` command will automatically copy it to the right location.
 
-Copy the example config file to the standard location:
+If you want to make changes to the local configuration file, copy it to the standard location:
 
 ```
 cp myriadeploy/deployment.cfg.local myriadeploy/deployment.cfg
 ```
 
-Make any changes you want to the config file, and then proceed to the next step.
+Make any changes you want to `myriadeploy/deployment.cfg`, and then proceed to the next step.
 
 ## 3. Running the cluster
 
 ### Launch the cluster
 
-To start the master and worker processes, execute the following command:
+To start the coordinator and worker processes, execute the following command from the `myriadeploy` directory:
 
 ```
-java -cp ./build/libs/myria-0.1-all.jar edu.washington.escience.myria.daemon.MyriaDriverLauncher -runtimeClass org.apache.reef.runtime.local.client.LocalRuntimeConfiguration -configPath './myriadeploy' -javaLibPath './build/libs' -nativeLibPath './lib'
+./launch_local_cluster
 ```
 
 You should see log output like the following:
@@ -182,13 +182,19 @@ INFO     2016-07-08 22:57:28,892 dispatcher.py:197] Starting module "default" ru
 INFO     2016-07-08 22:57:28,895 admin_server.py:118] Starting admin server at: http://localhost:8000
 ```
 
+If you have a port conflict with the default port `8080`, you can specify an alternative port:
+
+```
+dev_appserver.py --port <MY_CUSTOM_PORT> ./appengine
+```
+
 ###  Launch the MyriaWeb interface
 
 Point your browser to <http://localhost:8080>. Try running the sample queries in the "Examples" tab of the right-hand pane. Click on the "Datasets" menu of the navigation bar and try downloading a dataset.
 
 ## 6. Shutting down the cluster
 
-To shut down the master and worker processes, simply kill the Java process you started in step 3. All child processes, including the master and worker processes, will be automatically terminated.
+To shut down the cluster, simply kill the process you started in step 3 (`launch_local_cluster`). All child processes, including the coordinator and worker processes, will be automatically terminated.
 
 # Questions and issues
 
