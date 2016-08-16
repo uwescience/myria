@@ -179,6 +179,7 @@ public class CSVFileScanFragment extends LeafOperator {
   @Override
   protected TupleBatch fetchNextReady() throws IOException, DbException {
     long lineNumberBegin = lineNumber;
+    boolean unfinishedEncapsulatedTokenRow = false;
 
     while ((buffer.numTuples() < TupleBatch.BATCH_SIZE) && !flagAsIncomplete) {
       lineNumber++;
@@ -186,16 +187,15 @@ public class CSVFileScanFragment extends LeafOperator {
         break;
       }
 
+      if (unfinishedEncapsulatedTokenRow) {
+        onLastRow = true;
+      }
+
       try {
         if (!onLastRow) {
           record = iterator.next();
         }
       } catch (Exception e) {
-        /*
-         * FIX ME: If we hit an exception for a malformed row (in case of quotes for example), we read more bytes by
-         * marking this as the final line
-         */
-        onLastRow = true;
       }
 
       try {
@@ -203,6 +203,12 @@ public class CSVFileScanFragment extends LeafOperator {
           onLastRow = true;
         }
       } catch (Exception e) {
+        /*
+         * FIX ME: Only mark if we hit an exception for a malformed row (in case of quotes for example)
+         */
+        if (e.getMessage().contains("EOF reached before encapsulated token finished")) {
+          unfinishedEncapsulatedTokenRow = true;
+        }
       }
 
       if (record != null) {
@@ -261,6 +267,9 @@ public class CSVFileScanFragment extends LeafOperator {
                       0);
               iterator = parser.iterator();
               record = iterator.next();
+              if (unfinishedEncapsulatedTokenRow) {
+                record = iterator.next();
+              }
               finishedReadingLastRow = true;
             } else {
               byteOverlap *= 2;
