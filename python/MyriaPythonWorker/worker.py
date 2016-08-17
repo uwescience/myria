@@ -21,20 +21,28 @@ def main(infile, outfile):
         print("read tuple size")
         outputType = read_int(infile)
         print("read output type")
-
-
+        isFlatmap = read_int(infile)
 
         if tuplesize < 1:
             raise ValueError("size of tuple should not be less than 1 ")
 
         print(tuplesize)
+        print(isFlatmap)
         while True:
             print("python process trying to read tuple")
             tup =pickleSer.read_tuple(infile,tuplesize)
 
             print("python process done reading tuple, now writing ")
             retval = func(tup)
-            write_with_length(retval, outfile, outputType, pickleSer)
+            if(isFlatmap>0):
+                count = len(retval)
+                print "count of tuples returned: " + str(count)
+                write_int(count)
+                for i in range(count):
+                    write_with_length(retval[i],outfile, outputType,pickleSer)
+            else:
+                write_with_length(retval, outfile, outputType, pickleSer)
+                
             outfile.flush()
 
 
