@@ -62,7 +62,8 @@ public class PythonWorker {
    * @param outputType
    * @throws DbException
    */
-  public void sendCodePickle(final String pyCodeString, final int tupleSize, final Type outputType)
+  public void sendCodePickle(
+      final String pyCodeString, final int tupleSize, final Type outputType, final int isFlatMap)
       throws DbException {
     Preconditions.checkNotNull(pyCodeString);
 
@@ -75,6 +76,7 @@ public class PythonWorker {
 
         dOut.writeInt(tupleSize);
         writeOutputType(outputType);
+        dOut.writeInt(isFlatMap);
 
         dOut.flush();
         // LOGGER.info("wrote and flushed code snippet ");

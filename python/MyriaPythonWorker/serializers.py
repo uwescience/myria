@@ -60,7 +60,7 @@ def write_long(value, stream):
     stream.write(struct.pack("!q",value))
 
 
-def write_with_length(obj, stream, outputType):
+def write_with_length(obj, stream, outputType, serialiser):
     print("in write_with_length")
     print("Output type: "+ str(outputType))
 
@@ -79,8 +79,9 @@ def write_with_length(obj, stream, outputType):
         write_double(stream.write(obj))
     elif(outputType == DataType.BYTES):
         write_int(DataType.BYTES,stream)
-        write_int(len(obj),stream)
-        stream.write(obj)
+        serialiser.write_with_length(obj, stream)
+        #write_int(len(obj),stream)
+        #stream.write(obj)
 
 
 

@@ -16,6 +16,7 @@ import edu.washington.escience.myria.column.builder.ColumnBuilder;
 import edu.washington.escience.myria.column.builder.ColumnFactory;
 import edu.washington.escience.myria.column.builder.WritableColumn;
 import edu.washington.escience.myria.expression.Expression;
+import edu.washington.escience.myria.operator.FlatteningApply;
 import edu.washington.escience.myria.storage.AppendableTable;
 import edu.washington.escience.myria.storage.ReadableTable;
 import edu.washington.escience.myria.storage.TupleBatch;
@@ -95,6 +96,7 @@ public class FlatteningGenericEvaluator extends Evaluator {
    * @param result the table storing the result
    * @param colIdx index of the column that the result should be appended to
    * @throws InvocationTargetException exception thrown from janino
+   * @throws DbException
    */
   public void eval(
       final ReadableTable tb,
@@ -102,7 +104,7 @@ public class FlatteningGenericEvaluator extends Evaluator {
       final WritableColumn count,
       final AppendableTable result,
       final int colIdx)
-      throws InvocationTargetException {
+      throws InvocationTargetException, DbException {
     Preconditions.checkArgument(
         evaluator != null, "Call compile first or copy the data if it is the same in the input.");
     try {
@@ -129,9 +131,10 @@ public class FlatteningGenericEvaluator extends Evaluator {
    * @param result a (single-column) table containing evaluation results
    * @return a column containing the number of results from evaluating this expression on each row of {@link #tb}
    * @throws InvocationTargetException exception thrown from janino
+   * @throws DbException
    */
   public Column<?> evaluateColumn(final TupleBatch tb, final AppendableTable result)
-      throws InvocationTargetException {
+      throws InvocationTargetException, DbException {
     ColumnBuilder<?> count = ColumnFactory.allocateColumn(Type.INT_TYPE);
     for (int rowIdx = 0; rowIdx < tb.numTuples(); ++rowIdx) {
       eval(tb, rowIdx, count, result, 0);

@@ -21,6 +21,7 @@ import edu.washington.escience.myria.column.Column;
 import edu.washington.escience.myria.expression.Expression;
 import edu.washington.escience.myria.expression.evaluate.ExpressionOperatorParameter;
 import edu.washington.escience.myria.expression.evaluate.FlatteningGenericEvaluator;
+import edu.washington.escience.myria.expression.evaluate.PythonUDFFlatteningEvaluator;
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
 import edu.washington.escience.myria.storage.TupleBuffer;
@@ -237,7 +238,14 @@ public class FlatteningApply extends UnaryOperator {
     final ExpressionOperatorParameter parameters =
         new ExpressionOperatorParameter(inputSchema, getNodeID());
     for (Expression expr : emitExpressions) {
-      FlatteningGenericEvaluator evaluator = new FlatteningGenericEvaluator(expr, parameters);
+      FlatteningGenericEvaluator evaluator;
+      if (expr.isRegisteredUDF()) {
+
+        evaluator =
+            new PythonUDFFlatteningEvaluator(expr, parameters, getPythonFunctionRegistrar());
+      } else {
+        evaluator = new FlatteningGenericEvaluator(expr, parameters);
+      }
       if (evaluator.needsCompiling()) {
         evaluator.compile();
       }

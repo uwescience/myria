@@ -34,7 +34,7 @@ def main(infile, outfile):
 
             print("python process done reading tuple, now writing ")
             retval = func(tup)
-            write_with_length(retval, outfile, outputType)
+            write_with_length(retval, outfile, outputType, pickleSer)
             outfile.flush()
 
 
