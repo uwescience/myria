@@ -35,7 +35,8 @@ You may find it easier to start with these and modify them to suit your needs.
 
 [ingest_directory.sh](ingest_directory.sh) ingests a directory of files, each one as an individual relation.
 
-[combine_tables.sh](combine_tables.sh) generates a MyriaL query that unions together all the dataests that match a search term. It performs the union in batches of 100 relations, for stability. You can change the batch size in the script.
+[combine_tables.sh](combine_tables.sh) generates a MyriaL query that unions together all the dataests that match a search term. It performs the union in batches of 100 relations, for stability. You can change the batch size in the script. 
+Run it first normally to submit the first query for execution. Then run it again with flag `-2` to submit the remaining queries, after the first has finished and updated the catalog.
 
 [ingest_from_s3.sh](ingest_from_s3.sh) ingests from S3.
 
@@ -45,3 +46,4 @@ You may find it easier to start with these and modify them to suit your needs.
 
 [deletetemp.py](deletetemp.py) deletes temporary tables and other crud from the Postgreses in a Myria instance that are left around from failed queries or failed ingests. This is tested on Amazon.
 
+[sync_tables.sh](sync_tables.sh) copies a relation from one Myria instance to another.
