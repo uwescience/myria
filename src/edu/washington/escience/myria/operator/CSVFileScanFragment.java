@@ -179,7 +179,7 @@ public class CSVFileScanFragment extends LeafOperator {
   @Override
   protected TupleBatch fetchNextReady() throws IOException, DbException {
     long lineNumberBegin = lineNumber;
-    boolean unfinishedEncapsulatedTokenRow = false;
+    boolean truncatedQuotedField = false;
 
     while ((buffer.numTuples() < TupleBatch.BATCH_SIZE) && !flagAsIncomplete) {
       lineNumber++;
@@ -187,15 +187,12 @@ public class CSVFileScanFragment extends LeafOperator {
         break;
       }
 
-      if (unfinishedEncapsulatedTokenRow) {
+      if (truncatedQuotedField) {
         onLastRow = true;
       }
 
-      try {
-        if (!onLastRow) {
-          record = iterator.next();
-        }
-      } catch (Exception e) {
+      if (!onLastRow) {
+        record = iterator.next();
       }
 
       try {
@@ -204,10 +201,14 @@ public class CSVFileScanFragment extends LeafOperator {
         }
       } catch (Exception e) {
         /*
-         * FIX ME: Only mark if we hit an exception for a malformed row (in case of quotes for example)
+         * FIX ME: If we hit an exception for a malformed row (in case of quotes for example), we read more bytes by
+         * marking this as the final line
          */
-        if (e.getMessage().contains("EOF reached before encapsulated token finished")) {
-          unfinishedEncapsulatedTokenRow = true;
+        if (e.getMessage() != null
+            && e.getMessage().contains("EOF reached before encapsulated token finished")) {
+          truncatedQuotedField = true;
+        } else {
+          throw e;
         }
       }
 
@@ -221,16 +222,16 @@ public class CSVFileScanFragment extends LeafOperator {
          */
         if (onLastRow && !finishedReadingLastRow && !isLastWorker) {
           long trailingStartByte = partitionEndByteRange + 1;
-          long trailingEndByte = trailingStartByte + byteOverlap;
+          long trailingEndByte = trailingStartByte + byteOverlap - 1;
+          long finalBytePositionFound = trailingStartByte;
           boolean finalLineFound = false;
 
           while (!finalLineFound) {
-            boolean withinByteRange = trailingEndByte < maxByteRange;
             /*
              * If we are within the max byte range, then keep checking for a new line. Otherwise, if we've reached the
              * end of the file, mark finalLineFound as true.
              */
-            if (withinByteRange) {
+            if (trailingEndByte < maxByteRange) {
               InputStream trailingEndInputStream =
                   source.getInputStream(trailingStartByte, trailingEndByte);
               int dataChar = trailingEndInputStream.read();
@@ -241,10 +242,12 @@ public class CSVFileScanFragment extends LeafOperator {
                   break;
                 }
                 dataChar = trailingEndInputStream.read();
+                finalBytePositionFound++;
               }
               trailingEndInputStream.close();
             } else {
               finalLineFound = true;
+              finalBytePositionFound = maxByteRange;
             }
 
             /*
@@ -254,8 +257,7 @@ public class CSVFileScanFragment extends LeafOperator {
             if (finalLineFound) {
               long characterPositionAtBeginningOfRecord = record.getCharacterPosition();
               InputStream completePartitionStream =
-                  source.getInputStream(
-                      adjustedStartByteRange, Math.min(trailingEndByte, maxByteRange));
+                  source.getInputStream(adjustedStartByteRange, finalBytePositionFound);
               BufferedReader reader =
                   new BufferedReader(new InputStreamReader(completePartitionStream));
               reader.skip(characterPositionAtBeginningOfRecord);
@@ -267,7 +269,7 @@ public class CSVFileScanFragment extends LeafOperator {
                       0);
               iterator = parser.iterator();
               record = iterator.next();
-              if (unfinishedEncapsulatedTokenRow) {
+              if (truncatedQuotedField) {
                 record = iterator.next();
               }
               finishedReadingLastRow = true;
@@ -284,7 +286,7 @@ public class CSVFileScanFragment extends LeafOperator {
         /*
          * If we're on the last row, we check if we've finished reading the row completely.
          */
-        if (((!onLastRow) || (onLastRow && finishedReadingLastRow))) {
+        if (!onLastRow || (onLastRow && finishedReadingLastRow)) {
           for (int column = 0; column < schema.numColumns(); ++column) {
             String cell = record.get(column);
             try {
