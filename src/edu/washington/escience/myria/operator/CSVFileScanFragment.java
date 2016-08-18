@@ -57,6 +57,8 @@ public class CSVFileScanFragment extends LeafOperator {
   /** Which line of the file the scanner is currently on. */
   private long lineNumber = 0;
   private long byteOverlap = MyriaConstants.BYTE_OVERLAP_PARALLEL_INGEST;
+  private static final String truncatedQuoteErrorMessage =
+      "EOF reached before encapsulated token finished";
 
   private final boolean isLastWorker;
   private final long maxByteRange;
@@ -200,8 +202,7 @@ public class CSVFileScanFragment extends LeafOperator {
          * FIX ME: If we hit an exception for a malformed row (in case of quotes for example), we mark this as the last
          * row
          */
-        if (e.getMessage() != null
-            && e.getMessage().contains("EOF reached before encapsulated token finished")) {
+        if (e.getMessage() != null && e.getMessage().contains(truncatedQuoteErrorMessage)) {
           onLastRow = true;
         } else {
           throw e;
@@ -217,8 +218,7 @@ public class CSVFileScanFragment extends LeafOperator {
          * FIX ME: If we hit an exception for a malformed row (in case of quotes for example), we mark
          * nextRecordTruncated as true
          */
-        if (e.getMessage() != null
-            && e.getMessage().contains("EOF reached before encapsulated token finished")) {
+        if (e.getMessage() != null && e.getMessage().contains(truncatedQuoteErrorMessage)) {
           nextRecordTruncated = true;
         } else {
           throw e;
@@ -267,7 +267,7 @@ public class CSVFileScanFragment extends LeafOperator {
            */
           if (finalLineFound) {
             long characterPositionAtBeginningOfRecord =
-                record == null ? 0 : record.getCharacterPosition();
+                (record == null) ? 0 : record.getCharacterPosition();
             InputStream completePartitionStream =
                 source.getInputStream(adjustedStartByteRange, finalBytePositionFound);
             BufferedReader reader =
@@ -284,11 +284,10 @@ public class CSVFileScanFragment extends LeafOperator {
             if (nextRecordTruncated) {
               record = iterator.next();
             }
-            nextRecordTruncated = true;
             finishedReadingLastRow = true;
           } else {
-            byteOverlap *= 2;
             trailingStartByte += byteOverlap;
+            byteOverlap *= 2;
             trailingEndByte += byteOverlap;
           }
         }
