@@ -8,9 +8,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.ByteBuffer;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Iterator;
 
 import javax.annotation.Nullable;
@@ -18,6 +15,7 @@ import javax.annotation.Nullable;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.BooleanUtils;
 
 import com.google.common.base.MoreObjects;
@@ -374,17 +372,16 @@ public class CSVFileScanFragment extends LeafOperator {
     }
   }
 
-  protected ByteBuffer getByteBuffer(final String filename) throws DbException {
-    Preconditions.checkNotNull(filename, "byte[] filename was null");
-    // AmazonS3Source file = new AmazonS3Source(filename, adjustedStartByteRange, adjustedStartByteRange);//??
+  protected ByteBuffer getByteBuffer(final String filename) throws DbException, IOException {
+    Preconditions.checkNotNull(filename, "s3 uri was null");
+    AmazonS3Source file = new AmazonS3Source(filename, null, null);// ??
+    InputStream is = file.getInputStream();
 
     LOGGER.info("filename " + filename);
-    Path path = Paths.get(filename);
-    // LOGGER.info("path " + path.toString());
 
     byte[] data = null;
     try {
-      data = Files.readAllBytes(path);
+      data = IOUtils.toByteArray(is);
     } catch (IOException e) {
       throw new DbException(e);
     }
