@@ -18,6 +18,8 @@ import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.Column;
+import edu.washington.escience.myria.column.builder.ColumnBuilder;
+import edu.washington.escience.myria.column.builder.ColumnFactory;
 import edu.washington.escience.myria.expression.Expression;
 import edu.washington.escience.myria.expression.evaluate.ExpressionOperatorParameter;
 import edu.washington.escience.myria.expression.evaluate.FlatteningGenericEvaluator;
@@ -37,17 +39,20 @@ public class FlatteningApply extends UnaryOperator {
   /**
    * List (possibly empty) of expressions that will be used to create the output.
    */
-  @Nonnull private ImmutableList<Expression> emitExpressions = ImmutableList.of();
+  @Nonnull
+  private ImmutableList<Expression> emitExpressions = ImmutableList.of();
 
   /**
    * One evaluator for each expression in {@link #emitExpressions}.
    */
-  @Nonnull private ImmutableList<FlatteningGenericEvaluator> emitEvaluators = ImmutableList.of();
+  @Nonnull
+  private ImmutableList<FlatteningGenericEvaluator> emitEvaluators = ImmutableList.of();
 
   /**
    * Buffers (single-column) to hold results from evaluators before Cartesian product is applied.
    */
-  @Nonnull private ImmutableList<TupleBuffer> evalResultBuffers = ImmutableList.of();
+  @Nonnull
+  private ImmutableList<TupleBuffer> evalResultBuffers = ImmutableList.of();
 
   /**
    * Buffer to hold finished and in-progress TupleBatches.
@@ -58,7 +63,8 @@ public class FlatteningApply extends UnaryOperator {
    * Indexes of columns from input relation that we should include in the result (with values duplicated for each result
    * in each expression evaluation). Must be an empty set if no columns are to be retained.
    */
-  @Nonnull private ImmutableList<Integer> columnsToKeep = ImmutableList.of();
+  @Nonnull
+  private ImmutableList<Integer> columnsToKeep = ImmutableList.of();
 
   /**
    * @return the {@link #emitExpressions}
@@ -77,8 +83,7 @@ public class FlatteningApply extends UnaryOperator {
   /**
    * The logger for debug, trace, etc. messages in this class.
    */
-  private static final org.slf4j.Logger LOGGER =
-      org.slf4j.LoggerFactory.getLogger(FlatteningApply.class);
+  private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(FlatteningApply.class);
 
   /**
    *
@@ -86,9 +91,7 @@ public class FlatteningApply extends UnaryOperator {
    * @param emitExpressions expression that created the output
    * @param columnsToKeep indexes of columns to keep from input relation
    */
-  public FlatteningApply(
-      final Operator child,
-      @Nonnull final List<Expression> emitExpressions,
+  public FlatteningApply(final Operator child, @Nonnull final List<Expression> emitExpressions,
       final List<Integer> columnsToKeep) {
     super(child);
     Preconditions.checkNotNull(emitExpressions);
@@ -118,9 +121,7 @@ public class FlatteningApply extends UnaryOperator {
   private void setColumnsToKeep(final List<Integer> columnsToKeep) {
     if (columnsToKeep != null) {
       boolean sorted = Ordering.natural().isStrictlyOrdered(columnsToKeep);
-      Preconditions.checkArgument(
-          sorted,
-          "List of retained columns {} must be sorted and contain no duplicates.",
+      Preconditions.checkArgument(sorted, "List of retained columns {} must be sorted and contain no duplicates.",
           columnsToKeep);
       this.columnsToKeep = ImmutableList.copyOf(columnsToKeep);
     }
@@ -135,12 +136,9 @@ public class FlatteningApply extends UnaryOperator {
       if (inputTuples != null) {
         // Evaluate expressions on each column and store counts and results.
         List<Column<?>> resultCountColumns = Lists.newLinkedList();
-        for (final ListIterator<FlatteningGenericEvaluator> it = emitEvaluators.listIterator();
-            it.hasNext();
-            ) {
+        for (final ListIterator<FlatteningGenericEvaluator> it = emitEvaluators.listIterator(); it.hasNext();) {
           final FlatteningGenericEvaluator evaluator = it.next();
-          Column<?> counts =
-              evaluator.evaluateColumn(inputTuples, evalResultBuffers.get(it.previousIndex()));
+          Column<?> counts = evaluator.evaluateColumn(inputTuples, evalResultBuffers.get(it.previousIndex()));
           resultCountColumns.add(counts);
         }
 
@@ -171,14 +169,22 @@ public class FlatteningApply extends UnaryOperator {
               for (int iteratorIdx = 0; iteratorIdx < iteratorIndexes.length; ++iteratorIdx) {
                 int outputColIdx = columnsToKeep.size() + iteratorIdx;
                 int resultRowIdx = lastCumResultCounts[iteratorIdx] + iteratorIndexes[iteratorIdx];
-                outputBuffer.appendFromColumn(
-                    outputColIdx, evalResultBuffers.get(iteratorIdx).asColumn(0), resultRowIdx);
+
+                outputBuffer.appendFromColumn(outputColIdx, evalResultBuffers.get(iteratorIdx).asColumn(0),
+                    resultRowIdx);
+                ColumnBuilder<?> countIdx = ColumnFactory.allocateColumn(Type.INT_TYPE);
+                for (int i = 0; i < resultCounts[iteratorIdx]; i++) {
+                  countIdx.appendInt(i);
+                }
+                countIdx.build();
+                outputBuffer.appendFromColumn(outputColIdx + 1, countIdx, resultRowIdx);
+
               }
+
               // Duplicate the values of all columns we are keeping from the original relation in this row.
               int colIdx = 0;
               for (int colKeepIdx : columnsToKeep) {
-                TupleUtils.copyValue(
-                    inputTuples.asColumn(colKeepIdx), rowIdx, outputBuffer, colIdx++);
+                TupleUtils.copyValue(inputTuples.asColumn(colKeepIdx), rowIdx, outputBuffer, colIdx++);
               }
             } while (!computeNextCombination(resultCounts, iteratorIndexes));
           }
@@ -235,14 +241,12 @@ public class FlatteningApply extends UnaryOperator {
 
     ImmutableList.Builder<FlatteningGenericEvaluator> evalBuilder = ImmutableList.builder();
     ImmutableList.Builder<TupleBuffer> evalResultBuilder = ImmutableList.builder();
-    final ExpressionOperatorParameter parameters =
-        new ExpressionOperatorParameter(inputSchema, getNodeID());
+    final ExpressionOperatorParameter parameters = new ExpressionOperatorParameter(inputSchema, getNodeID());
     for (Expression expr : emitExpressions) {
       FlatteningGenericEvaluator evaluator;
       if (expr.isRegisteredUDF()) {
 
-        evaluator =
-            new PythonUDFFlatteningEvaluator(expr, parameters, getPythonFunctionRegistrar());
+        evaluator = new PythonUDFFlatteningEvaluator(expr, parameters, getPythonFunctionRegistrar());
       } else {
         evaluator = new FlatteningGenericEvaluator(expr, parameters);
       }
@@ -251,8 +255,7 @@ public class FlatteningApply extends UnaryOperator {
       }
       Preconditions.checkArgument(!evaluator.needsState());
       evalBuilder.add(evaluator);
-      evalResultBuilder.add(
-          new TupleBuffer(Schema.ofFields(expr.getOutputName(), expr.getOutputType(parameters))));
+      evalResultBuilder.add(new TupleBuffer(Schema.ofFields(expr.getOutputName(), expr.getOutputType(parameters))));
     }
     emitEvaluators = evalBuilder.build();
     evalResultBuffers = evalResultBuilder.build();
