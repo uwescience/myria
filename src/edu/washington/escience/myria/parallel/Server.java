@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -31,6 +32,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.inject.Inject;
 
+import org.apache.commons.httpclient.URIException;
 import org.apache.commons.lang.text.StrSubstitutor;
 import org.apache.reef.tang.Configuration;
 import org.apache.reef.tang.Injector;
@@ -84,9 +86,11 @@ import edu.washington.escience.myria.expression.Expression;
 import edu.washington.escience.myria.expression.MinusExpression;
 import edu.washington.escience.myria.expression.VariableExpression;
 import edu.washington.escience.myria.expression.WorkerIdExpression;
+import edu.washington.escience.myria.io.AmazonS3Source;
 import edu.washington.escience.myria.io.DataSink;
 import edu.washington.escience.myria.io.UriSink;
 import edu.washington.escience.myria.operator.Apply;
+import edu.washington.escience.myria.operator.CSVFileScanFragment;
 import edu.washington.escience.myria.operator.DataOutput;
 import edu.washington.escience.myria.operator.DbCreateIndex;
 import edu.washington.escience.myria.operator.DbCreateView;
@@ -918,8 +922,104 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
   }
 
   /**
-   * @param relationKey the relationalKey of the dataset to add
-   * @param schema the schema of the dataset to add
+   * Parallel Ingest
+   *
+   * @param relationKey the name of the dataset.
+   * @param workersToIngest restrict the workers to ingest data (null for all)
+   * @throws URIException
+   * @throws DbException
+   * @throws InterruptedException
+   */
+  public DatasetStatus parallelIngestDataset(
+      final RelationKey relationKey,
+      final Schema schema,
+      @Nullable final Character delimiter,
+      @Nullable final Character quote,
+      @Nullable final Character escape,
+      @Nullable final Integer numberOfSkippedLines,
+      final AmazonS3Source s3Source,
+      final Set<Integer> workersToIngest,
+      final PartitionFunction partitionFunction)
+      throws URIException, DbException, InterruptedException {
+    /* Figure out the workers we will use */
+    Set<Integer> actualWorkers = workersToIngest;
+    long fileSize = s3Source.getFileSize();
+
+    /* Determine the number of workers to ingest and the partition size */
+    long partitionSize = 0;
+    int[] workersArray;
+
+    if (workersToIngest == null) {
+      int[] allWorkers = MyriaUtils.integerSetToIntArray(getAliveWorkers());
+      int totalNumberOfWorkersToIngest = 0;
+      for (int i = allWorkers.length; i >= 1; i--) {
+        totalNumberOfWorkersToIngest = i;
+        long currentPartitionSize = fileSize / i;
+        if (currentPartitionSize > MyriaConstants.WORKER_PARALLEL_INGEST_MINIMUM_PARTITION_SIZE
+            || totalNumberOfWorkersToIngest == 1) {
+          partitionSize = currentPartitionSize;
+          break;
+        }
+      }
+      workersArray = Arrays.copyOfRange(allWorkers, 0, totalNumberOfWorkersToIngest);
+    } else {
+      Preconditions.checkArgument(actualWorkers.size() > 0, "Must use > 0 workers");
+      workersArray = MyriaUtils.integerSetToIntArray(actualWorkers);
+      partitionSize = fileSize / workersArray.length;
+    }
+    Map<Integer, SubQueryPlan> workerPlans = new HashMap<>();
+    for (int workerID = 1; workerID <= workersArray.length; workerID++) {
+      boolean isLastWorker = workerID == workersArray.length;
+      long startRange = partitionSize * (workerID - 1);
+      long endRange;
+      if (isLastWorker) {
+        endRange = fileSize - 1;
+      } else {
+        endRange = (partitionSize * workerID) - 1;
+      }
+
+      CSVFileScanFragment scanFragment =
+          new CSVFileScanFragment(
+              s3Source,
+              schema,
+              startRange,
+              endRange,
+              isLastWorker,
+              delimiter,
+              quote,
+              escape,
+              numberOfSkippedLines);
+      workerPlans.put(
+          workersArray[workerID - 1],
+          new SubQueryPlan(new DbInsert(scanFragment, relationKey, true)));
+    }
+
+    ListenableFuture<Query> qf;
+    try {
+      qf =
+          queryManager.submitQuery(
+              "ingest " + relationKey.toString(),
+              "ingest " + relationKey.toString(),
+              "ingest " + relationKey.toString(getDBMS()),
+              new SubQueryPlan(new SinkRoot(new EOSSource())),
+              workerPlans);
+    } catch (CatalogException e) {
+      throw new DbException("Error submitting query", e);
+    }
+
+    try {
+      qf.get();
+    } catch (ExecutionException e) {
+      throw new DbException("Error executing query", e.getCause());
+    }
+
+    updateHowPartitioned(relationKey, new HowPartitioned(partitionFunction, workersArray));
+    return getDatasetStatus(relationKey);
+  }
+
+  /**
+   * @param relationKey the relationalKey of the dataset to import
+   * @param schema the schema of the dataset to import
    * @param workersToImportFrom the set of workers
    * @throws DbException if there is an error
    * @throws InterruptedException interrupted

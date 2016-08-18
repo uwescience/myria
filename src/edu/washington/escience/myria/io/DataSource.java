@@ -15,6 +15,7 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 @JsonSubTypes({
   @Type(name = "Bytes", value = ByteArraySource.class),
   @Type(name = "File", value = FileSource.class),
+  @Type(name = "S3", value = AmazonS3Source.class),
   @Type(name = "URI", value = UriSource.class),
   @Type(name = "Empty", value = EmptySource.class)
 })

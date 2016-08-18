@@ -1,40 +1,10 @@
 package edu.washington.escience.myria.api;
 
-import com.google.common.base.MoreObjects;
-import com.google.common.base.Preconditions;
-import com.wordnik.swagger.annotations.Api;
-import com.wordnik.swagger.annotations.ApiOperation;
-import com.wordnik.swagger.annotations.ApiResponse;
-import com.wordnik.swagger.annotations.ApiResponses;
-import edu.washington.escience.myria.CsvTupleWriter;
-import edu.washington.escience.myria.DbException;
-import edu.washington.escience.myria.JsonTupleWriter;
-import edu.washington.escience.myria.RelationKey;
-import edu.washington.escience.myria.Schema;
-import edu.washington.escience.myria.TupleWriter;
-import edu.washington.escience.myria.accessmethod.AccessMethod.IndexRef;
-import edu.washington.escience.myria.api.encoding.CreateFunctionEncoding;
-import edu.washington.escience.myria.api.encoding.CreateIndexEncoding;
-import edu.washington.escience.myria.api.encoding.CreateViewEncoding;
-import edu.washington.escience.myria.api.encoding.DatasetEncoding;
-import edu.washington.escience.myria.api.encoding.DatasetStatus;
-import edu.washington.escience.myria.api.encoding.TipsyDatasetEncoding;
-import edu.washington.escience.myria.coordinator.CatalogException;
-import edu.washington.escience.myria.io.InputStreamSource;
-import edu.washington.escience.myria.io.PipeSink;
-import edu.washington.escience.myria.operator.BinaryFileScan;
-import edu.washington.escience.myria.operator.FileScan;
-import edu.washington.escience.myria.operator.Operator;
-import edu.washington.escience.myria.operator.TipsyFileScan;
-import edu.washington.escience.myria.operator.network.partition.HowPartitioned;
-import edu.washington.escience.myria.operator.network.partition.PartitionFunction;
-import edu.washington.escience.myria.operator.network.partition.RoundRobinPartitionFunction;
-import edu.washington.escience.myria.parallel.Server;
-import edu.washington.escience.myria.storage.TupleBatch;
-import org.apache.commons.httpclient.HttpStatus;
-import org.glassfish.jersey.media.multipart.ContentDisposition;
-import org.glassfish.jersey.media.multipart.FormDataParam;
-import org.slf4j.LoggerFactory;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URI;
+import java.util.List;
+import java.util.Set;
 
 import javax.annotation.Nonnull;
 import javax.ws.rs.Consumes;
@@ -53,11 +23,46 @@ import javax.ws.rs.core.Response.ResponseBuilder;
 import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.core.UriBuilder;
 import javax.ws.rs.core.UriInfo;
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.URI;
-import java.util.List;
-import java.util.Set;
+
+import org.apache.commons.httpclient.HttpStatus;
+import org.apache.commons.httpclient.URIException;
+import org.glassfish.jersey.media.multipart.ContentDisposition;
+import org.glassfish.jersey.media.multipart.FormDataParam;
+import org.slf4j.LoggerFactory;
+
+import com.google.common.base.MoreObjects;
+import com.google.common.base.Preconditions;
+import com.wordnik.swagger.annotations.Api;
+import com.wordnik.swagger.annotations.ApiOperation;
+import com.wordnik.swagger.annotations.ApiResponse;
+import com.wordnik.swagger.annotations.ApiResponses;
+
+import edu.washington.escience.myria.CsvTupleWriter;
+import edu.washington.escience.myria.DbException;
+import edu.washington.escience.myria.JsonTupleWriter;
+import edu.washington.escience.myria.RelationKey;
+import edu.washington.escience.myria.Schema;
+import edu.washington.escience.myria.TupleWriter;
+import edu.washington.escience.myria.accessmethod.AccessMethod.IndexRef;
+import edu.washington.escience.myria.api.encoding.CreateFunctionEncoding;
+import edu.washington.escience.myria.api.encoding.CreateIndexEncoding;
+import edu.washington.escience.myria.api.encoding.CreateViewEncoding;
+import edu.washington.escience.myria.api.encoding.DatasetEncoding;
+import edu.washington.escience.myria.api.encoding.DatasetStatus;
+import edu.washington.escience.myria.api.encoding.ParallelDatasetEncoding;
+import edu.washington.escience.myria.api.encoding.TipsyDatasetEncoding;
+import edu.washington.escience.myria.coordinator.CatalogException;
+import edu.washington.escience.myria.io.InputStreamSource;
+import edu.washington.escience.myria.io.PipeSink;
+import edu.washington.escience.myria.operator.BinaryFileScan;
+import edu.washington.escience.myria.operator.FileScan;
+import edu.washington.escience.myria.operator.Operator;
+import edu.washington.escience.myria.operator.TipsyFileScan;
+import edu.washington.escience.myria.operator.network.partition.HowPartitioned;
+import edu.washington.escience.myria.operator.network.partition.PartitionFunction;
+import edu.washington.escience.myria.operator.network.partition.RoundRobinPartitionFunction;
+import edu.washington.escience.myria.parallel.Server;
+import edu.washington.escience.myria.storage.TupleBatch;
 
 /**
  * This is the class that handles API calls to create or fetch datasets.
@@ -619,7 +624,41 @@ public final class DatasetResource {
   }
 
   /**
-   * @param dataset the dataset to be added.
+   * Ingests a dataset from S3 in parallel
+   *
+   * @param dataset the dataset to be ingested.
+   * @return the created dataset resource.
+   * @throws DbException if there is an error in the database.
+   * @throws InterruptedException
+   * @throws URIException
+   */
+  @POST
+  @Path("/parallelIngest")
+  @Consumes(MediaType.APPLICATION_JSON)
+  public Response parallelIngest(final ParallelDatasetEncoding dataset)
+      throws DbException, URIException, InterruptedException {
+    dataset.validate();
+    DatasetStatus status =
+        server.parallelIngestDataset(
+            dataset.relationKey,
+            dataset.schema,
+            dataset.delimiter,
+            dataset.quote,
+            dataset.escape,
+            dataset.numberOfSkippedLines,
+            dataset.s3Source,
+            dataset.workers,
+            dataset.partitionFunction);
+
+    /* In the response, tell the client the path to the relation. */
+    URI datasetUri = getCanonicalResourcePath(uriInfo, dataset.relationKey);
+    status.setUri(datasetUri);
+    ResponseBuilder builder = Response.created(datasetUri);
+    return builder.entity(status).build();
+  }
+
+  /**
+   * @param dataset the dataset to be imported.
    * @param uriInfo information about the current URL.
    * @return created dataset resource.
    * @throws DbException if there is an error in the database.
