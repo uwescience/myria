@@ -36,13 +36,13 @@ def main(infile, outfile):
             retval = func(tup)
             if(isFlatmap>0):
                 count = len(retval)
-                print "count of tuples returned: " + str(count)
+                print count
                 write_int(count)
                 for i in range(count):
                     write_with_length(retval[i],outfile, outputType,pickleSer)
             else:
                 write_with_length(retval, outfile, outputType, pickleSer)
-                
+
             outfile.flush()
 
 
