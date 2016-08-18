@@ -18,8 +18,6 @@ import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.Column;
-import edu.washington.escience.myria.column.builder.ColumnBuilder;
-import edu.washington.escience.myria.column.builder.ColumnFactory;
 import edu.washington.escience.myria.expression.Expression;
 import edu.washington.escience.myria.expression.evaluate.ExpressionOperatorParameter;
 import edu.washington.escience.myria.expression.evaluate.FlatteningGenericEvaluator;
@@ -147,6 +145,11 @@ public class FlatteningApply extends UnaryOperator {
         int[] lastCumResultCounts = new int[emitEvaluators.size()];
         int[] iteratorIndexes = new int[emitEvaluators.size()];
 
+        List<Type> types = Lists.newLinkedList();
+        types.add(Type.INT_TYPE);
+        List<String> names = ImmutableList.of("flatmapid");
+        Schema countIdxSchema = new Schema(types, names);
+
         for (int rowIdx = 0; rowIdx < inputTuples.numTuples(); ++rowIdx) {
           // First, get all result counts for this row.
           boolean emptyProduct = false;
@@ -169,15 +172,18 @@ public class FlatteningApply extends UnaryOperator {
               for (int iteratorIdx = 0; iteratorIdx < iteratorIndexes.length; ++iteratorIdx) {
                 int outputColIdx = columnsToKeep.size() + iteratorIdx;
                 int resultRowIdx = lastCumResultCounts[iteratorIdx] + iteratorIndexes[iteratorIdx];
+                LOGGER.info("resultRowIdx " + resultRowIdx);
+                LOGGER.info("iteratorIdx :" + iteratorIdx);
 
                 outputBuffer.appendFromColumn(outputColIdx, evalResultBuffers.get(iteratorIdx).asColumn(0),
                     resultRowIdx);
-                ColumnBuilder<?> countIdx = ColumnFactory.allocateColumn(Type.INT_TYPE);
+                TupleBuffer countIdx = new TupleBuffer(countIdxSchema);
+
                 for (int i = 0; i < resultCounts[iteratorIdx]; i++) {
-                  countIdx.appendInt(i);
+                  countIdx.putInt(0, i);
                 }
-                countIdx.build();
-                outputBuffer.appendFromColumn(outputColIdx + 1, countIdx, resultRowIdx);
+
+                outputBuffer.appendFromColumn(outputColIdx + 1, countIdx.asColumn(0), resultRowIdx);
 
               }
 
@@ -282,7 +288,10 @@ public class FlatteningApply extends UnaryOperator {
     }
     for (Expression expr : emitExpressions) {
       typesBuilder.add(expr.getOutputType(new ExpressionOperatorParameter(inputSchema)));
+      typesBuilder.add(Type.INT_TYPE);
       namesBuilder.add(expr.getOutputName());
+      namesBuilder.add("flatmapid");
+
     }
     return new Schema(typesBuilder.build(), namesBuilder.build());
   }
