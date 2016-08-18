@@ -25,6 +25,7 @@ import javax.ws.rs.core.UriBuilder;
 import javax.ws.rs.core.UriInfo;
 
 import org.apache.commons.httpclient.HttpStatus;
+import org.apache.commons.httpclient.URIException;
 import org.glassfish.jersey.media.multipart.ContentDisposition;
 import org.glassfish.jersey.media.multipart.FormDataParam;
 import org.slf4j.LoggerFactory;
@@ -47,6 +48,7 @@ import edu.washington.escience.myria.api.encoding.CreateIndexEncoding;
 import edu.washington.escience.myria.api.encoding.CreateViewEncoding;
 import edu.washington.escience.myria.api.encoding.DatasetEncoding;
 import edu.washington.escience.myria.api.encoding.DatasetStatus;
+import edu.washington.escience.myria.api.encoding.ParallelDatasetEncoding;
 import edu.washington.escience.myria.api.encoding.TipsyDatasetEncoding;
 import edu.washington.escience.myria.coordinator.CatalogException;
 import edu.washington.escience.myria.io.InputStreamSource;
@@ -713,6 +715,44 @@ public final class DatasetResource {
       status.setUri(getCanonicalResourcePath(uriInfo, status.getRelationKey()));
     }
     return datasets;
+  }
+
+  /*
+   * Ingests a dataset from S3 in parallel
+   *
+   * @param dataset the dataset to be ingested.
+   *
+   * @return the created dataset resource.
+   *
+   * @throws DbException if there is an error in the database.
+   *
+   * @throws InterruptedException
+   *
+   * @throws URIException
+   */
+  @POST
+  @Path("/parallelIngest")
+  @Consumes(MediaType.APPLICATION_JSON)
+  public Response parallelIngest(final ParallelDatasetEncoding dataset)
+      throws DbException, URIException, InterruptedException {
+    dataset.validate();
+    DatasetStatus status =
+        server.parallelIngestDataset(
+            dataset.relationKey,
+            dataset.schema,
+            dataset.delimiter,
+            dataset.quote,
+            dataset.escape,
+            dataset.numberOfSkippedLines,
+            dataset.s3Source,
+            dataset.workers,
+            dataset.partitionFunction);
+
+    /* In the response, tell the client the path to the relation. */
+    URI datasetUri = getCanonicalResourcePath(uriInfo, dataset.relationKey);
+    status.setUri(datasetUri);
+    ResponseBuilder builder = Response.created(datasetUri);
+    return builder.entity(status).build();
   }
 
   /**

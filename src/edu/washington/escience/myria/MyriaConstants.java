@@ -367,4 +367,8 @@ public final class MyriaConstants {
    * Python worker module
    */
   public static final String PYTHONWORKER = "MyriaPythonWorker.worker";
+  /** Number of bytes per worker partition for parallel ingest - 100MB */
+  public static final long WORKER_PARALLEL_INGEST_MINIMUM_PARTITION_SIZE = 100 * MB;
+  /** Byte overlap range for parallel ingest **/
+  public static final long BYTE_OVERLAP_PARALLEL_INGEST = 16 * KB;
 }
