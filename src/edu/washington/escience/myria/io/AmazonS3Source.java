@@ -14,7 +14,8 @@ import javax.annotation.concurrent.NotThreadSafe;
 import org.apache.commons.httpclient.URIException;
 
 import com.amazonaws.ClientConfiguration;
-import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
+import com.amazonaws.auth.AnonymousAWSCredentials;
+// import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.GetObjectRequest;
 import com.fasterxml.jackson.annotation.JsonCreator;
@@ -30,8 +31,7 @@ public class AmazonS3Source implements DataSource, Serializable {
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
   /** The logger for debug, trace, etc. messages in this class. */
-  private static final org.slf4j.Logger LOGGER =
-      org.slf4j.LoggerFactory.getLogger(AmazonS3Source.class);
+  private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(AmazonS3Source.class);
 
   private final URI s3Uri;
   private transient ClientConfiguration clientConfig;
@@ -47,10 +47,8 @@ public class AmazonS3Source implements DataSource, Serializable {
   private Long fileSize;
 
   @JsonCreator
-  public AmazonS3Source(
-      @JsonProperty(value = "s3Uri", required = true) final String uri,
-      @JsonProperty(value = "startRange") final Long startRange,
-      @JsonProperty(value = "endRange") final Long endRange)
+  public AmazonS3Source(@JsonProperty(value = "s3Uri", required = true) final String uri,
+      @JsonProperty(value = "startRange") final Long startRange, @JsonProperty(value = "endRange") final Long endRange)
       throws URIException {
     s3Uri = URI.create(Objects.requireNonNull(uri, "Parameter uri to UriSource may not be null"));
     if (!s3Uri.getScheme().equals("s3")) {
@@ -69,7 +67,7 @@ public class AmazonS3Source implements DataSource, Serializable {
     if (s3Client == null) {
       clientConfig = new ClientConfiguration();
       clientConfig.setMaxErrorRetry(3);
-      s3Client = new AmazonS3Client(new DefaultAWSCredentialsProviderChain());
+      s3Client = new AmazonS3Client(new AnonymousAWSCredentials());
     }
     return s3Client;
   }
