@@ -217,7 +217,8 @@ public class CSVFileScanFragment extends LeafOperator {
            */
           if (finalLineFound) {
             long characterPositionAtBeginningOfRecord = (record == null) ? 0 : record.getCharacterPosition();
-            InputStream completePartitionStream = source.getInputStream(adjustedStartByteRange, finalBytePositionFound);
+            InputStream completePartitionStream = source.getInputStream(adjustedStartByteRange + byteOffset,
+                finalBytePositionFound);
             BufferedReader reader = new BufferedReader(new InputStreamReader(completePartitionStream));
             reader.skip(characterPositionAtBeginningOfRecord);
             parser = new CSVParser(reader, CSVFormat.newFormat(delimiter).withQuote(quote).withEscape(escape), 0, 0);
@@ -241,6 +242,8 @@ public class CSVFileScanFragment extends LeafOperator {
        * If we're on the last row, we check if we've finished reading the row completely.
        */
       if (!onLastRow || (onLastRow && finishedReadingLastRow)) {
+        LOGGER.warn(record.toString());
+        LOGGER.warn("" + onLastRow);
         for (int column = 0; column < schema.numColumns(); ++column) {
           String cell = record.get(column);
           try {
@@ -273,6 +276,7 @@ public class CSVFileScanFragment extends LeafOperator {
               case BYTES_TYPE:
                 buffer.putByteBuffer(column, getByteBuffer(cell)); // read filename
                 break;
+
             }
           } catch (final IllegalArgumentException e) {
             throw new DbException("Error parsing column " + column + " of row " + lineNumber + ", expected type: "
@@ -287,6 +291,7 @@ public class CSVFileScanFragment extends LeafOperator {
         }
       }
       LOGGER.debug("Scanned {} input lines", lineNumber - lineNumberBegin);
+
     }
     return buffer.popAny();
   }
@@ -303,6 +308,8 @@ public class CSVFileScanFragment extends LeafOperator {
   protected Schema generateSchema() {
     return schema;
   }
+
+  int byteOffset = 0;
 
   @Override
   protected void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
@@ -327,7 +334,7 @@ public class CSVFileScanFragment extends LeafOperator {
        */
       if (partitionStartByteRange != 0) {
         int firstChar = partitionInputStream.read();
-        int byteOffset = 1;
+        byteOffset = 1;
         if (firstChar != '\n' && firstChar != '\r') {
           boolean newLineFound = false;
           while (!newLineFound) {
