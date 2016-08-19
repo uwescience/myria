@@ -66,6 +66,7 @@ public class CSVFileScanFragment extends LeafOperator {
   private final long partitionEndByteRange;
 
   private long adjustedStartByteRange;
+  private int byteOffsetFromTruncatedRowAtStart = 0;
   private InputStream partitionInputStream;
   private CSVRecord record;
   private boolean onLastRow;
@@ -269,7 +270,9 @@ public class CSVFileScanFragment extends LeafOperator {
             long characterPositionAtBeginningOfRecord =
                 (record == null) ? 0 : record.getCharacterPosition();
             InputStream completePartitionStream =
-                source.getInputStream(adjustedStartByteRange, finalBytePositionFound);
+                source.getInputStream(
+                    adjustedStartByteRange + byteOffsetFromTruncatedRowAtStart,
+                    finalBytePositionFound);
             BufferedReader reader =
                 new BufferedReader(new InputStreamReader(completePartitionStream));
             reader.skip(characterPositionAtBeginningOfRecord);
@@ -390,12 +393,13 @@ public class CSVFileScanFragment extends LeafOperator {
        */
       if (partitionStartByteRange != 0) {
         int firstChar = partitionInputStream.read();
-        int byteOffset = 1;
+        byteOffsetFromTruncatedRowAtStart = 1;
+
         if (firstChar != '\n' && firstChar != '\r') {
           boolean newLineFound = false;
           while (!newLineFound) {
             int currentChar = partitionInputStream.read();
-            byteOffset++;
+            byteOffsetFromTruncatedRowAtStart++;
             if (currentChar == '\n' || currentChar == '\r' || currentChar == -1) {
               newLineFound = true;
               /*
@@ -406,19 +410,26 @@ public class CSVFileScanFragment extends LeafOperator {
                 flagAsIncomplete = true;
               } else if (currentChar == '\r') {
                 currentChar = partitionInputStream.read();
+                byteOffsetFromTruncatedRowAtStart++;
                 if (currentChar != '\n') {
+                  byteOffsetFromTruncatedRowAtStart--;
                   partitionInputStream =
                       source.getInputStream(
-                          adjustedStartByteRange + byteOffset, partitionEndByteRange);
+                          adjustedStartByteRange + byteOffsetFromTruncatedRowAtStart,
+                          partitionEndByteRange);
                 }
               }
             }
           }
         } else if (firstChar == '\r') {
           int currentChar = partitionInputStream.read();
+          byteOffsetFromTruncatedRowAtStart++;
           if (currentChar != '\n') {
+            byteOffsetFromTruncatedRowAtStart--;
             partitionInputStream =
-                source.getInputStream(adjustedStartByteRange + byteOffset, partitionEndByteRange);
+                source.getInputStream(
+                    adjustedStartByteRange + byteOffsetFromTruncatedRowAtStart,
+                    partitionEndByteRange);
           }
         }
       }
@@ -430,6 +441,23 @@ public class CSVFileScanFragment extends LeafOperator {
                 new BufferedReader(new InputStreamReader(partitionInputStream)),
                 CSVFormat.newFormat(delimiter).withQuote(quote).withEscape(escape));
         iterator = parser.iterator();
+
+        try {
+          if (!iterator.hasNext()) {
+            flagAsIncomplete = true;
+          }
+        } catch (Exception e) {
+          /*
+           * FIX ME: If we hit an exception for a malformed row (in case of quotes for example), we mark this as the
+           * last row
+           */
+          if (e.getMessage() != null && e.getMessage().contains(truncatedQuoteErrorMessage)) {
+            onLastRow = true;
+          } else {
+            throw e;
+          }
+        }
+
         for (int i = 0; i < numberOfSkippedLines; i++) {
           iterator.next();
         }
