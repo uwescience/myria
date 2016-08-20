@@ -33,7 +33,7 @@ import edu.washington.escience.myria.storage.ReadableTable;
 )
 @JsonSubTypes({
   @Type(name = "CSV", value = CsvTupleWriter.class),
-  @Type(name = "Json", value = JsonTupleWriter.class),
+  @Type(name = "JSON", value = JsonTupleWriter.class),
   @Type(name = "PostgresBinary", value = PostgresBinaryTupleWriter.class)
 })
 public interface TupleWriter extends Serializable {
