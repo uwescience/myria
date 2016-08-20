@@ -1,0 +1,122 @@
+/**
+ *
+ */
+package edu.washington.escience.myria.perfenforce;
+
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Arrays;
+import java.util.List;
+
+import org.slf4j.LoggerFactory;
+
+import com.amazonaws.auth.AnonymousAWSCredentials;
+import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.AmazonS3Client;
+import com.amazonaws.services.s3.model.GetObjectRequest;
+
+import edu.washington.escience.myria.DbException;
+import edu.washington.escience.myria.api.encoding.PerfEnforceTableEncoding;
+
+/**
+ * The PerfEnforce Driver
+ *
+ */
+public final class PerfEnforceDriver {
+
+  protected static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(PerfEnforceDriver.class);
+
+  final public static List<Integer> configurations = Arrays.asList(4, 6, 8, 10, 12);
+
+  public static Path configurationPath;
+
+  private boolean isDonePSLA;
+  private PerfEnforceOnlineLearning perfenforceOnlineLearning;
+
+  public PerfEnforceDriver( final String instancePath) {
+    configurationPath = (Paths.get(instancePath, "perfenforce_files"));
+    LOGGER.warn("perf path " + configurationPath);
+    isDonePSLA = false;
+  }
+
+  /*
+   * Fetch necessary files from S3
+   */
+  public void fetchS3Files() throws PerfEnforceException {
+    AmazonS3 s3Client = new AmazonS3Client(new AnonymousAWSCredentials());
+    String currentFile = "";
+    BufferedReader bufferedReader;
+    try {
+      bufferedReader = new BufferedReader(new FileReader(configurationPath + "filesToFetch.txt"));
+      while ((currentFile = bufferedReader.readLine()) != null) {
+        Path filePath = configurationPath.resolve(currentFile);
+        s3Client.getObject(
+            new GetObjectRequest("perfenforce", currentFile), new File(filePath.toString()));
+      }
+      bufferedReader.close();
+    } catch (Exception e) {
+      throw new PerfEnforceException("Error while fetching files from S3");
+    }
+  }
+
+  public void preparePSLA() throws PerfEnforceException, DbException {
+    fetchS3Files();
+
+    PerfEnforceDataPreparation perfenforceDataPrepare = new PerfEnforceDataPreparation();
+    List<PerfEnforceTableEncoding> allTables =
+        PerfEnforceUtils.getTablesOfType(
+            "*", configurationPath.resolve("SchemaDefinition.json").toString());
+    for (PerfEnforceTableEncoding currentTable : allTables) {
+      if (currentTable.type.equalsIgnoreCase("fact")) {
+        perfenforceDataPrepare.ingestFact(currentTable);
+      } else {
+        perfenforceDataPrepare.ingestDimension(currentTable);
+      }
+      perfenforceDataPrepare.setStatisticsAnalyze(currentTable);
+      perfenforceDataPrepare.collectSelectivities(currentTable);
+    }
+
+    PSLAManagerWrapper pslaManager = new PSLAManagerWrapper();
+    pslaManager.generateQueries();
+
+    perfenforceDataPrepare.collectFeaturesFromQueries();
+
+    pslaManager.generatePSLA();
+    isDonePSLA = true;
+  }
+
+  /*
+   * Start the tier and begin the new query session
+   */
+  public boolean isDonePSLA() {
+    return isDonePSLA;
+  }
+
+  public void setTier(final int tier) {
+    perfenforceOnlineLearning = new PerfEnforceOnlineLearning(tier);
+  }
+
+  public void findSLA(final String querySQL) throws PerfEnforceException {
+    perfenforceOnlineLearning.findSLA(querySQL);
+    perfenforceOnlineLearning.findBestClusterSize();
+  }
+
+  public void recordRealRuntime(final Double queryRuntime) throws PerfEnforceException {
+    perfenforceOnlineLearning.recordRealRuntime(queryRuntime);
+  }
+
+  public QueryMetaData getCurrentQuery() {
+    return perfenforceOnlineLearning.getCurrentQuery();
+  }
+
+  public QueryMetaData getPreviousQuery() {
+    return perfenforceOnlineLearning.getPreviousQuery();
+  }
+
+  public int getClusterSize() {
+    return perfenforceOnlineLearning.getClusterSize();
+  }
+}
