@@ -11,6 +11,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.annotation.Nullable;
 import javax.annotation.concurrent.GuardedBy;
 import javax.inject.Inject;
 
@@ -55,7 +56,7 @@ public final class MyriaDriverLauncher {
   private static final Logger LOGGER = LoggerFactory.getLogger(MyriaDriverLauncher.class);
 
   private static final String USAGE_STRING =
-      "Usage: MyriaDriverLauncher [-runtimeClass <runtimeClass>] -configPath <configPath> -javaLibPath <javaLibPath> -nativeLibPath <nativeLibPath>";
+      "Usage: MyriaDriverLauncher [-runtimeClass <runtimeClass>] [-driverDir <driverDir>] -configPath <configPath> -javaLibPath <javaLibPath> -nativeLibPath <nativeLibPath>";
 
   private static final long DRIVER_PING_TIMEOUT_MILLIS = 60 * 1000;
 
@@ -64,10 +65,6 @@ public final class MyriaDriverLauncher {
    * @throws Exception if the Driver can't start.
    */
   public static void main(final String[] args) throws Exception {
-    if (!(args.length == 6 || args.length == 8)) {
-      System.err.println(USAGE_STRING);
-      System.exit(-1);
-    }
     run(args);
   }
 
@@ -111,6 +108,7 @@ public final class MyriaDriverLauncher {
    * @throws IOException
    */
   private final static Configuration getDriverConf(
+      @Nullable final String driverJobSubmissionDirectory,
       final String driverHostName,
       final int driverMemoryMB,
       final String[] libPaths,
@@ -139,6 +137,9 @@ public final class MyriaDriverLauncher {
             .set(DriverConfiguration.ON_CLIENT_MESSAGE, MyriaDriver.ClientMessageHandler.class)
             .set(DriverConfiguration.ON_CLIENT_CLOSED, MyriaDriver.ClientCloseHandler.class);
 
+    if (driverJobSubmissionDirectory != null) {
+      driverConf = driverConf.set(DriverConfiguration.DRIVER_JOB_SUBMISSION_DIRECTORY, driverJobSubmissionDirectory);
+    }
     for (String dirPath : libPaths) {
       for (String filePath : getFileNamesInDirectory(Paths.get(dirPath))) {
         driverConf = driverConf.set(DriverConfiguration.GLOBAL_LIBRARIES, filePath);
@@ -226,20 +227,22 @@ public final class MyriaDriverLauncher {
    * @throws IllegalArgumentException
    * @throws ClassNotFoundException
    */
+  @SuppressWarnings("unchecked")
   public static LauncherStatus run(final String[] args)
       throws InjectionException, IOException, ParseException, ConfigFileException,
           ClassNotFoundException, IllegalArgumentException, IllegalAccessException,
           NoSuchFieldException, SecurityException {
     final Tang tang = Tang.Factory.getTang();
-    @SuppressWarnings("unchecked")
-    final Configuration commandLineConf =
-        CommandLine.parseToConfiguration(
-            args, RuntimeClassName.class, ConfigPath.class, JavaLibPath.class, NativeLibPath.class);
+    try {
+      Configuration commandLineConf = CommandLine.parseToConfiguration(
+            args, RuntimeClassName.class, DriverJobSubmissionDirectory.class, ConfigPath.class, JavaLibPath.class, NativeLibPath.class);
     final Injector commandLineInjector = tang.newInjector(commandLineConf);
     final String runtimeClassName = commandLineInjector.getNamedInstance(RuntimeClassName.class);
+    final String driverJobSubmissionDirectory = commandLineInjector.isParameterSet(DriverJobSubmissionDirectory.class) ? commandLineInjector.getNamedInstance(DriverJobSubmissionDirectory.class) : null;
     final String configPath = commandLineInjector.getNamedInstance(ConfigPath.class);
     final String javaLibPath = commandLineInjector.getNamedInstance(JavaLibPath.class);
     final String nativeLibPath = commandLineInjector.getNamedInstance(NativeLibPath.class);
+
     final Configuration globalConf = getMyriaGlobalConf(configPath);
     final String serializedGlobalConf = new AvroConfigurationSerializer().toString(globalConf);
     final Configuration globalConfWrapper =
@@ -251,6 +254,7 @@ public final class MyriaDriverLauncher {
     final Configuration driverConf =
         Configurations.merge(
             getDriverConf(
+                driverJobSubmissionDirectory,
                 driverHostName,
                 driverMemoryMB,
                 new String[] {javaLibPath},
@@ -260,6 +264,10 @@ public final class MyriaDriverLauncher {
     return tang.newInjector(getRuntimeConf(runtimeClassName), getClientConf())
         .getInstance(MyriaDriverLauncher.class)
         .run(driverConf);
+    } catch (ParseException | InjectionException e) {
+      System.err.println(USAGE_STRING);
+      return LauncherStatus.FAILED;
+    }
   }
 
   private LauncherStatus run(final Configuration driverConf) {
@@ -310,6 +318,15 @@ public final class MyriaDriverLauncher {
     default_value = "org.apache.reef.runtime.local.client.LocalRuntimeConfiguration"
   )
   public static final class RuntimeClassName implements Name<String> {}
+
+  /**
+   * Command line parameter: runtime configuration class to use (defaults to local runtime).
+   */
+  @NamedParameter(
+    doc = "Full path of driver job submission directory; must be visible to the driver launcher and the driver",
+    short_name = "driverDir"
+  )
+  public static final class DriverJobSubmissionDirectory implements Name<String> {}
 
   /**
    * Command line parameter: directory containing configuration file on driver launch host.
