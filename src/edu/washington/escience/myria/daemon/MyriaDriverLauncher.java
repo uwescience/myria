@@ -1,20 +1,9 @@
 package edu.washington.escience.myria.daemon;
 
-import java.io.IOException;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.DirectoryStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.List;
-
-import javax.annotation.Nullable;
-import javax.annotation.concurrent.GuardedBy;
-import javax.inject.Inject;
-
+import edu.washington.escience.myria.MyriaConstants;
+import edu.washington.escience.myria.coordinator.ConfigFileException;
+import edu.washington.escience.myria.tools.MyriaConfigurationParser;
+import edu.washington.escience.myria.tools.MyriaGlobalConfigurationModule;
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.reef.client.ClientConfiguration;
@@ -45,18 +34,25 @@ import org.apache.reef.wake.remote.address.LocalAddressProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import edu.washington.escience.myria.MyriaConstants;
-import edu.washington.escience.myria.coordinator.ConfigFileException;
-import edu.washington.escience.myria.tools.MyriaConfigurationParser;
-import edu.washington.escience.myria.tools.MyriaGlobalConfigurationModule;
+import javax.annotation.Nullable;
+import javax.annotation.concurrent.GuardedBy;
+import javax.inject.Inject;
+import java.io.IOException;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.DirectoryStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 @Unit
 public final class MyriaDriverLauncher {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(MyriaDriverLauncher.class);
-
-  private static final String USAGE_STRING =
-      "Usage: MyriaDriverLauncher [-runtimeClass <runtimeClass>] [-driverDir <driverDir>] -configPath <configPath> -javaLibPath <javaLibPath> -nativeLibPath <nativeLibPath>";
 
   private static final long DRIVER_PING_TIMEOUT_MILLIS = 60 * 1000;
 
@@ -65,7 +61,8 @@ public final class MyriaDriverLauncher {
    * @throws Exception if the Driver can't start.
    */
   public static void main(final String[] args) throws Exception {
-    run(args);
+    LauncherStatus run = run(args);
+    LOGGER.info("Exit with status "+run);
   }
 
   private final REEF reef;
@@ -212,10 +209,70 @@ public final class MyriaDriverLauncher {
     return driverMemoryMB;
   }
 
+
+  /**
+   * Prints the expected configuration, compared to the actual configuration given.
+   * Used for logging command line arguments.
+   */
+  private static void logStartupMessage(Class<? extends Name<?>>[] classes, Injector inj) {
+    final StringBuilder sb = new StringBuilder("MyriaDriverLauncher configuration:\n");
+    for (int i = 0; i < classes.length; i++) {
+      final Class<? extends Name<?>> c = classes[i];
+      final NamedParameter annotation = c.getAnnotation(NamedParameter.class);
+
+      final String fullName = c.getName();
+      final String simpleName = c.getSimpleName();
+      final String shortName = annotation.short_name();
+      final String doc = annotation.doc();
+      final String defaultVal;
+      {
+        if (!annotation.default_value().equals(NamedParameter.REEF_UNINITIALIZED_VALUE))
+          defaultVal = annotation.default_value();
+        else if (!annotation.default_class().equals(Void.class))
+          defaultVal = annotation.default_class().getSimpleName();
+        else if (annotation.default_values().length > 0)
+          defaultVal = Arrays.toString(annotation.default_values());
+        else if (annotation.default_classes().length > 0) {
+          Class<?>[] default_classes = annotation.default_classes();
+          String[] sss = new String[default_classes.length];
+          for (int i1 = 0; i1 < default_classes.length; i1++) {
+            sss[i1] = default_classes[i1].getSimpleName();
+          }
+          defaultVal = Arrays.toString(sss);
+        } else
+          defaultVal = "";
+      }
+
+      if (i > 0) sb.append('\n');
+      sb.append(simpleName);
+      if (!shortName.isEmpty())
+        sb.append(" [-").append(shortName).append("]");
+
+//      sb.append(" (").append(expectedParameter.getSimpleArgName()).append("): ")
+      sb.append(": ").append(doc).append("\n -> ");
+
+      boolean ok;
+      try {
+        if ((ok = inj.isParameterSet(fullName)))
+          sb.append(inj.getInstance(fullName).toString());
+      } catch (InjectionException e) {
+        ok = false;
+      }
+      if (!ok)
+        if (!defaultVal.isEmpty())
+          sb.append("[cannot parse; using default] ").append(defaultVal);
+        else
+          sb.append("[cannot parse; no default]");
+    }
+    LOGGER.info(sb.toString());
+  }
+
+
+
+
   /**
    * Launch the Myria driver.
    *
-   * @param runtimeConf The runtime configuration (e.g. Local, YARN, etc)
    * @param args Command line arguments.
    * @throws InjectionException
    * @throws java.io.IOException
@@ -234,9 +291,12 @@ public final class MyriaDriverLauncher {
           NoSuchFieldException, SecurityException {
     final Tang tang = Tang.Factory.getTang();
     try {
-      Configuration commandLineConf = CommandLine.parseToConfiguration(
-            args, RuntimeClassName.class, DriverJobSubmissionDirectory.class, ConfigPath.class, JavaLibPath.class, NativeLibPath.class);
+      final Class<? extends Name<?>>[] commandLineClasses = new Class[] {
+          RuntimeClassName.class, DriverJobSubmissionDirectory.class, ConfigPath.class, JavaLibPath.class, NativeLibPath.class
+      };
+    final Configuration commandLineConf = CommandLine.parseToConfiguration(args, commandLineClasses);
     final Injector commandLineInjector = tang.newInjector(commandLineConf);
+      logStartupMessage(commandLineClasses, commandLineInjector);
     final String runtimeClassName = commandLineInjector.getNamedInstance(RuntimeClassName.class);
     final String driverJobSubmissionDirectory = commandLineInjector.isParameterSet(DriverJobSubmissionDirectory.class) ? commandLineInjector.getNamedInstance(DriverJobSubmissionDirectory.class) : null;
     final String configPath = commandLineInjector.getNamedInstance(ConfigPath.class);
@@ -265,7 +325,7 @@ public final class MyriaDriverLauncher {
         .getInstance(MyriaDriverLauncher.class)
         .run(driverConf);
     } catch (ParseException | InjectionException e) {
-      System.err.println(USAGE_STRING);
+      LOGGER.error("Problem with command line options", e);
       return LauncherStatus.FAILED;
     }
   }
