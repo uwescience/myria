@@ -394,7 +394,6 @@ public class CSVFileScanFragment extends LeafOperator {
       if (partitionStartByteRange != 0) {
         int firstChar = partitionInputStream.read();
         byteOffsetFromTruncatedRowAtStart = 1;
-
         if (firstChar != '\n' && firstChar != '\r') {
           boolean newLineFound = false;
           while (!newLineFound) {
@@ -434,6 +433,10 @@ public class CSVFileScanFragment extends LeafOperator {
         }
       }
 
+      if (adjustedStartByteRange + byteOffsetFromTruncatedRowAtStart - 1 == partitionEndByteRange) {
+        flagAsIncomplete = true;
+      }
+
       /* If the partition is incomplete, do not instantiate the parser */
       if (!flagAsIncomplete) {
         parser =
@@ -442,24 +445,11 @@ public class CSVFileScanFragment extends LeafOperator {
                 CSVFormat.newFormat(delimiter).withQuote(quote).withEscape(escape));
         iterator = parser.iterator();
 
-        try {
-          if (!iterator.hasNext()) {
-            flagAsIncomplete = true;
+        /* FIX ME: For now, we only support cases where the numberOfSkippedLines applies to the first worker */
+        if (partitionStartByteRange == 0) {
+          for (int i = 0; i < numberOfSkippedLines; i++) {
+            iterator.next();
           }
-        } catch (Exception e) {
-          /*
-           * FIX ME: If we hit an exception for a malformed row (in case of quotes for example), we mark this as the
-           * last row
-           */
-          if (e.getMessage() != null && e.getMessage().contains(truncatedQuoteErrorMessage)) {
-            onLastRow = true;
-          } else {
-            throw e;
-          }
-        }
-
-        for (int i = 0; i < numberOfSkippedLines; i++) {
-          iterator.next();
         }
       }
     } catch (IOException e) {
