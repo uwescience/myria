@@ -31,6 +31,7 @@ import edu.washington.escience.myria.operator.Operator;
   @Type(name = "CollectProducer", value = CollectProducerEncoding.class),
   @Type(name = "Consumer", value = ConsumerEncoding.class),
   @Type(name = "Counter", value = CounterEncoding.class),
+  @Type(name = "DataOutput", value = DataOutputEncoding.class),
   @Type(name = "DbInsert", value = DbInsertEncoding.class),
   @Type(name = "DbQueryScan", value = QueryScanEncoding.class),
   @Type(name = "DbCreateIndex", value = CreateIndexEncoding.class),
