@@ -6,7 +6,7 @@ package edu.washington.escience.myria.api.encoding;
 import java.util.List;
 
 /**
- * Stats Table Encoding
+ * Perfenforce Statistics Table Encoding
  */
 public class PerfEnforceStatisticsEncoding {
   @Required public String table_name;

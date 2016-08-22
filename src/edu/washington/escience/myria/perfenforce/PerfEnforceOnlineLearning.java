@@ -15,10 +15,9 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.ws.rs.core.Context;
-
 import org.slf4j.LoggerFactory;
 
+import edu.washington.escience.myria.api.encoding.PerfEnforceQueryMetadataEncoding;
 import edu.washington.escience.myria.parallel.Server;
 
 /**
@@ -26,11 +25,11 @@ import edu.washington.escience.myria.parallel.Server;
  */
 public class PerfEnforceOnlineLearning {
 
-  @Context private Server server;
+  private final Server server;
 
   List<String> previousDataPoints;
-  private QueryMetaData currentQuery;
-  private final QueryMetaData previousQuery;
+  private PerfEnforceQueryMetadataEncoding currentQuery;
+  private final PerfEnforceQueryMetadataEncoding previousQuery;
   private final String onlineLearningPath;
   private final Double[] queryPredictions;
   private int clusterSize;
@@ -39,19 +38,20 @@ public class PerfEnforceOnlineLearning {
   protected static final org.slf4j.Logger LOGGER =
       LoggerFactory.getLogger(PerfEnforceOnlineLearning.class);
 
-  public PerfEnforceOnlineLearning(final int tier) {
+  public PerfEnforceOnlineLearning(final Server server, final int tier) {
     clusterSize = PerfEnforceDriver.configurations.get(tier);
-    currentQuery = new QueryMetaData();
-    previousQuery = new QueryMetaData();
+    currentQuery = new PerfEnforceQueryMetadataEncoding();
+    previousQuery = new PerfEnforceQueryMetadataEncoding();
     queryPredictions = new Double[PerfEnforceDriver.configurations.size()];
     onlineLearningPath =
         Paths.get(PerfEnforceDriver.configurationPath.toString(), "ScalingAlgorithms", "Live")
             .toString();
+    this.server = server;
   }
 
   public void findSLA(final String querySQL) throws PerfEnforceException {
 
-    String highestFeatures = PerfEnforceUtils.getMaxFeature(querySQL, clusterSize);
+    String highestFeatures = PerfEnforceUtils.getMaxFeature(server, querySQL, clusterSize);
 
     try {
       PrintWriter featureWriter =
@@ -106,7 +106,7 @@ public class PerfEnforceOnlineLearning {
       predictionReader.close();
 
       for (int c : PerfEnforceDriver.configurations) {
-        String maxFeatureForConfiguration = PerfEnforceUtils.getMaxFeature(querySQL, c);
+        String maxFeatureForConfiguration = PerfEnforceUtils.getMaxFeature(server, querySQL, c);
         FileWriter featureWriterForConfiguration;
         featureWriterForConfiguration =
             new FileWriter(
@@ -115,7 +115,7 @@ public class PerfEnforceOnlineLearning {
         featureWriterForConfiguration.write(maxFeatureForConfiguration + '\n');
         featureWriterForConfiguration.close();
       }
-      currentQuery = new QueryMetaData(queryCounter, Double.parseDouble(querySLA));
+      currentQuery = new PerfEnforceQueryMetadataEncoding(queryCounter, Double.parseDouble(querySLA));
     } catch (Exception e) {
       throw new PerfEnforceException("Error finding SLA");
     }
@@ -299,11 +299,11 @@ public class PerfEnforceOnlineLearning {
             PerfEnforceDriver.configurations.indexOf(clusterSize), currentQuery.id, queryRuntime));
   }
 
-  public QueryMetaData getPreviousQuery() {
+  public PerfEnforceQueryMetadataEncoding getPreviousQuery() {
     return previousQuery;
   }
 
-  public QueryMetaData getCurrentQuery() {
+  public PerfEnforceQueryMetadataEncoding getCurrentQuery() {
     return currentQuery;
   }
 

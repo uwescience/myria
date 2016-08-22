@@ -19,7 +19,9 @@ import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.GetObjectRequest;
 
 import edu.washington.escience.myria.DbException;
+import edu.washington.escience.myria.api.encoding.PerfEnforceQueryMetadataEncoding;
 import edu.washington.escience.myria.api.encoding.PerfEnforceTableEncoding;
+import edu.washington.escience.myria.parallel.Server;
 
 /**
  * The PerfEnforce Driver
@@ -33,12 +35,13 @@ public final class PerfEnforceDriver {
 
   public static Path configurationPath;
 
+  private final Server server;
   private boolean isDonePSLA;
   private PerfEnforceOnlineLearning perfenforceOnlineLearning;
 
-  public PerfEnforceDriver(final String instancePath) {
+  public PerfEnforceDriver(final Server server, final String instancePath) {
     configurationPath = (Paths.get(instancePath, "perfenforce_files"));
-    LOGGER.warn("perf path " + configurationPath);
+    this.server = server;
     isDonePSLA = false;
   }
 
@@ -69,7 +72,7 @@ public final class PerfEnforceDriver {
       throws PerfEnforceException, DbException, Exception {
     fetchS3Files();
 
-    PerfEnforceDataPreparation perfenforceDataPrepare = new PerfEnforceDataPreparation();
+    PerfEnforceDataPreparation perfenforceDataPrepare = new PerfEnforceDataPreparation(server);
 
     for (PerfEnforceTableEncoding currentTable : tableList) {
       if (currentTable.type.equalsIgnoreCase("fact")) {
@@ -98,7 +101,7 @@ public final class PerfEnforceDriver {
   }
 
   public void setTier(final int tier) {
-    perfenforceOnlineLearning = new PerfEnforceOnlineLearning(tier);
+    perfenforceOnlineLearning = new PerfEnforceOnlineLearning(server, tier);
   }
 
   public void findSLA(final String querySQL) throws PerfEnforceException {
@@ -110,11 +113,11 @@ public final class PerfEnforceDriver {
     perfenforceOnlineLearning.recordRealRuntime(queryRuntime);
   }
 
-  public QueryMetaData getCurrentQuery() {
+  public PerfEnforceQueryMetadataEncoding getCurrentQuery() {
     return perfenforceOnlineLearning.getCurrentQuery();
   }
 
-  public QueryMetaData getPreviousQuery() {
+  public PerfEnforceQueryMetadataEncoding getPreviousQuery() {
     return perfenforceOnlineLearning.getPreviousQuery();
   }
 

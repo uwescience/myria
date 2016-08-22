@@ -14,10 +14,10 @@ import org.glassfish.jersey.media.multipart.FormDataParam;
 import org.slf4j.LoggerFactory;
 
 import edu.washington.escience.myria.DbException;
+import edu.washington.escience.myria.api.encoding.PerfEnforceQueryMetadataEncoding;
 import edu.washington.escience.myria.api.encoding.PerfEnforceTableEncoding;
 import edu.washington.escience.myria.parallel.Server;
 import edu.washington.escience.myria.perfenforce.PerfEnforceException;
-import edu.washington.escience.myria.perfenforce.QueryMetaData;
 
 /**
  * This is the class that handles API calls for PerfEnforce
@@ -79,13 +79,13 @@ public final class PerfEnforceResource {
 
   @GET
   @Path("/getPreviousQuery")
-  public QueryMetaData getPreviousQuery() {
+  public PerfEnforceQueryMetadataEncoding getPreviousQuery() {
     return server.getPerfEnforceDriver().getPreviousQuery();
   }
 
   @GET
   @Path("/getCurrentQuery")
-  public QueryMetaData getCurrentQuery() {
+  public PerfEnforceQueryMetadataEncoding getCurrentQuery() {
     return server.getPerfEnforceDriver().getCurrentQuery();
   }
 }

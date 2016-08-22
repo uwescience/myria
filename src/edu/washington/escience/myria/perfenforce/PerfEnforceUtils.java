@@ -10,8 +10,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import javax.ws.rs.core.Context;
-
 import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
@@ -21,8 +19,6 @@ import edu.washington.escience.myria.parallel.Server;
  * Helper Methods
  */
 public class PerfEnforceUtils {
-
-  @Context private static Server server;
 
   public static Set<Integer> getWorkerRangeSet(final int limit) {
     Set<Integer> seq = new HashSet<Integer>();
@@ -88,7 +84,7 @@ public class PerfEnforceUtils {
     return keySchema;
   }
 
-  public static String getMaxFeature(final String sqlQuery, final int configuration)
+  public static String getMaxFeature(final Server server, final String sqlQuery, final int configuration)
       throws PerfEnforceException {
 
     try {

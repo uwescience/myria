@@ -18,8 +18,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
-import javax.ws.rs.core.Context;
-
 import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -49,7 +47,7 @@ import edu.washington.escience.myria.util.MyriaUtils;
  */
 public class PerfEnforceDataPreparation {
 
-  @Context private Server server;
+  private final Server server;
 
   private HashMap<Integer, RelationKey> factTableRelationMapper;
   private PerfEnforceTableEncoding factTableDescription;
@@ -58,11 +56,17 @@ public class PerfEnforceDataPreparation {
   protected static final org.slf4j.Logger LOGGER =
       LoggerFactory.getLogger(PerfEnforceDataPreparation.class);
 
+
+  public PerfEnforceDataPreparation(final Server server)
+  {
+	  this.server = server;
+  }
+
   /*
    * Ingesting the fact table in a parallel sequence
    */
   public HashMap<Integer, RelationKey> ingestFact(final PerfEnforceTableEncoding factTableDesc)
-      throws PerfEnforceException {
+      throws Exception {
     factTableRelationMapper = new HashMap<Integer, RelationKey>();
 
     ArrayList<RelationKey> relationKeysToUnion = new ArrayList<RelationKey>();
@@ -83,6 +87,7 @@ public class PerfEnforceDataPreparation {
               factTableDesc.relationKey.getUserName(),
               factTableDesc.relationKey.getProgramName(),
               factTableDesc.relationKey.getRelationName() + maxConfig + "_U");
+
       server.parallelIngestDataset(
           relationKeyWithUnion,
           factTableDesc.schema,
@@ -93,6 +98,7 @@ public class PerfEnforceDataPreparation {
           factTableDesc.source,
           maxWorkerRange,
           null);
+
       relationKeysToUnion.add(relationKeyWithUnion);
 
       RelationKey relationKeyOriginal =
@@ -170,7 +176,8 @@ public class PerfEnforceDataPreparation {
       }
       return factTableRelationMapper;
     } catch (Exception e) {
-      throw new PerfEnforceException("Error while ingesting fact table");
+	throw e;
+      //throw new PerfEnforceException("Error while ingesting fact table");
     }
   }
 
@@ -178,7 +185,7 @@ public class PerfEnforceDataPreparation {
    * Ingesting dimension tables for broadcasting
    */
   public void ingestDimension(final PerfEnforceTableEncoding dimTableDesc)
-      throws PerfEnforceException {
+      throws Exception {
 
     Set<Integer> totalWorkers =
         PerfEnforceUtils.getWorkerRangeSet(Collections.max(PerfEnforceDriver.configurations));
@@ -226,7 +233,8 @@ public class PerfEnforceDataPreparation {
 
       server.submitQueryPlan(new SinkRoot(new EOSSource()), workerPlans).get();
     } catch (Exception e) {
-      throw new PerfEnforceException("Error ingesting dimension tables");
+	throw e;
+      //throw new PerfEnforceException("Error ingesting dimension tables");
     }
   }
 
@@ -394,7 +402,7 @@ public class PerfEnforceDataPreparation {
                   factTableDescription.relationKey.getRelationName(),
                   factTableRelationMapper.get(config).getRelationName());
           String explainQuery = "EXPLAIN " + currentLine;
-          String features = PerfEnforceUtils.getMaxFeature(explainQuery, config);
+          String features = PerfEnforceUtils.getMaxFeature(server,explainQuery, config);
           featureWriter.write(features + "\n");
         }
         featureWriter.close();
