@@ -38,8 +38,7 @@ import edu.washington.escience.myria.storage.TupleBatch;
 public class PythonUDFEvaluator extends GenericEvaluator {
 
   /** logger for this class. */
-  private static final org.slf4j.Logger LOGGER =
-      org.slf4j.LoggerFactory.getLogger(PythonUDFEvaluator.class);
+  private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(PythonUDFEvaluator.class);
 
   private final PythonFunctionRegistrar pyFunction;
 
@@ -63,9 +62,7 @@ public class PythonUDFEvaluator extends GenericEvaluator {
    * @param parameters parameters that are passed to the expression
    * @param pyFuncReg python function registrar to get the python function.
    */
-  public PythonUDFEvaluator(
-      final Expression expression,
-      final ExpressionOperatorParameter parameters,
+  public PythonUDFEvaluator(final Expression expression, final ExpressionOperatorParameter parameters,
       final PythonFunctionRegistrar pyFuncReg) {
     super(expression, parameters);
 
@@ -78,6 +75,7 @@ public class PythonUDFEvaluator extends GenericEvaluator {
       pyFunction = null;
     }
     if (parameters.getStateSchema() != null) {
+
       needsState = true;
     }
     PyUDFExpression op = (PyUDFExpression) expression.getRootExpressionOperator();
@@ -143,16 +141,12 @@ public class PythonUDFEvaluator extends GenericEvaluator {
    */
   @Override
   public void compile() {
-    // LOGGER.info("this should be called when compiling!");
+    LOGGER.info("this should be called when compiling!");
     /* Do nothing! */
   }
 
   @Override
-  public void eval(
-      final ReadableTable tb,
-      final int rowIdx,
-      final WritableColumn result,
-      final ReadableTable state)
+  public void eval(final ReadableTable tb, final int rowIdx, final WritableColumn result, final ReadableTable state)
       throws DbException {
     Object obj = evaluatePython(tb, rowIdx, state);
     if (obj == null) {
@@ -192,12 +186,8 @@ public class PythonUDFEvaluator extends GenericEvaluator {
    * @param state - state for aggregator functions
    * @throws DbException
    */
-  public void evalUpdatePyExpression(
-      final ReadableTable tb,
-      final int rowIdx,
-      final AppendableTable result,
-      final ReadableTable state)
-      throws DbException {
+  public void evalUpdatePyExpression(final ReadableTable tb, final int rowIdx, final AppendableTable result,
+      final ReadableTable state) throws DbException {
 
     Object obj = evaluatePython(tb, rowIdx, state);
     int resultcol = -1;
@@ -214,7 +204,9 @@ public class PythonUDFEvaluator extends GenericEvaluator {
           result.putDouble(resultcol, (Double) obj);
           break;
         case BYTES_TYPE:
+          LOGGER.info("updating state!");
           result.putByteBuffer(resultcol, (ByteBuffer.wrap((byte[]) obj)));
+
           break;
         case FLOAT_TYPE:
           result.putFloat(resultcol, (float) obj);
@@ -253,13 +245,8 @@ public class PythonUDFEvaluator extends GenericEvaluator {
 
     try {
       if (needsState == false && (bRightState || bLeftState)) {
-        LOGGER.info(
-            "needs State: "
-                + needsState
-                + " Right column is state: "
-                + bRightState
-                + " Left column is state: "
-                + bLeftState);
+        LOGGER.info("needs State: " + needsState + " Right column is state: " + bRightState + " Left column is state: "
+            + bLeftState);
         throw new DbException("this evaluator should not need state!");
 
       } else {
@@ -358,8 +345,7 @@ public class PythonUDFEvaluator extends GenericEvaluator {
    * @param dOut
    * @throws DbException
    */
-  private void writeToStream(
-      final ReadableTable tb, final int row, final int columnIdx, final DataOutputStream dOut)
+  private void writeToStream(final ReadableTable tb, final int row, final int columnIdx, final DataOutputStream dOut)
       throws DbException {
 
     Preconditions.checkNotNull(tb, "tuple input cannot be null");

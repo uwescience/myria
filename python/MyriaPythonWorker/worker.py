@@ -36,8 +36,7 @@ def main(infile, outfile):
             retval = func(tup)
             if(isFlatmap>0):
                 count = len(retval)
-                print count
-                write_int(count)
+                write_int(count,outfile)
                 for i in range(count):
                     write_with_length(retval[i],outfile, outputType,pickleSer)
             else:
@@ -49,7 +48,7 @@ def main(infile, outfile):
     except Exception:
         try:
             write_int(SpecialLengths.PYTHON_EXCEPTION_THROWN,outfile)
-            write_with_length(traceback.format_exc().encode("utf-8"),outfile,5)
+            write_with_length(traceback.format_exc().encode("utf-8"),outfile,5,pickleSer)
             print(traceback.format_exc(), file=sys.stderr)
         except Exception:
             print("python process failed with exception: ", file=sys.stderr)
