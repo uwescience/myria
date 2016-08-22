@@ -63,8 +63,8 @@ public final class MyriaDriverLauncher {
    * @throws Exception if the Driver can't start.
    */
   public static void main(final String[] args) throws Exception {
-    LauncherStatus run = run(args);
-    LOGGER.info("Exit with status " + run);
+    LauncherStatus status = run(args);
+    LOGGER.info("Exit with status " + status);
   }
 
   private final REEF reef;
@@ -80,7 +80,7 @@ public final class MyriaDriverLauncher {
     this.reef = reef;
   }
 
-  private final static Configuration getRuntimeConf(final String runtimeClassName)
+  private static Configuration getRuntimeConf(final String runtimeClassName)
       throws ClassNotFoundException, IllegalArgumentException, IllegalAccessException,
           NoSuchFieldException, SecurityException {
     final Class<?> runtimeClass = Class.forName(runtimeClassName);
@@ -92,7 +92,7 @@ public final class MyriaDriverLauncher {
     return cm.build();
   }
 
-  private final static Configuration getClientConf() {
+  private static Configuration getClientConf() {
     return ClientConfiguration.CONF
         .set(ClientConfiguration.ON_JOB_RUNNING, RunningJobHandler.class)
         .set(ClientConfiguration.ON_JOB_MESSAGE, JobMessageHandler.class)
@@ -104,9 +104,8 @@ public final class MyriaDriverLauncher {
 
   /**
    * @return The Driver configuration.
-   * @throws IOException
    */
-  private final static Configuration getDriverConf(
+  private static Configuration getDriverConf(
       @Nullable final String driverJobSubmissionDirectory,
       final String driverHostName,
       final int driverMemoryMB,
@@ -217,7 +216,7 @@ public final class MyriaDriverLauncher {
    * Prints the expected configuration, compared to the actual configuration given.
    * Used for logging command line arguments.
    */
-  private static void logStartupMessage(Class<? extends Name<?>>[] classes, Injector inj) {
+  private static String genStartupMessage(Class<? extends Name<?>>[] classes, Injector inj) {
     final StringBuilder sb = new StringBuilder("MyriaDriverLauncher configuration:\n");
     for (int i = 0; i < classes.length; i++) {
       final Class<? extends Name<?>> c = classes[i];
@@ -229,32 +228,46 @@ public final class MyriaDriverLauncher {
       final String doc = annotation.doc();
       final String defaultVal;
       {
-        if (!annotation.default_value().equals(NamedParameter.REEF_UNINITIALIZED_VALUE))
+        if (!annotation.default_value().equals(NamedParameter.REEF_UNINITIALIZED_VALUE)) {
           defaultVal = annotation.default_value();
-        else if (!annotation.default_class().equals(Void.class))
+        } else if (!annotation.default_class().equals(Void.class)) {
           defaultVal = annotation.default_class().getSimpleName();
-        else if (annotation.default_values().length > 0)
+        } else if (annotation.default_values().length > 0) {
           defaultVal = Arrays.toString(annotation.default_values());
-        else if (annotation.default_classes().length > 0) {
-          Class<?>[] default_classes = annotation.default_classes();
-          String[] sss = new String[default_classes.length];
-          for (int i1 = 0; i1 < default_classes.length; i1++) {
-            sss[i1] = default_classes[i1].getSimpleName();
+        } else if (annotation.default_classes().length > 0) {
+          StringBuilder b = new StringBuilder("[");
+          Class<?>[] cls = annotation.default_classes();
+          for (int j = 0; ; j++) {
+
+            b.append(cls[j].getSimpleName());
+            if (j == cls.length - 1) {
+              b.append(']');
+              break;
+            }
+            b.append(", ");
           }
-          defaultVal = Arrays.toString(sss);
+          defaultVal = b.toString();
         } else defaultVal = "";
       }
 
-      if (i > 0) sb.append('\n');
+      if (i > 0) {
+        sb.append('\n');
+      }
       sb.append(simpleName);
-      if (!shortName.isEmpty()) sb.append(" [-").append(shortName).append("]");
+      if (!shortName.isEmpty()) {
+        sb.append(" [-").append(shortName).append("]");
+      }
 
-      //      sb.append(" (").append(expectedParameter.getSimpleArgName()).append("): ")
+      // If desired, the type of the parameter can be obtained from
+      // commandLineConf.getNamedParameters() --> .getSimpleArgName()
       sb.append(": ").append(doc).append("\n -> ");
 
       boolean ok;
       try {
-        if ((ok = inj.isParameterSet(fullName))) sb.append(inj.getInstance(fullName).toString());
+        ok = inj.isParameterSet(fullName);
+        if (ok) {
+          sb.append(inj.getInstance(fullName).toString());
+        }
       } catch (InjectionException e) {
         ok = false;
       }
@@ -262,22 +275,13 @@ public final class MyriaDriverLauncher {
         if (!defaultVal.isEmpty()) sb.append("[cannot parse; using default] ").append(defaultVal);
         else sb.append("[cannot parse; no default]");
     }
-    LOGGER.info(sb.toString());
+    return sb.toString();
   }
 
   /**
    * Launch the Myria driver.
    *
    * @param args Command line arguments.
-   * @throws InjectionException
-   * @throws java.io.IOException
-   * @throws ParseException
-   * @throws ConfigFileException
-   * @throws SecurityException
-   * @throws NoSuchFieldException
-   * @throws IllegalAccessException
-   * @throws IllegalArgumentException
-   * @throws ClassNotFoundException
    */
   @SuppressWarnings("unchecked")
   public static LauncherStatus run(final String[] args)
@@ -297,12 +301,17 @@ public final class MyriaDriverLauncher {
       final Configuration commandLineConf =
           CommandLine.parseToConfiguration(args, commandLineClasses);
       final Injector commandLineInjector = tang.newInjector(commandLineConf);
-      logStartupMessage(commandLineClasses, commandLineInjector);
+      LOGGER.info(genStartupMessage(commandLineClasses, commandLineInjector));
       final String runtimeClassName = commandLineInjector.getNamedInstance(RuntimeClassName.class);
-      final String driverJobSubmissionDirectory =
-          commandLineInjector.isParameterSet(DriverJobSubmissionDirectory.class)
-              ? commandLineInjector.getNamedInstance(DriverJobSubmissionDirectory.class)
-              : null;
+      final String driverJobSubmissionDirectory;
+      {
+        if (commandLineInjector.isParameterSet(DriverJobSubmissionDirectory.class)) {
+          driverJobSubmissionDirectory =
+              commandLineInjector.getNamedInstance(DriverJobSubmissionDirectory.class);
+        } else {
+          driverJobSubmissionDirectory = null;
+        }
+      }
       final String configPath = commandLineInjector.getNamedInstance(ConfigPath.class);
       final String javaLibPath = commandLineInjector.getNamedInstance(JavaLibPath.class);
       final String nativeLibPath = commandLineInjector.getNamedInstance(NativeLibPath.class);
@@ -313,8 +322,8 @@ public final class MyriaDriverLauncher {
           tang.newConfigurationBuilder()
               .bindNamedParameter(SerializedGlobalConf.class, serializedGlobalConf)
               .build();
-      String driverHostName = getMasterHost(globalConf);
-      int driverMemoryMB = getDriverMemory(globalConf);
+      final String driverHostName = getMasterHost(globalConf);
+      final int driverMemoryMB = getDriverMemory(globalConf);
       final Configuration driverConf =
           Configurations.merge(
               getDriverConf(
@@ -329,7 +338,7 @@ public final class MyriaDriverLauncher {
           .getInstance(MyriaDriverLauncher.class)
           .run(driverConf);
     } catch (ParseException | InjectionException e) {
-      LOGGER.error("Problem with command line options", e);
+      LOGGER.error("Problem with command line options (see previous log message)", e);
       return LauncherStatus.FAILED;
     }
   }
@@ -384,7 +393,8 @@ public final class MyriaDriverLauncher {
   public static final class RuntimeClassName implements Name<String> {}
 
   /**
-   * Command line parameter: runtime configuration class to use (defaults to local runtime).
+   * Command line parameter: path of driver job submission directory;
+   * must be visible to the driver launcher and the driver
    */
   @NamedParameter(
     doc =
