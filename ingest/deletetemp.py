@@ -15,7 +15,14 @@ ssh {w} "sudo -u postgres psql {m} -c \\"select 'drop table ' || '\\\\\\\"' || t
 restart_postgres = """
 ssh {w} "sudo /etc/init.d/postgresql restart"
 """
-
+get_disk_usage = """
+ssh {w} "sudo df -h"
+"""
+for worker in config.options('workers'):
+    w = config.get('workers',worker)
+    worker_host = w.split(':')[0]
+    p = subprocess.Popen(get_disk_usage.format(w=worker_host), shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    print "".join(p.stdout.readlines()).strip()
 for worker in config.options('workers'):
     w = config.get('workers',worker)
     worker_host = w.split(':')[0]
