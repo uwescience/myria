@@ -433,6 +433,7 @@ public class CSVFileScanFragment extends LeafOperator {
         }
       }
 
+      /* If we hit the end of the partition then mark it as incomplete.*/
       if (adjustedStartByteRange + byteOffsetFromTruncatedRowAtStart - 1 == partitionEndByteRange) {
         flagAsIncomplete = true;
       }
@@ -445,7 +446,7 @@ public class CSVFileScanFragment extends LeafOperator {
                 CSVFormat.newFormat(delimiter).withQuote(quote).withEscape(escape));
         iterator = parser.iterator();
 
-        /* FIX ME: For now, we only support cases where the numberOfSkippedLines applies to the first worker */
+        /* FIX ME: For now, we only support cases where all skipped lines are contained within the first partition. */
         if (partitionStartByteRange == 0) {
           for (int i = 0; i < numberOfSkippedLines; i++) {
             iterator.next();
