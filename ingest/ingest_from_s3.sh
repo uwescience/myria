@@ -27,8 +27,7 @@ for f in $(aws s3 ls $s3bucket/ | cut -d ' ' -f 6); do
 done
 
 str="$str
-store(R, ${ResultRelation}_Pkmer, [kmer]);
-store(R, ${ResultRelation}_Psampleid, [sampleid]);"
+store(R, ${ResultRelation}_Pkmer, [kmer]);"
 
 echo "$str"
 

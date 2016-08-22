@@ -14,6 +14,7 @@ _usage() {
 #/home/gridsan/groups/istcdata/datasets/ocean_metagenome/csv_data/parsed_11_cnt/S0002_11_cnt.csv
 #'/home/gridsan/dhutchison/gits/graphulo/target/graphulo-1.0.0-SNAPSHOT-all.jar'
 #./ingest_myria.sh -f localhost:8753 /home/dhutchis/gits/istc_oceanography/myria_ingest/S0002_11_cnt_cut.csv kmercnt_11_forward_S0002_cut   -cp /home/dhutchis/gits/graphulo/target/graphulo-1.0.0-SNAPSHOT-all.jar edu.mit.ll.graphulo_ocean.OceanPipeKmers  -K 11
+#./ingest_myria.sh -f http://ec2-52-43-110-122.us-west-2.compute.amazonaws.com:8753 /home/gridsan/groups/istcdata/datasets/ocean_metagenome/csv_data/parsed_11_cnt/S0002_11_cnt.csv test_S0002_cut   -cp '/home/gridsan/dhutchison/gits/graphulo/target/graphulo-1.0.0-SNAPSHOT-all.jar' edu.mit.ll.graphulo_ocean.OceanPipeKmers  -K 11 -binary
 
 if [ "$#" -lt "3" ]; then
   _usage
@@ -67,8 +68,6 @@ else
 	fi
 	echo "{ \"userName\" : \"public\", \"programName\" : \"adhoc\", \"relationName\" : \"$ResultRelation\" }" > "$TDIR/relationKey.json"
 	echo '{ "columnTypes": ["STRING_TYPE", "LONG_TYPE"], "columnNames": ["kmer", "cnt"] }' > "$TDIR/schema.json"
-	printf ',' > "$TDIR/delimiter.json"
-	echo 'true' > "$TDIR/overwrite.json"
 
 	java $@ < "$InputFile" \
 		| curl -i -XPOST "$MyriaHostAndPort"/dataset -H "Content-type: multipart/form-data" \
