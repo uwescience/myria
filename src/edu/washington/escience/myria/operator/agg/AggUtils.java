@@ -15,22 +15,21 @@ import edu.washington.escience.myria.operator.agg.PrimitiveAggregator.Aggregatio
  */
 public final class AggUtils {
   /** Utility classes do not have a public constructor. */
-  private AggUtils() {}
+  private AggUtils() {
+  }
+
+  /** logger for this class. */
+  private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(AggUtils.class);
 
   /** Which aggregation ops require COUNT to be computed. */
-  private static final Set<AggregationOp> COUNT_OPS =
-      ImmutableSet.of(AggregationOp.COUNT, AggregationOp.AVG, AggregationOp.STDEV);
+  private static final Set<AggregationOp> COUNT_OPS = ImmutableSet.of(AggregationOp.COUNT, AggregationOp.AVG,
+      AggregationOp.STDEV);
   /** Which aggregation ops require SUM to be computed. */
-  private static final Set<AggregationOp> SUM_OPS =
-      ImmutableSet.of(AggregationOp.SUM, AggregationOp.AVG, AggregationOp.STDEV);
+  private static final Set<AggregationOp> SUM_OPS = ImmutableSet.of(AggregationOp.SUM, AggregationOp.AVG,
+      AggregationOp.STDEV);
   /** Which aggregation ops require any tuple-level stats to be computed. */
-  private static final Set<AggregationOp> STATS_OPS =
-      ImmutableSet.of(
-          AggregationOp.MIN,
-          AggregationOp.MAX,
-          AggregationOp.SUM,
-          AggregationOp.AVG,
-          AggregationOp.STDEV);
+  private static final Set<AggregationOp> STATS_OPS = ImmutableSet.of(AggregationOp.MIN, AggregationOp.MAX,
+      AggregationOp.SUM, AggregationOp.AVG, AggregationOp.STDEV);
 
   /**
    * @param aggOps the aggregate operations
@@ -88,13 +87,11 @@ public final class AggUtils {
    * @return the aggregators for this operator.
    * @throws DbException if there is an error.
    */
-  public static Aggregator[] allocateAggs(
-      final AggregatorFactory[] factories,
-      final Schema inputSchema,
-      final PythonFunctionRegistrar pyFuncReg)
-      throws DbException {
+  public static Aggregator[] allocateAggs(final AggregatorFactory[] factories, final Schema inputSchema,
+      final PythonFunctionRegistrar pyFuncReg) throws DbException {
     Aggregator[] aggregators = new Aggregator[factories.length];
     for (int j = 0; j < factories.length; ++j) {
+      LOGGER.info(factories[j].getClass().toString());
       aggregators[j] = factories[j].get(inputSchema, pyFuncReg);
     }
     return aggregators;
