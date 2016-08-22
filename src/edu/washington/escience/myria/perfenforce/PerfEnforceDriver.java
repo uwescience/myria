@@ -36,7 +36,7 @@ public final class PerfEnforceDriver {
   private boolean isDonePSLA;
   private PerfEnforceOnlineLearning perfenforceOnlineLearning;
 
-  public PerfEnforceDriver( final String instancePath) {
+  public PerfEnforceDriver(final String instancePath) {
     configurationPath = (Paths.get(instancePath, "perfenforce_files"));
     LOGGER.warn("perf path " + configurationPath);
     isDonePSLA = false;
@@ -45,12 +45,14 @@ public final class PerfEnforceDriver {
   /*
    * Fetch necessary files from S3
    */
-  public void fetchS3Files() throws PerfEnforceException {
+  public void fetchS3Files() throws PerfEnforceException, Exception {
     AmazonS3 s3Client = new AmazonS3Client(new AnonymousAWSCredentials());
     String currentFile = "";
     BufferedReader bufferedReader;
     try {
-      bufferedReader = new BufferedReader(new FileReader(configurationPath + "filesToFetch.txt"));
+      bufferedReader =
+          new BufferedReader(
+              new FileReader(configurationPath.resolve("filesToFetch.txt").toString()));
       while ((currentFile = bufferedReader.readLine()) != null) {
         Path filePath = configurationPath.resolve(currentFile);
         s3Client.getObject(
@@ -58,18 +60,18 @@ public final class PerfEnforceDriver {
       }
       bufferedReader.close();
     } catch (Exception e) {
-      throw new PerfEnforceException("Error while fetching files from S3");
+      throw e;
+      //throw new PerfEnforceException("Error while fetching files from S3");
     }
   }
 
-  public void preparePSLA() throws PerfEnforceException, DbException {
+  public void preparePSLA(List<PerfEnforceTableEncoding> tableList)
+      throws PerfEnforceException, DbException, Exception {
     fetchS3Files();
 
     PerfEnforceDataPreparation perfenforceDataPrepare = new PerfEnforceDataPreparation();
-    List<PerfEnforceTableEncoding> allTables =
-        PerfEnforceUtils.getTablesOfType(
-            "*", configurationPath.resolve("SchemaDefinition.json").toString());
-    for (PerfEnforceTableEncoding currentTable : allTables) {
+
+    for (PerfEnforceTableEncoding currentTable : tableList) {
       if (currentTable.type.equalsIgnoreCase("fact")) {
         perfenforceDataPrepare.ingestFact(currentTable);
       } else {

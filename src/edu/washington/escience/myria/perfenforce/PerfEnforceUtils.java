@@ -4,8 +4,6 @@
 package edu.washington.escience.myria.perfenforce;
 
 import java.io.BufferedReader;
-import java.io.File;
-import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -14,14 +12,9 @@ import java.util.Set;
 
 import javax.ws.rs.core.Context;
 
-import com.google.common.base.Charsets;
-import com.google.common.io.Files;
-import com.google.gson.Gson;
-
 import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
-import edu.washington.escience.myria.api.encoding.PerfEnforceTableEncoding;
 import edu.washington.escience.myria.parallel.Server;
 
 /**
@@ -30,27 +23,6 @@ import edu.washington.escience.myria.parallel.Server;
 public class PerfEnforceUtils {
 
   @Context private static Server server;
-
-  public static List<PerfEnforceTableEncoding> getTablesOfType(
-      final String type, final String configFilePath) throws PerfEnforceException {
-    List<PerfEnforceTableEncoding> listTablesOfType = new ArrayList<PerfEnforceTableEncoding>();
-    Gson gson = new Gson();
-    String stringFromFile;
-    try {
-      stringFromFile = Files.toString(new File(configFilePath), Charsets.UTF_8);
-      PerfEnforceTableEncoding[] tableList =
-          gson.fromJson(stringFromFile, PerfEnforceTableEncoding[].class);
-
-      for (PerfEnforceTableEncoding currentTable : tableList) {
-        if (currentTable.type.equals(type) || type.equals("*")) {
-          listTablesOfType.add(currentTable);
-        }
-      }
-    } catch (IOException e) {
-      throw new PerfEnforceException(e);
-    }
-    return listTablesOfType;
-  }
 
   public static Set<Integer> getWorkerRangeSet(final int limit) {
     Set<Integer> seq = new HashSet<Integer>();
@@ -88,6 +60,9 @@ public class PerfEnforceUtils {
     return sql;
   }
 
+  /*
+   * Get list of attributes in a string
+   */
   public static String getAttributeKeyString(final Set<Integer> keys, final Schema schema) {
     String keyString = "";
     int counter = 1;
@@ -101,6 +76,9 @@ public class PerfEnforceUtils {
     return keyString;
   }
 
+  /*
+   * Get list of attributes in a schema
+   */
   public static Schema getAttributeKeySchema(final Set<Integer> keys, final Schema schema) {
     Schema keySchema = Schema.EMPTY_SCHEMA;
     for (int key : keys) {
@@ -115,6 +93,7 @@ public class PerfEnforceUtils {
 
     try {
       String explainQuery = "EXPLAIN " + sqlQuery;
+      assert (false); /*fix this */
       explainQuery = explainQuery.replace("lineitem", "lineitem" + configuration);
 
       List<String> featuresList = new ArrayList<String>();
