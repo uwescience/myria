@@ -16,7 +16,6 @@ import javax.annotation.Nullable;
 import javax.annotation.concurrent.GuardedBy;
 import javax.inject.Inject;
 
-import com.google.common.base.Joiner;
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.reef.client.ClientConfiguration;
@@ -218,9 +217,7 @@ public final class MyriaDriverLauncher {
    * Used for logging command line arguments.
    */
   private static String genStartupMessage(Class<? extends Name<?>>[] classes, Injector inj) {
-    final StringBuilder sb = new StringBuilder("MyriaDriverLauncher configuration:\n");
-    for (int i = 0; i < classes.length; i++) {
-      final Class<? extends Name<?>> c = classes[i];
+    String allparams = Arrays.stream(classes).map(c -> {
       final NamedParameter annotation = c.getAnnotation(NamedParameter.class);
 
       final String fullName = c.getName();
@@ -236,24 +233,20 @@ public final class MyriaDriverLauncher {
         } else if (annotation.default_values().length > 0) {
           defaultVal = Arrays.toString(annotation.default_values());
         } else if (annotation.default_classes().length > 0) {
-          final String[] classNames =
+          final String classNames =
               Arrays.stream(annotation.default_classes())
                   .map(Class::getSimpleName)
-                  .toArray(String[]::new);
-          defaultVal = String.format("[%s]", Joiner.on(", ").join(classNames));
+                  .reduce("", (a, b) -> a + ", " + b);
+          defaultVal = String.format("[%s]", classNames);
         } else {
           defaultVal = "";
         }
       }
 
-      if (i > 0) {
-        sb.append('\n');
-      }
-      sb.append(simpleName);
+      final StringBuilder sb = new StringBuilder(simpleName);
       if (!shortName.isEmpty()) {
         sb.append(" [-").append(shortName).append("]");
       }
-
       // If desired, the type of the parameter can be obtained from
       // commandLineConf.getNamedParameters() --> .getSimpleArgName()
       sb.append(": ").append(doc).append("\n -> ");
@@ -267,11 +260,14 @@ public final class MyriaDriverLauncher {
       } catch (InjectionException | BindException e) {
         ok = false;
       }
-      if (!ok)
+      if (!ok) {
         if (!defaultVal.isEmpty()) sb.append("[cannot parse; using default] ").append(defaultVal);
         else sb.append("[cannot parse; no default]");
-    }
-    return sb.toString();
+      }
+      return sb.toString();
+    }).reduce("", (a, b) -> a + "\n" + b);
+
+    return "MyriaDriverLauncher configuration:\n"+allparams;
   }
 
   /**
