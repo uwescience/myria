@@ -11,8 +11,6 @@ import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.regex.Pattern;
 
-import net.jcip.annotations.Immutable;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,6 +23,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 
 import edu.washington.escience.myria.util.MyriaUtils;
+import net.jcip.annotations.Immutable;
 
 /**
  * Schema describes the schema of a tuple.
@@ -104,7 +103,7 @@ public final class Schema implements Serializable {
           columnTypes.add(Type.DATETIME_TYPE);
           break;
         case java.sql.Types.BLOB:
-          LOGGER.info("this was called!");
+          // LOGGER.info("this was called!");
           columnTypes.add(Type.BYTES_TYPE);
           break;
         default:

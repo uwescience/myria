@@ -144,7 +144,7 @@ public class Expression implements Serializable {
       } else {
         appendExpression =
             new StringBuilder(RESULT)
-                .append(".append")
+                .append(".put")
                 .append(getOutputType(parameters).getName())
                 .append("(")
                 .append(getJavaExpression(parameters))
