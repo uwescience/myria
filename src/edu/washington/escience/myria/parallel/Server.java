@@ -694,7 +694,7 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
       addRelationToCatalog(
           MyriaConstants.PYUDF_RELATION, MyriaConstants.PYUDF_SCHEMA, workerIds, false);
     }
-    perfEnforceDriver = new PerfEnforceDriver(this,instancePath);
+    perfEnforceDriver = new PerfEnforceDriver(this, instancePath);
   }
 
   /**

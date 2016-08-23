@@ -115,7 +115,8 @@ public class PerfEnforceOnlineLearning {
         featureWriterForConfiguration.write(maxFeatureForConfiguration + '\n');
         featureWriterForConfiguration.close();
       }
-      currentQuery = new PerfEnforceQueryMetadataEncoding(queryCounter, Double.parseDouble(querySLA));
+      currentQuery =
+          new PerfEnforceQueryMetadataEncoding(queryCounter, Double.parseDouble(querySLA));
     } catch (Exception e) {
       throw new PerfEnforceException("Error finding SLA");
     }

@@ -670,7 +670,7 @@ public final class JdbcAccessMethod extends AccessMethod {
       throws DbException {
     String statement =
         Joiner.on(' ')
-            .join("CREATE OR REPLACE MATERIALIZED VIEW", viewName, "AS", viewDefinition, ";");
+            .join("CREATE MATERIALIZED VIEW", viewName, "AS", viewDefinition, ";");
     execute(statement);
   }
 

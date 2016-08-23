@@ -56,10 +56,8 @@ public class PerfEnforceDataPreparation {
   protected static final org.slf4j.Logger LOGGER =
       LoggerFactory.getLogger(PerfEnforceDataPreparation.class);
 
-
-  public PerfEnforceDataPreparation(final Server server)
-  {
-	  this.server = server;
+  public PerfEnforceDataPreparation(final Server server) {
+    this.server = server;
   }
 
   /*
@@ -176,7 +174,7 @@ public class PerfEnforceDataPreparation {
       }
       return factTableRelationMapper;
     } catch (Exception e) {
-	throw e;
+      throw e;
       //throw new PerfEnforceException("Error while ingesting fact table");
     }
   }
@@ -184,8 +182,7 @@ public class PerfEnforceDataPreparation {
   /*
    * Ingesting dimension tables for broadcasting
    */
-  public void ingestDimension(final PerfEnforceTableEncoding dimTableDesc)
-      throws Exception {
+  public void ingestDimension(final PerfEnforceTableEncoding dimTableDesc) throws Exception {
 
     Set<Integer> totalWorkers =
         PerfEnforceUtils.getWorkerRangeSet(Collections.max(PerfEnforceDriver.configurations));
@@ -233,7 +230,7 @@ public class PerfEnforceDataPreparation {
 
       server.submitQueryPlan(new SinkRoot(new EOSSource()), workerPlans).get();
     } catch (Exception e) {
-	throw e;
+      throw e;
       //throw new PerfEnforceException("Error ingesting dimension tables");
     }
   }
@@ -402,7 +399,7 @@ public class PerfEnforceDataPreparation {
                   factTableDescription.relationKey.getRelationName(),
                   factTableRelationMapper.get(config).getRelationName());
           String explainQuery = "EXPLAIN " + currentLine;
-          String features = PerfEnforceUtils.getMaxFeature(server,explainQuery, config);
+          String features = PerfEnforceUtils.getMaxFeature(server, explainQuery, config);
           featureWriter.write(features + "\n");
         }
         featureWriter.close();

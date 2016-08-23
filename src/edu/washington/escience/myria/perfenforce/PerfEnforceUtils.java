@@ -84,7 +84,8 @@ public class PerfEnforceUtils {
     return keySchema;
   }
 
-  public static String getMaxFeature(final Server server, final String sqlQuery, final int configuration)
+  public static String getMaxFeature(
+      final Server server, final String sqlQuery, final int configuration)
       throws PerfEnforceException {
 
     try {
