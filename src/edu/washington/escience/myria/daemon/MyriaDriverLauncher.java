@@ -222,30 +222,25 @@ public final class MyriaDriverLauncher {
             .map(
                 c -> {
                   final NamedParameter annotation = c.getAnnotation(NamedParameter.class);
-
                   final String fullName = c.getName();
                   final String simpleName = c.getSimpleName();
                   final String shortName = annotation.short_name();
                   final String doc = annotation.doc();
                   final String defaultVal;
-                  {
-                    if (!annotation
-                        .default_value()
-                        .equals(NamedParameter.REEF_UNINITIALIZED_VALUE)) {
-                      defaultVal = annotation.default_value();
-                    } else if (!annotation.default_class().equals(Void.class)) {
-                      defaultVal = annotation.default_class().getSimpleName();
-                    } else if (annotation.default_values().length > 0) {
-                      defaultVal = Arrays.toString(annotation.default_values());
-                    } else if (annotation.default_classes().length > 0) {
-                      final String classNames =
-                          Arrays.stream(annotation.default_classes())
-                              .map(Class::getSimpleName)
-                              .reduce("", (a, b) -> a + ", " + b);
-                      defaultVal = String.format("[%s]", classNames);
-                    } else {
-                      defaultVal = "";
-                    }
+                  if (!annotation.default_value().equals(NamedParameter.REEF_UNINITIALIZED_VALUE)) {
+                    defaultVal = annotation.default_value();
+                  } else if (!annotation.default_class().equals(Void.class)) {
+                    defaultVal = annotation.default_class().getSimpleName();
+                  } else if (annotation.default_values().length > 0) {
+                    defaultVal = Arrays.toString(annotation.default_values());
+                  } else if (annotation.default_classes().length > 0) {
+                    final String classNames =
+                        Arrays.stream(annotation.default_classes())
+                            .map(Class::getSimpleName)
+                            .reduce("", (a, b) -> a + ", " + b);
+                    defaultVal = String.format("[%s]", classNames);
+                  } else {
+                    defaultVal = "";
                   }
 
                   final StringBuilder sb = new StringBuilder(simpleName);
@@ -314,7 +309,6 @@ public final class MyriaDriverLauncher {
       final String configPath = commandLineInjector.getNamedInstance(ConfigPath.class);
       final String javaLibPath = commandLineInjector.getNamedInstance(JavaLibPath.class);
       final String nativeLibPath = commandLineInjector.getNamedInstance(NativeLibPath.class);
-
       final Configuration globalConf = getMyriaGlobalConf(configPath);
       final String serializedGlobalConf = new AvroConfigurationSerializer().toString(globalConf);
       final Configuration globalConfWrapper =
