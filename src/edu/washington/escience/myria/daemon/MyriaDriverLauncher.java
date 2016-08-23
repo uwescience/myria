@@ -16,6 +16,7 @@ import javax.annotation.Nullable;
 import javax.annotation.concurrent.GuardedBy;
 import javax.inject.Inject;
 
+import com.google.common.base.Joiner;
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.reef.client.ClientConfiguration;
@@ -235,19 +236,14 @@ public final class MyriaDriverLauncher {
         } else if (annotation.default_values().length > 0) {
           defaultVal = Arrays.toString(annotation.default_values());
         } else if (annotation.default_classes().length > 0) {
-          StringBuilder b = new StringBuilder("[");
-          Class<?>[] cls = annotation.default_classes();
-          for (int j = 0; ; j++) {
-
-            b.append(cls[j].getSimpleName());
-            if (j == cls.length - 1) {
-              b.append(']');
-              break;
-            }
-            b.append(", ");
-          }
-          defaultVal = b.toString();
-        } else defaultVal = "";
+          final String[] classNames =
+              Arrays.stream(annotation.default_classes())
+                  .map(Class::getSimpleName)
+                  .toArray(String[]::new);
+          defaultVal = String.format("[%s]", Joiner.on(", ").join(classNames));
+        } else {
+          defaultVal = "";
+        }
       }
 
       if (i > 0) {
@@ -268,7 +264,7 @@ public final class MyriaDriverLauncher {
         if (ok) {
           sb.append(inj.getInstance(fullName).toString());
         }
-      } catch (InjectionException e) {
+      } catch (InjectionException | BindException e) {
         ok = false;
       }
       if (!ok)
@@ -304,13 +300,11 @@ public final class MyriaDriverLauncher {
       LOGGER.info(genStartupMessage(commandLineClasses, commandLineInjector));
       final String runtimeClassName = commandLineInjector.getNamedInstance(RuntimeClassName.class);
       final String driverJobSubmissionDirectory;
-      {
-        if (commandLineInjector.isParameterSet(DriverJobSubmissionDirectory.class)) {
-          driverJobSubmissionDirectory =
-              commandLineInjector.getNamedInstance(DriverJobSubmissionDirectory.class);
-        } else {
-          driverJobSubmissionDirectory = null;
-        }
+      if (commandLineInjector.isParameterSet(DriverJobSubmissionDirectory.class)) {
+        driverJobSubmissionDirectory =
+            commandLineInjector.getNamedInstance(DriverJobSubmissionDirectory.class);
+      } else {
+        driverJobSubmissionDirectory = null;
       }
       final String configPath = commandLineInjector.getNamedInstance(ConfigPath.class);
       final String javaLibPath = commandLineInjector.getNamedInstance(JavaLibPath.class);
@@ -345,7 +339,7 @@ public final class MyriaDriverLauncher {
 
   private LauncherStatus run(final Configuration driverConf) {
     // Most UNIX signals will not throw an exception, so need to be trapped here.
-    Runtime.getRuntime().addShutdownHook(new Thread(() -> close()));
+    Runtime.getRuntime().addShutdownHook(new Thread(this::close));
     try {
       LOGGER.info("Submitting Myria driver to REEF...");
       reef.submit(driverConf);
