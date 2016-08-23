@@ -15,23 +15,29 @@ import edu.washington.escience.myria.expression.evaluate.ExpressionOperatorParam
  */
 public class Expression implements Serializable {
 
+  /** logger for this class. */
+  private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(Expression.class);
+
   /***/
   private static final long serialVersionUID = 1L;
 
   /**
    * Name of the column that the result will be written to.
    */
-  @JsonProperty private final String outputName;
+  @JsonProperty
+  private final String outputName;
 
   /**
    * The java expression to be evaluated.
    */
-  @JsonProperty private String javaExpression;
+  @JsonProperty
+  private String javaExpression;
 
   /**
    * Expression encoding reference is needed to get the output type.
    */
-  @JsonProperty private final ExpressionOperator rootExpressionOperator;
+  @JsonProperty
+  private final ExpressionOperator rootExpressionOperator;
 
   /**
    * Variable name of result.
@@ -123,35 +129,26 @@ public class Expression implements Serializable {
    */
   public String getJavaExpressionWithAppend(final ExpressionOperatorParameter parameters) {
     String appendExpression = rootExpressionOperator.getJavaExpressionWithAppend(parameters);
+    // LOGGER.info("append got called");
     if (appendExpression == null) {
+      // LOGGER.info("append is not null");
       if (isMultivalued()) {
         String primitiveTypeName = getOutputType(parameters).toJavaType().getName();
-        appendExpression =
-            new StringBuilder(primitiveTypeName)
-                .append("[] results = ")
-                .append(getJavaExpression(parameters))
-                .append(";\n")
-                .append(COUNT)
-                .append(".appendInt(results.length);\n")
-                .append("for (int i = 0; i < results.length; ++i) {\n")
-                .append(RESULT)
-                .append(".put")
-                .append(getOutputType(parameters).getName())
-                .append("(")
-                .append(COL)
-                .append(", results[i]);\n}")
-                .toString();
+        // LOGGER.info(primitiveTypeName);
+        appendExpression = new StringBuilder(primitiveTypeName).append("[] results = ").append(getJavaExpression(
+            parameters)).append(";\n").append(COUNT).append(".appendInt(results.length);\n").append(
+                "for (int i = 0; i < results.length; ++i) {\n").append(RESULT).append(".put").append(getOutputType(
+                    parameters).getName()).append("(").append(COL).append(", results[i]);\n}").toString();
       } else {
-        appendExpression =
-            new StringBuilder(RESULT)
-                .append(".put")
-                .append(getOutputType(parameters).getName())
-                .append("(")
-                .append(getJavaExpression(parameters))
-                .append(")")
-                .toString();
+        appendExpression = new StringBuilder(RESULT).append(".append").append(getOutputType(parameters).getName())
+            .append("(")
+            // .append(COL)
+            // .append(",")
+            .append(getJavaExpression(parameters)).append(")").toString();
+
       }
     }
+    // LOGGER.info(appendExpression);
     return appendExpression;
   }
 
@@ -194,9 +191,8 @@ public class Expression implements Serializable {
    * @return if this expression evaluates to a constant
    */
   public boolean isConstant() {
-    return !hasOperator(VariableExpression.class)
-        && !hasOperator(StateExpression.class)
-        && !hasOperator(RandomExpression.class);
+    return !hasOperator(VariableExpression.class) && !hasOperator(StateExpression.class) && !hasOperator(
+        RandomExpression.class);
   }
 
   /**

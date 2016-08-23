@@ -57,7 +57,7 @@ public class FunctionResource {
    */
   @GET
   public List<String> getFunctions() throws DbException {
-    LOGGER.info("get functions!");
+    // LOGGER.info("get functions!");
     return server.getFunctions();
   }
 
@@ -70,7 +70,7 @@ public class FunctionResource {
   @Path("/register")
   @Consumes(MediaType.APPLICATION_JSON)
   public Response createFunction(final FunctionEncoding encoding) throws DbException {
-    LOGGER.info("register function!");
+    // LOGGER.info("register function!");
 
     long queryId;
     try {
@@ -109,9 +109,9 @@ public class FunctionResource {
 
     /* Assemble the name of the relation. */
     String functionName = name;
-    LOGGER.info("get function!");
+    // LOGGER.info("get function!");
 
-    LOGGER.info("looking for  function with name: " + functionName);
+    // LOGGER.info("looking for function with name: " + functionName);
     FunctionStatus status = server.getFunctionDetails(functionName);
     if (status == null) {
       /* Not found, throw a 404 (Not Found) */

@@ -403,7 +403,7 @@ public final class MasterCatalog {
       throw new CatalogException("Catalog is closed.");
     }
 
-    LOGGER.info("ger function status for function with name: " + name);
+    // LOGGER.info("ger function status for function with name: " + name);
     try {
       return queue
           .execute(
@@ -418,7 +418,7 @@ public final class MasterCatalog {
 
                     statement.bind(1, name);
                     if (!statement.step()) {
-                      LOGGER.info("returning null");
+                      // LOGGER.info("returning null");
                       return null;
                     }
 
@@ -1874,9 +1874,9 @@ public final class MasterCatalog {
     if (isClosed) {
       throw new CatalogException("Catalog is closed.");
     }
-    LOGGER.info("Name of function: " + name);
-    LOGGER.info("input schema " + inputSchema);
-    LOGGER.info("output schema " + outputType);
+    // LOGGER.info("Name of function: " + name);
+    // LOGGER.info("input schema " + inputSchema);
+    // LOGGER.info("output schema " + outputType);
 
     try {
       queue

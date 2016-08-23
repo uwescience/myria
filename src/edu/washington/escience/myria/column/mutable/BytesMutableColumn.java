@@ -33,7 +33,7 @@ public final class BytesMutableColumn extends MutableColumn<ByteBuffer> {
    *
    * @param data the data
    * @param numData number of tuples.
-   * */
+   */
   public BytesMutableColumn(final ByteBuffer[] data, final int numData) {
     this.data = data;
     position = numData;
@@ -75,16 +75,16 @@ public final class BytesMutableColumn extends MutableColumn<ByteBuffer> {
   @Override
   public BytesColumn toColumn() {
     // arraycopy(Object src, int srcPos, Object dest, int destPos, int length)
-    LOGGER.info("byte array tocolumn was called!");
-    LOGGER.info("length of the bytebuffer array :" + data.length);
+    // LOGGER.info("byte array tocolumn was called!");
+    // LOGGER.info("length of the bytebuffer array :" + data.length);
 
     return new BytesColumn(data.clone(), position);
   }
 
   @Override
   public BytesMutableColumn clone() {
-    LOGGER.info("byte array clone was called!");
-    LOGGER.info("length of the bytebuffer array :" + data.length);
+    // LOGGER.info("byte array clone was called!");
+    // LOGGER.info("length of the bytebuffer array :" + data.length);
 
     return new BytesMutableColumn(data.clone(), position);
   }

@@ -88,8 +88,8 @@ public class PythonUDFFlatteningEvaluator extends FlatteningGenericEvaluator {
       rightColumnIdx = ((VariableExpression) right).getColumnIdx();
     }
 
-    LOGGER.info("Left column ID " + leftColumnIdx);
-    LOGGER.info("right column ID " + rightColumnIdx);
+    // LOGGER.info("Left column ID " + leftColumnIdx);
+    // LOGGER.info("right column ID " + rightColumnIdx);
   }
 
   /**
@@ -159,7 +159,7 @@ public class PythonUDFFlatteningEvaluator extends FlatteningGenericEvaluator {
       final AppendableTable result,
       final int colIdx)
       throws DbException {
-    LOGGER.info("eval called!");
+    // LOGGER.info("eval called!");
     if (pyWorker == null) {
       pyWorker = new PythonWorker();
       initEvaluator();
@@ -167,7 +167,7 @@ public class PythonUDFFlatteningEvaluator extends FlatteningGenericEvaluator {
 
     try {
       DataOutputStream dOut = pyWorker.getDataOutputStream();
-      LOGGER.info("got the output stream!");
+      // LOGGER.info("got the output stream!");
       ReadableTable lreadbuffer;
       // send left column
       lreadbuffer = tb;
@@ -195,7 +195,7 @@ public class PythonUDFFlatteningEvaluator extends FlatteningGenericEvaluator {
       final WritableColumn count, final AppendableTable result, final int colIdx)
       throws DbException {
 
-    LOGGER.info("trying to read now");
+    // LOGGER.info("trying to read now");
     int type = 0;
     Object obj = null;
     DataInputStream dIn = pyWorker.getDataInputStream();
@@ -216,7 +216,7 @@ public class PythonUDFFlatteningEvaluator extends FlatteningGenericEvaluator {
           dIn.readFully(excp);
           throw new DbException(new String(excp));
         } else {
-          LOGGER.info("type read: " + type);
+          // LOGGER.info("type read: " + type);
           if (type == MyriaConstants.PythonType.DOUBLE.getVal()) {
             obj = dIn.readDouble();
             result.putDouble(colIdx, (Double) obj);
@@ -232,7 +232,7 @@ public class PythonUDFFlatteningEvaluator extends FlatteningGenericEvaluator {
           } else if (type == MyriaConstants.PythonType.BYTES.getVal()) {
             int l = dIn.readInt();
             if (l > 0) {
-              LOGGER.info("length greater than zero!");
+              // LOGGER.info("length greater than zero!");
               obj = new byte[l];
               dIn.readFully((byte[]) obj);
               result.putByteBuffer(colIdx, ByteBuffer.wrap((byte[]) obj));
@@ -264,10 +264,10 @@ public class PythonUDFFlatteningEvaluator extends FlatteningGenericEvaluator {
     Preconditions.checkNotNull(dOut, "Output stream for python process cannot be null");
 
     Schema tbsc = tb.getSchema();
-    LOGGER.info("tuple batch schema " + tbsc.toString());
+    // LOGGER.info("tuple batch schema " + tbsc.toString());
     try {
       Type type = tbsc.getColumnType(columnIdx);
-      LOGGER.info("column index " + columnIdx + " columnType " + type.toString());
+      // LOGGER.info("column index " + columnIdx + " columnType " + type.toString());
       switch (type) {
         case BOOLEAN_TYPE:
           LOGGER.info("BOOLEAN type not supported for python function ");
@@ -286,7 +286,7 @@ public class PythonUDFFlatteningEvaluator extends FlatteningGenericEvaluator {
           dOut.writeInt(MyriaConstants.PythonType.INT.getVal());
           dOut.writeInt(Integer.SIZE / Byte.SIZE);
           dOut.writeInt(tb.getInt(columnIdx, row));
-          LOGGER.info("writing int to py process");
+          // LOGGER.info("writing int to py process");
           break;
         case LONG_TYPE:
           dOut.writeInt(MyriaConstants.PythonType.LONG.getVal());
@@ -301,7 +301,7 @@ public class PythonUDFFlatteningEvaluator extends FlatteningGenericEvaluator {
           break;
         case BYTES_TYPE:
           dOut.writeInt(MyriaConstants.PythonType.BYTES.getVal());
-          LOGGER.info("writing Bytebuffer to py process");
+          // LOGGER.info("writing Bytebuffer to py process");
           ByteBuffer input = tb.getByteBuffer(columnIdx, row);
           if (input != null && input.hasArray()) {
             // LOGGER.info("input array buffer length" + input.array().length);

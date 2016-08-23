@@ -143,9 +143,16 @@ public class PythonWorker {
    * @throws IOException
    */
   private void startPythonWorker() throws IOException {
+
     String pythonWorker = MyriaConstants.PYTHONWORKER;
     ProcessBuilder pb = new ProcessBuilder(MyriaConstants.PYTHONEXEC, "-m", pythonWorker);
     final Map<String, String> env = pb.environment();
+    StringBuilder sb = new StringBuilder();
+    sb.append(System.getenv("HOME"));
+    sb.append("/anaconda2/bin");
+    sb.append(":");
+    sb.append(env.get("PATH"));
+    env.put("PATH", sb.toString());
 
     env.put("PYTHONUNBUFFERED", "YES");
 

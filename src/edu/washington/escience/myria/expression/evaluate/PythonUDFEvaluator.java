@@ -38,7 +38,8 @@ import edu.washington.escience.myria.storage.TupleBatch;
 public class PythonUDFEvaluator extends GenericEvaluator {
 
   /** logger for this class. */
-  private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(PythonUDFEvaluator.class);
+  private static final org.slf4j.Logger LOGGER =
+      org.slf4j.LoggerFactory.getLogger(PythonUDFEvaluator.class);
 
   private final PythonFunctionRegistrar pyFunction;
 
@@ -62,7 +63,9 @@ public class PythonUDFEvaluator extends GenericEvaluator {
    * @param parameters parameters that are passed to the expression
    * @param pyFuncReg python function registrar to get the python function.
    */
-  public PythonUDFEvaluator(final Expression expression, final ExpressionOperatorParameter parameters,
+  public PythonUDFEvaluator(
+      final Expression expression,
+      final ExpressionOperatorParameter parameters,
       final PythonFunctionRegistrar pyFuncReg) {
     super(expression, parameters);
 
@@ -146,7 +149,11 @@ public class PythonUDFEvaluator extends GenericEvaluator {
   }
 
   @Override
-  public void eval(final ReadableTable tb, final int rowIdx, final WritableColumn result, final ReadableTable state)
+  public void eval(
+      final ReadableTable tb,
+      final int rowIdx,
+      final WritableColumn result,
+      final ReadableTable state)
       throws DbException {
     Object obj = evaluatePython(tb, rowIdx, state);
     if (obj == null) {
@@ -186,8 +193,12 @@ public class PythonUDFEvaluator extends GenericEvaluator {
    * @param state - state for aggregator functions
    * @throws DbException
    */
-  public void evalUpdatePyExpression(final ReadableTable tb, final int rowIdx, final AppendableTable result,
-      final ReadableTable state) throws DbException {
+  public void evalUpdatePyExpression(
+      final ReadableTable tb,
+      final int rowIdx,
+      final AppendableTable result,
+      final ReadableTable state)
+      throws DbException {
 
     Object obj = evaluatePython(tb, rowIdx, state);
     int resultcol = -1;
@@ -204,7 +215,7 @@ public class PythonUDFEvaluator extends GenericEvaluator {
           result.putDouble(resultcol, (Double) obj);
           break;
         case BYTES_TYPE:
-          LOGGER.info("updating state!");
+          // LOGGER.info("updating state!");
           result.putByteBuffer(resultcol, (ByteBuffer.wrap((byte[]) obj)));
 
           break;
@@ -245,13 +256,18 @@ public class PythonUDFEvaluator extends GenericEvaluator {
 
     try {
       if (needsState == false && (bRightState || bLeftState)) {
-        LOGGER.info("needs State: " + needsState + " Right column is state: " + bRightState + " Left column is state: "
-            + bLeftState);
+        LOGGER.info(
+            "needs State: "
+                + needsState
+                + " Right column is state: "
+                + bRightState
+                + " Left column is state: "
+                + bLeftState);
         throw new DbException("this evaluator should not need state!");
 
       } else {
         DataOutputStream dOut = pyWorker.getDataOutputStream();
-        LOGGER.info("got the output stream!");
+        // LOGGER.info("got the output stream!");
         ReadableTable lreadbuffer;
         // send left column
         if (bLeftState) {
@@ -296,7 +312,7 @@ public class PythonUDFEvaluator extends GenericEvaluator {
    * @throws DbException
    */
   private Object readFromStream() throws DbException {
-    LOGGER.info("trying to read now");
+    // LOGGER.info("trying to read now");
     int type = 0;
     Object obj = null;
     DataInputStream dIn = pyWorker.getDataInputStream();
@@ -310,20 +326,20 @@ public class PythonUDFEvaluator extends GenericEvaluator {
         dIn.readFully(excp);
         throw new DbException(new String(excp));
       } else {
-        LOGGER.info("type read: " + type);
+        // LOGGER.info("type read: " + type);
         if (type == MyriaConstants.PythonType.DOUBLE.getVal()) {
           obj = dIn.readDouble();
         } else if (type == MyriaConstants.PythonType.FLOAT.getVal()) {
           obj = dIn.readFloat();
         } else if (type == MyriaConstants.PythonType.INT.getVal()) {
-          LOGGER.info("trying to read int ");
+          // LOGGER.info("trying to read int ");
           obj = dIn.readInt();
         } else if (type == MyriaConstants.PythonType.LONG.getVal()) {
           obj = dIn.readLong();
         } else if (type == MyriaConstants.PythonType.BYTES.getVal()) {
           int l = dIn.readInt();
           if (l > 0) {
-            LOGGER.info("length greater than zero!");
+            // LOGGER.info("length greater than zero!");
             obj = new byte[l];
             dIn.readFully((byte[]) obj);
           }
@@ -345,17 +361,18 @@ public class PythonUDFEvaluator extends GenericEvaluator {
    * @param dOut
    * @throws DbException
    */
-  private void writeToStream(final ReadableTable tb, final int row, final int columnIdx, final DataOutputStream dOut)
+  private void writeToStream(
+      final ReadableTable tb, final int row, final int columnIdx, final DataOutputStream dOut)
       throws DbException {
 
     Preconditions.checkNotNull(tb, "tuple input cannot be null");
     Preconditions.checkNotNull(dOut, "Output stream for python process cannot be null");
 
     Schema tbsc = tb.getSchema();
-    LOGGER.info("tuple batch schema " + tbsc.toString());
+    // LOGGER.info("tuple batch schema " + tbsc.toString());
     try {
       Type type = tbsc.getColumnType(columnIdx);
-      LOGGER.info("column index " + columnIdx + " columnType " + type.toString());
+      // LOGGER.info("column index " + columnIdx + " columnType " + type.toString());
       switch (type) {
         case BOOLEAN_TYPE:
           LOGGER.info("BOOLEAN type not supported for python function ");
@@ -374,7 +391,7 @@ public class PythonUDFEvaluator extends GenericEvaluator {
           dOut.writeInt(MyriaConstants.PythonType.INT.getVal());
           dOut.writeInt(Integer.SIZE / Byte.SIZE);
           dOut.writeInt(tb.getInt(columnIdx, row));
-          LOGGER.info("writing int to py process");
+          // LOGGER.info("writing int to py process");
           break;
         case LONG_TYPE:
           dOut.writeInt(MyriaConstants.PythonType.LONG.getVal());
@@ -389,7 +406,7 @@ public class PythonUDFEvaluator extends GenericEvaluator {
           break;
         case BYTES_TYPE:
           dOut.writeInt(MyriaConstants.PythonType.BYTES.getVal());
-          LOGGER.info("writing Bytebuffer to py process");
+          // LOGGER.info("writing Bytebuffer to py process");
           ByteBuffer input = tb.getByteBuffer(columnIdx, row);
           if (input != null && input.hasArray()) {
             // LOGGER.info("input array buffer length" + input.array().length);

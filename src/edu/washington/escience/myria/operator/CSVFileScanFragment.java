@@ -59,7 +59,8 @@ public class CSVFileScanFragment extends LeafOperator {
   /** Which line of the file the scanner is currently on. */
   private long lineNumber = 0;
   private long byteOverlap = MyriaConstants.BYTE_OVERLAP_PARALLEL_INGEST;
-  private static final String truncatedQuoteErrorMessage = "EOF reached before encapsulated token finished";
+  private static final String truncatedQuoteErrorMessage =
+      "EOF reached before encapsulated token finished";
 
   private final boolean isLastWorker;
   private final long maxByteRange;
@@ -79,38 +80,88 @@ public class CSVFileScanFragment extends LeafOperator {
   /**
    * The logger for debug, trace, etc. messages in this class.
    */
-  private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(CSVFileScanFragment.class);
+  private static final org.slf4j.Logger LOGGER =
+      org.slf4j.LoggerFactory.getLogger(CSVFileScanFragment.class);
 
-  public CSVFileScanFragment(final String filename, final Schema schema, final long startByteRange,
-      final long endByteRange, final boolean isLastWorker) {
+  public CSVFileScanFragment(
+      final String filename,
+      final Schema schema,
+      final long startByteRange,
+      final long endByteRange,
+      final boolean isLastWorker) {
     this(filename, schema, startByteRange, endByteRange, isLastWorker, null, null, null, null);
   }
 
-  public CSVFileScanFragment(final DataSource source, final Schema schema, final long startByteRange,
-      final long endByteRange, final boolean isLastWorker) {
+  public CSVFileScanFragment(
+      final DataSource source,
+      final Schema schema,
+      final long startByteRange,
+      final long endByteRange,
+      final boolean isLastWorker) {
     this(source, schema, startByteRange, endByteRange, isLastWorker, null, null, null, null);
   }
 
-  public CSVFileScanFragment(final String filename, final Schema schema, final long startByteRange,
-      final long endByteRange, final boolean isLastWorker, final Character delimiter) {
-    this(new FileSource(filename), schema, startByteRange, endByteRange, isLastWorker, delimiter, null, null, null);
+  public CSVFileScanFragment(
+      final String filename,
+      final Schema schema,
+      final long startByteRange,
+      final long endByteRange,
+      final boolean isLastWorker,
+      final Character delimiter) {
+    this(
+        new FileSource(filename),
+        schema,
+        startByteRange,
+        endByteRange,
+        isLastWorker,
+        delimiter,
+        null,
+        null,
+        null);
   }
 
-  public CSVFileScanFragment(final DataSource source, final Schema schema, final long startByteRange,
-      final long endByteRange, final boolean isLastWorker, final Character delimiter) {
+  public CSVFileScanFragment(
+      final DataSource source,
+      final Schema schema,
+      final long startByteRange,
+      final long endByteRange,
+      final boolean isLastWorker,
+      final Character delimiter) {
     this(source, schema, startByteRange, endByteRange, isLastWorker, delimiter, null, null, null);
   }
 
-  public CSVFileScanFragment(final String filename, final Schema schema, final long startByteRange,
-      final long endByteRange, final boolean isLastWorker, @Nullable final Character delimiter,
-      @Nullable final Character quote, @Nullable final Character escape, @Nullable final Integer numberOfSkippedLines) {
-    this(new FileSource(filename), schema, startByteRange, endByteRange, isLastWorker, delimiter, quote, escape,
+  public CSVFileScanFragment(
+      final String filename,
+      final Schema schema,
+      final long startByteRange,
+      final long endByteRange,
+      final boolean isLastWorker,
+      @Nullable final Character delimiter,
+      @Nullable final Character quote,
+      @Nullable final Character escape,
+      @Nullable final Integer numberOfSkippedLines) {
+    this(
+        new FileSource(filename),
+        schema,
+        startByteRange,
+        endByteRange,
+        isLastWorker,
+        delimiter,
+        quote,
+        escape,
         numberOfSkippedLines);
   }
 
-  public CSVFileScanFragment(final DataSource source, final Schema schema, final long partitionStartByteRange,
-      final long partitionEndByteRange, final boolean isLastWorker, @Nullable final Character delimiter,
-      @Nullable final Character quote, @Nullable final Character escape, @Nullable final Integer numberOfSkippedLines) {
+  public CSVFileScanFragment(
+      final DataSource source,
+      final Schema schema,
+      final long partitionStartByteRange,
+      final long partitionEndByteRange,
+      final boolean isLastWorker,
+      @Nullable final Character delimiter,
+      @Nullable final Character quote,
+      @Nullable final Character escape,
+      @Nullable final Integer numberOfSkippedLines) {
     this.source = (AmazonS3Source) Preconditions.checkNotNull(source, "source");
     this.schema = Preconditions.checkNotNull(schema, "schema");
 
@@ -194,7 +245,8 @@ public class CSVFileScanFragment extends LeafOperator {
            * of the file, mark finalLineFound as true.
            */
           if (trailingEndByte < maxByteRange) {
-            InputStream trailingEndInputStream = source.getInputStream(trailingStartByte, trailingEndByte);
+            InputStream trailingEndInputStream =
+                source.getInputStream(trailingStartByte, trailingEndByte);
             int dataChar = trailingEndInputStream.read();
             while (dataChar != -1) {
               char currentChar = (char) dataChar;
@@ -216,13 +268,20 @@ public class CSVFileScanFragment extends LeafOperator {
            * trailing range.
            */
           if (finalLineFound) {
-            long characterPositionAtBeginningOfRecord = (record == null) ? 0 : record.getCharacterPosition();
-            InputStream completePartitionStream = source.getInputStream(adjustedStartByteRange + byteOffset,
-                finalBytePositionFound);
+            long characterPositionAtBeginningOfRecord =
+                (record == null) ? 0 : record.getCharacterPosition();
+            InputStream completePartitionStream =
+                source.getInputStream(adjustedStartByteRange + byteOffset, finalBytePositionFound);
 
-            BufferedReader reader = new BufferedReader(new InputStreamReader(completePartitionStream));
+            BufferedReader reader =
+                new BufferedReader(new InputStreamReader(completePartitionStream));
             reader.skip(characterPositionAtBeginningOfRecord);
-            parser = new CSVParser(reader, CSVFormat.newFormat(delimiter).withQuote(quote).withEscape(escape), 0, 0);
+            parser =
+                new CSVParser(
+                    reader,
+                    CSVFormat.newFormat(delimiter).withQuote(quote).withEscape(escape),
+                    0,
+                    0);
             iterator = parser.iterator();
             record = iterator.next();
             if (nextRecordTruncated) {
@@ -277,8 +336,16 @@ public class CSVFileScanFragment extends LeafOperator {
                 break;
             }
           } catch (final IllegalArgumentException e) {
-            throw new DbException("Error parsing column " + column + " of row " + lineNumber + ", expected type: "
-                + schema.getColumnType(column) + ", scanned value: " + cell, e);
+            throw new DbException(
+                "Error parsing column "
+                    + column
+                    + " of row "
+                    + lineNumber
+                    + ", expected type: "
+                    + schema.getColumnType(column)
+                    + ", scanned value: "
+                    + cell,
+                e);
           }
         }
         /*
@@ -349,8 +416,9 @@ public class CSVFileScanFragment extends LeafOperator {
                 currentChar = partitionInputStream.read();
                 byteOffset++;
                 if (currentChar != '\n') {
-                  partitionInputStream = source.getInputStream(adjustedStartByteRange + byteOffset,
-                      partitionEndByteRange);
+                  partitionInputStream =
+                      source.getInputStream(
+                          adjustedStartByteRange + byteOffset, partitionEndByteRange);
                 }
               }
             }
@@ -359,15 +427,18 @@ public class CSVFileScanFragment extends LeafOperator {
           int currentChar = partitionInputStream.read();
           byteOffset++;
           if (currentChar != '\n') {
-            partitionInputStream = source.getInputStream(adjustedStartByteRange + byteOffset, partitionEndByteRange);
+            partitionInputStream =
+                source.getInputStream(adjustedStartByteRange + byteOffset, partitionEndByteRange);
           }
         }
       }
 
       /* If the partition is incomplete, do not instantiate the parser */
       if (!flagAsIncomplete) {
-        parser = new CSVParser(new BufferedReader(new InputStreamReader(partitionInputStream)), CSVFormat.newFormat(
-            delimiter).withQuote(quote).withEscape(escape));
+        parser =
+            new CSVParser(
+                new BufferedReader(new InputStreamReader(partitionInputStream)),
+                CSVFormat.newFormat(delimiter).withQuote(quote).withEscape(escape));
         iterator = parser.iterator();
         for (int i = 0; i < numberOfSkippedLines; i++) {
           iterator.next();
@@ -383,7 +454,7 @@ public class CSVFileScanFragment extends LeafOperator {
     AmazonS3Source file = new AmazonS3Source(filename, null, null); // ??
     InputStream is = file.getInputStream();
 
-    LOGGER.info("filename " + filename);
+    // LOGGER.info("filename " + filename);
 
     byte[] data = null;
     try {
@@ -391,7 +462,7 @@ public class CSVFileScanFragment extends LeafOperator {
     } catch (IOException e) {
       throw new DbException(e);
     }
-    LOGGER.info("size of bytebuffer written: " + data.length);
+    // LOGGER.info("size of bytebuffer written: " + data.length);
     return ByteBuffer.wrap(data);
   }
 }
