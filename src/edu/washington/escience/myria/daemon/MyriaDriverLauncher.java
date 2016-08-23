@@ -217,57 +217,64 @@ public final class MyriaDriverLauncher {
    * Used for logging command line arguments.
    */
   private static String genStartupMessage(Class<? extends Name<?>>[] classes, Injector inj) {
-    String allparams = Arrays.stream(classes).map(c -> {
-      final NamedParameter annotation = c.getAnnotation(NamedParameter.class);
+    String allparams =
+        Arrays.stream(classes)
+            .map(
+                c -> {
+                  final NamedParameter annotation = c.getAnnotation(NamedParameter.class);
 
-      final String fullName = c.getName();
-      final String simpleName = c.getSimpleName();
-      final String shortName = annotation.short_name();
-      final String doc = annotation.doc();
-      final String defaultVal;
-      {
-        if (!annotation.default_value().equals(NamedParameter.REEF_UNINITIALIZED_VALUE)) {
-          defaultVal = annotation.default_value();
-        } else if (!annotation.default_class().equals(Void.class)) {
-          defaultVal = annotation.default_class().getSimpleName();
-        } else if (annotation.default_values().length > 0) {
-          defaultVal = Arrays.toString(annotation.default_values());
-        } else if (annotation.default_classes().length > 0) {
-          final String classNames =
-              Arrays.stream(annotation.default_classes())
-                  .map(Class::getSimpleName)
-                  .reduce("", (a, b) -> a + ", " + b);
-          defaultVal = String.format("[%s]", classNames);
-        } else {
-          defaultVal = "";
-        }
-      }
+                  final String fullName = c.getName();
+                  final String simpleName = c.getSimpleName();
+                  final String shortName = annotation.short_name();
+                  final String doc = annotation.doc();
+                  final String defaultVal;
+                  {
+                    if (!annotation
+                        .default_value()
+                        .equals(NamedParameter.REEF_UNINITIALIZED_VALUE)) {
+                      defaultVal = annotation.default_value();
+                    } else if (!annotation.default_class().equals(Void.class)) {
+                      defaultVal = annotation.default_class().getSimpleName();
+                    } else if (annotation.default_values().length > 0) {
+                      defaultVal = Arrays.toString(annotation.default_values());
+                    } else if (annotation.default_classes().length > 0) {
+                      final String classNames =
+                          Arrays.stream(annotation.default_classes())
+                              .map(Class::getSimpleName)
+                              .reduce("", (a, b) -> a + ", " + b);
+                      defaultVal = String.format("[%s]", classNames);
+                    } else {
+                      defaultVal = "";
+                    }
+                  }
 
-      final StringBuilder sb = new StringBuilder(simpleName);
-      if (!shortName.isEmpty()) {
-        sb.append(" [-").append(shortName).append("]");
-      }
-      // If desired, the type of the parameter can be obtained from
-      // commandLineConf.getNamedParameters() --> .getSimpleArgName()
-      sb.append(": ").append(doc).append("\n -> ");
+                  final StringBuilder sb = new StringBuilder(simpleName);
+                  if (!shortName.isEmpty()) {
+                    sb.append(" [-").append(shortName).append("]");
+                  }
+                  // If desired, the type of the parameter can be obtained from
+                  // commandLineConf.getNamedParameters() --> .getSimpleArgName()
+                  sb.append(": ").append(doc).append("\n -> ");
 
-      boolean ok;
-      try {
-        ok = inj.isParameterSet(fullName);
-        if (ok) {
-          sb.append(inj.getInstance(fullName).toString());
-        }
-      } catch (InjectionException | BindException e) {
-        ok = false;
-      }
-      if (!ok) {
-        if (!defaultVal.isEmpty()) sb.append("[cannot parse; using default] ").append(defaultVal);
-        else sb.append("[cannot parse; no default]");
-      }
-      return sb.toString();
-    }).reduce("", (a, b) -> a + "\n" + b);
+                  boolean ok;
+                  try {
+                    ok = inj.isParameterSet(fullName);
+                    if (ok) {
+                      sb.append(inj.getInstance(fullName).toString());
+                    }
+                  } catch (InjectionException | BindException e) {
+                    ok = false;
+                  }
+                  if (!ok) {
+                    if (!defaultVal.isEmpty())
+                      sb.append("[cannot parse; using default] ").append(defaultVal);
+                    else sb.append("[cannot parse; no default]");
+                  }
+                  return sb.toString();
+                })
+            .reduce("", (a, b) -> a + "\n" + b);
 
-    return "MyriaDriverLauncher configuration:\n"+allparams;
+    return "MyriaDriverLauncher configuration:\n" + allparams;
   }
 
   /**
