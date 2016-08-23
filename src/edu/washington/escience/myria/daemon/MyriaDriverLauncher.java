@@ -250,11 +250,11 @@ public final class MyriaDriverLauncher {
 
                   final StringBuilder sb = new StringBuilder(simpleName);
                   if (!shortName.isEmpty()) {
-                    sb.append(" [-").append(shortName).append("]");
+                    sb.append(String.format(" [-%s]", shortName));
                   }
                   // If desired, the type of the parameter can be obtained from
                   // commandLineConf.getNamedParameters() --> .getSimpleArgName()
-                  sb.append(": ").append(doc).append("\n -> ");
+                  sb.append(String.format(": %s\n-> ", doc));
 
                   boolean ok;
                   try {
@@ -266,9 +266,11 @@ public final class MyriaDriverLauncher {
                     ok = false;
                   }
                   if (!ok) {
-                    if (!defaultVal.isEmpty())
+                    if (!defaultVal.isEmpty()) {
                       sb.append("[cannot parse; using default] ").append(defaultVal);
-                    else sb.append("[cannot parse; no default]");
+                    } else {
+                      sb.append("[cannot parse; no default]");
+                    }
                   }
                   return sb.toString();
                 })
