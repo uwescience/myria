@@ -239,7 +239,8 @@ public class PerfEnforceDataPreparation {
    * Run Statistics on the table by extending statistics space for each column and running analyze on the table for all
    * workers
    */
-  public void setStatisticsAnalyze(final PerfEnforceTableEncoding t) throws DbException {
+  public void setStatisticsAnalyze(final PerfEnforceTableEncoding t)
+      throws DbException, InterruptedException {
     /*
      * If this table is Fact, we need to make sure we run "analyze" on all versions of the table
      */
@@ -268,20 +269,18 @@ public class PerfEnforceDataPreparation {
   }
 
   public void postgresStatsAnalyzeTable(final PerfEnforceTableEncoding t, Set<Integer> workers)
-      throws DbException {
+      throws DbException, InterruptedException {
     for (int i = 0; i < t.schema.getColumnNames().size(); i++) {
       server.executeSQLStatement(
           String.format(
               "ALTER TABLE %s ALTER COLUMN %s SET STATISTICS 500;",
               t.relationKey.toString(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL),
               t.schema.getColumnName(i)),
-          Schema.EMPTY_SCHEMA,
           workers);
     }
     server.executeSQLStatement(
         String.format(
             "ANALYZE %s;", t.relationKey.toString(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL)),
-        Schema.EMPTY_SCHEMA,
         workers);
   }
 

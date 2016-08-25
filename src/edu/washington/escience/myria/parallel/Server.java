@@ -1322,6 +1322,32 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
     return queryID;
   }
 
+  public void executeSQLStatement(final String sqlString, final Set<Integer> workers)
+      throws DbException, InterruptedException {
+
+    /* Execute the SQL command on the set of workers */
+    try {
+      Map<Integer, SubQueryPlan> workerPlans = new HashMap<>();
+      for (Integer workerId : workers) {
+        workerPlans.put(workerId, new SubQueryPlan(new DbExecute(null, sqlString, null)));
+      }
+      ListenableFuture<Query> qf =
+          queryManager.submitQuery(
+              "sql execute " + sqlString,
+              "sql execute " + sqlString,
+              "sql execute " + sqlString,
+              new SubQueryPlan(new SinkRoot(new EOSSource())),
+              workerPlans);
+      try {
+        qf.get();
+      } catch (ExecutionException e) {
+        throw new DbException("Error executing query", e.getCause());
+      }
+    } catch (CatalogException e) {
+      throw new DbException(e);
+    }
+  }
+
   public String[] executeSQLStatement(
       final String sqlString, final Schema outputSchema, final Set<Integer> workers)
       throws DbException {
@@ -1356,6 +1382,10 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
     }
     String response = new String(responseBytes, Charset.forName("UTF-8"));
     String[] tuples = response.split("\r\n");
+    // LOGGING
+    for (String t : tuples) {
+      LOGGER.warn("ROW OUTPUT " + t);
+    }
     return tuples;
   }
 

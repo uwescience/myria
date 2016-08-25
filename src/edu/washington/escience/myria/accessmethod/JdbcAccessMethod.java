@@ -669,8 +669,7 @@ public final class JdbcAccessMethod extends AccessMethod {
   public void createMaterializedViewPostgres(final String viewName, final String viewDefinition)
       throws DbException {
     String statement =
-        Joiner.on(' ')
-            .join("CREATE MATERIALIZED VIEW", viewName, "AS", viewDefinition, ";");
+        Joiner.on(' ').join("CREATE MATERIALIZED VIEW", viewName, "AS", viewDefinition, ";");
     execute(statement);
   }
 
