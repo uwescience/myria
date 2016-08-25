@@ -208,8 +208,8 @@ public final class FileScan extends LeafOperator {
               Float f = Floats.tryParse(cell);
               if (f != null) {
                 buffer.putBoolean(column, f != 0);
-              } else if (BooleanUtils.toBoolean(cell)) {
-                buffer.putBoolean(column, Boolean.parseBoolean(cell));
+              } else {
+                buffer.putBoolean(column, BooleanUtils.toBoolean(cell));
               }
               break;
             case DOUBLE_TYPE:
