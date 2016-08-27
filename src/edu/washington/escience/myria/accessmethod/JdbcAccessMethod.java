@@ -454,7 +454,7 @@ public final class JdbcAccessMethod extends AccessMethod {
         execute("RENAME TABLE " + newName + " TO " + oldName);
         break;
       case MyriaConstants.STORAGE_SYSTEM_POSTGRESQL:
-        dropTableIfExists(oldRelation);
+        dropTableIfExistsCascade(oldRelation);
         execute("ALTER TABLE " + newName + " RENAME TO " + oldName);
         break;
       default:

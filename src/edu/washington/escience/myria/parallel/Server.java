@@ -100,6 +100,7 @@ import edu.washington.escience.myria.operator.DbCreateFunction;
 import edu.washington.escience.myria.operator.DbCreateIndex;
 import edu.washington.escience.myria.operator.DbCreateView;
 import edu.washington.escience.myria.operator.DbDelete;
+import edu.washington.escience.myria.operator.DbExecute;
 import edu.washington.escience.myria.operator.DbInsert;
 import edu.washington.escience.myria.operator.DbQueryScan;
 import edu.washington.escience.myria.operator.DuplicateTBGenerator;
@@ -1329,14 +1330,17 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
     try {
       Map<Integer, SubQueryPlan> workerPlans = new HashMap<>();
       for (Integer workerId : workers) {
-        workerPlans.put(workerId, new SubQueryPlan(new DbExecute(null, sqlString, null)));
+        workerPlans.put(
+            workerId,
+            new SubQueryPlan(
+                new DbExecute(EmptyRelation.of(Schema.EMPTY_SCHEMA), sqlString, null)));
       }
       ListenableFuture<Query> qf =
           queryManager.submitQuery(
               "sql execute " + sqlString,
               "sql execute " + sqlString,
               "sql execute " + sqlString,
-              new SubQueryPlan(new SinkRoot(new EOSSource())),
+              new SubQueryPlan(new EmptySink(new EOSSource())),
               workerPlans);
       try {
         qf.get();
@@ -1359,12 +1363,14 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
     final ExchangePairID operatorId = ExchangePairID.newID();
     CollectProducer producer = new CollectProducer(scan, operatorId, MyriaConstants.MASTER_ID);
     SubQueryPlan workerPlan = new SubQueryPlan(producer);
-    Map<Integer, SubQueryPlan> workerPlans = new HashMap<>(workers.size());
+    Map<Integer, SubQueryPlan> workerPlans = new HashMap<>();
     for (Integer w : workers) {
       workerPlans.put(w, workerPlan);
     }
+    
     final Consumer consumer = new Consumer(outputSchema, operatorId, workers);
     TupleSink output = new TupleSink(consumer, writer, byteSink);
+    
     final SubQueryPlan masterPlan = new SubQueryPlan(output);
 
     String planString = "execute sql statement : " + sqlString;

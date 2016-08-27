@@ -284,7 +284,8 @@ public class PerfEnforceDataPreparation {
         workers);
   }
 
-  public void collectSelectivities(final PerfEnforceTableEncoding t) throws PerfEnforceException {
+  public void collectSelectivities(final PerfEnforceTableEncoding t)
+      throws PerfEnforceException, Exception {
     List<PerfEnforceStatisticsEncoding> statsList = new ArrayList<PerfEnforceStatisticsEncoding>();
     try {
       if (t.type.equals("fact")) {
@@ -315,7 +316,8 @@ public class PerfEnforceDataPreparation {
       mapper.writeValue(statsObjectWriter, statsList);
       statsObjectWriter.close();
     } catch (Exception e) {
-      throw new PerfEnforceException("Error collecting table statistics");
+      throw e;
+      //throw new PerfEnforceException("Error collecting table statistics");
     }
   }
 
@@ -350,7 +352,8 @@ public class PerfEnforceDataPreparation {
                 tableName,
                 selectivityList.get(i));
         String[] sqlResult =
-            server.executeSQLStatement(rankingQuery, attributeKeySchema, new HashSet<Integer>(1));
+            server.executeSQLStatement(
+                rankingQuery, attributeKeySchema, new HashSet<Integer>(Arrays.asList(1)));
 
         selectivityKeys.add(sqlResult[0]);
       }
