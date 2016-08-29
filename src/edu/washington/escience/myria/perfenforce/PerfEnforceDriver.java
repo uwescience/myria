@@ -80,14 +80,13 @@ public final class PerfEnforceDriver {
       } else {
         perfenforceDataPrepare.ingestDimension(currentTable);
       }
-      perfenforceDataPrepare.setStatisticsAnalyze(currentTable);
+      perfenforceDataPrepare.analyzeTable(currentTable);
       perfenforceDataPrepare.collectSelectivities(currentTable);
     }
 
     PSLAManagerWrapper pslaManager = new PSLAManagerWrapper();
     pslaManager.generateQueries();
-
-    perfenforceDataPrepare.collectFeaturesFromQueries();
+    perfenforceDataPrepare.collectFeaturesFromGeneratedQueries();
 
     pslaManager.generatePSLA();
     isDonePSLA = true;

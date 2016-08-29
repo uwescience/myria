@@ -4,6 +4,8 @@
 package edu.washington.escience.myria.perfenforce;
 
 import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.PrintWriter;
 import java.nio.file.Path;
@@ -239,12 +241,12 @@ public class PerfEnforceDataPreparation {
    * Run Statistics on the table by extending statistics space for each column and running analyze on the table for all
    * workers
    */
-  public void setStatisticsAnalyze(final PerfEnforceTableEncoding t)
+  public void analyzeTable(final PerfEnforceTableEncoding t)
       throws DbException, InterruptedException {
     /*
      * If this table is Fact, we need to make sure we run "analyze" on all versions of the table
      */
-    if (t.type.equals("fact")) {
+    if (t.type.equalsIgnoreCase("fact")) {
       for (Entry<Integer, RelationKey> entry : factTableRelationMapper.entrySet()) {
         PerfEnforceTableEncoding temp =
             new PerfEnforceTableEncoding(
@@ -286,35 +288,42 @@ public class PerfEnforceDataPreparation {
 
   public void collectSelectivities(final PerfEnforceTableEncoding t)
       throws PerfEnforceException, Exception {
-    List<PerfEnforceStatisticsEncoding> statsList = new ArrayList<PerfEnforceStatisticsEncoding>();
+
     try {
-      if (t.type.equals("fact")) {
-        for (Integer currentConfig : PerfEnforceDriver.configurations) {
+      /* record the stats for each configuration */
+      for (Integer currentConfig : PerfEnforceDriver.configurations) {
+        Path statsWorkerPath =
+            PerfEnforceDriver.configurationPath
+                .resolve(currentConfig + "_Workers")
+                .resolve("stats.json");
+        PerfEnforceStatisticsEncoding currentStatsEncoding;
+        if (t.type.equalsIgnoreCase("fact")) {
+
           RelationKey factRelationKey = factTableRelationMapper.get(currentConfig);
           long factTableTupleCount = server.getDatasetStatus(factRelationKey).getNumTuples();
-          statsList.add(
+          currentStatsEncoding =
               runTableRanking(
-                  factRelationKey, factTableTupleCount, currentConfig, t.type, t.keys, t.schema));
-        }
-      } else {
-        RelationKey dimensionTableKey = t.relationKey;
-        long dimensionTableTupleCount = server.getDatasetStatus(dimensionTableKey).getNumTuples();
-        statsList.add(
-            runTableRanking(
-                dimensionTableKey,
-                dimensionTableTupleCount,
-                Collections.max(PerfEnforceDriver.configurations),
-                t.type,
-                t.keys,
-                t.schema));
-      }
+                  factRelationKey, factTableTupleCount, currentConfig, t.type, t.keys, t.schema);
 
-      PrintWriter statsObjectWriter =
-          new PrintWriter(
-              PerfEnforceDriver.configurationPath.resolve("stats.json").toString(), "UTF-8");
-      ObjectMapper mapper = new ObjectMapper();
-      mapper.writeValue(statsObjectWriter, statsList);
-      statsObjectWriter.close();
+        } else {
+          RelationKey dimensionTableKey = t.relationKey;
+          long dimensionTableTupleCount = server.getDatasetStatus(dimensionTableKey).getNumTuples();
+          currentStatsEncoding =
+              runTableRanking(
+                  dimensionTableKey,
+                  dimensionTableTupleCount,
+                  Collections.max(PerfEnforceDriver.configurations),
+                  t.type,
+                  t.keys,
+                  t.schema);
+        }
+
+        PrintWriter statsObjectWriter =
+            new PrintWriter(new FileOutputStream(new File(statsWorkerPath.toString()), true));
+        ObjectMapper mapper = new ObjectMapper();
+        mapper.writeValue(statsObjectWriter, currentStatsEncoding);
+        statsObjectWriter.close();
+      }
     } catch (Exception e) {
       throw e;
       //throw new PerfEnforceException("Error collecting table statistics");
@@ -370,7 +379,7 @@ public class PerfEnforceDataPreparation {
     }
   }
 
-  public void collectFeaturesFromQueries() throws PerfEnforceException {
+  public void collectFeaturesFromGeneratedQueries() throws PerfEnforceException {
 
     for (Integer config : PerfEnforceDriver.configurations) {
       Path workerPath =

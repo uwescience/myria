@@ -39,6 +39,12 @@ public final class PerfEnforceResource {
     return Response.noContent().build();
   }
 
+  @GET
+  @Path("/isDonePSLA")
+  public Response isDonePSLA() {
+    return Response.ok(server.getPerfEnforceDriver().isDonePSLA()).build();
+  }
+
   @POST
   @Path("/setTier")
   @Consumes(MediaType.MULTIPART_FORM_DATA)
@@ -63,12 +69,6 @@ public final class PerfEnforceResource {
       throws PerfEnforceException {
     server.getPerfEnforceDriver().recordRealRuntime(queryRuntime);
     return Response.noContent().build();
-  }
-
-  @GET
-  @Path("/isDonePSLA")
-  public Response isDonePSLA() {
-    return Response.ok(server.getPerfEnforceDriver().isDonePSLA()).build();
   }
 
   @GET

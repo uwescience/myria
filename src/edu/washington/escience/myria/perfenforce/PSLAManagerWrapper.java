@@ -10,10 +10,11 @@ import java.nio.file.Path;
  * A wrapper for the PSLAManager executable
  */
 public class PSLAManagerWrapper {
-  final Path PSLAManagerPath;
+  final Path PSLAManagerExePath;
 
   public PSLAManagerWrapper() {
-    PSLAManagerPath = PerfEnforceDriver.configurationPath.resolve("PLSAManager");
+    PSLAManagerExePath =
+        PerfEnforceDriver.configurationPath.resolve("PSLAManager").resolve("PSLAManager.exe");
   }
 
   public void generateQueries() {
@@ -22,8 +23,8 @@ public class PSLAManagerWrapper {
           Runtime.getRuntime()
               .exec(
                   "mono "
-                      + PSLAManagerPath.toString()
-                      + "PSLAManager.exe -f "
+                      + PSLAManagerExePath.toString()
+                      + " -f "
                       + PerfEnforceDriver.configurationPath.toString()
                       + " -q");
       p.waitFor();
@@ -38,8 +39,8 @@ public class PSLAManagerWrapper {
           Runtime.getRuntime()
               .exec(
                   "mono "
-                      + PSLAManagerPath.toString()
-                      + "PSLAManager.exe -f "
+                      + PSLAManagerExePath.toString()
+                      + " -f "
                       + PerfEnforceDriver.configurationPath.toString()
                       + " -p");
       p.waitFor();
