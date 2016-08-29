@@ -22,7 +22,7 @@ public class PSLAManagerWrapper {
       Process p =
           Runtime.getRuntime()
               .exec(
-                  "mono "
+                  "sudo mono "
                       + PSLAManagerExePath.toString()
                       + " -f "
                       + PerfEnforceDriver.configurationPath.toString()
@@ -38,7 +38,7 @@ public class PSLAManagerWrapper {
       Process p =
           Runtime.getRuntime()
               .exec(
-                  "mono "
+                  "sudo mono "
                       + PSLAManagerExePath.toString()
                       + " -f "
                       + PerfEnforceDriver.configurationPath.toString()

@@ -67,6 +67,7 @@ public class PerfEnforceDataPreparation {
    */
   public HashMap<Integer, RelationKey> ingestFact(final PerfEnforceTableEncoding factTableDesc)
       throws Exception {
+    factTableDescription = factTableDesc;
     factTableRelationMapper = new HashMap<Integer, RelationKey>();
 
     ArrayList<RelationKey> relationKeysToUnion = new ArrayList<RelationKey>();
@@ -286,42 +287,50 @@ public class PerfEnforceDataPreparation {
         workers);
   }
 
-  public void collectSelectivities(final PerfEnforceTableEncoding t)
-      throws PerfEnforceException, Exception {
+  public void collectSelectivities() throws PerfEnforceException, Exception {
 
     try {
       /* record the stats for each configuration */
       for (Integer currentConfig : PerfEnforceDriver.configurations) {
+
         Path statsWorkerPath =
             PerfEnforceDriver.configurationPath
                 .resolve(currentConfig + "_Workers")
                 .resolve("stats.json");
-        PerfEnforceStatisticsEncoding currentStatsEncoding;
-        if (t.type.equalsIgnoreCase("fact")) {
+        List<PerfEnforceStatisticsEncoding> statsEncodingList =
+            new ArrayList<PerfEnforceStatisticsEncoding>();
 
-          RelationKey factRelationKey = factTableRelationMapper.get(currentConfig);
-          long factTableTupleCount = server.getDatasetStatus(factRelationKey).getNumTuples();
-          currentStatsEncoding =
-              runTableRanking(
-                  factRelationKey, factTableTupleCount, currentConfig, t.type, t.keys, t.schema);
+        RelationKey factRelationKey = factTableRelationMapper.get(currentConfig);
+        long factTableTupleCount = server.getDatasetStatus(factRelationKey).getNumTuples();
+        statsEncodingList.add(
+            runTableRanking(
+                factRelationKey,
+                factTableTupleCount,
+                currentConfig,
+                factTableDescription.type,
+                factTableDescription.keys,
+                factTableDescription.schema));
 
-        } else {
-          RelationKey dimensionTableKey = t.relationKey;
-          long dimensionTableTupleCount = server.getDatasetStatus(dimensionTableKey).getNumTuples();
-          currentStatsEncoding =
-              runTableRanking(
-                  dimensionTableKey,
-                  dimensionTableTupleCount,
-                  Collections.max(PerfEnforceDriver.configurations),
-                  t.type,
-                  t.keys,
-                  t.schema);
+        for (PerfEnforceTableEncoding t : PerfEnforceDriver.tableList) {
+          if (t.type.equalsIgnoreCase("dimension")) {
+            RelationKey dimensionTableKey = t.relationKey;
+            long dimensionTableTupleCount =
+                server.getDatasetStatus(dimensionTableKey).getNumTuples();
+            statsEncodingList.add(
+                runTableRanking(
+                    dimensionTableKey,
+                    dimensionTableTupleCount,
+                    Collections.max(PerfEnforceDriver.configurations),
+                    t.type,
+                    t.keys,
+                    t.schema));
+          }
         }
 
         PrintWriter statsObjectWriter =
-            new PrintWriter(new FileOutputStream(new File(statsWorkerPath.toString()), true));
+            new PrintWriter(new FileOutputStream(new File(statsWorkerPath.toString())));
         ObjectMapper mapper = new ObjectMapper();
-        mapper.writeValue(statsObjectWriter, currentStatsEncoding);
+        mapper.writeValue(statsObjectWriter, statsEncodingList);
         statsObjectWriter.close();
       }
     } catch (Exception e) {

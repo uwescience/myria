@@ -34,9 +34,11 @@ public final class PerfEnforceDriver {
   final public static List<Integer> configurations = Arrays.asList(4, 6, 8, 10, 12);
 
   public static Path configurationPath;
+  public static List<PerfEnforceTableEncoding> tableList;
 
   private final Server server;
   private boolean isDonePSLA;
+
   private PerfEnforceOnlineLearning perfenforceOnlineLearning;
 
   public PerfEnforceDriver(final Server server, final String instancePath) {
@@ -70,6 +72,7 @@ public final class PerfEnforceDriver {
 
   public void preparePSLA(List<PerfEnforceTableEncoding> tableList)
       throws PerfEnforceException, DbException, Exception {
+    this.tableList = tableList;
     fetchS3Files();
 
     PerfEnforceDataPreparation perfenforceDataPrepare = new PerfEnforceDataPreparation(server);
@@ -81,9 +84,9 @@ public final class PerfEnforceDriver {
         perfenforceDataPrepare.ingestDimension(currentTable);
       }
       perfenforceDataPrepare.analyzeTable(currentTable);
-      perfenforceDataPrepare.collectSelectivities(currentTable);
     }
 
+    perfenforceDataPrepare.collectSelectivities();
     PSLAManagerWrapper pslaManager = new PSLAManagerWrapper();
     pslaManager.generateQueries();
     perfenforceDataPrepare.collectFeaturesFromGeneratedQueries();
@@ -95,6 +98,7 @@ public final class PerfEnforceDriver {
   /*
    * Start the tier and begin the new query session
    */
+
   public boolean isDonePSLA() {
     return isDonePSLA;
   }
