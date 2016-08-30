@@ -41,6 +41,11 @@ public enum Type implements Serializable {
     }
 
     @Override
+    public Class<?> toJavaArrayType() {
+      return int[].class;
+    }
+
+    @Override
     public Class<?> toJavaObjectType() {
       return Integer.class;
     }
@@ -78,6 +83,11 @@ public enum Type implements Serializable {
     @Override
     public Class<?> toJavaType() {
       return float.class;
+    }
+
+    @Override
+    public Class<?> toJavaArrayType() {
+      return float[].class;
     }
 
     @Override
@@ -121,6 +131,11 @@ public enum Type implements Serializable {
     }
 
     @Override
+    public Class<?> toJavaArrayType() {
+      return double[].class;
+    }
+
+    @Override
     public Class<?> toJavaObjectType() {
       return Double.class;
     }
@@ -158,6 +173,11 @@ public enum Type implements Serializable {
     @Override
     public Class<?> toJavaType() {
       return boolean.class;
+    }
+
+    @Override
+    public Class<?> toJavaArrayType() {
+      return boolean[].class;
     }
 
     @Override
@@ -201,6 +221,11 @@ public enum Type implements Serializable {
     }
 
     @Override
+    public Class<?> toJavaArrayType() {
+      return String[].class;
+    }
+
+    @Override
     public Class<?> toJavaObjectType() {
       return toJavaType();
     }
@@ -241,6 +266,11 @@ public enum Type implements Serializable {
     }
 
     @Override
+    public Class<?> toJavaArrayType() {
+      return long[].class;
+    }
+
+    @Override
     public Class<?> toJavaObjectType() {
       return Long.class;
     }
@@ -278,6 +308,11 @@ public enum Type implements Serializable {
     @Override
     public Class<?> toJavaType() {
       return DateTime.class;
+    }
+
+    @Override
+    public Class<?> toJavaArrayType() {
+      return DateTime[].class;
     }
 
     @Override
@@ -502,6 +537,11 @@ public enum Type implements Serializable {
    * @return the java type
    */
   public abstract Class<?> toJavaType();
+
+  /**
+   * @return the java array type
+   */
+  public abstract Class<?> toJavaArrayType();
 
   /**
    * @return the non primitive java type

@@ -46,11 +46,10 @@ public class CounterExpression extends UnaryExpression {
 
   @Override
   public String getJavaString(final ExpressionOperatorParameter parameters) {
-    // TODO: use IntStream when we switch to Java 8
     return new StringBuilder()
-        .append("int[] counter; for (int i = 0; i < (int) (")
+        .append("IntStream.range(0, (")
         .append(getOperand().getJavaString(parameters))
-        .append("); ++i) {\ncounter[i] = i;\n}\nreturn counter;")
+        .append(")).toArray()")
         .toString();
   }
 
@@ -60,13 +59,13 @@ public class CounterExpression extends UnaryExpression {
         .append(Expression.COUNT)
         .append(".appendInt((int) (")
         .append(getOperand().getJavaString(parameters))
-        .append("));\nfor (int i = 0; i < (int) (")
+        .append("));\n")
+        // It would be nice to replace this loop with IntStream.forEach(), but Janino doesn't support lambdas.
+        .append("for (int i = 0; i < (int) (")
         .append(getOperand().getJavaString(parameters))
         .append("); ++i) {\n")
         .append(Expression.RESULT)
-        .append(".putInt(")
-        .append(Expression.COL)
-        .append(", i);\n}")
+        .append(".appendInt(i);\n}")
         .toString();
   }
 

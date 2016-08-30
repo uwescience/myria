@@ -50,10 +50,6 @@ public class Expression implements Serializable {
    */
   public static final String ROW = "row";
   /**
-   * Variable name of row index.
-   */
-  public static final String COL = "col";
-  /**
    * Variable name of state.
    */
   public static final String STATE = "state";
@@ -120,21 +116,19 @@ public class Expression implements Serializable {
     String appendExpression = rootExpressionOperator.getJavaExpressionWithAppend(parameters);
     if (appendExpression == null) {
       if (isMultivalued()) {
-        String primitiveTypeName = getOutputType(parameters).toJavaType().getName();
+        String primitiveTypeName = getOutputType(parameters).toJavaArrayType().getSimpleName();
         appendExpression =
             new StringBuilder(primitiveTypeName)
-                .append("[] results = ")
+                .append(" results = ")
                 .append(getJavaExpression(parameters))
                 .append(";\n")
                 .append(COUNT)
                 .append(".appendInt(results.length);\n")
                 .append("for (int i = 0; i < results.length; ++i) {\n")
                 .append(RESULT)
-                .append(".put")
+                .append(".append")
                 .append(getOutputType(parameters).getName())
-                .append("(")
-                .append(COL)
-                .append(", results[i]);\n}")
+                .append("(results[i]);\n}")
                 .toString();
       } else {
         appendExpression =
@@ -143,7 +137,7 @@ public class Expression implements Serializable {
                 .append(getOutputType(parameters).getName())
                 .append("(")
                 .append(getJavaExpression(parameters))
-                .append(")")
+                .append(");")
                 .toString();
       }
     }
@@ -195,8 +189,7 @@ public class Expression implements Serializable {
   }
 
   /**
-   * An expression is "multivalued" when it has a primitive array return type. This is a requirement for being used in
-   * the FlatteningApply operator.
+   * An expression is "multivalued" when it has a primitive array return type.
    *
    * @return if the root expression has a primitive array return type
    */

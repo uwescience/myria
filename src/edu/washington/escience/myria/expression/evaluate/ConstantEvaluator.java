@@ -98,13 +98,17 @@ public final class ConstantEvaluator extends GenericEvaluator {
   public void eval(
       final ReadableTable tb,
       final int rowIdx,
+      final WritableColumn count,
       final WritableColumn result,
       final ReadableTable state) {
-    throw new UnsupportedOperationException("Should not be here. Should be using eval() instead");
+    throw new UnsupportedOperationException(
+        "Should not be here. Should be using evaluateColumn() instead");
   }
 
   @Override
-  public Column<?> evaluateColumn(final TupleBatch tb) {
-    return new ConstantValueColumn((Comparable<?>) value, type, tb.numTuples());
+  public EvaluatorResult evaluateColumn(final TupleBatch tb) {
+    return new EvaluatorResult(
+        new ConstantValueColumn((Comparable<?>) value, type, tb.numTuples()),
+        new ConstantValueColumn(1, Type.INT_TYPE, tb.numTuples()));
   }
 }

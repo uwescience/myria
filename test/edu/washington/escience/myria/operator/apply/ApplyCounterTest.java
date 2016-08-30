@@ -13,7 +13,7 @@ import edu.washington.escience.myria.expression.CounterExpression;
 import edu.washington.escience.myria.expression.Expression;
 import edu.washington.escience.myria.expression.ExpressionOperator;
 import edu.washington.escience.myria.expression.VariableExpression;
-import edu.washington.escience.myria.operator.FlatteningApply;
+import edu.washington.escience.myria.operator.Apply;
 import edu.washington.escience.myria.operator.TupleSource;
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
@@ -36,7 +36,7 @@ public class ApplyCounterTest {
     Expression expr = new Expression("int_values", split);
     Expressions.add(expr);
 
-    FlatteningApply apply = new FlatteningApply(new TupleSource(input), Expressions.build(), null);
+    Apply apply = new Apply(new TupleSource(input), Expressions.build());
     apply.open(TestEnvVars.get());
     int rowIdx = 0;
     while (!apply.eos()) {

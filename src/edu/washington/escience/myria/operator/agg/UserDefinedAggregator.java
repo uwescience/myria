@@ -81,7 +81,7 @@ public class UserDefinedAggregator implements Aggregator {
     for (int index = 0; index < emitEvaluators.size(); index++) {
       final GenericEvaluator evaluator = emitEvaluators.get(index);
       try {
-        evaluator.eval(null, 0, dest.asWritableColumn(destColumn + index), stateTuple);
+        evaluator.eval(null, 0, null, dest.asWritableColumn(destColumn + index), stateTuple);
       } catch (InvocationTargetException e) {
         throw new DbException("Error finalizing aggregate", e);
       }

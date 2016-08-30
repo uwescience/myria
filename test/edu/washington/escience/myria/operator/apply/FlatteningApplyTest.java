@@ -15,7 +15,7 @@ import edu.washington.escience.myria.expression.Expression;
 import edu.washington.escience.myria.expression.ExpressionOperator;
 import edu.washington.escience.myria.expression.SplitExpression;
 import edu.washington.escience.myria.expression.VariableExpression;
-import edu.washington.escience.myria.operator.FlatteningApply;
+import edu.washington.escience.myria.operator.Apply;
 import edu.washington.escience.myria.operator.TupleSource;
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
@@ -68,16 +68,19 @@ public class FlatteningApplyTest {
     ImmutableList.Builder<Expression> Expressions = ImmutableList.builder();
 
     ExpressionOperator countColIdx = new VariableExpression(0);
+    Expressions.add(new Expression("int_count", countColIdx));
+
+    ExpressionOperator splitColIdx = new VariableExpression(2);
+    Expressions.add(new Expression("joined_ints", splitColIdx));
+
     ExpressionOperator counter = new CounterExpression(countColIdx);
     Expressions.add(new Expression("int_values", counter));
 
-    ExpressionOperator splitColIdx = new VariableExpression(2);
     ExpressionOperator regex = new ConstantExpression(SEPARATOR);
     ExpressionOperator split = new SplitExpression(splitColIdx, regex);
     Expressions.add(new Expression("joined_ints_splits", split));
 
-    FlatteningApply apply =
-        new FlatteningApply(new TupleSource(input), Expressions.build(), ImmutableList.of(0, 2));
+    Apply apply = new Apply(new TupleSource(input), Expressions.build());
     apply.open(TestEnvVars.get());
     int rowIdx = 0;
     while (!apply.eos()) {
