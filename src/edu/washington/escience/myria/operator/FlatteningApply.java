@@ -1,9 +1,9 @@
 package edu.washington.escience.myria.operator;
 
 import java.lang.reflect.InvocationTargetException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.ListIterator;
 import java.util.Objects;
 
 import javax.annotation.Nonnull;
@@ -45,12 +45,6 @@ public class FlatteningApply extends UnaryOperator {
    */
   @Nonnull
   private ImmutableList<FlatteningGenericEvaluator> emitEvaluators = ImmutableList.of();
-
-  /**
-   * Buffers (single-column) to hold results from evaluators before Cartesian product is applied.
-   */
-  @Nonnull
-  private ImmutableList<TupleBuffer> evalResultBuffers = ImmutableList.of();
 
   /**
    * Buffer to hold finished and in-progress TupleBatches.
@@ -134,11 +128,13 @@ public class FlatteningApply extends UnaryOperator {
       if (inputTuples != null) {
         // Evaluate expressions on each column and store counts and results.
         List<Column<?>> resultCountColumns = Lists.newLinkedList();
-        for (final ListIterator<FlatteningGenericEvaluator> it = emitEvaluators.listIterator(); it.hasNext();) {
-          final FlatteningGenericEvaluator evaluator = it.next();
-          Column<?> counts = evaluator.evaluateColumn(inputTuples, evalResultBuffers.get(it.previousIndex()));
+        List<TupleBuffer> evalResultBuffers = new ArrayList<>();
+        for (final FlatteningGenericEvaluator evaluator : emitEvaluators) {
+          TupleBuffer results = new TupleBuffer(Schema.ofFields(evaluator.getOutputName(), evaluator.getOutputType()));
+          Column<?> counts = evaluator.evaluateColumn(inputTuples, results);
           LOGGER.info("number of results in this column " + counts.size());
           resultCountColumns.add(counts);
+          evalResultBuffers.add(results);
         }
         LOGGER.info("emit.eval size: " + emitEvaluators.size());
 
@@ -257,7 +253,6 @@ public class FlatteningApply extends UnaryOperator {
     Schema inputSchema = Objects.requireNonNull(getChild().getSchema());
 
     ImmutableList.Builder<FlatteningGenericEvaluator> evalBuilder = ImmutableList.builder();
-    ImmutableList.Builder<TupleBuffer> evalResultBuilder = ImmutableList.builder();
     final ExpressionOperatorParameter parameters = new ExpressionOperatorParameter(inputSchema, getNodeID());
     for (Expression expr : emitExpressions) {
       FlatteningGenericEvaluator evaluator;
@@ -272,10 +267,8 @@ public class FlatteningApply extends UnaryOperator {
       }
       Preconditions.checkArgument(!evaluator.needsState());
       evalBuilder.add(evaluator);
-      evalResultBuilder.add(new TupleBuffer(Schema.ofFields(expr.getOutputName(), expr.getOutputType(parameters))));
     }
     emitEvaluators = evalBuilder.build();
-    evalResultBuffers = evalResultBuilder.build();
     outputBuffer = new TupleBatchBuffer(getSchema());
   }
 
