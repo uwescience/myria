@@ -35,8 +35,7 @@ import edu.washington.escience.myria.storage.TupleBatch;
 public class PythonUDFFlatteningEvaluator extends FlatteningGenericEvaluator {
 
   /** logger for this class. */
-  private static final org.slf4j.Logger LOGGER =
-      org.slf4j.LoggerFactory.getLogger(PythonUDFEvaluator.class);
+  private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(PythonUDFEvaluator.class);
 
   private final PythonFunctionRegistrar pyFunction;
 
@@ -57,9 +56,7 @@ public class PythonUDFFlatteningEvaluator extends FlatteningGenericEvaluator {
    * @param parameters parameters that are passed to the expression
    * @param pyFuncReg python function registrar to get the python function.
    */
-  public PythonUDFFlatteningEvaluator(
-      final Expression expression,
-      final ExpressionOperatorParameter parameters,
+  public PythonUDFFlatteningEvaluator(final Expression expression, final ExpressionOperatorParameter parameters,
       final PythonFunctionRegistrar pyFuncReg) {
     super(expression, parameters);
 
@@ -141,24 +138,14 @@ public class PythonUDFFlatteningEvaluator extends FlatteningGenericEvaluator {
    * @throws DbException
    */
   @Override
-  public void eval(
-      final ReadableTable tb,
-      final int rowIdx,
-      final WritableColumn count,
-      final AppendableTable result,
-      final int colIdx)
-      throws InvocationTargetException, DbException {
+  public void eval(final ReadableTable tb, final int rowIdx, final WritableColumn count, final AppendableTable result,
+      final int colIdx) throws InvocationTargetException, DbException {
 
     evaluatePython(tb, rowIdx, count, result, colIdx);
   }
 
-  private void evaluatePython(
-      final ReadableTable tb,
-      final int rowIdx,
-      final WritableColumn count,
-      final AppendableTable result,
-      final int colIdx)
-      throws DbException {
+  private void evaluatePython(final ReadableTable tb, final int rowIdx, final WritableColumn count,
+      final AppendableTable result, final int colIdx) throws DbException {
     // LOGGER.info("eval called!");
     if (pyWorker == null) {
       pyWorker = new PythonWorker();
@@ -191,8 +178,7 @@ public class PythonUDFFlatteningEvaluator extends FlatteningGenericEvaluator {
    * @return Object
    * @throws DbException
    */
-  private void readFromStream(
-      final WritableColumn count, final AppendableTable result, final int colIdx)
+  private void readFromStream(final WritableColumn count, final AppendableTable result, final int colIdx)
       throws DbException {
 
     // LOGGER.info("trying to read now");
@@ -204,6 +190,7 @@ public class PythonUDFFlatteningEvaluator extends FlatteningGenericEvaluator {
 
       // first read count
       int c = dIn.readInt();
+      LOGGER.info("count is: " + c);
       // append count to the column
       count.appendInt(c);
       // then read the resulting tuples from stream
@@ -216,7 +203,7 @@ public class PythonUDFFlatteningEvaluator extends FlatteningGenericEvaluator {
           dIn.readFully(excp);
           throw new DbException(new String(excp));
         } else {
-          // LOGGER.info("type read: " + type);
+          LOGGER.info("type read: " + type);
           if (type == MyriaConstants.PythonType.DOUBLE.getVal()) {
             obj = dIn.readDouble();
             result.putDouble(colIdx, (Double) obj);
@@ -226,6 +213,7 @@ public class PythonUDFFlatteningEvaluator extends FlatteningGenericEvaluator {
           } else if (type == MyriaConstants.PythonType.INT.getVal()) {
             obj = dIn.readInt();
             result.putInt(colIdx, (int) obj);
+            LOGGER.info("int returned :" + (int) obj);
           } else if (type == MyriaConstants.PythonType.LONG.getVal()) {
             obj = dIn.readLong();
             result.putLong(colIdx, (long) obj);
@@ -240,7 +228,7 @@ public class PythonUDFFlatteningEvaluator extends FlatteningGenericEvaluator {
           }
         }
       }
-
+      LOGGER.info("number of tuples in result: " + result.numTuples());
     } catch (Exception e) {
       LOGGER.info("Error reading from stream");
       throw new DbException(e);
@@ -256,8 +244,7 @@ public class PythonUDFFlatteningEvaluator extends FlatteningGenericEvaluator {
    * @param dOut
    * @throws DbException
    */
-  private void writeToStream(
-      final ReadableTable tb, final int row, final int columnIdx, final DataOutputStream dOut)
+  private void writeToStream(final ReadableTable tb, final int row, final int columnIdx, final DataOutputStream dOut)
       throws DbException {
 
     Preconditions.checkNotNull(tb, "tuple input cannot be null");
