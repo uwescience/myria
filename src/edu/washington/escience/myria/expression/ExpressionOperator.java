@@ -36,6 +36,7 @@ import edu.washington.escience.myria.expression.evaluate.ExpressionOperatorParam
   @Type(name = "MD5", value = HashMd5Expression.class),
   @Type(name = "NEG", value = NegateExpression.class),
   @Type(name = "NOT", value = NotExpression.class),
+  @Type(name = "SEQUENCE", value = SequenceExpression.class),
   @Type(name = "SIN", value = SinExpression.class),
   @Type(name = "SQRT", value = SqrtExpression.class),
   @Type(name = "TAN", value = TanExpression.class),
@@ -57,6 +58,7 @@ import edu.washington.escience.myria.expression.evaluate.ExpressionOperatorParam
   @Type(name = "OR", value = OrExpression.class),
   @Type(name = "PLUS", value = PlusExpression.class),
   @Type(name = "POW", value = PowExpression.class),
+  @Type(name = "SPLIT", value = SplitExpression.class),
   @Type(name = "TIMES", value = TimesExpression.class),
   /* Nary */
   @Type(name = "CONDITION", value = ConditionalExpression.class),
@@ -81,6 +83,21 @@ public abstract class ExpressionOperator implements Serializable {
    * @return the entire tree represented as an expression.
    */
   public abstract String getJavaString(final ExpressionOperatorParameter parameters);
+
+  /**
+   * @param parameters parameters that are needed to create the java expression
+   * @return Java code to efficiently append results to an output column
+   */
+  public String getJavaExpressionWithAppend(final ExpressionOperatorParameter parameters) {
+    return null;
+  }
+
+  /**
+   * @return if this expression returns a primitive array
+   */
+  public boolean hasArrayOutputType() {
+    return false;
+  }
 
   /**
    * @return all children

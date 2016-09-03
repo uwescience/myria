@@ -15,10 +15,10 @@ public interface ScriptEvalInterface {
    * {@link edu.washington.escience.myria.expression.StateExpression}.
    *
    * @param tb a tuple batch
-   * @param rowId the row in the tb that should be used.
+   * @param row index of the row in the tb that should be used.
    * @param result where the output should be written.
    * @param state state that is passed during evaluation, and written after the new state is computed.
    */
   void evaluate(
-      final ReadableTable tb, final int rowId, final AppendableTable result, final Tuple state);
+      final ReadableTable tb, final int row, final AppendableTable result, final Tuple state);
 }

@@ -38,6 +38,10 @@ public class Expression implements Serializable {
    */
   public static final String RESULT = "result";
   /**
+   * Variable name of result count.
+   */
+  public static final String COUNT = "count";
+  /**
    * Variable name of input tuple batch.
    */
   public static final String TB = "tb";
@@ -109,13 +113,35 @@ public class Expression implements Serializable {
    * @return the Java form of this expression that also writes the results to a {@link ColumnBuilder}.
    */
   public String getJavaExpressionWithAppend(final ExpressionOperatorParameter parameters) {
-    return new StringBuilder(RESULT)
-        .append(".append")
-        .append(getOutputType(parameters).getName())
-        .append("(")
-        .append(getJavaExpression(parameters))
-        .append(")")
-        .toString();
+    String appendExpression = rootExpressionOperator.getJavaExpressionWithAppend(parameters);
+    if (appendExpression == null) {
+      if (isMultivalued()) {
+        String primitiveTypeName = getOutputType(parameters).toJavaArrayType().getSimpleName();
+        appendExpression =
+            new StringBuilder(primitiveTypeName)
+                .append(" results = ")
+                .append(getJavaExpression(parameters))
+                .append(";\n")
+                .append(COUNT)
+                .append(".appendInt(results.length);\n")
+                .append("for (int i = 0; i < results.length; ++i) {\n")
+                .append(RESULT)
+                .append(".append")
+                .append(getOutputType(parameters).getName())
+                .append("(results[i]);\n}")
+                .toString();
+      } else {
+        appendExpression =
+            new StringBuilder(RESULT)
+                .append(".append")
+                .append(getOutputType(parameters).getName())
+                .append("(")
+                .append(getJavaExpression(parameters))
+                .append(");")
+                .toString();
+      }
+    }
+    return appendExpression;
   }
 
   /**
@@ -160,5 +186,14 @@ public class Expression implements Serializable {
     return !hasOperator(VariableExpression.class)
         && !hasOperator(StateExpression.class)
         && !hasOperator(RandomExpression.class);
+  }
+
+  /**
+   * An expression is "multivalued" when it has a primitive array return type.
+   *
+   * @return if the root expression has a primitive array return type
+   */
+  public boolean isMultivalued() {
+    return rootExpressionOperator.hasArrayOutputType();
   }
 }

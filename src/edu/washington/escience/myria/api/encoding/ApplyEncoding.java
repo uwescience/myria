@@ -11,7 +11,7 @@ public class ApplyEncoding extends UnaryOperatorEncoding<Apply> {
   @Required public List<Expression> emitExpressions;
 
   @Override
-  public Apply construct(ConstructArgs args) {
+  public Apply construct(final ConstructArgs args) {
     return new Apply(null, emitExpressions);
   }
 }

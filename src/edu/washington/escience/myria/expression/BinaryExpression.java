@@ -223,25 +223,40 @@ public abstract class BinaryExpression extends ExpressionOperator {
   }
 
   /**
+   * A function that could be used as the default type checker for a binary expression where each operand must be of a
+   * specified type.
+   *
+   * @param leftExpectedType expected type of left operand
+   * @param rightExpectedType expected type of right operand
+   * @param parameters parameters that are needed to determine the output type
+   */
+  protected final void checkOperandTypes(
+      final Type leftExpectedType,
+      final Type rightExpectedType,
+      final ExpressionOperatorParameter parameters) {
+    Type leftType = getLeft().getOutputType(parameters);
+    Type rightType = getRight().getOutputType(parameters);
+    Preconditions.checkArgument(
+        leftType == leftExpectedType,
+        "%s cannot handle left child [%s] of Type %s",
+        getClass().getSimpleName(),
+        getLeft(),
+        leftType);
+    Preconditions.checkArgument(
+        rightType == rightExpectedType,
+        "%s cannot handle right child [%s] of Type %s",
+        getClass().getSimpleName(),
+        getRight(),
+        rightType);
+  }
+
+  /**
    * A function that could be used as the default type checker for a binary expression where both operands must be
    * boolean.
    *
    * @param parameters parameters that are needed to determine the output type
    */
   protected final void checkBooleanType(final ExpressionOperatorParameter parameters) {
-    Type leftType = getLeft().getOutputType(parameters);
-    Type rightType = getRight().getOutputType(parameters);
-    Preconditions.checkArgument(
-        leftType == Type.BOOLEAN_TYPE,
-        "%s cannot handle left child [%s] of Type %s",
-        getClass().getSimpleName(),
-        getLeft(),
-        leftType);
-    Preconditions.checkArgument(
-        rightType == Type.BOOLEAN_TYPE,
-        "%s cannot handle right child [%s] of Type %s",
-        getClass().getSimpleName(),
-        getRight(),
-        rightType);
+    checkOperandTypes(Type.BOOLEAN_TYPE, Type.BOOLEAN_TYPE, parameters);
   }
 }

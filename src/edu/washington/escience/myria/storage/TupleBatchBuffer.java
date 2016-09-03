@@ -358,7 +358,7 @@ public class TupleBatchBuffer implements AppendableTable {
    * @param sourceColumn the column from which data will be retrieved.
    * @param sourceRow the row in the source column from which data will be retrieved.
    */
-  private final void appendFromColumn(
+  public final void appendFromColumn(
       final int destColumn, final ReadableColumn sourceColumn, final int sourceRow) {
     TupleUtils.copyValue(sourceColumn, sourceRow, this, destColumn);
   }

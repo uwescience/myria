@@ -77,7 +77,7 @@ public interface AppendableTable extends TupleTable {
 
   /**
    * @param column the index of the column to be returned.
-   * @return a {@link ReadableColumn} representation of the specified column of this table.
+   * @return a {@link WritableColumn} representation of the specified column of this table.
    */
   @Nonnull
   WritableColumn asWritableColumn(final int column);

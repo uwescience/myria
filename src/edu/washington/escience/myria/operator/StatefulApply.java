@@ -114,8 +114,11 @@ public class StatefulApply extends Apply {
     // first, generate columns that do not require state. This can often be optimized.
     for (int columnIdx = 0; columnIdx < numColumns; columnIdx++) {
       final GenericEvaluator evaluator = getEmitEvaluators().get(columnIdx);
+      Preconditions.checkArgument(
+          !evaluator.getExpression().isMultivalued(),
+          "A multivalued expression cannot be used in StatefulApply.");
       if (!evaluator.needsState() || evaluator.isCopyFromInput()) {
-        output.set(columnIdx, evaluator.evaluateColumn(tb));
+        output.set(columnIdx, evaluator.evaluateColumn(tb).getResultColumns().get(0));
       } else {
         needState.add(columnIdx);
       }
@@ -133,14 +136,16 @@ public class StatefulApply extends Apply {
       // update state
       Tuple newState = new Tuple(getStateSchema());
       for (int columnIdx = 0; columnIdx < stateSchema.numColumns(); columnIdx++) {
-        updateEvaluators.get(columnIdx).eval(tb, rowIdx, newState.getColumn(columnIdx), state);
+        updateEvaluators
+            .get(columnIdx)
+            .eval(tb, rowIdx, null, newState.getColumn(columnIdx), state);
       }
       state = newState;
       // apply expression
       for (int index = 0; index < needState.size(); index++) {
         final GenericEvaluator evaluator = getEmitEvaluators().get(needState.get(index));
         // TODO: optimize the case where the state is copied directly
-        evaluator.eval(tb, rowIdx, columnBuilders.get(index), state);
+        evaluator.eval(tb, rowIdx, null, columnBuilders.get(index), state);
       }
     }
 
@@ -169,7 +174,7 @@ public class StatefulApply extends Apply {
       }
       evaluators.add(evaluator);
     }
-    setEvaluators(evaluators);
+    setEmitEvaluators(evaluators);
 
     updateEvaluators = new ArrayList<>();
     updateEvaluators.ensureCapacity(updateExpressions.size());

@@ -122,17 +122,28 @@ public abstract class UnaryExpression extends ExpressionOperator {
   }
 
   /**
-   * A function that could be used as the default type checker for a unary expression where the operand must be numeric.
+   * A function that could be used as the default type checker for a unary expression where the operand must be of a
+   * specified type.
+   *
+   * @param expectedType expected type of operand
+   * @param parameters parameters that are needed to determine the output type
+   */
+  protected final void checkOperandType(
+      final Type expectedType, final ExpressionOperatorParameter parameters) {
+    Type type = getOperand().getOutputType(parameters);
+    Preconditions.checkArgument(
+        type == expectedType,
+        "%s cannot handle operand [%s] of Type %s",
+        getClass().getSimpleName(),
+        getOperand());
+  }
+
+  /**
+   * A function that could be used as the default type checker for a unary expression where the operand must be boolean.
    *
    * @param parameters parameters that are needed to determine the output type
    */
   protected void checkBooleanType(final ExpressionOperatorParameter parameters) {
-    Type operandType = getOperand().getOutputType(parameters);
-    Preconditions.checkArgument(
-        operandType == Type.BOOLEAN_TYPE,
-        "%s cannot handle operand [%s] of Type %s",
-        getClass().getSimpleName(),
-        getOperand(),
-        operandType);
+    checkOperandType(Type.BOOLEAN_TYPE, parameters);
   }
 }
