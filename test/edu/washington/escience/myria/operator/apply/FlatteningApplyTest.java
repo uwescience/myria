@@ -10,7 +10,7 @@ import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.expression.ConstantExpression;
-import edu.washington.escience.myria.expression.CounterExpression;
+import edu.washington.escience.myria.expression.SequenceExpression;
 import edu.washington.escience.myria.expression.Expression;
 import edu.washington.escience.myria.expression.ExpressionOperator;
 import edu.washington.escience.myria.expression.SplitExpression;
@@ -73,7 +73,7 @@ public class FlatteningApplyTest {
     ExpressionOperator splitColIdx = new VariableExpression(2);
     Expressions.add(new Expression("joined_ints", splitColIdx));
 
-    ExpressionOperator counter = new CounterExpression(countColIdx);
+    ExpressionOperator counter = new SequenceExpression(countColIdx);
     Expressions.add(new Expression("int_values", counter));
 
     ExpressionOperator regex = new ConstantExpression(SEPARATOR);

@@ -118,7 +118,10 @@ public class Apply extends UnaryOperator {
           EvaluatorResult evalResult = eval.evaluateColumn(inputTuples);
           resultCountColumns.add(evalResult.getResultCounts());
           resultColumns.add(evalResult.getResults());
-          resultColumnsForTB.add(evalResult.getResultsAsColumn());
+          Preconditions.checkArgument(
+              eval.getExpression().isMultivalued() || (evalResult.getResultColumns().size() == 1),
+              "A single-valued expression cannot have more than one result column.");
+          resultColumnsForTB.add(evalResult.getResultColumns().get(0));
         }
         // This is a zero-copy optimization that appends result columns directly to our output buffer
         // if we don't need to take the Cartesian product. (For expressions which are pure column references,
@@ -211,7 +214,7 @@ public class Apply extends UnaryOperator {
 
     Schema inputSchema = Objects.requireNonNull(getChild().getSchema());
 
-    ImmutableList.Builder<GenericEvaluator> evalBuilder = ImmutableList.builder();
+    List<GenericEvaluator> evals = new ArrayList<>();
     final ExpressionOperatorParameter parameters =
         new ExpressionOperatorParameter(inputSchema, getNodeID());
 
@@ -226,9 +229,9 @@ public class Apply extends UnaryOperator {
         evaluator.compile();
       }
       Preconditions.checkArgument(!evaluator.needsState());
-      evalBuilder.add(evaluator);
+      evals.add(evaluator);
     }
-    emitEvaluators = evalBuilder.build();
+    setEmitEvaluators(evals);
     outputBuffer = new TupleBatchBuffer(getSchema());
   }
 

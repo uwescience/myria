@@ -36,6 +36,7 @@ import edu.washington.escience.myria.expression.evaluate.ExpressionOperatorParam
   @Type(name = "MD5", value = HashMd5Expression.class),
   @Type(name = "NEG", value = NegateExpression.class),
   @Type(name = "NOT", value = NotExpression.class),
+  @Type(name = "SEQUENCE", value = SequenceExpression.class),
   @Type(name = "SIN", value = SinExpression.class),
   @Type(name = "SQRT", value = SqrtExpression.class),
   @Type(name = "TAN", value = TanExpression.class),

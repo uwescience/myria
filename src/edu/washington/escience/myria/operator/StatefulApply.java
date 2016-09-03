@@ -114,8 +114,11 @@ public class StatefulApply extends Apply {
     // first, generate columns that do not require state. This can often be optimized.
     for (int columnIdx = 0; columnIdx < numColumns; columnIdx++) {
       final GenericEvaluator evaluator = getEmitEvaluators().get(columnIdx);
+      Preconditions.checkArgument(
+          !evaluator.getExpression().isMultivalued(),
+          "A multivalued expression cannot be used in StatefulApply.");
       if (!evaluator.needsState() || evaluator.isCopyFromInput()) {
-        output.set(columnIdx, evaluator.evaluateColumn(tb).getResultsAsColumn());
+        output.set(columnIdx, evaluator.evaluateColumn(tb).getResultColumns().get(0));
       } else {
         needState.add(columnIdx);
       }

@@ -1,14 +1,17 @@
 package edu.washington.escience.myria.expression.evaluate;
 
 import java.lang.reflect.InvocationTargetException;
+import java.util.List;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import org.codehaus.commons.compiler.CompileException;
 import org.codehaus.commons.compiler.CompilerFactoryFactory;
 import org.codehaus.commons.compiler.IScriptEvaluator;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
@@ -100,20 +103,23 @@ public class GenericEvaluator extends Evaluator {
    *
    * @param tb a tuple batch
    * @param rowIdx index of the row that should be used for input data
-   * @param count column storing number of results
+   * @param count column storing number of results (null for single-valued expressions)
    * @param result the table storing the result
    * @param state additional state that affects the computation
    * @throws InvocationTargetException exception thrown from janino
    */
   public void eval(
-      final ReadableTable tb,
+      @Nonnull final ReadableTable tb,
       final int rowIdx,
-      final WritableColumn count,
-      final WritableColumn result,
-      final ReadableTable state)
+      @Nullable final WritableColumn count,
+      @Nonnull final WritableColumn result,
+      @Nullable final ReadableTable state)
       throws InvocationTargetException {
     Preconditions.checkArgument(
         evaluator != null, "Call compile first or copy the data if it is the same in the input.");
+    Preconditions.checkArgument(
+        getExpression().isMultivalued() != (count == null),
+        "count must be null for a single-valued expression and non-null for a multivalued expression.");
     try {
       evaluator.evaluate(tb, rowIdx, count, result, state);
     } catch (Exception e) {
@@ -135,42 +141,52 @@ public class GenericEvaluator extends Evaluator {
    */
   public static class EvaluatorResult {
     private final ReadableColumn results;
-    private final Column<?> resultCounts;
+    private final ImmutableList<Column<?>> resultColumns;
+    private final ReadableColumn resultCounts;
 
     protected EvaluatorResult(
-        @Nonnull final ReadableColumn results, @Nonnull final Column<?> resultCounts) {
+        @Nonnull final TupleBuffer results, @Nonnull final Column<?> resultCounts) {
+      final List<TupleBatch> resultBatches = results.finalResult();
+      ImmutableList.Builder<Column<?>> resultColumnsBuilder = ImmutableList.builder();
+      for (final TupleBatch tb : resultBatches) {
+        resultColumnsBuilder.add(tb.getDataColumns().get(0));
+      }
+      this.resultColumns = resultColumnsBuilder.build();
+      this.results = results.asColumn(0);
+      this.resultCounts = resultCounts;
+    }
+
+    protected EvaluatorResult(
+        @Nonnull final Column<?> results, @Nonnull final Column<?> resultCounts) {
+      this.resultColumns = ImmutableList.of(results);
       this.results = results;
       this.resultCounts = resultCounts;
     }
+
     /**
      * @return a {@link ReadableColumn} containing results from {@link #evaluateColumn}
      */
     public ReadableColumn getResults() {
       return results;
     }
+
     /**
-     * This is useful for, e.g., constructing a {@link TupleBatch} from several evaluators.
-     * This will return null if the result was not generated from a single-valued expression.
-     *
-     * @return a {@link Column<?>} containing results from {@link #evaluateColumn}
+     * @return a {@link List<Column>} containing results from {@link #evaluateColumn}
      */
-    public Column<?> getResultsAsColumn() {
-      if (results instanceof Column<?>) {
-        return (Column<?>) results;
-      } else {
-        return null;
-      }
+    public List<Column<?>> getResultColumns() {
+      return resultColumns;
     }
+
     /**
      * @return a {@link Column<Integer>} containing result counts from {@link #evaluateColumn}
      */
-    public Column<?> getResultCounts() {
+    public ReadableColumn getResultCounts() {
       return resultCounts;
     }
   }
 
   /**
-   * Evaluate an expression over an entire TupleBatch and return the column of results. This method cannot take state
+   * Evaluate an expression over an entire TupleBatch and return the column(s) of results, along with a column of result counts from each tuple. This method cannot take state
    * into consideration.
    *
    * @param tb the tuples to be input to this expression
@@ -194,30 +210,21 @@ public class GenericEvaluator extends Evaluator {
           tb.getDataColumns().get(((VariableExpression) op).getColumnIdx()), constCounts);
     }
     // For multivalued expressions, we may get more than `TupleBatch.BATCH_SIZE` results,
-    // so we need to allocate a `TupleBuffer` instead of a `ColumnBuilder` for results.
-    // (That is why we need `ReadableColumn` rather than `Column` as the result type.)
-    final WritableColumn resultsWriter;
+    // so we need to pass in a `TupleBuffer` rather than a `ColumnBuilder` to `eval()`,
+    // and return a `List<Column>` rather than a `Column` of results.
     final Type type = getOutputType();
-    TupleBuffer resultsBuffer = null;
-    if (getExpression().isMultivalued()) {
-      resultsBuffer = new TupleBuffer(Schema.ofFields(getExpression().getOutputName(), type));
-      resultsWriter = resultsBuffer.asWritableColumn(0);
-    } else {
-      // For single-valued expressions, return a `Column` to allow callers to easily construct a `TupleBatch`.
-      resultsWriter = ColumnFactory.allocateColumn(type);
-    }
+    final TupleBuffer resultsBuffer =
+        new TupleBuffer(Schema.ofFields(getExpression().getOutputName(), type));
+    final WritableColumn resultsWriter = resultsBuffer.asWritableColumn(0);
     for (int rowIdx = 0; rowIdx < tb.numTuples(); ++rowIdx) {
       eval(tb, rowIdx, countsWriter, resultsWriter, null);
     }
     final Column<?> resultCounts;
-    final ReadableColumn results;
     if (getExpression().isMultivalued()) {
       resultCounts = ((ColumnBuilder<?>) countsWriter).build();
-      results = resultsBuffer.asColumn(0);
     } else {
       resultCounts = constCounts;
-      results = ((ColumnBuilder<?>) resultsWriter).build();
     }
-    return new EvaluatorResult(results, resultCounts);
+    return new EvaluatorResult(resultsBuffer, resultCounts);
   }
 }

@@ -9,7 +9,7 @@ import com.google.common.collect.ImmutableList;
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
-import edu.washington.escience.myria.expression.CounterExpression;
+import edu.washington.escience.myria.expression.SequenceExpression;
 import edu.washington.escience.myria.expression.Expression;
 import edu.washington.escience.myria.expression.ExpressionOperator;
 import edu.washington.escience.myria.expression.VariableExpression;
@@ -19,7 +19,7 @@ import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
 import edu.washington.escience.myria.util.TestEnvVars;
 
-public class ApplyCounterTest {
+public class ApplySequenceTest {
   private final int COUNT = 2 * TupleBatch.BATCH_SIZE + 1;
 
   @Test
@@ -32,7 +32,7 @@ public class ApplyCounterTest {
 
     ImmutableList.Builder<Expression> Expressions = ImmutableList.builder();
     ExpressionOperator colIdx = new VariableExpression(0);
-    ExpressionOperator split = new CounterExpression(colIdx);
+    ExpressionOperator split = new SequenceExpression(colIdx);
     Expression expr = new Expression("int_values", split);
     Expressions.add(expr);
 

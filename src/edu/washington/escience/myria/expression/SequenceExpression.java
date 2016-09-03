@@ -1,15 +1,12 @@
 package edu.washington.escience.myria.expression;
 
-import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableList;
-
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.expression.evaluate.ExpressionOperatorParameter;
 
 /**
  * Return a sequence of numbers from 0 (inclusive) to operand (exclusive).
  */
-public class CounterExpression extends UnaryExpression {
+public class SequenceExpression extends UnaryExpression {
   /***/
   private static final long serialVersionUID = 1L;
 
@@ -17,7 +14,7 @@ public class CounterExpression extends UnaryExpression {
    * This is not really unused, it's used automagically by Jackson deserialization.
    */
   @SuppressWarnings("unused")
-  private CounterExpression() {
+  private SequenceExpression() {
     super();
   }
 
@@ -26,21 +23,13 @@ public class CounterExpression extends UnaryExpression {
    *
    * @param operand an expression that evaluates to a positive integer
    */
-  public CounterExpression(final ExpressionOperator operand) {
+  public SequenceExpression(final ExpressionOperator operand) {
     super(operand);
   }
 
   @Override
   public Type getOutputType(final ExpressionOperatorParameter parameters) {
-    Type operandType = getOperand().getOutputType(parameters);
-    ImmutableList<Type> validTypes = ImmutableList.of(Type.INT_TYPE);
-    int operandIdx = validTypes.indexOf(operandType);
-    Preconditions.checkArgument(
-        operandIdx != -1,
-        "%s cannot handle operand [%s] of Type %s",
-        getClass().getSimpleName(),
-        getOperand(),
-        operandType);
+    checkOperandType(Type.INT_TYPE, parameters);
     return Type.INT_TYPE;
   }
 
