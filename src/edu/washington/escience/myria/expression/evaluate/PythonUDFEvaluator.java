@@ -49,7 +49,7 @@ public class PythonUDFEvaluator extends GenericEvaluator {
 
   private PythonWorker pyWorker;
   private boolean needsState = false;
-  private int stateColumnIdx = -1;
+  private final boolean[] isStateColumn;
   private int tupleSize = -1;
   private int[] columnIdxs = null;
 
@@ -66,59 +66,25 @@ public class PythonUDFEvaluator extends GenericEvaluator {
       final PythonFunctionRegistrar pyFuncReg) {
     super(expression, parameters);
 
-    // parameters and expression are saved in the super
-    // LOGGER.info("Output name for the python expression" + getExpression().getOutputName());
-
     if (pyFuncReg != null) {
       pyFunction = pyFuncReg;
     } else {
       pyFunction = null;
     }
-    if (parameters.getStateSchema() != null) {
 
+    if (parameters.getStateSchema() != null) {
       needsState = true;
     }
+
     PyUDFExpression op = (PyUDFExpression) expression.getRootExpressionOperator();
     outputType = op.getOutput();
+
     List<ExpressionOperator> childops = op.getChildren();
     tupleSize = childops.size();
     columnIdxs = new int[tupleSize];
+    isStateColumn = new boolean[tupleSize];
     Arrays.fill(columnIdxs, -1);
-
-    for (int i = 0; i < childops.size(); i++) {
-      if (childops.get(i).getClass().equals(StateExpression.class)) {
-        stateColumnIdx = ((StateExpression) childops.get(i)).getColumnIdx();
-        columnIdxs[i] = ((StateExpression) childops.get(i)).getColumnIdx();
-      } else {
-        columnIdxs[i] = ((VariableExpression) childops.get(i)).getColumnIdx();
-      }
-
-    }
-
-    // ExpressionOperator left = op.getLeft();
-    // // LOGGER.info("left string :" + left.toString());
-    //
-    // ExpressionOperator right = op.getRight();
-    // // LOGGER.info("right string :" + right.toString());
-    //
-    // if (left.getClass().equals(VariableExpression.class)) {
-    // leftColumnIdx = ((VariableExpression) left).getColumnIdx();
-    //
-    // } else if (left.getClass().equals(StateExpression.class)) {
-    // leftColumnIdx = ((StateExpression) left).getColumnIdx();
-    // bLeftState = true;
-    // }
-    //
-    // if (right.getClass().equals(VariableExpression.class)) {
-    // rightColumnIdx = ((VariableExpression) right).getColumnIdx();
-    //
-    // } else if (right.getClass().equals(StateExpression.class)) {
-    // rightColumnIdx = ((StateExpression) right).getColumnIdx();
-    // bRightState = true;
-    // }
-
-    // LOGGER.info("Left column ID " + leftColumnIdx + "left variable? " + bLeftState);
-    // LOGGER.info("right column ID " + rightColumnIdx + "right variable? " + bRightState);
+    Arrays.fill(isStateColumn, false);
 
   }
 
@@ -136,13 +102,29 @@ public class PythonUDFEvaluator extends GenericEvaluator {
 
       String pyCodeString = pyFunction.getUDF(pyFunc);
       if (pyCodeString == null) {
-        LOGGER.info("no python UDF with name {} registered.", pyFunc);
+        LOGGER.info("no python UDF with name " + pyFunc);
         throw new DbException("No Python UDf with given name registered.");
       } else {
         // tuple size is
         LOGGER.info("tuple size is: " + tupleSize);
         pyWorker.sendCodePickle(pyCodeString, tupleSize, outputType, 0);
       }
+      List<ExpressionOperator> childops = op.getChildren();
+
+      for (int i = 0; i < childops.size(); i++) {
+        if (childops.get(i).getClass().equals(StateExpression.class)) {
+          isStateColumn[i] = true;
+          columnIdxs[i] = ((StateExpression) childops.get(i)).getColumnIdx();
+        } else {
+          columnIdxs[i] = ((VariableExpression) childops.get(i)).getColumnIdx();
+        }
+
+      }
+      // LOGGER.info("column indices length: " + columnIdxs.length);
+      // for (int j = 0; j < tupleSize; j++) {
+      // LOGGER.info("this is a state variable: " + isStateColumn[j]);
+      // LOGGER.info("variable index: " + j + "column index value: " + columnIdxs[j]);
+      // }
 
     } catch (Exception e) {
       // LOGGER.info(e.getMessage());
@@ -205,9 +187,15 @@ public class PythonUDFEvaluator extends GenericEvaluator {
       final ReadableTable state) throws DbException {
 
     Object obj = evaluatePython(tb, rowIdx, state);
-    int resultcol = stateColumnIdx;
+    int resultcol = -1;
+    for (int i = 0; i < tupleSize; i++) {
+      if (isStateColumn[i]) {
+        resultcol = columnIdxs[i];
+      }
+      break;
+    }
 
-    LOGGER.info("trying to update state on column: " + resultcol);
+    // LOGGER.info("trying to update state on column: " + resultcol);
     try {
       switch (outputType) {
         case DOUBLE_TYPE:
@@ -246,34 +234,29 @@ public class PythonUDFEvaluator extends GenericEvaluator {
    */
   private Object evaluatePython(final ReadableTable tb, final int rowIdx, final ReadableTable state)
       throws DbException {
-    LOGGER.info("eval called!");
+    // LOGGER.info("eval called!");
     if (pyWorker == null) {
       pyWorker = new PythonWorker();
       initEvaluator();
     }
-
     try {
-      if (needsState == false && (stateColumnIdx != -1)) {
-        LOGGER.info("needs State: " + needsState + " state column Idx is: " + stateColumnIdx);
-        throw new DbException("this evaluator should not need state!");
 
-      } else {
-        DataOutputStream dOut = pyWorker.getDataOutputStream();
-        // LOGGER.info("got the output stream!");
-
-        for (int i = 0; i < tupleSize; i++) {
-          if (i == stateColumnIdx) {
-            writeToStream(state, rowIdx, stateColumnIdx, dOut);
-          } else {
-            writeToStream(tb, rowIdx, columnIdxs[i], dOut);
-          }
-
+      DataOutputStream dOut = pyWorker.getDataOutputStream();
+      // LOGGER.info("got the output stream!");
+      for (int i = 0; i < tupleSize; i++) {
+        if (isStateColumn[i]) {
+          // LOGGER.info("state column index: " + columnIdxs[i]);
+          writeToStream(state, rowIdx, columnIdxs[i], dOut);
+        } else {
+          // LOGGER.info("column index for variable: " + i + " is " + columnIdxs[i]);
+          writeToStream(tb, rowIdx, columnIdxs[i], dOut);
         }
 
-        // read response back
-        Object result = readFromStream();
-        return result;
       }
+
+      // read response back
+      Object result = readFromStream();
+      return result;
 
     } catch (DbException e) {
       LOGGER.info("Error writing to python stream" + e.getMessage());

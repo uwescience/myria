@@ -132,11 +132,11 @@ public class FlatteningApply extends UnaryOperator {
         for (final FlatteningGenericEvaluator evaluator : emitEvaluators) {
           TupleBuffer results = new TupleBuffer(Schema.ofFields(evaluator.getOutputName(), evaluator.getOutputType()));
           Column<?> counts = evaluator.evaluateColumn(inputTuples, results);
-          LOGGER.info("number of results in this column " + counts.size());
+          // LOGGER.info("number of results in this column " + counts.size());
           resultCountColumns.add(counts);
           evalResultBuffers.add(results);
         }
-        LOGGER.info("emit.eval size: " + emitEvaluators.size());
+        // LOGGER.info("emit.eval size: " + emitEvaluators.size());
 
         int[] resultCounts = new int[emitEvaluators.size()];
         int[] cumResultCounts = new int[emitEvaluators.size()];
@@ -153,13 +153,13 @@ public class FlatteningApply extends UnaryOperator {
           boolean emptyProduct = false;
           for (int i = 0; i < resultCountColumns.size(); ++i) {
             int resultCount = resultCountColumns.get(i).getInt(rowIdx);
-            LOGGER.info("result count for this row: " + resultCount);
+            // LOGGER.info("result count for this row: " + resultCount);
             resultCounts[i] = resultCount;
             lastCumResultCounts[i] = cumResultCounts[i];
             cumResultCounts[i] += resultCounts[i];
             if (resultCount == 0) {
               // If at least one evaluator returned zero results, the Cartesian product is empty.
-              LOGGER.info("resultcount is zero!!");
+              // LOGGER.info("resultcount is zero!!");
               emptyProduct = true;
             }
           }
@@ -167,15 +167,15 @@ public class FlatteningApply extends UnaryOperator {
           if (!emptyProduct) {
             // Initialize each iterator to its starting index.
             Arrays.fill(iteratorIndexes, 0);
-            int a = 0;
+            // int a = 0;
             // Iterate over each element of the Cartesian product and append to output.
             do {
               for (int iteratorIdx = 0; iteratorIdx < iteratorIndexes.length; ++iteratorIdx) {
                 int outputColIdx = columnsToKeep.size() + iteratorIdx;
                 int resultRowIdx = lastCumResultCounts[iteratorIdx] + iteratorIndexes[iteratorIdx];
                 // LOGGER.info("resultRowIdx " + resultRowIdx);
-                LOGGER.info("round " + a);
-                LOGGER.info("iteratorIdx :" + iteratorIdx);
+                // LOGGER.info("round " + a);
+                // LOGGER.info("iteratorIdx :" + iteratorIdx);
 
                 outputBuffer.appendFromColumn(outputColIdx, evalResultBuffers.get(iteratorIdx).asColumn(0),
                     resultRowIdx);
@@ -193,7 +193,7 @@ public class FlatteningApply extends UnaryOperator {
               for (int colKeepIdx : columnsToKeep) {
                 TupleUtils.copyValue(inputTuples.asColumn(colKeepIdx), rowIdx, outputBuffer, colIdx++);
               }
-              a = a + 1;
+              // a = a + 1;
             } while (!computeNextCombination(resultCounts, iteratorIndexes));
           }
         }
@@ -225,10 +225,10 @@ public class FlatteningApply extends UnaryOperator {
       // If the current iterator is not exhausted, increment it and exit the loop,
       // otherwise reset the current iterator and continue.
       if (iteratorIndexes[iteratorPos] < upperBounds[iteratorPos] - 1) {
-        LOGGER.info("reset iterator index to new val");
+        // LOGGER.info("reset iterator index to new val");
 
         iteratorIndexes[iteratorPos] += 1;
-        LOGGER.info("new iterator index" + iteratorIndexes[iteratorPos]);
+        // LOGGER.info("new iterator index" + iteratorIndexes[iteratorPos]);
 
         break;
       } else {
@@ -238,7 +238,7 @@ public class FlatteningApply extends UnaryOperator {
           break;
         } else {
           // Reset the current iterator and continue.
-          LOGGER.info("reset the iterator because  reached end");
+          // LOGGER.info("reset the iterator because reached end");
           iteratorIndexes[iteratorPos] = 0;
         }
       }

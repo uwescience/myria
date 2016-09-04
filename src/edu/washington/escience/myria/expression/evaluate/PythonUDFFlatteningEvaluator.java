@@ -109,7 +109,7 @@ public class PythonUDFFlatteningEvaluator extends FlatteningGenericEvaluator {
 
       String pyCodeString = pyFunction.getUDF(pyFunc);
       if (pyCodeString == null) {
-        LOGGER.info("no python UDF with name {} registered.", pyFunc);
+        LOGGER.info("no python UDF with name : " + pyFunc);
         throw new DbException("No Python UDf with given name registered.");
       } else {
         // tuple size is always 2 for binary expression.
@@ -161,7 +161,7 @@ public class PythonUDFFlatteningEvaluator extends FlatteningGenericEvaluator {
     try {
 
       if (needsState == false && (stateColumnIdx != -1)) {
-        LOGGER.info("needs State: " + needsState + " state column Idx is: " + stateColumnIdx);
+        // LOGGER.info("needs State: " + needsState + " state column Idx is: " + stateColumnIdx);
         throw new DbException("this evaluator should not need state!");
 
       } else {
@@ -199,7 +199,7 @@ public class PythonUDFFlatteningEvaluator extends FlatteningGenericEvaluator {
 
       // first read count
       int c = dIn.readInt();
-      LOGGER.info("count is: " + c);
+      // LOGGER.info("count is: " + c);
       // append count to the column
       count.appendInt(c);
       // then read the resulting tuples from stream
@@ -212,7 +212,7 @@ public class PythonUDFFlatteningEvaluator extends FlatteningGenericEvaluator {
           dIn.readFully(excp);
           throw new DbException(new String(excp));
         } else {
-          LOGGER.info("type read: " + type);
+          // LOGGER.info("type read: " + type);
           if (type == MyriaConstants.PythonType.DOUBLE.getVal()) {
             obj = dIn.readDouble();
             result.putDouble(colIdx, (Double) obj);
@@ -222,7 +222,7 @@ public class PythonUDFFlatteningEvaluator extends FlatteningGenericEvaluator {
           } else if (type == MyriaConstants.PythonType.INT.getVal()) {
             obj = dIn.readInt();
             result.putInt(colIdx, (int) obj);
-            LOGGER.info("int returned :" + (int) obj);
+            // LOGGER.info("int returned :" + (int) obj);
           } else if (type == MyriaConstants.PythonType.LONG.getVal()) {
             obj = dIn.readLong();
             result.putLong(colIdx, (long) obj);
@@ -237,7 +237,7 @@ public class PythonUDFFlatteningEvaluator extends FlatteningGenericEvaluator {
           }
         }
       }
-      LOGGER.info("number of tuples in result: " + result.numTuples());
+      // LOGGER.info("number of tuples in result: " + result.numTuples());
     } catch (Exception e) {
       LOGGER.info("Error reading from stream");
       throw new DbException(e);
