@@ -6,6 +6,8 @@ package edu.washington.escience.myria.expression.evaluate;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.nio.ByteBuffer;
+import java.util.Arrays;
+import java.util.List;
 
 import org.codehaus.janino.ExpressionEvaluator;
 
@@ -38,8 +40,7 @@ import edu.washington.escience.myria.storage.TupleBatch;
 public class PythonUDFEvaluator extends GenericEvaluator {
 
   /** logger for this class. */
-  private static final org.slf4j.Logger LOGGER =
-      org.slf4j.LoggerFactory.getLogger(PythonUDFEvaluator.class);
+  private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(PythonUDFEvaluator.class);
 
   private final PythonFunctionRegistrar pyFunction;
 
@@ -48,11 +49,9 @@ public class PythonUDFEvaluator extends GenericEvaluator {
 
   private PythonWorker pyWorker;
   private boolean needsState = false;
-  private int leftColumnIdx = -1;
-  private int rightColumnIdx = -1;
-
-  private boolean bLeftState = false;
-  private boolean bRightState = false;
+  private int stateColumnIdx = -1;
+  private int tupleSize = -1;
+  private int[] columnIdxs = null;
 
   private final Type outputType;
 
@@ -63,9 +62,7 @@ public class PythonUDFEvaluator extends GenericEvaluator {
    * @param parameters parameters that are passed to the expression
    * @param pyFuncReg python function registrar to get the python function.
    */
-  public PythonUDFEvaluator(
-      final Expression expression,
-      final ExpressionOperatorParameter parameters,
+  public PythonUDFEvaluator(final Expression expression, final ExpressionOperatorParameter parameters,
       final PythonFunctionRegistrar pyFuncReg) {
     super(expression, parameters);
 
@@ -83,28 +80,42 @@ public class PythonUDFEvaluator extends GenericEvaluator {
     }
     PyUDFExpression op = (PyUDFExpression) expression.getRootExpressionOperator();
     outputType = op.getOutput();
+    List<ExpressionOperator> childops = op.getChildren();
+    tupleSize = childops.size();
+    columnIdxs = new int[tupleSize];
+    Arrays.fill(columnIdxs, -1);
 
-    ExpressionOperator left = op.getLeft();
-    // LOGGER.info("left string :" + left.toString());
+    for (int i = 0; i < childops.size(); i++) {
+      if (childops.get(i).getClass().equals(StateExpression.class)) {
+        stateColumnIdx = ((StateExpression) childops.get(i)).getColumnIdx();
+        columnIdxs[i] = ((StateExpression) childops.get(i)).getColumnIdx();
+      } else {
+        columnIdxs[i] = ((VariableExpression) childops.get(i)).getColumnIdx();
+      }
 
-    ExpressionOperator right = op.getRight();
-    // LOGGER.info("right string :" + right.toString());
-
-    if (left.getClass().equals(VariableExpression.class)) {
-      leftColumnIdx = ((VariableExpression) left).getColumnIdx();
-
-    } else if (left.getClass().equals(StateExpression.class)) {
-      leftColumnIdx = ((StateExpression) left).getColumnIdx();
-      bLeftState = true;
     }
 
-    if (right.getClass().equals(VariableExpression.class)) {
-      rightColumnIdx = ((VariableExpression) right).getColumnIdx();
-
-    } else if (right.getClass().equals(StateExpression.class)) {
-      rightColumnIdx = ((StateExpression) right).getColumnIdx();
-      bRightState = true;
-    }
+    // ExpressionOperator left = op.getLeft();
+    // // LOGGER.info("left string :" + left.toString());
+    //
+    // ExpressionOperator right = op.getRight();
+    // // LOGGER.info("right string :" + right.toString());
+    //
+    // if (left.getClass().equals(VariableExpression.class)) {
+    // leftColumnIdx = ((VariableExpression) left).getColumnIdx();
+    //
+    // } else if (left.getClass().equals(StateExpression.class)) {
+    // leftColumnIdx = ((StateExpression) left).getColumnIdx();
+    // bLeftState = true;
+    // }
+    //
+    // if (right.getClass().equals(VariableExpression.class)) {
+    // rightColumnIdx = ((VariableExpression) right).getColumnIdx();
+    //
+    // } else if (right.getClass().equals(StateExpression.class)) {
+    // rightColumnIdx = ((StateExpression) right).getColumnIdx();
+    // bRightState = true;
+    // }
 
     // LOGGER.info("Left column ID " + leftColumnIdx + "left variable? " + bLeftState);
     // LOGGER.info("right column ID " + rightColumnIdx + "right variable? " + bRightState);
@@ -128,8 +139,9 @@ public class PythonUDFEvaluator extends GenericEvaluator {
         LOGGER.info("no python UDF with name {} registered.", pyFunc);
         throw new DbException("No Python UDf with given name registered.");
       } else {
-        // tuple size is always 2 for binary expression & this is not flatmap
-        pyWorker.sendCodePickle(pyCodeString, 2, outputType, 0);
+        // tuple size is
+        LOGGER.info("tuple size is: " + tupleSize);
+        pyWorker.sendCodePickle(pyCodeString, tupleSize, outputType, 0);
       }
 
     } catch (Exception e) {
@@ -149,11 +161,7 @@ public class PythonUDFEvaluator extends GenericEvaluator {
   }
 
   @Override
-  public void eval(
-      final ReadableTable tb,
-      final int rowIdx,
-      final WritableColumn result,
-      final ReadableTable state)
+  public void eval(final ReadableTable tb, final int rowIdx, final WritableColumn result, final ReadableTable state)
       throws DbException {
     Object obj = evaluatePython(tb, rowIdx, state);
     if (obj == null) {
@@ -193,21 +201,12 @@ public class PythonUDFEvaluator extends GenericEvaluator {
    * @param state - state for aggregator functions
    * @throws DbException
    */
-  public void evalUpdatePyExpression(
-      final ReadableTable tb,
-      final int rowIdx,
-      final AppendableTable result,
-      final ReadableTable state)
-      throws DbException {
+  public void evalUpdatePyExpression(final ReadableTable tb, final int rowIdx, final AppendableTable result,
+      final ReadableTable state) throws DbException {
 
     Object obj = evaluatePython(tb, rowIdx, state);
-    int resultcol = -1;
-    if (bLeftState) {
-      resultcol = leftColumnIdx;
-    }
-    if (bRightState) {
-      resultcol = rightColumnIdx;
-    }
+    int resultcol = stateColumnIdx;
+
     LOGGER.info("trying to update state on column: " + resultcol);
     try {
       switch (outputType) {
@@ -217,7 +216,6 @@ public class PythonUDFEvaluator extends GenericEvaluator {
         case BYTES_TYPE:
           // LOGGER.info("updating state!");
           result.putByteBuffer(resultcol, (ByteBuffer.wrap((byte[]) obj)));
-
           break;
         case FLOAT_TYPE:
           result.putFloat(resultcol, (float) obj);
@@ -255,35 +253,23 @@ public class PythonUDFEvaluator extends GenericEvaluator {
     }
 
     try {
-      if (needsState == false && (bRightState || bLeftState)) {
-        LOGGER.info(
-            "needs State: "
-                + needsState
-                + " Right column is state: "
-                + bRightState
-                + " Left column is state: "
-                + bLeftState);
+      if (needsState == false && (stateColumnIdx != -1)) {
+        LOGGER.info("needs State: " + needsState + " state column Idx is: " + stateColumnIdx);
         throw new DbException("this evaluator should not need state!");
 
       } else {
         DataOutputStream dOut = pyWorker.getDataOutputStream();
         // LOGGER.info("got the output stream!");
-        ReadableTable lreadbuffer;
-        // send left column
-        if (bLeftState) {
-          lreadbuffer = state;
-        } else {
-          lreadbuffer = tb;
+
+        for (int i = 0; i < tupleSize; i++) {
+          if (i == stateColumnIdx) {
+            writeToStream(state, rowIdx, stateColumnIdx, dOut);
+          } else {
+            writeToStream(tb, rowIdx, columnIdxs[i], dOut);
+          }
+
         }
-        writeToStream(lreadbuffer, rowIdx, leftColumnIdx, dOut);
-        ReadableTable rreadbuffer;
-        // send right column
-        if (bRightState) {
-          rreadbuffer = state;
-        } else {
-          rreadbuffer = tb;
-        }
-        writeToStream(rreadbuffer, rowIdx, rightColumnIdx, dOut);
+
         // read response back
         Object result = readFromStream();
         return result;
@@ -361,8 +347,7 @@ public class PythonUDFEvaluator extends GenericEvaluator {
    * @param dOut
    * @throws DbException
    */
-  private void writeToStream(
-      final ReadableTable tb, final int row, final int columnIdx, final DataOutputStream dOut)
+  private void writeToStream(final ReadableTable tb, final int row, final int columnIdx, final DataOutputStream dOut)
       throws DbException {
 
     Preconditions.checkNotNull(tb, "tuple input cannot be null");

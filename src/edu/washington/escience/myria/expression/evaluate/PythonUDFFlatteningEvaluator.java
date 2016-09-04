@@ -7,6 +7,8 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.nio.ByteBuffer;
+import java.util.Arrays;
+import java.util.List;
 
 import org.codehaus.janino.ExpressionEvaluator;
 
@@ -20,6 +22,7 @@ import edu.washington.escience.myria.column.builder.WritableColumn;
 import edu.washington.escience.myria.expression.Expression;
 import edu.washington.escience.myria.expression.ExpressionOperator;
 import edu.washington.escience.myria.expression.PyUDFExpression;
+import edu.washington.escience.myria.expression.StateExpression;
 import edu.washington.escience.myria.expression.VariableExpression;
 import edu.washington.escience.myria.functions.PythonFunctionRegistrar;
 import edu.washington.escience.myria.functions.PythonWorker;
@@ -43,9 +46,10 @@ public class PythonUDFFlatteningEvaluator extends FlatteningGenericEvaluator {
   private final static int NULL_LENGTH = -5;
 
   private PythonWorker pyWorker;
-  private final boolean needsState = false;
-  private int leftColumnIdx = -1;
-  private int rightColumnIdx = -1;
+  private boolean needsState = false;
+  private int stateColumnIdx = -1;
+  private int tupleSize = -1;
+  private int[] columnIdxs = null;
 
   private final Type outputType;
 
@@ -69,24 +73,26 @@ public class PythonUDFFlatteningEvaluator extends FlatteningGenericEvaluator {
       pyFunction = null;
     }
 
+    if (parameters.getStateSchema() != null) {
+
+      needsState = true;
+    }
     PyUDFExpression op = (PyUDFExpression) expression.getRootExpressionOperator();
     outputType = op.getOutput();
+    List<ExpressionOperator> childops = op.getChildren();
+    tupleSize = childops.size();
+    columnIdxs = new int[tupleSize];
+    Arrays.fill(columnIdxs, -1);
 
-    ExpressionOperator left = op.getLeft();
-    // LOGGER.info("left string :" + left.toString());
-
-    ExpressionOperator right = op.getRight();
-    // LOGGER.info("right string :" + right.toString());
-
-    if (left.getClass().equals(VariableExpression.class)) {
-      leftColumnIdx = ((VariableExpression) left).getColumnIdx();
+    for (int i = 0; i < childops.size(); i++) {
+      if (childops.get(i).getClass().equals(StateExpression.class)) {
+        stateColumnIdx = ((StateExpression) childops.get(i)).getColumnIdx();
+        columnIdxs[i] = ((StateExpression) childops.get(i)).getColumnIdx();
+      } else {
+        columnIdxs[i] = ((VariableExpression) childops.get(i)).getColumnIdx();
+      }
     }
-    if (right.getClass().equals(VariableExpression.class)) {
-      rightColumnIdx = ((VariableExpression) right).getColumnIdx();
-    }
 
-    // LOGGER.info("Left column ID " + leftColumnIdx);
-    // LOGGER.info("right column ID " + rightColumnIdx);
   }
 
   /**
@@ -107,7 +113,7 @@ public class PythonUDFFlatteningEvaluator extends FlatteningGenericEvaluator {
         throw new DbException("No Python UDf with given name registered.");
       } else {
         // tuple size is always 2 for binary expression.
-        pyWorker.sendCodePickle(pyCodeString, 2, outputType, 1);
+        pyWorker.sendCodePickle(pyCodeString, tupleSize, outputType, 1);
       }
 
     } catch (Exception e) {
@@ -153,17 +159,20 @@ public class PythonUDFFlatteningEvaluator extends FlatteningGenericEvaluator {
     }
 
     try {
-      DataOutputStream dOut = pyWorker.getDataOutputStream();
-      // LOGGER.info("got the output stream!");
-      ReadableTable lreadbuffer;
-      // send left column
-      lreadbuffer = tb;
 
-      writeToStream(lreadbuffer, rowIdx, leftColumnIdx, dOut);
-      ReadableTable rreadbuffer;
-      // send right column
-      rreadbuffer = tb;
-      writeToStream(rreadbuffer, rowIdx, rightColumnIdx, dOut);
+      if (needsState == false && (stateColumnIdx != -1)) {
+        LOGGER.info("needs State: " + needsState + " state column Idx is: " + stateColumnIdx);
+        throw new DbException("this evaluator should not need state!");
+
+      } else {
+        DataOutputStream dOut = pyWorker.getDataOutputStream();
+        // LOGGER.info("got the output stream!");
+        for (int i = 0; i < tupleSize; i++) {
+          writeToStream(tb, rowIdx, columnIdxs[i], dOut);
+        }
+
+      }
+
       // read response back
       readFromStream(count, result, colIdx);
 

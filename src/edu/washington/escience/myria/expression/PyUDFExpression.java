@@ -3,6 +3,8 @@
  */
 package edu.washington.escience.myria.expression;
 
+import java.util.List;
+
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import edu.washington.escience.myria.Type;
@@ -11,17 +13,19 @@ import edu.washington.escience.myria.expression.evaluate.ExpressionOperatorParam
 /**
  *
  */
-public class PyUDFExpression extends BinaryExpression {
+public class PyUDFExpression extends NAryExpression {
   /***/
   private static final long serialVersionUID = 1L;
 
   /** The name of the python function. */
-  @JsonProperty private final String name;
+  @JsonProperty
+  private final String name;
 
   /**
    * Output Type of python function.
    */
-  @JsonProperty private final Type outputType;
+  @JsonProperty
+  private final Type outputType;
 
   /**
    * This is not really unused, it's used automagically by Jackson deserialization.
@@ -35,17 +39,12 @@ public class PyUDFExpression extends BinaryExpression {
   /**
    * Python function expression
    *
-   * @param left the left operand.
-   * @param right the right operand.
+   * @param children operand.
    * @param Type - output Type of the python function
    * @param name - name of the python function in the catalog
    */
-  public PyUDFExpression(
-      final ExpressionOperator left,
-      final ExpressionOperator right,
-      final String name,
-      final Type outputType) {
-    super(left, right);
+  public PyUDFExpression(final List<ExpressionOperator> children, final String name, final Type outputType) {
+    super(children);
     this.name = name;
     this.outputType = outputType;
   }
