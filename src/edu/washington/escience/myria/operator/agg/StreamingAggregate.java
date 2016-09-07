@@ -1,5 +1,6 @@
 package edu.washington.escience.myria.operator.agg;
 
+import java.io.IOException;
 import java.util.Objects;
 
 import javax.annotation.Nonnull;
@@ -66,16 +67,13 @@ public class StreamingAggregate extends UnaryOperator {
    * @param gfields The columns over which we are grouping the result.
    * @param factories The factories that will produce the {@link Aggregator}s for each group.
    */
-  public StreamingAggregate(
-      @Nullable final Operator child,
-      @Nonnull final int[] gfields,
+  public StreamingAggregate(@Nullable final Operator child, @Nonnull final int[] gfields,
       @Nonnull final AggregatorFactory... factories) {
     super(child);
     gFields = Objects.requireNonNull(gfields, "gfields");
     this.factories = Objects.requireNonNull(factories, "factories");
     Preconditions.checkArgument(gfields.length > 0, " must have at least one group by field");
-    Preconditions.checkArgument(
-        factories.length > 0, "to use StreamingAggregate, must specify some aggregates");
+    Preconditions.checkArgument(factories.length > 0, "to use StreamingAggregate, must specify some aggregates");
     gRange = new int[gfields.length];
     for (int i = 0; i < gRange.length; ++i) {
       gRange[i] = i;
@@ -88,9 +86,10 @@ public class StreamingAggregate extends UnaryOperator {
    *
    * @throws DbException if any error occurs.
    * @return result tuple batch
+   * @throws IOException
    */
   @Override
-  protected TupleBatch fetchNextReady() throws DbException {
+  protected TupleBatch fetchNextReady() throws DbException, IOException {
     if (child.eos()) {
       return null;
     }
@@ -144,8 +143,9 @@ public class StreamingAggregate extends UnaryOperator {
    * Add aggregate results with previous grouping key to result buffer.
    *
    * @throws DbException if any error
+   * @throws IOException
    */
-  private void addToResult() throws DbException {
+  private void addToResult() throws DbException, IOException {
     int fromIndex = 0;
     for (; fromIndex < curGroupKey.numColumns(); ++fromIndex) {
       TupleUtils.copyValue(curGroupKey, fromIndex, 0, resultBuffer, fromIndex);

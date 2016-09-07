@@ -1,5 +1,6 @@
 package edu.washington.escience.myria.operator;
 
+import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.List;
@@ -75,7 +76,7 @@ public class Apply extends UnaryOperator {
   }
 
   @Override
-  protected TupleBatch fetchNextReady() throws DbException, InvocationTargetException {
+  protected TupleBatch fetchNextReady() throws DbException, InvocationTargetException, IOException {
     Operator child = getChild();
 
     if (child.eoi() || child.eos()) {
@@ -101,8 +102,7 @@ public class Apply extends UnaryOperator {
     Schema inputSchema = Objects.requireNonNull(getChild().getSchema());
 
     emitEvaluators = new ArrayList<>(emitExpressions.size());
-    final ExpressionOperatorParameter parameters =
-        new ExpressionOperatorParameter(inputSchema, getNodeID());
+    final ExpressionOperatorParameter parameters = new ExpressionOperatorParameter(inputSchema, getNodeID());
     for (Expression expr : emitExpressions) {
       GenericEvaluator evaluator;
       if (expr.isConstant()) {

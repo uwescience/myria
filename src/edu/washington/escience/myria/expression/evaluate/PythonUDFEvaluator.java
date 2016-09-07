@@ -5,6 +5,7 @@ package edu.washington.escience.myria.expression.evaluate;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.List;
@@ -95,9 +96,6 @@ public class PythonUDFEvaluator extends GenericEvaluator {
     ExpressionOperator op = getExpression().getRootExpressionOperator();
 
     String pyFunc = ((PyUDFExpression) op).getName();
-
-    // LOGGER.info(pyFunc);
-
     try {
 
       String pyCodeString = pyFunction.getUDF(pyFunc);
@@ -120,14 +118,9 @@ public class PythonUDFEvaluator extends GenericEvaluator {
         }
 
       }
-      // LOGGER.info("column indices length: " + columnIdxs.length);
-      // for (int j = 0; j < tupleSize; j++) {
-      // LOGGER.info("this is a state variable: " + isStateColumn[j]);
-      // LOGGER.info("variable index: " + j + "column index value: " + columnIdxs[j]);
-      // }
 
     } catch (Exception e) {
-      // LOGGER.info(e.getMessage());
+      LOGGER.info(e.getMessage());
       throw new DbException(e);
     }
   }
@@ -144,7 +137,7 @@ public class PythonUDFEvaluator extends GenericEvaluator {
 
   @Override
   public void eval(final ReadableTable tb, final int rowIdx, final WritableColumn result, final ReadableTable state)
-      throws DbException {
+      throws DbException, IOException {
     Object obj = evaluatePython(tb, rowIdx, state);
     if (obj == null) {
       throw new DbException("Python process returned null!");
@@ -167,7 +160,7 @@ public class PythonUDFEvaluator extends GenericEvaluator {
           result.appendLong((long) obj);
           break;
         default:
-          LOGGER.info("Type{} not supported as python Output.", outputType.toString());
+          LOGGER.info("Type{} not supported as python Output." + outputType.toString());
           break;
       }
     } catch (Exception e) {
@@ -182,9 +175,11 @@ public class PythonUDFEvaluator extends GenericEvaluator {
    * @param result - result column
    * @param state - state for aggregator functions
    * @throws DbException
+   * @throws IOException
    */
   public void evalUpdatePyExpression(final ReadableTable tb, final int rowIdx, final AppendableTable result,
-      final ReadableTable state) throws DbException {
+      final ReadableTable state) throws DbException, IOException {
+    pyWorker.sendNumTuples(1);
 
     Object obj = evaluatePython(tb, rowIdx, state);
     int resultcol = -1;
@@ -224,17 +219,89 @@ public class PythonUDFEvaluator extends GenericEvaluator {
     }
   }
 
+  public void evalBatch(final List<ReadableTable> ltb, final AppendableTable result, final ReadableTable state)
+      throws DbException, IOException {
+    if (pyWorker == null) {
+      pyWorker = new PythonWorker();
+      initEvaluator();
+    }
+
+    // Object obj = evaluatePython(ltb,state);
+    int resultcol = -1;
+    for (int i = 0; i < tupleSize; i++) {
+      if (isStateColumn[i]) {
+        resultcol = columnIdxs[i];
+      }
+      break;
+    }
+    try {
+
+      DataOutputStream dOut = pyWorker.getDataOutputStream();
+
+      // write the tuple batch
+      int numTuples = 0;
+      for (int j = 0; j < ltb.size(); j++) {
+        numTuples += ltb.get(j).numTuples();
+      }
+      pyWorker.sendNumTuples(numTuples);
+      LOGGER.info("number of tuples for stateful agg: " + numTuples);
+      for (int tbIdx = 0; tbIdx < ltb.size(); tbIdx++) {
+        TupleBatch tb = (TupleBatch) ltb.get(tbIdx);
+        for (int tup = 0; tup < tb.numTuples(); tup++) {
+          for (int row = 0; row < tb.numColumns(); row++) {
+            for (int col = 0; col < tupleSize; col++) {
+              writeToStream(tb, row, columnIdxs[col], dOut);
+            }
+          }
+        }
+      }
+      LOGGER.info("wrote all the tuples back!");
+      // read result back
+      Object obj = readFromStream();
+      LOGGER.info("trying to update state on column: " + resultcol);
+
+      switch (outputType) {
+        case DOUBLE_TYPE:
+          result.putDouble(resultcol, (Double) obj);
+          break;
+        case BYTES_TYPE:
+          // LOGGER.info("updating state!");
+          result.putByteBuffer(resultcol, (ByteBuffer.wrap((byte[]) obj)));
+          break;
+        case FLOAT_TYPE:
+          result.putFloat(resultcol, (float) obj);
+          break;
+        case INT_TYPE:
+          result.putInt(resultcol, (int) obj);
+          break;
+        case LONG_TYPE:
+          result.putLong(resultcol, (long) obj);
+          break;
+
+        default:
+          LOGGER.info("type not supported as Python Output");
+          break;
+      }
+
+    } catch (Exception e) {
+
+      throw new DbException(e);
+    }
+  }
+
   /**
    *
    * @param tb
    * @param rowIdx
    * @param state
-   * @return
+   * @return object result
    * @throws DbException
+   * @throws IOException
    */
-  private Object evaluatePython(final ReadableTable tb, final int rowIdx, final ReadableTable state)
-      throws DbException {
+  private Object evaluatePython(final ReadableTable tb, final int rowIdx, final ReadableTable state) throws DbException,
+      IOException {
     // LOGGER.info("eval called!");
+
     if (pyWorker == null) {
       pyWorker = new PythonWorker();
       initEvaluator();
@@ -242,18 +309,12 @@ public class PythonUDFEvaluator extends GenericEvaluator {
     try {
 
       DataOutputStream dOut = pyWorker.getDataOutputStream();
-      // LOGGER.info("got the output stream!");
+
+      pyWorker.sendNumTuples(1);
+      LOGGER.info("number of tuples to be written: " + 1);
       for (int i = 0; i < tupleSize; i++) {
-        if (isStateColumn[i]) {
-          // LOGGER.info("state column index: " + columnIdxs[i]);
-          writeToStream(state, rowIdx, columnIdxs[i], dOut);
-        } else {
-          // LOGGER.info("column index for variable: " + i + " is " + columnIdxs[i]);
-          writeToStream(tb, rowIdx, columnIdxs[i], dOut);
-        }
-
+        writeToStream(tb, rowIdx, columnIdxs[i], dOut);
       }
-
       // read response back
       Object result = readFromStream();
       return result;
@@ -265,7 +326,7 @@ public class PythonUDFEvaluator extends GenericEvaluator {
   }
 
   @Override
-  public Column<?> evaluateColumn(final TupleBatch tb) throws DbException {
+  public Column<?> evaluateColumn(final TupleBatch tb) throws DbException, IOException {
 
     Type type = getOutputType();
     ColumnBuilder<?> ret = ColumnFactory.allocateColumn(type);

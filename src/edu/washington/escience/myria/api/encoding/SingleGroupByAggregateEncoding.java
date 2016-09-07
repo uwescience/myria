@@ -6,11 +6,13 @@ import edu.washington.escience.myria.operator.agg.SingleGroupByAggregate;
 
 public class SingleGroupByAggregateEncoding extends UnaryOperatorEncoding<SingleGroupByAggregate> {
 
-  @Required public AggregatorFactory[] aggregators;
-  @Required public int argGroupField;
+  @Required
+  public AggregatorFactory[] aggregators;
+  @Required
+  public int argGroupField;
 
   @Override
-  public SingleGroupByAggregate construct(ConstructArgs args) {
+  public SingleGroupByAggregate construct(final ConstructArgs args) {
     return new SingleGroupByAggregate(null, argGroupField, aggregators);
   }
 }

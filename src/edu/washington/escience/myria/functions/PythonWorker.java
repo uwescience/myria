@@ -28,8 +28,7 @@ import edu.washington.escience.myria.Type;
 public class PythonWorker {
   /***/
   private static final long serialVersionUID = 1L;
-  private static final org.slf4j.Logger LOGGER =
-      org.slf4j.LoggerFactory.getLogger(PythonWorker.class);
+  private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(PythonWorker.class);
 
   private ServerSocket serverSocket = null;
   private Socket clientSock = null;
@@ -62,8 +61,7 @@ public class PythonWorker {
    * @param outputType
    * @throws DbException
    */
-  public void sendCodePickle(
-      final String pyCodeString, final int tupleSize, final Type outputType, final int isFlatMap)
+  public void sendCodePickle(final String pyCodeString, final int tupleSize, final Type outputType, final int isFlatMap)
       throws DbException {
     Preconditions.checkNotNull(pyCodeString);
 
@@ -86,6 +84,16 @@ public class PythonWorker {
       }
     } catch (Exception e) {
       LOGGER.info("failed to send python code pickle");
+      throw new DbException(e);
+    }
+  }
+
+  public void sendNumTuples(final int numTuples) throws IOException, DbException {
+    Preconditions.checkArgument(numTuples > 0, "number of tuples: %s", numTuples);
+    try {
+      dOut.writeInt(numTuples);
+    } catch (Exception e) {
+      LOGGER.info("failed to write number of tuples to python process!");
       throw new DbException(e);
     }
   }

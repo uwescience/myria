@@ -80,8 +80,8 @@ public abstract class PrimitiveAggregator implements Aggregator, Serializable {
     this.aggOps = new LinkedHashSet<>(Arrays.asList(aggOps));
 
     if (!getAvailableAgg().containsAll(this.aggOps)) {
-      throw new IllegalArgumentException(
-          "Unsupported aggregation(s): " + Sets.difference(this.aggOps, getAvailableAgg()));
+      throw new IllegalArgumentException("Unsupported aggregation(s): " + Sets.difference(this.aggOps,
+          getAvailableAgg()));
     }
 
     if (aggOps.length == 0) {

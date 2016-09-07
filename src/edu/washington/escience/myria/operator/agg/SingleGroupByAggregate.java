@@ -1,5 +1,6 @@
 package edu.washington.escience.myria.operator.agg;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -32,8 +33,7 @@ public class SingleGroupByAggregate extends UnaryOperator {
   /**
    * The Logger.
    */
-  private static final org.slf4j.Logger LOGGER =
-      org.slf4j.LoggerFactory.getLogger(SingleGroupByAggregate.class);
+  private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(SingleGroupByAggregate.class);
 
   /**
    * default serialization ID.
@@ -104,8 +104,8 @@ public class SingleGroupByAggregate extends UnaryOperator {
    * @param gfield The column over which we are grouping the result.
    * @param factories Factories for the aggregation operators to use.
    */
-  public SingleGroupByAggregate(
-      @Nullable final Operator child, final int gfield, final AggregatorFactory... factories) {
+  public SingleGroupByAggregate(@Nullable final Operator child, final int gfield,
+      final AggregatorFactory... factories) {
     super(child);
     gColumn = Objects.requireNonNull(gfield, "gfield");
     this.factories = Objects.requireNonNull(factories, "factories");
@@ -211,10 +211,18 @@ public class SingleGroupByAggregate extends UnaryOperator {
    * @throws DbException if there is an error.
    */
   private void processTupleBatch(final TupleBatch tb) throws DbException {
-    for (int i = 0; i < tb.numTuples(); ++i) {
-      Object[] groupAgg = getAggState(tb, i);
-      for (int agg = 0; agg < aggregators.length; ++agg) {
-        aggregators[agg].addRow(tb, i, groupAgg[agg]);
+    LOGGER.info("processing tuple batch");
+
+    for (int agg = 0; agg < aggregators.length; ++agg) {
+      if (aggregators[agg].getClass().getName().equals(StatefulUserDefinedAggregator.class.getName())) {
+
+        Object[] groupAgg = getAggState(tb, 0);
+        aggregators[agg].add(tb, groupAgg[agg]);
+      } else {
+        for (int i = 0; i < tb.numTuples(); ++i) {
+          Object[] groupAgg = getAggState(tb, i);
+          aggregators[agg].addRow(tb, i, groupAgg[agg]);
+        }
       }
     }
   }
@@ -226,9 +234,10 @@ public class SingleGroupByAggregate extends UnaryOperator {
    * @param resultBuffer where the tuples will be appended.
    * @param aggState the states corresponding to all aggregators.
    * @throws DbException if there is an error.
+   * @throws IOException
    */
-  private void concatResults(final TupleBatchBuffer resultBuffer, final Object[] aggState)
-      throws DbException {
+  private void concatResults(final TupleBatchBuffer resultBuffer, final Object[] aggState) throws DbException,
+      IOException {
     int index = 1;
     for (int agg = 0; agg < aggregators.length; ++agg) {
       aggregators[agg].getResult(resultBuffer, index, aggState[agg]);
@@ -239,8 +248,9 @@ public class SingleGroupByAggregate extends UnaryOperator {
   /**
    * @param resultBuffer where the results are stored.
    * @throws DbException if there is an error.
+   * @throws IOException
    */
-  private void generateResult(final TupleBatchBuffer resultBuffer) throws DbException {
+  private void generateResult(final TupleBatchBuffer resultBuffer) throws DbException, IOException {
 
     switch (gColumnType) {
       case BOOLEAN_TYPE:
@@ -293,7 +303,7 @@ public class SingleGroupByAggregate extends UnaryOperator {
   }
 
   @Override
-  protected final TupleBatch fetchNextReady() throws DbException {
+  protected final TupleBatch fetchNextReady() throws DbException, IOException {
     TupleBatch tb = null;
     final Operator child = getChild();
 
@@ -330,8 +340,7 @@ public class SingleGroupByAggregate extends UnaryOperator {
   protected final void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
     Preconditions.checkState(getSchema() != null, "unable to determine schema in init");
 
-    aggregators =
-        AggUtils.allocateAggs(factories, getChild().getSchema(), getPythonFunctionRegistrar());
+    aggregators = AggUtils.allocateAggs(factories, getChild().getSchema(), getPythonFunctionRegistrar());
     resultBuffer = new TupleBatchBuffer(getSchema());
 
     switch (gColumnType) {
@@ -372,8 +381,7 @@ public class SingleGroupByAggregate extends UnaryOperator {
 
     Preconditions.checkElementIndex(gColumn, inputSchema.numColumns(), "group column");
 
-    Schema outputSchema =
-        Schema.ofFields(inputSchema.getColumnType(gColumn), inputSchema.getColumnName(gColumn));
+    Schema outputSchema = Schema.ofFields(inputSchema.getColumnType(gColumn), inputSchema.getColumnName(gColumn));
 
     gColumnType = inputSchema.getColumnType(gColumn);
     try {
