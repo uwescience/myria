@@ -120,7 +120,9 @@ class PickleSerializer(object):
 
   def read_tuple(self, stream, tuplesize):
       datalist= []
+
       print ("length is  tuple is "+str(tuplesize))
+
       for i in range (tuplesize):
           #first element read type
           elementType = read_int(stream)

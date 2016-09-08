@@ -189,8 +189,14 @@ public final class MultiGroupByAggregate extends UnaryOperator {
    * @throws DbException if there is an error.
    */
   private void updateGroup(final TupleBatch tb, final int row, final Object[] curAggStates) throws DbException {
+
     for (int agg = 0; agg < aggregators.length; ++agg) {
-      aggregators[agg].addRow(tb, row, curAggStates[agg]);
+      if (aggregators[agg].getClass().getName().equals(StatefulUserDefinedAggregator.class.getName())) {
+        aggregators[agg].add(tb, curAggStates[agg]);
+      } else {
+        aggregators[agg].addRow(tb, row, curAggStates[agg]);
+      }
+
     }
   }
 

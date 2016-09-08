@@ -105,6 +105,7 @@ public class PythonUDFEvaluator extends GenericEvaluator {
       } else {
         // tuple size is
         LOGGER.info("tuple size is: " + tupleSize);
+        LOGGER.info("does this eval need state? " + needsState);
         pyWorker.sendCodePickle(pyCodeString, tupleSize, outputType, 0);
       }
       List<ExpressionOperator> childops = op.getChildren();
@@ -138,6 +139,8 @@ public class PythonUDFEvaluator extends GenericEvaluator {
   @Override
   public void eval(final ReadableTable tb, final int rowIdx, final WritableColumn result, final ReadableTable state)
       throws DbException, IOException {
+    LOGGER.info("eval called");
+
     Object obj = evaluatePython(tb, rowIdx, state);
     if (obj == null) {
       throw new DbException("Python process returned null!");
@@ -168,65 +171,67 @@ public class PythonUDFEvaluator extends GenericEvaluator {
     }
   }
 
-  /**
-   *
-   * @param tb - tuple batch to evaluate
-   * @param rowIdx - row index for evaluation
-   * @param result - result column
-   * @param state - state for aggregator functions
-   * @throws DbException
-   * @throws IOException
-   */
-  public void evalUpdatePyExpression(final ReadableTable tb, final int rowIdx, final AppendableTable result,
-      final ReadableTable state) throws DbException, IOException {
-    pyWorker.sendNumTuples(1);
-
-    Object obj = evaluatePython(tb, rowIdx, state);
-    int resultcol = -1;
-    for (int i = 0; i < tupleSize; i++) {
-      if (isStateColumn[i]) {
-        resultcol = columnIdxs[i];
-      }
-      break;
-    }
-
-    // LOGGER.info("trying to update state on column: " + resultcol);
-    try {
-      switch (outputType) {
-        case DOUBLE_TYPE:
-          result.putDouble(resultcol, (Double) obj);
-          break;
-        case BYTES_TYPE:
-          // LOGGER.info("updating state!");
-          result.putByteBuffer(resultcol, (ByteBuffer.wrap((byte[]) obj)));
-          break;
-        case FLOAT_TYPE:
-          result.putFloat(resultcol, (float) obj);
-          break;
-        case INT_TYPE:
-          result.putInt(resultcol, (int) obj);
-          break;
-        case LONG_TYPE:
-          result.putLong(resultcol, (long) obj);
-          break;
-
-        default:
-          LOGGER.info("type not supported as Python Output");
-          break;
-      }
-    } catch (Exception e) {
-      throw new DbException(e);
-    }
-  }
+  // /**
+  // *
+  // * @param tb - tuple batch to evaluate
+  // * @param rowIdx - row index for evaluation
+  // * @param result - result column
+  // * @param state - state for aggregator functions
+  // * @throws DbException
+  // * @throws IOException
+  // */
+  //// public void evalUpdatePyExpression(final ReadableTable tb, final int rowIdx, final AppendableTable result,
+  // final ReadableTable state) throws DbException, IOException {
+  // pyWorker.sendNumTuples(1);
+  //
+  // Object obj = evaluatePython(tb, rowIdx, state);
+  // int resultcol = -1;
+  // for (int i = 0; i < tupleSize; i++) {
+  // if (isStateColumn[i]) {
+  // resultcol = columnIdxs[i];
+  // }
+  // break;
+  // }
+  //
+  // // LOGGER.info("trying to update state on column: " + resultcol);
+  // try {
+  // switch (outputType) {
+  // case DOUBLE_TYPE:
+  // result.putDouble(resultcol, (Double) obj);
+  // break;
+  // case BYTES_TYPE:
+  // // LOGGER.info("updating state!");
+  // result.putByteBuffer(resultcol, (ByteBuffer.wrap((byte[]) obj)));
+  // break;
+  // case FLOAT_TYPE:
+  // result.putFloat(resultcol, (float) obj);
+  // break;
+  // case INT_TYPE:
+  // result.putInt(resultcol, (int) obj);
+  // break;
+  // case LONG_TYPE:
+  // result.putLong(resultcol, (long) obj);
+  // break;
+  //
+  // default:
+  // LOGGER.info("type not supported as Python Output");
+  // break;
+  // }
+  // } catch (Exception e) {
+  // throw new DbException(e);
+  // }
+  // }
 
   public void evalBatch(final List<ReadableTable> ltb, final AppendableTable result, final ReadableTable state)
       throws DbException, IOException {
+
+    LOGGER.info("evalbatch called!!");
     if (pyWorker == null) {
       pyWorker = new PythonWorker();
       initEvaluator();
     }
-
-    // Object obj = evaluatePython(ltb,state);
+    // this could be a problem -- this is finding the first state column -- could there be multple state
+    // columns ?
     int resultcol = -1;
     for (int i = 0; i < tupleSize; i++) {
       if (isStateColumn[i]) {
@@ -246,13 +251,15 @@ public class PythonUDFEvaluator extends GenericEvaluator {
       pyWorker.sendNumTuples(numTuples);
       LOGGER.info("number of tuples for stateful agg: " + numTuples);
       for (int tbIdx = 0; tbIdx < ltb.size(); tbIdx++) {
+
         TupleBatch tb = (TupleBatch) ltb.get(tbIdx);
+
         for (int tup = 0; tup < tb.numTuples(); tup++) {
-          for (int row = 0; row < tb.numColumns(); row++) {
-            for (int col = 0; col < tupleSize; col++) {
-              writeToStream(tb, row, columnIdxs[col], dOut);
-            }
+          for (int col = 0; col < tupleSize; col++) {
+            LOGGER.info("is this a state column? " + isStateColumn[col]);
+            writeToStream(tb, tup, columnIdxs[col], dOut);
           }
+
         }
       }
       LOGGER.info("wrote all the tuples back!");
@@ -265,7 +272,6 @@ public class PythonUDFEvaluator extends GenericEvaluator {
           result.putDouble(resultcol, (Double) obj);
           break;
         case BYTES_TYPE:
-          // LOGGER.info("updating state!");
           result.putByteBuffer(resultcol, (ByteBuffer.wrap((byte[]) obj)));
           break;
         case FLOAT_TYPE:
@@ -313,7 +319,11 @@ public class PythonUDFEvaluator extends GenericEvaluator {
       pyWorker.sendNumTuples(1);
       LOGGER.info("number of tuples to be written: " + 1);
       for (int i = 0; i < tupleSize; i++) {
-        writeToStream(tb, rowIdx, columnIdxs[i], dOut);
+        if (isStateColumn[i]) {
+          writeToStream(state, rowIdx, columnIdxs[i], dOut);
+        } else {
+          writeToStream(tb, rowIdx, columnIdxs[i], dOut);
+        }
       }
       // read response back
       Object result = readFromStream();

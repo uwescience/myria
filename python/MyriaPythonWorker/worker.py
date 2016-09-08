@@ -30,7 +30,16 @@ def main(infile, outfile):
         print(isFlatmap)
         while True:
             print("python process trying to read tuple")
-            tup =pickleSer.read_tuple(infile,tuplesize)
+
+            numTuples = read_int(infile)
+            print ("number of tuples to be read: "+ str(numTuples))
+            if(numTuples >1):
+                tup=[]
+                for j in range(numTuples):
+                    tup.append(pickleSer.read_tuple(infile,tuplesize))
+                    print( "tuples read "+ str(j))
+            else:
+                tup = pickleSer.read_tuple(infile,tuplesize)
 
             print("python process done reading tuple, now writing ")
             retval = func(tup)

@@ -68,6 +68,12 @@ public class UserDefinedAggregator implements Aggregator {
 
   @Override
   public void addRow(final ReadableTable from, final int row, final Object state) throws DbException {
+
+    if (pyUDFEvaluators.size() > 0) {
+      LOGGER.info("this aggregate has python UDF, StatefulAggreagte should be called!");
+      throw new DbException("this aggregate has python UDF, StatefulAggreagte should be called!");
+    }
+
     Tuple stateTuple = (Tuple) state;
 
     try {
@@ -75,12 +81,6 @@ public class UserDefinedAggregator implements Aggregator {
         updateEvaluator.evaluate(from, row, stateTuple, stateTuple);
       }
 
-      if (pyUDFEvaluators.size() > 0) {
-        for (int i = 0; i < pyUDFEvaluators.size(); i++) {
-          // LOGGER.info("trying to update state variable");
-          pyUDFEvaluators.get(i).evalUpdatePyExpression(from, row, stateTuple, stateTuple);
-        }
-      }
     } catch (Exception e) {
       // LOGGER.error("Error updating UDA state", e);
       throw new DbException("Error updating UDA state", e);

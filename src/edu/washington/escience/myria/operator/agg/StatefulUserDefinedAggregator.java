@@ -44,17 +44,45 @@ public class StatefulUserDefinedAggregator extends UserDefinedAggregator {
 
   @Override
   public void add(final ReadableTable from, final Object state) throws DbException {
-    ltb.add(from);
+    LOGGER.info("add called");
+    if (!ltb.contains(from)) {
+      // ths is not going to work if the tuplebatch has more than one tuple
+      ltb.add(from);
+    }
+    try {
+      if (updateEvaluator != null) {
+        // this aggreagte has a script eval
+        for (int row = 0; row < from.numTuples(); ++row) {
+          addRow(from, row, state);
+        }
+
+      }
+
+    } catch (Exception e) {
+      // LOGGER.error("Error updating UDA state", e);
+      throw new DbException("Error updating UDA state", e);
+    }
+
   }
 
   @Override
   public void addRow(final ReadableTable from, final int row, final Object state) throws DbException {
-    throw new DbException("Add Row not supported for StatefulUDA");
+    Tuple stateTuple = (Tuple) state;
+    try {
+      if (updateEvaluator != null) {
+        updateEvaluator.evaluate(from, row, stateTuple, stateTuple);
+      }
+    } catch (Exception e) {
+      // LOGGER.error("Error updating UDA state", e);
+      throw new DbException("Error updating UDA state", e);
+    }
+
   }
 
   @Override
   public void getResult(final AppendableTable dest, final int destColumn, final Object state) throws DbException,
       IOException {
+    LOGGER.info("get results called");
 
     Tuple stateTuple = (Tuple) state;
 
@@ -62,6 +90,7 @@ public class StatefulUserDefinedAggregator extends UserDefinedAggregator {
     if (pyUDFEvaluators.size() > 0) {
       for (int i = 0; i < pyUDFEvaluators.size(); i++) {
         // LOGGER.info("trying to update state variable");
+        LOGGER.info("calling evalbatch with tb list size " + ltb.size());
         pyUDFEvaluators.get(i).evalBatch(ltb, stateTuple, stateTuple);
       }
     }
@@ -70,6 +99,7 @@ public class StatefulUserDefinedAggregator extends UserDefinedAggregator {
     for (int index = 0; index < emitEvaluators.size(); index++) {
       final GenericEvaluator evaluator = emitEvaluators.get(index);
       try {
+        LOGGER.info("trying to finalize output before emiting");
         evaluator.eval(null, 0, dest.asWritableColumn(destColumn + index), stateTuple);
       } catch (InvocationTargetException e) {
         throw new DbException("Error finalizing aggregate", e);
