@@ -5,6 +5,7 @@ package edu.washington.escience.myria.expression.evaluate;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
@@ -47,7 +48,7 @@ public class PythonUDFFlatteningEvaluator extends FlatteningGenericEvaluator {
 
   private PythonWorker pyWorker;
   private boolean needsState = false;
-  private int stateColumnIdx = -1;
+  private final boolean[] isStateColumn;
   private int tupleSize = -1;
   private int[] columnIdxs = null;
 
@@ -64,9 +65,6 @@ public class PythonUDFFlatteningEvaluator extends FlatteningGenericEvaluator {
       final PythonFunctionRegistrar pyFuncReg) {
     super(expression, parameters);
 
-    // parameters and expression are saved in the super
-    // LOGGER.info("Output name for the python expression" + getExpression().getOutputName());
-
     if (pyFuncReg != null) {
       pyFunction = pyFuncReg;
     } else {
@@ -74,24 +72,18 @@ public class PythonUDFFlatteningEvaluator extends FlatteningGenericEvaluator {
     }
 
     if (parameters.getStateSchema() != null) {
-
       needsState = true;
     }
+
     PyUDFExpression op = (PyUDFExpression) expression.getRootExpressionOperator();
     outputType = op.getOutput();
+
     List<ExpressionOperator> childops = op.getChildren();
     tupleSize = childops.size();
     columnIdxs = new int[tupleSize];
+    isStateColumn = new boolean[tupleSize];
     Arrays.fill(columnIdxs, -1);
-
-    for (int i = 0; i < childops.size(); i++) {
-      if (childops.get(i).getClass().equals(StateExpression.class)) {
-        stateColumnIdx = ((StateExpression) childops.get(i)).getColumnIdx();
-        columnIdxs[i] = ((StateExpression) childops.get(i)).getColumnIdx();
-      } else {
-        columnIdxs[i] = ((VariableExpression) childops.get(i)).getColumnIdx();
-      }
-    }
+    Arrays.fill(isStateColumn, false);
 
   }
 
@@ -102,22 +94,32 @@ public class PythonUDFFlatteningEvaluator extends FlatteningGenericEvaluator {
     ExpressionOperator op = getExpression().getRootExpressionOperator();
 
     String pyFunc = ((PyUDFExpression) op).getName();
-
-    // LOGGER.info(pyFunc);
-
     try {
 
       String pyCodeString = pyFunction.getUDF(pyFunc);
       if (pyCodeString == null) {
-        LOGGER.info("no python UDF with name : " + pyFunc);
+        LOGGER.info("no python UDF with name " + pyFunc);
         throw new DbException("No Python UDf with given name registered.");
       } else {
-        // tuple size is always 2 for binary expression.
-        pyWorker.sendCodePickle(pyCodeString, tupleSize, outputType, 1);
+        // tuple size is
+        LOGGER.info("tuple size is: " + tupleSize);
+        LOGGER.info("does this eval need state? " + needsState);
+        pyWorker.sendCodePickle(pyCodeString, tupleSize, outputType, 0);
+      }
+      List<ExpressionOperator> childops = op.getChildren();
+
+      for (int i = 0; i < childops.size(); i++) {
+        if (childops.get(i).getClass().equals(StateExpression.class)) {
+          isStateColumn[i] = true;
+          columnIdxs[i] = ((StateExpression) childops.get(i)).getColumnIdx();
+        } else {
+          columnIdxs[i] = ((VariableExpression) childops.get(i)).getColumnIdx();
+        }
+
       }
 
     } catch (Exception e) {
-      // LOGGER.info(e.getMessage());
+      LOGGER.info(e.getMessage());
       throw new DbException(e);
     }
   }
@@ -142,16 +144,17 @@ public class PythonUDFFlatteningEvaluator extends FlatteningGenericEvaluator {
    * @param colIdx index of the column that the result should be appended to
    * @throws InvocationTargetException exception thrown from janino
    * @throws DbException
+   * @throws IOException
    */
   @Override
   public void eval(final ReadableTable tb, final int rowIdx, final WritableColumn count, final AppendableTable result,
-      final int colIdx) throws InvocationTargetException, DbException {
+      final int colIdx) throws InvocationTargetException, DbException, IOException {
 
     evaluatePython(tb, rowIdx, count, result, colIdx);
   }
 
   private void evaluatePython(final ReadableTable tb, final int rowIdx, final WritableColumn count,
-      final AppendableTable result, final int colIdx) throws DbException {
+      final AppendableTable result, final int colIdx) throws DbException, IOException {
     // LOGGER.info("eval called!");
     if (pyWorker == null) {
       pyWorker = new PythonWorker();
@@ -160,17 +163,11 @@ public class PythonUDFFlatteningEvaluator extends FlatteningGenericEvaluator {
 
     try {
 
-      if (needsState == false && (stateColumnIdx != -1)) {
-        // LOGGER.info("needs State: " + needsState + " state column Idx is: " + stateColumnIdx);
-        throw new DbException("this evaluator should not need state!");
-
-      } else {
-        DataOutputStream dOut = pyWorker.getDataOutputStream();
-        // LOGGER.info("got the output stream!");
-        for (int i = 0; i < tupleSize; i++) {
-          writeToStream(tb, rowIdx, columnIdxs[i], dOut);
-        }
-
+      DataOutputStream dOut = pyWorker.getDataOutputStream();
+      pyWorker.sendNumTuples(1);
+      // LOGGER.info("got the output stream!");
+      for (int i = 0; i < tupleSize; i++) {
+        writeToStream(tb, rowIdx, columnIdxs[i], dOut);
       }
 
       // read response back

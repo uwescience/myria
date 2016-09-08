@@ -238,6 +238,7 @@ public class SingleGroupByAggregate extends UnaryOperator {
    */
   private void concatResults(final TupleBatchBuffer resultBuffer, final Object[] aggState) throws DbException,
       IOException {
+    LOGGER.info("concat results called");
     int index = 1;
     for (int agg = 0; agg < aggregators.length; ++agg) {
       aggregators[agg].getResult(resultBuffer, index, aggState[agg]);
@@ -251,6 +252,7 @@ public class SingleGroupByAggregate extends UnaryOperator {
    * @throws IOException
    */
   private void generateResult(final TupleBatchBuffer resultBuffer) throws DbException, IOException {
+    LOGGER.info("generate results called in agg");
 
     switch (gColumnType) {
       case BOOLEAN_TYPE:
@@ -317,9 +319,6 @@ public class SingleGroupByAggregate extends UnaryOperator {
 
     while ((tb = child.nextReady()) != null) {
 
-      if (LOGGER.isDebugEnabled()) {
-        LOGGER.debug("get a TB from child");
-      }
       processTupleBatch(tb);
     }
 

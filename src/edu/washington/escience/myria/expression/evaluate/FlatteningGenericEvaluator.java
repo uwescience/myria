@@ -1,5 +1,6 @@
 package edu.washington.escience.myria.expression.evaluate;
 
+import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 
 import org.codehaus.commons.compiler.CompileException;
@@ -27,8 +28,7 @@ import edu.washington.escience.myria.storage.TupleBatch;
 public class FlatteningGenericEvaluator extends Evaluator {
 
   /** logger for this class. */
-  private static final org.slf4j.Logger LOGGER =
-      org.slf4j.LoggerFactory.getLogger(FlatteningGenericEvaluator.class);
+  private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(FlatteningGenericEvaluator.class);
 
   /**
    * Expression evaluator.
@@ -41,8 +41,7 @@ public class FlatteningGenericEvaluator extends Evaluator {
    * @param expression the expression for the evaluator
    * @param parameters parameters that are passed to the expression
    */
-  public FlatteningGenericEvaluator(
-      final Expression expression, final ExpressionOperatorParameter parameters) {
+  public FlatteningGenericEvaluator(final Expression expression, final ExpressionOperatorParameter parameters) {
     super(expression, parameters);
   }
 
@@ -53,8 +52,7 @@ public class FlatteningGenericEvaluator extends Evaluator {
    */
   @Override
   public void compile() throws DbException {
-    Preconditions.checkArgument(
-        needsCompiling() || (getStateSchema() != null),
+    Preconditions.checkArgument(needsCompiling() || (getStateSchema() != null),
         "This expression does not need to be compiled.");
 
     String javaExpression = getJavaExpressionWithAppend();
@@ -69,18 +67,9 @@ public class FlatteningGenericEvaluator extends Evaluator {
     se.setDefaultImports(MyriaConstants.DEFAULT_JANINO_IMPORTS);
 
     try {
-      evaluator =
-          (FlatteningExpressionEvalInterface)
-              se.createFastEvaluator(
-                  javaExpression,
-                  FlatteningExpressionEvalInterface.class,
-                  new String[] {
-                    Expression.TB,
-                    Expression.ROW,
-                    Expression.COUNT,
-                    Expression.RESULT,
-                    Expression.COL
-                  });
+      evaluator = (FlatteningExpressionEvalInterface) se.createFastEvaluator(javaExpression,
+          FlatteningExpressionEvalInterface.class, new String[] {
+              Expression.TB, Expression.ROW, Expression.COUNT, Expression.RESULT, Expression.COL });
     } catch (CompileException e) {
       LOGGER.error("Error when compiling expression {}: {}", javaExpression, e);
       throw new DbException("Error when compiling expression: " + javaExpression, e);
@@ -97,16 +86,12 @@ public class FlatteningGenericEvaluator extends Evaluator {
    * @param colIdx index of the column that the result should be appended to
    * @throws InvocationTargetException exception thrown from janino
    * @throws DbException
+   * @throws IOException
    */
-  public void eval(
-      final ReadableTable tb,
-      final int rowIdx,
-      final WritableColumn count,
-      final AppendableTable result,
-      final int colIdx)
-      throws InvocationTargetException, DbException {
-    Preconditions.checkArgument(
-        evaluator != null, "Call compile first or copy the data if it is the same in the input.");
+  public void eval(final ReadableTable tb, final int rowIdx, final WritableColumn count, final AppendableTable result,
+      final int colIdx) throws InvocationTargetException, DbException, IOException {
+    Preconditions.checkArgument(evaluator != null,
+        "Call compile first or copy the data if it is the same in the input.");
     try {
       evaluator.evaluate(tb, rowIdx, count, result, colIdx);
     } catch (Exception e) {
@@ -132,9 +117,10 @@ public class FlatteningGenericEvaluator extends Evaluator {
    * @return a column containing the number of results from evaluating this expression on each row of {@link #tb}
    * @throws InvocationTargetException exception thrown from janino
    * @throws DbException
+   * @throws IOException
    */
-  public Column<?> evaluateColumn(final TupleBatch tb, final AppendableTable result)
-      throws InvocationTargetException, DbException {
+  public Column<?> evaluateColumn(final TupleBatch tb, final AppendableTable result) throws InvocationTargetException,
+      DbException, IOException {
     ColumnBuilder<?> count = ColumnFactory.allocateColumn(Type.INT_TYPE);
     for (int rowIdx = 0; rowIdx < tb.numTuples(); ++rowIdx) {
       eval(tb, rowIdx, count, result, 0);
