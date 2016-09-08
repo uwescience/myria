@@ -35,6 +35,7 @@ import edu.washington.escience.myria.expression.evaluate.ExpressionOperatorParam
   @Type(name = "LOG", value = LogExpression.class),
   @Type(name = "MD5", value = HashMd5Expression.class),
   @Type(name = "NEG", value = NegateExpression.class),
+  @Type(name = "NGRAM", value = NgramExpression.class),
   @Type(name = "NOT", value = NotExpression.class),
   @Type(name = "SEQUENCE", value = SequenceExpression.class),
   @Type(name = "SIN", value = SinExpression.class),
