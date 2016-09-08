@@ -25,15 +25,15 @@ public class FlatteningApplyTest {
 
   private final String SEPARATOR = ",";
   private final int SPLIT_MAX = 10;
-  private final int COUNTER_MAX = 2 * TupleBatch.BATCH_SIZE + 1;
-  private final int EXPECTED_RESULTS = SPLIT_MAX * COUNTER_MAX;
+  private final long COUNTER_MAX = 2 * TupleBatch.BATCH_SIZE + 1;
+  private final long EXPECTED_RESULTS = SPLIT_MAX * COUNTER_MAX;
 
   @Test
   public void testApply() throws DbException {
     final Schema schema =
         Schema.ofFields(
             "int_count",
-            Type.INT_TYPE,
+            Type.LONG_TYPE,
             "ignore_1",
             Type.FLOAT_TYPE,
             "joined_ints",
@@ -43,11 +43,11 @@ public class FlatteningApplyTest {
     final Schema expectedResultSchema =
         Schema.ofFields(
             "int_count",
-            Type.INT_TYPE,
+            Type.LONG_TYPE,
             "joined_ints",
             Type.STRING_TYPE,
             "int_values",
-            Type.INT_TYPE,
+            Type.LONG_TYPE,
             "joined_ints_splits",
             Type.STRING_TYPE);
     final TupleBatchBuffer input = new TupleBatchBuffer(schema);
@@ -61,7 +61,7 @@ public class FlatteningApplyTest {
     }
     final String joinedInts = sb.toString();
 
-    input.putInt(0, COUNTER_MAX);
+    input.putLong(0, COUNTER_MAX);
     input.putFloat(1, 1.0f);
     input.putString(2, joinedInts);
     input.putBoolean(3, true);
@@ -89,9 +89,9 @@ public class FlatteningApplyTest {
         assertEquals(expectedResultSchema, result.getSchema());
 
         for (int batchIdx = 0; batchIdx < result.numTuples(); ++batchIdx, ++rowIdx) {
-          assertEquals(COUNTER_MAX, result.getInt(0, batchIdx));
+          assertEquals(COUNTER_MAX, result.getLong(0, batchIdx));
           assertEquals(joinedInts, result.getString(1, batchIdx));
-          assertEquals((rowIdx / SPLIT_MAX), result.getInt(2, batchIdx));
+          assertEquals((rowIdx / SPLIT_MAX), result.getLong(2, batchIdx));
           assertEquals((rowIdx % SPLIT_MAX), Integer.parseInt(result.getString(3, batchIdx)));
         }
       }
