@@ -67,6 +67,7 @@ public class UserDefinedAggregatorFactory implements AggregatorFactory {
    * The schema of the result tuples.
    */
   private transient Schema resultSchema;
+  private transient boolean bHasPyEval = false;
 
   /**
    * Construct a new user-defined aggregate. The initializers set the initial state of the aggregate; the updaters
@@ -101,7 +102,6 @@ public class UserDefinedAggregatorFactory implements AggregatorFactory {
   @Nonnull
   public Aggregator get(final Schema inputSchema, final PythonFunctionRegistrar pyFuncReg) throws DbException {
 
-    boolean bHasPyEval = false;
     if (state == null) {
       Objects.requireNonNull(inputSchema, "inputSchema");
       Preconditions.checkArgument(initializers.size() == updaters.size(),
@@ -122,8 +122,7 @@ public class UserDefinedAggregatorFactory implements AggregatorFactory {
       stateEvaluator.evaluate(null, 0, state, null);
 
       /* Set up the updaters. */
-
-      pyUpdateEvaluators = new ArrayList<>();
+      pyUpdateEvaluators = new ArrayList<PythonUDFEvaluator>();
       updateEvaluator = getEvalScript(updaters, new ExpressionOperatorParameter(inputSchema, stateSchema), pyFuncReg);
 
       /* Set up the emitters. */
@@ -138,7 +137,6 @@ public class UserDefinedAggregatorFactory implements AggregatorFactory {
           bHasPyEval = true;
 
         } else {
-
           evaluator = new GenericEvaluator(expr, new ExpressionOperatorParameter(null, stateSchema));
         }
 
@@ -192,6 +190,7 @@ public class UserDefinedAggregatorFactory implements AggregatorFactory {
       // LOGGER.info("expression output name" + expr.getOutputName());
 
       if (!expr.isRegisteredUDF()) {
+
         Type type = expr.getOutputType(param);
         compute.append(type.toJavaType().getName()).append(" val").append(varCount).append(" = ").append(expr
             .getJavaExpression(param)).append(";\n");
@@ -199,6 +198,7 @@ public class UserDefinedAggregatorFactory implements AggregatorFactory {
         output.append(Expression.RESULT).append(".put").append(type.toJavaObjectType().getSimpleName()).append("(")
             .append(varCount).append(", val").append(varCount).append(");\n");
       } else {
+        bHasPyEval = true;
         PythonUDFEvaluator evaluator = new PythonUDFEvaluator(expr, param, pyFuncReg);
         pyUpdateEvaluators.add(evaluator);
 

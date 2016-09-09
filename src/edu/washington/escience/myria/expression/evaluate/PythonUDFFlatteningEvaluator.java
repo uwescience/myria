@@ -51,6 +51,7 @@ public class PythonUDFFlatteningEvaluator extends FlatteningGenericEvaluator {
   private final boolean[] isStateColumn;
   private int tupleSize = -1;
   private int[] columnIdxs = null;
+  private final int isFlatmap = 1;
 
   private final Type outputType;
 
@@ -104,7 +105,7 @@ public class PythonUDFFlatteningEvaluator extends FlatteningGenericEvaluator {
         // tuple size is
         LOGGER.info("tuple size is: " + tupleSize);
         LOGGER.info("does this eval need state? " + needsState);
-        pyWorker.sendCodePickle(pyCodeString, tupleSize, outputType, 0);
+        pyWorker.sendCodePickle(pyCodeString, tupleSize, outputType, isFlatmap);
       }
       List<ExpressionOperator> childops = op.getChildren();
 
@@ -196,7 +197,7 @@ public class PythonUDFFlatteningEvaluator extends FlatteningGenericEvaluator {
 
       // first read count
       int c = dIn.readInt();
-      // LOGGER.info("count is: " + c);
+      LOGGER.info("count is: " + c);
       // append count to the column
       count.appendInt(c);
       // then read the resulting tuples from stream
@@ -234,7 +235,7 @@ public class PythonUDFFlatteningEvaluator extends FlatteningGenericEvaluator {
           }
         }
       }
-      // LOGGER.info("number of tuples in result: " + result.numTuples());
+      LOGGER.info("number of tuples in result: " + result.numTuples());
     } catch (Exception e) {
       LOGGER.info("Error reading from stream");
       throw new DbException(e);
