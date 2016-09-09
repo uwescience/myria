@@ -14,10 +14,10 @@ public class FileSink implements DataSink {
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
 
-  @JsonProperty
-  private String filename;
+  @JsonProperty private String filename;
 
-  public FileSink(@JsonProperty(value = "filename", required = true) final String filename) throws CatalogException {
+  public FileSink(@JsonProperty(value = "filename", required = true) final String filename)
+      throws CatalogException {
     this.filename = filename;
   }
 
