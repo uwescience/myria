@@ -1,0 +1,316 @@
+{
+	"fragments": 
+	[
+		{
+			"operators": 
+			[
+			{
+				"opId" : 1,
+				"opType" : "Consumer",
+				"argOperatorId" : 10 
+			},
+			{
+				"opId" : 2,
+				"opType" : "UnionAll",
+				"argChildren" : [1]
+			},
+			{
+				"opId" : 3,
+				"opType" : "EOSController",
+				"argChild" : 2
+			}
+			],
+			"overrideWorkers": 
+			[
+				1
+			]
+		},
+		{
+			"operators": 
+			[
+			{
+				"opId" : 4,
+				"opType" : "TableScan",
+				"relationKey" : {
+					"userName" : "jwang",
+					"programName" : "sg",
+					"relationName" : "arc"
+				}
+			},
+			{
+				"opId" : 20,
+				"opType" : "LocalMultiwayProducer",
+				"argChild" : 4
+			}
+			]
+		},
+		{
+			"operators": 
+			[
+			{
+				"opId" : 41,
+				"opType" : "LocalMultiwayConsumer",
+				"argOperatorId" : 20
+			},
+			{
+				"opId" : 45,
+				"opType" : "Apply",
+				"argChild" : 41,
+                "emitExpressions": [
+				{
+			    	"outputName": "x",
+                    "rootExpressionOperator": {
+                       "type": "VARIABLE",
+					   "columnIdx": 1
+                   	}
+                },
+				{
+			    	"outputName": "y",
+                    "rootExpressionOperator": {
+                       "type": "VARIABLE",
+					   "columnIdx": 1
+                   	}
+                }
+                ]
+			},
+			{
+				"opId" : 46,
+				"opType" : "ShuffleProducer",
+				"argChild" : 45,
+				"argPf" : {
+					"type" : "MultiFieldHash",
+					"indexes" : [0,1]
+				}
+			}
+			]
+		},
+
+		{
+			"operators": 
+			[
+			{
+				"opId" : 21,
+				"opType" : "LocalMultiwayConsumer",
+				"argOperatorId" : 20
+			},
+			{
+				"opId" : 5,
+				"opType" : "Apply",
+				"argChild" : 21,
+                "emitExpressions": [
+				{
+			    	"outputName": "x",
+                    "rootExpressionOperator": {
+                       "type": "VARIABLE",
+					   "columnIdx": 0
+                   	}
+                },
+				{
+			    	"outputName": "y",
+                    "rootExpressionOperator": {
+                       "type": "VARIABLE",
+					   "columnIdx": 0
+                   	}
+                }
+                ]
+			},
+			{
+				"opId" : 6,
+				"opType" : "ShuffleProducer",
+				"argChild" : 5,
+				"argPf" : {
+					"type" : "MultiFieldHash",
+					"indexes" : [0,1]
+				}
+			}
+			]
+		},
+		{
+			"operators": 
+			[
+			{
+				"opId" : 7,
+				"opType" : "ShuffleConsumer",
+				"argOperatorId" : 6
+			},
+			{
+				"opId" : 47,
+				"opType" : "ShuffleConsumer",
+				"argOperatorId" : 46
+			},
+			{
+				"opId" : 42,
+				"opType" : "UnionAll",
+				"argChildren" : [7,47]
+			},
+			{
+				"opId" : 8,
+				"opType" : "ShuffleConsumer",
+				"argOperatorId" : 27
+			},
+			{
+				"opId" : 9,
+				"opType" : "Consumer",
+				"argOperatorId" : 3
+			},
+			{
+				"opId" : 10,
+				"opType" : "IDBController",
+				"argSelfIdbId" : "0",
+				"argInitialInput" : 42,
+				"argIterationInput" : 8,
+				"argEosControllerInput" : 9,
+				"argState" : {
+					"type" : "DupElim"
+				},
+				"relationKey": {
+					"programName": "sg",
+					"relationName": "result",
+					"userName": "jwang"
+				}
+			},
+			{
+				"opId" : 11,
+				"opType" : "ShuffleProducer",
+				"argChild" : 10,
+				"argPf" : {
+					"type" : "SingleFieldHash",
+					"index" : 0
+				}
+			}
+			]
+		},
+		{
+			"operators": 
+			[
+			{
+				"opId" : 12,
+				"opType" : "LocalMultiwayConsumer",
+				"argOperatorId" : 20
+			},
+			{
+				"opId" : 13,
+				"opType" : "ShuffleProducer",
+				"argChild" : 12,
+				"argPf" : {
+					"type" : "SingleFieldHash",
+					"index" : 0
+				}
+			}
+			]
+		},
+		{
+			"operators": 
+			[
+			{
+				"opId" : 22,
+				"opType" : "LocalMultiwayConsumer",
+				"argOperatorId" : 20
+			},
+			{
+				"opId" : 23,
+				"opType" : "ShuffleProducer",
+				"argChild" : 22,
+				"argPf" : {
+					"type" : "SingleFieldHash",
+					"index" : 0
+				}
+			}
+			]
+		},
+		{
+			"operators": 
+			[
+			{
+				"opId" : 14,
+				"opType" : "ShuffleConsumer",
+				"argOperatorId" : 13
+			},
+			{
+				"opId" : 15,
+				"opType" : "ShuffleConsumer",
+				"argOperatorId" : 11
+			},
+			{
+				"opId" : 16,
+				"opType" : "SymmetricHashJoin",
+				"argChild1" : 14,
+				"argChild2" : 15,
+				"argColumns1" : ["0"],
+				"argColumns2" : ["0"],
+				"argSelect1" : ["1"],
+				"argSelect2" : ["1"],
+				"argOrder" : "ALTER"
+			},
+			{
+				"opId" : 18,
+				"opType" : "ShuffleProducer",
+				"argChild" : 16,
+				"argPf" : {
+					"type" : "SingleFieldHash",
+					"index" : 1
+				}
+			}
+			]
+		},
+		{
+			"operators": 
+			[
+			{
+				"opId" : 24,
+				"opType" : "ShuffleConsumer",
+				"argOperatorId" : 18
+			},
+			{
+				"opId" : 31,
+				"opType" : "ShuffleConsumer",
+				"argOperatorId" : 23
+			},
+			{
+				"opId" : 25,
+				"opType" : "Apply",
+				"argChild" : 31,
+                "emitExpressions": [
+				{
+			    	"outputName": "b",
+                    "rootExpressionOperator": {
+                       "type": "VARIABLE",
+					   "columnIdx": 0
+                   	}
+                },
+				{
+			    	"outputName": "y",
+                    "rootExpressionOperator": {
+                       "type": "VARIABLE",
+					   "columnIdx": 1
+                   	}
+                }
+                ]
+			},
+			{
+				"opId" : 26,
+				"opType" : "SymmetricHashJoin",
+				"argChild1" : 24,
+				"argChild2" : 25,
+				"argColumns1" : ["1"],
+				"argColumns2" : ["0"],
+				"argSelect1" : ["0"],
+				"argSelect2" : ["1"],
+				"argOrder" : "ALTER"
+			},
+			{
+				"opId" : 27,
+				"opType" : "ShuffleProducer",
+				"argChild" : 26,
+				"argPf" : {
+					"type" : "MultiFieldHash",
+					"indexes" : [0,1]
+				}
+			}
+			]
+		}
+	],
+	"logicalRa": "",
+	"rawQuery": "sg(X,Y) :- arc(P,X), arc(P,Y), X != Y; sg(X,Y) :- arc(A,X), sg(A,B), arc(B,Y)",
+	"language": "datalog"
+}

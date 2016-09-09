@@ -3,23 +3,6 @@
         {
             "operators": [
                 {
-                    "argOperatorId": 45,
-                    "opId": 0,
-                    "opType": "CollectConsumer"
-                },
-                {
-                    "argChild": 0,
-                    "opId": 46,
-                    "opType": "SinkRoot"
-                }
-            ],
-            "overrideWorkers": [
-                "0"
-            ]
-        },
-        {
-            "operators": [
-                {
                     "argOperatorId": 11,
                     "opId": 1,
                     "opType": "Consumer"
@@ -358,6 +341,11 @@
                     "argIterationInput": 36,
                     "argSelfIdbId": "2",
                     "opId": 43,
+                    "relationKey": {
+                        "programName": "joinChain",
+                        "relationName": "C",
+                        "userName": "jwang"
+                    },
                     "opType": "IDBController"
                 },
                 {
@@ -407,22 +395,8 @@
                     "opType": "ShuffleProducer"
                 }
             ]
-        },
-        {
-            "operators": [
-                {
-                    "argOperatorId": 37,
-                    "opId": 44,
-                    "opType": "LocalMultiwayConsumer"
-                },
-                {
-                    "argChild": 44,
-                    "opId": 45,
-                    "opType": "CollectProducer"
-                }
-            ]
         }
     ],
     "logicalRa": "",
-    "rawQuery": ""
+    "rawQuery": "A(x, y) :- A0(x, y); A(x, y) :- R(x, z), A(z, y); B(x, y) :- B0(x, y); B(x, y) :- A(x, z), B(z, y); C(x, y) :- C0(x, y); C(x, y) :- B(x, z), C(z, y);"
 }

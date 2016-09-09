@@ -3,18 +3,6 @@
         {
             "operators": [
                 {
-                    "argOperatorId": 46,
-                    "opId": 0,
-                    "opType": "CollectConsumer"
-                }
-            ],
-            "overrideWorkers": [
-                "0"
-            ]
-        },
-        {
-            "operators": [
-                {
                     "argOperatorId": 11,
                     "opId": 1,
                     "opType": "Consumer"
@@ -91,7 +79,7 @@
                     "argEosControllerInput": 10,
                     "argInitialInput": 8,
                     "argIterationInput": 9,
-                    "argState": 
+                    "argState":
                     {
                         "type" : "DupElim"
                     },
@@ -208,7 +196,7 @@
                     "argEosControllerInput": 23,
                     "argInitialInput": 21,
                     "argIterationInput": 22,
-                    "argState": 
+                    "argState":
                     {
                         "type" : "DupElim"
                     },
@@ -324,13 +312,18 @@
                 {
                     "argEosControllerInput": 36,
                     "argInitialInput": 34,
-                    "argState": 
+                    "argState":
                     {
                         "type" : "DupElim"
                     },
                     "argIterationInput": 35,
                     "argSelfIdbId": "2",
                     "opId": 37,
+                    "relationKey": {
+                        "programName": "joinCircle",
+                        "relationName": "C",
+                        "userName": "jwang"
+                    },
                     "opType": "IDBController"
                 },
                 {
@@ -398,22 +391,8 @@
                     "opType": "ShuffleProducer"
                 }
             ]
-        },
-        {
-            "operators": [
-                {
-                    "argOperatorId": 38,
-                    "opId": 45,
-                    "opType": "LocalMultiwayConsumer"
-                },
-                {
-                    "argChild": 45,
-                    "opId": 46,
-                    "opType": "CollectProducer"
-                }
-            ]
         }
     ],
     "logicalRa": "",
-    "rawQuery": ""
+    "rawQuery": "A(x, y) :- A0(x, y); A(x, y) :- C(x, z), A(z, y); B(x, y) :- B0(x, y); B(x, y) :- A(x, z), B(z, y); C(x, y) :- C0(x, y); C(x, y) :- B(x, z), C(z, y);"
 }

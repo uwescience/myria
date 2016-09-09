@@ -1,0 +1,17 @@
+{
+  "relationKey" : {
+    "userName" : "jwang",
+    "programName" : "galaxy_evolution",
+    "relationName" : "galaxies_of_interest"
+  },
+  "schema" : {
+    "columnTypes" : ["LONG_TYPE", "LONG_TYPE"],
+    "columnNames" : ["t", "groupid"]
+  },
+  "source" : {
+    "dataType" : "Bytes",
+    "bytes": "MCAwCjAgMQo="
+  },
+  "overwrite": true,
+  "delimiter": " "
+}

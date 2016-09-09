@@ -1,0 +1,17 @@
+{
+  "relationKey" : {
+    "userName" : "jwang",
+    "programName" : "sg",
+    "relationName" : "arc"
+  },
+  "schema" : {
+    "columnTypes" : ["LONG_TYPE", "LONG_TYPE"],
+    "columnNames" : ["node_id_1", "node_id_2"]
+  },
+  "source" : {
+    "dataType" : "Bytes",
+    "bytes": "MTkgMzcKNDUgMzQKMjEgNDQKMTEgMzkKMTcgMQo0OSAzMwo0NCAxOAo0MiAxMAoyNSAzNAozMiAxOQoyNCAwCjI4IDE2CjQ5IDIyCjQzIDQ2CjIyIDM0CjQxIDgKMzAgMzcKMzcgNQo0MiA0OAoyMyA1CjkgMTIKNDQgMTkKMzQgMTkKNDUgNDcKMzcgMTIKMjUgMzgKMzYgNgoxOSAxMgoyOCAyCjQ3IDI1CjIwIDIyCjQ3IDI4CjQ4IDMzCjcgMjAKMzMgMAoyOCAyNgoyNSAyOQozNyAzNQo0OSAyCjMzIDQ3CjQ0IDE0CjQ0IDgKNDIgNDEKMjIgNAoyNSA0NQozMSA0Mwo1IDYKNDcgMjcKNiAxMAo0OCA0MAozMiAxCjggNDUKNDEgNgoyIDE5CjM4IDQwCjMgMTQKMCAyNgozNCA0OAoyMCAxMAo2IDE3CjI3IDE4CjMxIDMKMTkgMzYKMzEgNwoyOSA0NwoyMiAxMQo0MCAyNgoyMSA3CjIzIDM3CjIzIDcKMjkgMTAKNDggMTgKMzcgMjYKNDIgMzgKMTQgMjcKMzggMTAKMjkgOAoyMCAyNgoxNyA0NAoxMyAyMAozNyAyOQozIDMxCjEwIDMyCjQwIDQzCjE0IDIyCjMgMjgKNDEgNDAKNDEgMzgKMTQgMzQKNSAwCjEzIDM4CjM4IDEyCjI0IDE3CjMxIDQ3CjQyIDM1CjM0IDQ1CjEwIDM3CjExIDMzCjQ5IDI3CjYgMAo="
+  },
+  "overwrite": true,
+  "delimiter": " "
+}

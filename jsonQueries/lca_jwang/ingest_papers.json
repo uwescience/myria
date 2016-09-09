@@ -1,0 +1,17 @@
+{
+  "relationKey" : {
+    "userName" : "jwang",
+    "programName" : "lca",
+    "relationName" : "papers"
+  },
+  "schema" : {
+    "columnTypes" : ["LONG_TYPE", "LONG_TYPE"],
+    "columnNames" : ["pid", "year"]
+  },
+  "source" : {
+    "dataType" : "Bytes",
+    "bytes": "MCAyMDA4CjEgMTk3NwoyIDE5NzIKMyAxOTY4CjQgMTk2OQo1IDE5NzEKNiAxOTkzCjcgMTk4MAo4IDIwMDcKOSAyMDAyCjEwIDE5NjMKMTEgMTk5NAoxMiAxOTgzCjEzIDE5NjEKMTQgMjAwOAoxNSAxOTc1CjE2IDIwMDgKMTcgMjAwMwoxOCAyMDAwCjE5IDE5NzcKMjAgMjAwMAoyMSAyMDA3CjIyIDE5ODEKMjMgMTk4OQoyNCAxOTc0CjI1IDE5OTEKMjYgMTk4OQoyNyAxOTg4CjI4IDE5OTQKMjkgMTk5OAozMCAxOTY4CjMxIDE5OTkKMzIgMTk4OQozMyAxOTcwCjM0IDE5NzEKMzUgMTk2OQozNiAxOTc4CjM3IDE5OTUKMzggMTk5NQozOSAxOTk1CjQwIDE5NjUKNDEgMTk3Mwo0MiAxOTYwCjQzIDE5NjEKNDQgMTk4OQo0NSAyMDAyCjQ2IDE5NzMKNDcgMTk4Mwo0OCAyMDA0CjQ5IDIwMDcK"
+  },
+  "overwrite": true,
+  "delimiter": " "
+}
