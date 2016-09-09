@@ -115,6 +115,7 @@ public class UserDefinedAggregatorFactory implements AggregatorFactory {
       }
 
       /* Initialize the state. */
+
       Schema stateSchema = generateStateSchema(inputSchema);
       state = new Tuple(stateSchema);
       ScriptEvalInterface stateEvaluator = getEvalScript(initializers, new ExpressionOperatorParameter(inputSchema),
@@ -155,6 +156,7 @@ public class UserDefinedAggregatorFactory implements AggregatorFactory {
       resultSchema = new Schema(types, names);
     }
     if (bHasPyEval) {
+
       return new StatefulUserDefinedAggregator(state.clone(), updateEvaluator, pyUpdateEvaluators, emitEvaluators,
           resultSchema);
     } else {
@@ -204,9 +206,6 @@ public class UserDefinedAggregatorFactory implements AggregatorFactory {
 
       }
     }
-    // if (needsPyEval != null) {
-    // LOGGER.info("number of python evaluators: " + needsPyEval.size());
-    // }
 
     String script = compute.append(output).toString();
     LOGGER.info("Compiling UDA {}", script);

@@ -1,5 +1,7 @@
 package edu.washington.escience.myria.operator.agg;
 
+import java.util.List;
+
 import com.google.common.math.LongMath;
 
 import edu.washington.escience.myria.DbException;
@@ -50,5 +52,10 @@ public final class CountAllAggregator implements Aggregator {
   private final class CountAllState {
     /** The number of tuples seen so far. */
     private long count = 0;
+  }
+
+  @Override
+  public void add(final List<Object> from, final Object state) throws DbException {
+    throw new DbException(" method not implemented");
   }
 }

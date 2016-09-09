@@ -104,6 +104,7 @@ class PickleSerializer(object):
          raise ValueError("type list is not the same as tuple size")
 
   def read_item(self, stream, itemType,length):
+    obj= None
     if(itemType ==DataType.INT):
         obj = read_int(stream)
     elif(itemType == DataType.LONG):

@@ -33,6 +33,7 @@ import edu.washington.escience.myria.operator.Apply;
 import edu.washington.escience.myria.operator.StatefulApply;
 import edu.washington.escience.myria.storage.AppendableTable;
 import edu.washington.escience.myria.storage.ReadableTable;
+import edu.washington.escience.myria.storage.Tuple;
 import edu.washington.escience.myria.storage.TupleBatch;
 
 /**
@@ -53,6 +54,7 @@ public class PythonUDFEvaluator extends GenericEvaluator {
   private final boolean[] isStateColumn;
   private int tupleSize = -1;
   private int[] columnIdxs = null;
+  private final boolean btuples = false;
 
   private final Type outputType;
 
@@ -222,8 +224,8 @@ public class PythonUDFEvaluator extends GenericEvaluator {
   // }
   // }
 
-  public void evalBatch(final List<ReadableTable> ltb, final AppendableTable result, final ReadableTable state)
-      throws DbException, IOException {
+  public void evalBatch(final List<Object> ltb, final AppendableTable result, final ReadableTable state,
+      final boolean bTuple) throws DbException, IOException {
 
     LOGGER.info("evalbatch called!!");
     if (pyWorker == null) {
@@ -242,24 +244,33 @@ public class PythonUDFEvaluator extends GenericEvaluator {
     try {
 
       DataOutputStream dOut = pyWorker.getDataOutputStream();
-
-      // write the tuple batch
       int numTuples = 0;
       for (int j = 0; j < ltb.size(); j++) {
-        numTuples += ltb.get(j).numTuples();
+        if (bTuple) {
+          numTuples += 1;
+        } else {
+          numTuples += ((ReadableTable) ltb.get(j)).numTuples();
+        }
+
       }
       pyWorker.sendNumTuples(numTuples);
       LOGGER.info("number of tuples for stateful agg: " + numTuples);
       for (int tbIdx = 0; tbIdx < ltb.size(); tbIdx++) {
 
-        TupleBatch tb = (TupleBatch) ltb.get(tbIdx);
-
-        for (int tup = 0; tup < tb.numTuples(); tup++) {
+        if (bTuple) {
           for (int col = 0; col < tupleSize; col++) {
-            LOGGER.info("is this a state column? " + isStateColumn[col]);
-            writeToStream(tb, tup, columnIdxs[col], dOut);
-          }
 
+            writeToStream(ltb.get(tbIdx), 0, columnIdxs[col], dOut, bTuple);
+          }
+        } else {
+          TupleBatch tb = (TupleBatch) ltb.get(tbIdx);
+
+          for (int tup = 0; tup < tb.numTuples(); tup++) {
+            for (int col = 0; col < tupleSize; col++) {
+              LOGGER.info("is this a state column? " + isStateColumn[col]);
+              writeToStream(tb, tup, columnIdxs[col], dOut, bTuple);
+            }
+          }
         }
       }
       LOGGER.info("wrote all the tuples back!");
@@ -320,9 +331,9 @@ public class PythonUDFEvaluator extends GenericEvaluator {
       LOGGER.info("number of tuples to be written: " + 1);
       for (int i = 0; i < tupleSize; i++) {
         if (isStateColumn[i]) {
-          writeToStream(state, rowIdx, columnIdxs[i], dOut);
+          writeToStream(state, rowIdx, columnIdxs[i], dOut, false);
         } else {
-          writeToStream(tb, rowIdx, columnIdxs[i], dOut);
+          writeToStream(tb, rowIdx, columnIdxs[i], dOut, false);
         }
       }
       // read response back
@@ -401,13 +412,18 @@ public class PythonUDFEvaluator extends GenericEvaluator {
    * @param dOut
    * @throws DbException
    */
-  private void writeToStream(final ReadableTable tb, final int row, final int columnIdx, final DataOutputStream dOut)
-      throws DbException {
+  private void writeToStream(final Object tb, final int row, final int columnIdx, final DataOutputStream dOut,
+      final boolean bTuple) throws DbException {
 
     Preconditions.checkNotNull(tb, "tuple input cannot be null");
     Preconditions.checkNotNull(dOut, "Output stream for python process cannot be null");
+    Schema tbsc;
+    if (bTuple) {
+      tbsc = ((Tuple) tb).getSchema();
+    } else {
+      tbsc = ((ReadableTable) tb).getSchema();
+    }
 
-    Schema tbsc = tb.getSchema();
     // LOGGER.info("tuple batch schema " + tbsc.toString());
     try {
       Type type = tbsc.getColumnType(columnIdx);
@@ -419,23 +435,40 @@ public class PythonUDFEvaluator extends GenericEvaluator {
         case DOUBLE_TYPE:
           dOut.writeInt(MyriaConstants.PythonType.DOUBLE.getVal());
           dOut.writeInt(Double.SIZE / Byte.SIZE);
-          dOut.writeDouble(tb.getDouble(columnIdx, row));
+
+          if (bTuple) {
+            dOut.writeDouble(((Tuple) tb).getDouble(columnIdx, row));
+          } else {
+            dOut.writeDouble(((ReadableTable) tb).getDouble(columnIdx, row));
+          }
           break;
         case FLOAT_TYPE:
           dOut.writeInt(MyriaConstants.PythonType.FLOAT.getVal());
           dOut.writeInt(Float.SIZE / Byte.SIZE);
-          dOut.writeFloat(tb.getFloat(columnIdx, row));
+          if (bTuple) {
+            dOut.writeFloat(((Tuple) tb).getFloat(columnIdx, row));
+          } else {
+            dOut.writeFloat(((ReadableTable) tb).getFloat(columnIdx, row));
+          }
           break;
         case INT_TYPE:
           dOut.writeInt(MyriaConstants.PythonType.INT.getVal());
           dOut.writeInt(Integer.SIZE / Byte.SIZE);
-          dOut.writeInt(tb.getInt(columnIdx, row));
+          if (bTuple) {
+            dOut.writeInt(((Tuple) tb).getInt(columnIdx, row));
+          } else {
+            dOut.writeInt(((ReadableTable) tb).getInt(columnIdx, row));
+          }
           // LOGGER.info("writing int to py process");
           break;
         case LONG_TYPE:
           dOut.writeInt(MyriaConstants.PythonType.LONG.getVal());
           dOut.writeInt(Long.SIZE / Byte.SIZE);
-          dOut.writeLong(tb.getLong(columnIdx, row));
+          if (bTuple) {
+            dOut.writeLong(((Tuple) tb).getLong(columnIdx, row));
+          } else {
+            dOut.writeLong(((ReadableTable) tb).getLong(columnIdx, row));
+          }
           break;
         case STRING_TYPE:
           LOGGER.info("STRING type is not yet supported for python function ");
@@ -445,8 +478,12 @@ public class PythonUDFEvaluator extends GenericEvaluator {
           break;
         case BYTES_TYPE:
           dOut.writeInt(MyriaConstants.PythonType.BYTES.getVal());
-          // LOGGER.info("writing Bytebuffer to py process");
-          ByteBuffer input = tb.getByteBuffer(columnIdx, row);
+          ByteBuffer input;
+          if (bTuple) {
+            input = ((Tuple) tb).getByteBuffer(columnIdx, row);
+          } else {
+            input = ((ReadableTable) tb).getByteBuffer(columnIdx, row);
+          }
           if (input != null && input.hasArray()) {
             // LOGGER.info("input array buffer length" + input.array().length);
             dOut.writeInt(input.array().length);

@@ -111,4 +111,9 @@ public class UserDefinedAggregator implements Aggregator {
 
     return initialState.clone();
   }
+
+  @Override
+  public void add(final List<Object> from, final Object state) throws DbException {
+    throw new DbException(" method not implemented");
+  }
 }

@@ -26,8 +26,8 @@ public class StatefulUserDefinedAggregator extends UserDefinedAggregator {
   private static final long serialVersionUID = 1L;
   /** logger for this class. */
   private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(StatefulUserDefinedAggregator.class);
-
-  private final List<ReadableTable> ltb = new ArrayList<ReadableTable>();
+  private final List<Object> ltb = new ArrayList<>();
+  private List<Object> ltup;
 
   /**
    * @param state the initialized state of the tuple
@@ -44,24 +44,27 @@ public class StatefulUserDefinedAggregator extends UserDefinedAggregator {
 
   @Override
   public void add(final ReadableTable from, final Object state) throws DbException {
-    LOGGER.info("add called");
+    // LOGGER.info("add called");
     if (!ltb.contains(from)) {
-      // ths is not going to work if the tuplebatch has more than one tuple
       ltb.add(from);
     }
+
     try {
       if (updateEvaluator != null) {
         // this aggreagte has a script eval
         for (int row = 0; row < from.numTuples(); ++row) {
           addRow(from, row, state);
         }
-
       }
-
     } catch (Exception e) {
-      // LOGGER.error("Error updating UDA state", e);
       throw new DbException("Error updating UDA state", e);
     }
+  }
+
+  @Override
+  public void add(final List<Object> from, final Object state) throws DbException {
+    // LOGGER.info("add tuple called");
+    ltup = from;
 
   }
 
@@ -91,7 +94,14 @@ public class StatefulUserDefinedAggregator extends UserDefinedAggregator {
       for (int i = 0; i < pyUDFEvaluators.size(); i++) {
         // LOGGER.info("trying to update state variable");
         LOGGER.info("calling evalbatch with tb list size " + ltb.size());
-        pyUDFEvaluators.get(i).evalBatch(ltb, stateTuple, stateTuple);
+        if (ltb.size() != 0) {
+          pyUDFEvaluators.get(i).evalBatch(ltb, stateTuple, stateTuple, false);
+        } else if (ltup != null && ltup.size() > 0) {
+
+          pyUDFEvaluators.get(i).evalBatch(ltup, stateTuple, stateTuple, true);
+        } else {
+          throw new DbException("cannot get results!!");
+        }
       }
     }
     // emit results
@@ -118,4 +128,5 @@ public class StatefulUserDefinedAggregator extends UserDefinedAggregator {
 
     return initialState.clone();
   }
+
 }

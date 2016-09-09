@@ -30,7 +30,6 @@ def main(infile, outfile):
         print(isFlatmap)
         while True:
             print("python process trying to read tuple")
-
             numTuples = read_int(infile)
             print ("number of tuples to be read: "+ str(numTuples))
             if(numTuples >1):

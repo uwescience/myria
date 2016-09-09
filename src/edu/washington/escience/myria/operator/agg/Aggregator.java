@@ -2,6 +2,7 @@ package edu.washington.escience.myria.operator.agg;
 
 import java.io.IOException;
 import java.io.Serializable;
+import java.util.List;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.Schema;
@@ -56,4 +57,11 @@ public interface Aggregator extends Serializable {
    * @return the schema of the outputs of this {@link Aggregator}.
    */
   Schema getResultSchema();
+
+  /**
+   * @param lt
+   * @param state
+   * @throws DbException
+   */
+  void add(List<Object> from, Object state) throws DbException;
 }

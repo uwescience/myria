@@ -174,9 +174,10 @@ public class FlatteningApply extends UnaryOperator {
               for (int iteratorIdx = 0; iteratorIdx < iteratorIndexes.length; ++iteratorIdx) {
                 int outputColIdx = columnsToKeep.size() + iteratorIdx;
                 int resultRowIdx = lastCumResultCounts[iteratorIdx] + iteratorIndexes[iteratorIdx];
-                // LOGGER.info("resultRowIdx " + resultRowIdx);
+                LOGGER.info("resultRowIdx " + resultRowIdx);
                 // LOGGER.info("round " + a);
-                // LOGGER.info("iteratorIdx :" + iteratorIdx);
+                LOGGER.info("outputColIdx " + outputColIdx);
+                LOGGER.info("iteratorIdx :" + iteratorIdx);
 
                 outputBuffer.appendFromColumn(outputColIdx, evalResultBuffers.get(iteratorIdx).asColumn(0),
                     resultRowIdx);
