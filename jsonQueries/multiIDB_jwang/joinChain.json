@@ -345,7 +345,7 @@
                         "programName": "joinChain",
                         "relationName": "C",
                         "userName": "jwang"
-					},
+                    },
                     "opType": "IDBController"
                 },
                 {
@@ -398,5 +398,5 @@
         }
     ],
     "logicalRa": "",
-    "rawQuery": "A(x, y) :- A0(x, y); A(x, y) :- R(x, z), A(z, y); B(x, y) :- B0(x, y), B(x, y) :- A(x, z), B(z, y); C(x, y) :- C0(x, y); C(x, y) :- B(x, z), C(z, y);"
+    "rawQuery": "A(x, y) :- A0(x, y); A(x, y) :- R(x, z), A(z, y); B(x, y) :- B0(x, y); B(x, y) :- A(x, z), B(z, y); C(x, y) :- C0(x, y); C(x, y) :- B(x, z), C(z, y);"
 }
