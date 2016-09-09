@@ -7,6 +7,9 @@ import static org.junit.Assert.assertEquals;
 
 import java.io.ByteArrayOutputStream;
 import java.nio.charset.Charset;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 import org.junit.Test;
 
@@ -15,6 +18,7 @@ import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.io.ByteArraySource;
 import edu.washington.escience.myria.io.ByteSink;
+import edu.washington.escience.myria.io.FileSink;
 import edu.washington.escience.myria.io.DataSource;
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.util.TestEnvVars;
@@ -42,6 +46,30 @@ public class DataSinkTest {
     dataOutput.close();
 
     byte[] responseBytes = ((ByteArrayOutputStream) byteSink.getOutputStream()).toByteArray();
+    String dataDst = new String(responseBytes, Charset.forName("UTF-8"));
+
+    assertEquals(dataSrc, dataDst);
+  }
+
+  @Test
+  public void testDataSinkToFile() throws Exception {
+    /* Read a CSV and construct the query */
+    String dataSrc = "x,y\r\n1,2\r\n3,4\r\n5,6\r\n7,8\r\n";
+    byte[] srcBytes = dataSrc.getBytes(Charset.forName("UTF-8"));
+    Schema relationSchema = Schema.ofFields("x", Type.INT_TYPE, "y", Type.INT_TYPE);
+    DataSource byteSource = new ByteArraySource(srcBytes);
+    FileScan fileScan = new FileScan(byteSource, relationSchema, ',', null, null, 1);
+    Path tempFile = Files.createTempFile(this.getClass().getName(), ".tmp");
+    FileSink sink = new FileSink(tempFile.toString());
+    DataOutput dataOutput = new DataOutput(fileScan, new CsvTupleWriter(), sink);
+
+    dataOutput.open(TestEnvVars.get());
+    while (!dataOutput.eos()) {
+      dataOutput.nextReady();
+    }
+    dataOutput.close();
+
+    byte[] responseBytes = Files.readAllBytes(tempFile);
     String dataDst = new String(responseBytes, Charset.forName("UTF-8"));
 
     assertEquals(dataSrc, dataDst);

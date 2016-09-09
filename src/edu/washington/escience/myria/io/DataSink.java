@@ -16,7 +16,8 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 @JsonSubTypes({
   @Type(name = "Pipe", value = PipeSink.class),
   @Type(name = "Bytes", value = ByteSink.class),
-  @Type(name = "Uri", value = UriSink.class)
+  @Type(name = "Uri", value = UriSink.class),
+  @Type(name = "File", value = FileSink.class)
 })
 public interface DataSink extends Serializable {
   /**
