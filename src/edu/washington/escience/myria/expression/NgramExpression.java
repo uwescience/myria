@@ -4,7 +4,7 @@ import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.expression.evaluate.ExpressionOperatorParameter;
 
 /**
- * Returns a sequence of substrings of a given string, split on a regular expression.
+ * Returns all n-character substrings in sequence ("n-grams") from the input string.
  */
 public class NgramExpression extends BinaryExpression {
   /***/
@@ -19,10 +19,10 @@ public class NgramExpression extends BinaryExpression {
   }
 
   /**
-   * Takes the string to be split and the regex to split it on.
+   * Takes the string from which to compute n-grams and the length `n` of each n-gram.
    *
-   * @param left the left operand (index of string column).
-   * @param right the right operand (regular expression string).
+   * @param left the left operand (input string)
+   * @param right the right operand (value of `n` in "n-gram")
    */
   public NgramExpression(final ExpressionOperator left, final ExpressionOperator right) {
     super(left, right);
