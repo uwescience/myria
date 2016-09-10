@@ -9,6 +9,7 @@ import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.storage.AppendableTable;
 import edu.washington.escience.myria.storage.ReadableTable;
+import edu.washington.escience.myria.storage.TupleBatch;
 
 /**
  * An aggregator that counts the number of rows in its input.
@@ -55,7 +56,7 @@ public final class CountAllAggregator implements Aggregator {
   }
 
   @Override
-  public void add(final List<Object> from, final Object state) throws DbException {
+  public void add(final List<TupleBatch> from, final Object state) throws DbException {
     throw new DbException(" method not implemented");
   }
 }

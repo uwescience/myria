@@ -12,6 +12,7 @@ import edu.washington.escience.myria.expression.evaluate.ScriptEvalInterface;
 import edu.washington.escience.myria.storage.AppendableTable;
 import edu.washington.escience.myria.storage.ReadableTable;
 import edu.washington.escience.myria.storage.Tuple;
+import edu.washington.escience.myria.storage.TupleBatch;
 
 /**
  * Apply operator that has to be initialized and carries a state while new tuples are generated.
@@ -113,7 +114,7 @@ public class UserDefinedAggregator implements Aggregator {
   }
 
   @Override
-  public void add(final List<Object> from, final Object state) throws DbException {
+  public void add(final List<TupleBatch> from, final Object state) throws DbException {
     throw new DbException(" method not implemented");
   }
 }

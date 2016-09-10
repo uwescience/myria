@@ -224,7 +224,7 @@ public class PythonUDFEvaluator extends GenericEvaluator {
   // }
   // }
 
-  public void evalBatch(final List<Object> ltb, final AppendableTable result, final ReadableTable state,
+  public void evalBatch(final List<TupleBatch> ltb, final AppendableTable result, final ReadableTable state,
       final boolean bTuple) throws DbException, IOException {
 
     LOGGER.info("evalbatch called!!");
@@ -263,7 +263,7 @@ public class PythonUDFEvaluator extends GenericEvaluator {
             writeToStream(ltb.get(tbIdx), 0, columnIdxs[col], dOut, bTuple);
           }
         } else {
-          TupleBatch tb = (TupleBatch) ltb.get(tbIdx);
+          TupleBatch tb = ltb.get(tbIdx);
 
           for (int tup = 0; tup < tb.numTuples(); tup++) {
             for (int col = 0; col < tupleSize; col++) {

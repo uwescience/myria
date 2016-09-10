@@ -16,6 +16,7 @@ import edu.washington.escience.myria.expression.evaluate.ScriptEvalInterface;
 import edu.washington.escience.myria.storage.AppendableTable;
 import edu.washington.escience.myria.storage.ReadableTable;
 import edu.washington.escience.myria.storage.Tuple;
+import edu.washington.escience.myria.storage.TupleBatch;
 
 /**
  * 
@@ -26,8 +27,8 @@ public class StatefulUserDefinedAggregator extends UserDefinedAggregator {
   private static final long serialVersionUID = 1L;
   /** logger for this class. */
   private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(StatefulUserDefinedAggregator.class);
-  private final List<Object> ltb = new ArrayList<>();
-  private List<Object> ltup;
+  private final List<TupleBatch> ltb = new ArrayList<>();
+  private List<TupleBatch> ltup;
 
   /**
    * @param state the initialized state of the tuple
@@ -46,7 +47,7 @@ public class StatefulUserDefinedAggregator extends UserDefinedAggregator {
   public void add(final ReadableTable from, final Object state) throws DbException {
     // LOGGER.info("add called");
     if (!ltb.contains(from)) {
-      ltb.add(from);
+      ltb.add((TupleBatch) from);
     }
 
     try {
@@ -62,7 +63,7 @@ public class StatefulUserDefinedAggregator extends UserDefinedAggregator {
   }
 
   @Override
-  public void add(final List<Object> from, final Object state) throws DbException {
+  public void add(final List<TupleBatch> from, final Object state) throws DbException {
     // LOGGER.info("add tuple called");
     ltup = from;
 
@@ -98,7 +99,7 @@ public class StatefulUserDefinedAggregator extends UserDefinedAggregator {
           pyUDFEvaluators.get(i).evalBatch(ltb, stateTuple, stateTuple, false);
         } else if (ltup != null && ltup.size() > 0) {
 
-          pyUDFEvaluators.get(i).evalBatch(ltup, stateTuple, stateTuple, true);
+          pyUDFEvaluators.get(i).evalBatch(ltup, stateTuple, stateTuple, false);
         } else {
           throw new DbException("cannot get results!!");
         }

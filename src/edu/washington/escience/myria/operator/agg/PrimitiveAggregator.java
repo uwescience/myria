@@ -13,6 +13,7 @@ import com.google.common.collect.Sets;
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
+import edu.washington.escience.myria.storage.TupleBatch;
 
 /**
  * Single column aggregator.
@@ -155,7 +156,7 @@ public abstract class PrimitiveAggregator implements Aggregator, Serializable {
   }
 
   @Override
-  public void add(final List<Object> from, final Object state) throws DbException {
+  public void add(final List<TupleBatch> from, final Object state) throws DbException {
     throw new DbException(" method not implemented");
   }
 }

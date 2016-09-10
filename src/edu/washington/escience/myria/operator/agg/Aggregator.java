@@ -8,6 +8,7 @@ import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.storage.AppendableTable;
 import edu.washington.escience.myria.storage.ReadableTable;
+import edu.washington.escience.myria.storage.TupleBatch;
 
 /**
  * The interface for any aggregation.
@@ -63,5 +64,5 @@ public interface Aggregator extends Serializable {
    * @param state
    * @throws DbException
    */
-  void add(List<Object> from, Object state) throws DbException;
+  void add(List<TupleBatch> from, Object state) throws DbException;
 }
