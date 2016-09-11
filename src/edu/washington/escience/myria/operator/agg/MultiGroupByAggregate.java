@@ -3,6 +3,7 @@ package edu.washington.escience.myria.operator.agg;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.BitSet;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
 
@@ -49,7 +50,8 @@ public final class MultiGroupByAggregate extends UnaryOperator {
   private transient List<Object[]> aggStates;
   // private transient List<List<Object>> tbgroupsState;
   private transient List<List<TupleBatch>> tbgroupState;
-  private transient List<BitSet> bs;
+  HashMap<Integer, BitSet> bs = new HashMap<Integer, BitSet>();
+  // private transient List<BitSet> bs;
   /** Maps the hash of a grouping key to a list of indices in {@link #groupKeys}. */
   private transient IntObjectHashMap<IntArrayList> groupKeyMap;
   /** The schema of the columns indicated by the group keys. */
@@ -126,14 +128,11 @@ public final class MultiGroupByAggregate extends UnaryOperator {
     int tbnum = 0;
     while (tb != null) {
       for (int row = 0; row < tb.numTuples(); ++row) {
-        // get row hash
-        // gettb hash
-        // int tbhash = HashUtils.hashRow(table, row)
+
         int rowHash = HashUtils.hashSubRow(tb, gfields, row);
         // have we seen this row before?
         IntArrayList hashMatches = groupKeyMap.get(rowHash);
         if (hashMatches == null) {
-          // LOGGER.info("hashMatches is null");
           hashMatches = newKey(rowHash);
           newGroup(tb, row, hashMatches, tbnum);
           continue;
@@ -143,9 +142,10 @@ public final class MultiGroupByAggregate extends UnaryOperator {
           int value = hashMatches.get(i);
           LOGGER.info("index for aggstate " + value);
           if (TupleUtils.tupleEquals(tb, gfields, row, groupKeys, grpRange, value)) {
-            LOGGER.info("Agg state size " + aggStates.size() + " Tbgroupstate " + tbgroupState.size());
-            addBitSet(row, tbnum, value, tb.numTuples(), false);
-            // updateGroup(tb, row, aggStates.get(value), tbgroupsState.get(value), bs.get(value));
+            LOGGER.info("item belongs to groupid: " + value);
+            // LOGGER.info("Agg state size " + aggStates.size() + " Tbgroupstate " + tbgroupState.size());
+            addBitSet(row, value);
+
             found = true;
             break;
           }
@@ -174,23 +174,15 @@ public final class MultiGroupByAggregate extends UnaryOperator {
   }
 
   private void updateGroups(final TupleBatch tb, final int numTupleBatch) {
-    LOGGER.info("tbgroupState size = " + tbgroupState.size());
-    LOGGER.info("bs size = " + bs.size());
-    LOGGER.info("updating groups for tuplebatch number " + numTupleBatch);
-    for (int j = 0; j < bs.size(); j++) {
-      LOGGER.info("bit set list for tuplebatch " + j + "is " + bs.get(j).size());
-    }
+    // LOGGER.info("updating groups for tuplebatch number " + numTupleBatch);
+    // LOGGER.info("tbgroupState size = " + tbgroupState.size());
+    // LOGGER.info("bs size = " + bs.size());
 
     for (int i = 0; i < tbgroupState.size(); i++) {
-      LOGGER.info("getting group state " + i);
-      List<TupleBatch> ltb = tbgroupState.get(i);
-      BitSet curBitSet = bs.get(i);
-      TupleBatch filteredtb = tb.filter(curBitSet);
-      if (filteredtb.numTuples() > 0) {
-        LOGGER.info("filtered tuple had stuff");
-        ltb.add(filteredtb);
-      } else {
-        LOGGER.info("filetered tuple was empty");
+      // LOGGER.info("getting group state " + i);
+      if (!bs.get(i).isEmpty()) {
+        TupleBatch filteredtb = tb.filter(bs.get(i));
+        tbgroupState.get(i).add(filteredtb);
       }
       bs.get(i).clear();
 
@@ -198,18 +190,8 @@ public final class MultiGroupByAggregate extends UnaryOperator {
 
   }
 
-  private void addBitSet(final int row, final int tbid, final int groupid, final int numTuples,
-      final boolean bNewGroup) {
-    LOGGER.info("tuplebatch id = " + tbid);
-    LOGGER.info("groupid =  " + groupid);
-    // if a new group, then add number of bitsets==tbid
-
-    for (int group = 0; group < bs.size(); group++) {
-      if (group == groupid) {
-        bs.get(group).set(row);
-      }
-    }
-
+  private void addBitSet(final int row, final int groupid) {
+    bs.get(groupid).set(row);
   }
 
   /**
@@ -223,12 +205,11 @@ public final class MultiGroupByAggregate extends UnaryOperator {
    */
   private void newGroup(final TupleBatch tb, final int row, final IntArrayList hashMatches, final int tbid)
       throws DbException {
-    int newIndex = groupKeys.numTuples();
-    // LOGGER.info("new Index " + newIndex);
+    int newIndex = groupKeys.numTuples(); // LOGGER.info("new Index " + newIndex);
     for (int column = 0; column < gfields.length; ++column) {
       // LOGGER.info("copy value");
       TupleUtils.copyValue(tb, gfields[column], row, groupKeys, column);
-      LOGGER.info("group keys now has  " + groupKeys.numTuples() + " tuples");
+      // LOGGER.info("group keys now has " + groupKeys.numTuples() + " tuples");
     }
     hashMatches.add(newIndex);
     Object[] curAggStates = AggUtils.allocateAggStates(aggregators);
@@ -237,15 +218,10 @@ public final class MultiGroupByAggregate extends UnaryOperator {
     // Allocate a tuple batch list to hold state tuples
     List<TupleBatch> ltb = new ArrayList<TupleBatch>();
     tbgroupState.add(ltb);
-
     // create a bitset for this tuplebatch
-
     BitSet curbitSet = new BitSet(tb.numTuples());
-    bs.add(curbitSet);
-
-    LOGGER.info(" added new bitsetlist to new group with index: " + newIndex);
-    addBitSet(row, tbid, newIndex, tb.numTuples(), true);
-
+    bs.put(newIndex, curbitSet);
+    addBitSet(row, newIndex);
     // updateGroup(tb, row, curAggStates, statelt, tokeeplist);
 
     Preconditions.checkState(groupKeys.numTuples() == aggStates.size(), "groupKeys %s != groupAggs %s", groupKeys
@@ -273,29 +249,13 @@ public final class MultiGroupByAggregate extends UnaryOperator {
    * @param curAggStates the aggregation states to be updated.
    * @throws DbException if there is an error.
    */
-  @SuppressWarnings("deprecation")
+
   private void updateGroup(final TupleBatch tb, final int row, final Object[] curAggStates, final List<Object> state)
       throws DbException {
 
     for (int agg = 0; agg < aggregators.length; ++agg) {
-      if (aggregators[agg] instanceof StatefulUserDefinedAggregator) {
-        // copy the tuple to groupagg state - don't calladd
-        // Tuple tup = new Tuple(inputSchema);
-        // // copy tuple
-        // for (int i = 0; i < tb.numColumns(); i++) {
-        // tup.set(i, tb.getObject(i, row));
-        // }
-        // state.add(tup);
-        // LOGGER.info("length of state: " + state.size());
-        // BitSet toKeep = new BitSet(tb.numTuples());
-        // LOGGER.info("bitset not set? "+toKeep.toString());
-        // LOGGER.info("row id is"+ row);
-        // toKeep.set(row);
-        // LOGGER.info("did the biset set? "+toKeep.toString());
-        // bslist.add(toKeep);
+      if (!(aggregators[agg] instanceof StatefulUserDefinedAggregator)) {
 
-        // aggregators[agg].add(tb, curAggStates[agg]);
-      } else {
         aggregators[agg].addRow(tb, row, curAggStates[agg]);
       }
 
@@ -309,39 +269,33 @@ public final class MultiGroupByAggregate extends UnaryOperator {
    */
   private TupleBatch getResultBatch() throws DbException, IOException {
     Preconditions.checkState(getChild().eos(), "cannot extract results from an aggregate until child has reached EOS");
+    LOGGER.info("getbatchresults called");
     if (groupKeyList == null) {
       groupKeyList = Lists.newLinkedList(groupKeys.finalResult());
       groupKeys = null;
     }
-
     if (groupKeyList.isEmpty()) {
       return null;
     }
 
+    LOGGER.info("groupKeyList: " + groupKeyList.size());
+
     TupleBatch curGroupKeys = groupKeyList.remove(0);
     TupleBatchBuffer curGroupAggs = new TupleBatchBuffer(aggSchema);
+
     LOGGER.info("number of aggStates: " + aggStates.size());
     LOGGER.info("number of tbgroupsStates: " + tbgroupState.size());
-    LOGGER.info("number of Bitsets: " + bs.size());
-    // for (int j = 0; j < bs.size(); j++) {
-    // BitSet a = bs.get(j);
-    // LOGGER.info("size of " + j + "th bistset list is - " + a.size());
-    // LOGGER.info("Printing bitset ");
-    // for (int r = 0; r < a.size(); r++) {
-    // LOGGER.info("printing bitset: " + a.toString());
-    // }
-    // }
+
     for (int row = 0; row < curGroupKeys.numTuples(); ++row) {
 
       Object[] rowAggs = aggStates.get(row);
+      // Object[] rowAggs = aggStates.remove(row);
       List<TupleBatch> lt = tbgroupState.get(row);
+
       LOGGER.info("group row: " + row);
       int curCol = 0;
       for (int agg = 0; agg < aggregators.length; ++agg) {
-        // here check if the type is statefule agg and then pass the tuplelist with the
-        // right tuples -maybe call add here with tuplelist
-        // then call get result for the agg -- this will be called for each group
-        // ensure previous list of uples is cleared before next set is sent in...
+
         if (aggregators[agg].getClass().getName().equals(StatefulUserDefinedAggregator.class.getName())) {
 
           aggregators[agg].add(lt, rowAggs[agg]);
@@ -357,6 +311,7 @@ public final class MultiGroupByAggregate extends UnaryOperator {
         "curGroupKeys size %s != aggResults size %s", curGroupKeys.numTuples(), aggResults.numTuples());
 
     /* Note: as of Java7 sublists of sublists do what we want -- the sublists are at most one deep. */
+    tbgroupState = tbgroupState.subList(curGroupKeys.numTuples(), tbgroupState.size());
     aggStates = aggStates.subList(curGroupKeys.numTuples(), aggStates.size());
     return new TupleBatch(getSchema(), ImmutableList.<Column<?>> builder().addAll(curGroupKeys.getDataColumns()).addAll(
         aggResults.getDataColumns()).build());
@@ -424,7 +379,7 @@ public final class MultiGroupByAggregate extends UnaryOperator {
     groupKeys = new TupleBuffer(groupSchema);
     aggStates = new ArrayList<>();
     tbgroupState = new ArrayList<>();
-    bs = new ArrayList<>();
+    bs = new HashMap<Integer, BitSet>();
     groupKeyMap = new IntObjectHashMap<>();
   }
 };

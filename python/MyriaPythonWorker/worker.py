@@ -33,10 +33,11 @@ def main(infile, outfile):
             numTuples = read_int(infile)
             print ("number of tuples to be read: "+ str(numTuples))
             if(numTuples >1):
-                tup=[]
+                tuplist =[]
                 for j in range(numTuples):
-                    tup.append(pickleSer.read_tuple(infile,tuplesize))
+                    tuplist.append(pickleSer.read_tuple(infile,tuplesize))
                     print( "tuples read "+ str(j))
+                tup = (0,tuplist)
             else:
                 tup = pickleSer.read_tuple(infile,tuplesize)
 

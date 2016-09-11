@@ -27,8 +27,7 @@ public class StatefulUserDefinedAggregator extends UserDefinedAggregator {
   private static final long serialVersionUID = 1L;
   /** logger for this class. */
   private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(StatefulUserDefinedAggregator.class);
-  private final List<TupleBatch> ltb = new ArrayList<>();
-  private List<TupleBatch> ltup;
+  private List<TupleBatch> ltb;
 
   /**
    * @param state the initialized state of the tuple
@@ -46,6 +45,9 @@ public class StatefulUserDefinedAggregator extends UserDefinedAggregator {
   @Override
   public void add(final ReadableTable from, final Object state) throws DbException {
     // LOGGER.info("add called");
+    if (ltb == null) {
+      ltb = new ArrayList<>();
+    }
     if (!ltb.contains(from)) {
       ltb.add((TupleBatch) from);
     }
@@ -65,7 +67,7 @@ public class StatefulUserDefinedAggregator extends UserDefinedAggregator {
   @Override
   public void add(final List<TupleBatch> from, final Object state) throws DbException {
     // LOGGER.info("add tuple called");
-    ltup = from;
+    ltb = from;
 
   }
 
@@ -94,12 +96,9 @@ public class StatefulUserDefinedAggregator extends UserDefinedAggregator {
     if (pyUDFEvaluators.size() > 0) {
       for (int i = 0; i < pyUDFEvaluators.size(); i++) {
         // LOGGER.info("trying to update state variable");
-        LOGGER.info("calling evalbatch with tb list size " + ltb.size());
-        if (ltb.size() != 0) {
-          pyUDFEvaluators.get(i).evalBatch(ltb, stateTuple, stateTuple, false);
-        } else if (ltup != null && ltup.size() > 0) {
-
-          pyUDFEvaluators.get(i).evalBatch(ltup, stateTuple, stateTuple, false);
+        // LOGGER.info("calling evalbatch with tb list size " + ltb.size());
+        if (ltb != null && ltb.size() != 0) {
+          pyUDFEvaluators.get(i).evalBatch(ltb, stateTuple, stateTuple);
         } else {
           throw new DbException("cannot get results!!");
         }
