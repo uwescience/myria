@@ -27,8 +27,8 @@ public class UnionAllTest {
 
   @Test
   public void testUnionAllConstructorWithNull() throws DbException {
-    TupleSource[] children = new TupleSource[1];
-    children[0] = new TupleSource(TestUtils.generateRandomTuples(10, 1000, false));
+    BatchTupleSource[] children = new BatchTupleSource[1];
+    children[0] = new BatchTupleSource(TestUtils.generateRandomTuples(10, 1000, false));
     UnionAll union = new UnionAll(null);
     union.setChildren(children);
   }
@@ -39,9 +39,9 @@ public class UnionAllTest {
     randomTuples[0] = TestUtils.generateRandomTuples(12300, 5000, false);
     randomTuples[1] = TestUtils.generateRandomTuples(4200, 2000, false);
 
-    TupleSource[] children = new TupleSource[2];
-    children[0] = new TupleSource(randomTuples[0]);
-    children[1] = new TupleSource(randomTuples[1]);
+    BatchTupleSource[] children = new BatchTupleSource[2];
+    children[0] = new BatchTupleSource(randomTuples[0]);
+    children[1] = new BatchTupleSource(randomTuples[1]);
 
     UnionAll union = new UnionAll(children);
     union.open(null);
@@ -77,10 +77,10 @@ public class UnionAllTest {
 
   @Test
   public void testUnionAllCount() throws DbException {
-    TupleSource[] children = new TupleSource[3];
-    children[0] = new TupleSource(TestUtils.generateRandomTuples(12300, 5000, false));
-    children[1] = new TupleSource(TestUtils.generateRandomTuples(4200, 2000, false));
-    children[2] = new TupleSource(TestUtils.generateRandomTuples(19900, 5000, false));
+    BatchTupleSource[] children = new BatchTupleSource[3];
+    children[0] = new BatchTupleSource(TestUtils.generateRandomTuples(12300, 5000, false));
+    children[1] = new BatchTupleSource(TestUtils.generateRandomTuples(4200, 2000, false));
+    children[2] = new BatchTupleSource(TestUtils.generateRandomTuples(19900, 5000, false));
     UnionAll union = new UnionAll(children);
     union.open(null);
     TupleBatch tb = null;
@@ -98,9 +98,9 @@ public class UnionAllTest {
 
   @Test
   public void testUnionAllVaryingSchemas() throws DbException {
-    TupleSource[] children = new TupleSource[3];
-    children[0] = new TupleSource(TestUtils.generateRandomTuples(12300, 5000, false));
-    children[1] = new TupleSource(TestUtils.generateRandomTuples(4200, 2000, false));
+    BatchTupleSource[] children = new BatchTupleSource[3];
+    children[0] = new BatchTupleSource(TestUtils.generateRandomTuples(12300, 5000, false));
+    children[1] = new BatchTupleSource(TestUtils.generateRandomTuples(4200, 2000, false));
 
     /* Child 2 will have tuples with different names */
     TupleBatchBuffer tuples2 = TestUtils.generateRandomTuples(19900, 5000, false);
@@ -114,7 +114,7 @@ public class UnionAllTest {
     for (TupleBatch tb : tuples2.getAll()) {
       tuples2renamed.appendTB(tb.rename(renames));
     }
-    children[2] = new TupleSource(tuples2renamed);
+    children[2] = new BatchTupleSource(tuples2renamed);
 
     UnionAll union = new UnionAll(children);
     union.open(null);
@@ -135,13 +135,13 @@ public class UnionAllTest {
   public void testUnionIncompatibleSchemas() throws DbException {
     Operator[] children = new Operator[3];
     // range always returns INT_TYPE
-    children[0] = new TupleSource(TestUtils.range(5));
-    children[1] = new TupleSource(TestUtils.range(50));
+    children[0] = new BatchTupleSource(TestUtils.range(5));
+    children[1] = new BatchTupleSource(TestUtils.range(50));
 
     /* Child 2 will have tuples with different type -- cast int to long */
     children[2] =
         new Apply(
-            new TupleSource(TestUtils.range(50)),
+            new BatchTupleSource(TestUtils.range(50)),
             ImmutableList.of(
                 new Expression(
                     "long",

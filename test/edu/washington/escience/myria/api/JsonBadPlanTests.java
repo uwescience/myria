@@ -18,7 +18,7 @@ import edu.washington.escience.myria.api.encoding.CollectProducerEncoding;
 import edu.washington.escience.myria.api.encoding.EmptyRelationEncoding;
 import edu.washington.escience.myria.api.encoding.PlanFragmentEncoding;
 import edu.washington.escience.myria.api.encoding.QueryConstruct;
-import edu.washington.escience.myria.api.encoding.SinkRootEncoding;
+import edu.washington.escience.myria.api.encoding.EmptySinkEncoding;
 import edu.washington.escience.myria.api.encoding.UnionAllEncoding;
 
 /**
@@ -51,7 +51,7 @@ public class JsonBadPlanTests {
     AbstractConsumerEncoding<?> cons = new CollectConsumerEncoding();
     cons.opId = 0;
     cons.argOperatorId = 2;
-    SinkRootEncoding sink = new SinkRootEncoding();
+    EmptySinkEncoding sink = new EmptySinkEncoding();
     sink.opId = 1;
     sink.argChild = cons.opId;
     PlanFragmentEncoding frag = PlanFragmentEncoding.of(cons, sink);
@@ -83,7 +83,7 @@ public class JsonBadPlanTests {
     UnionAllEncoding ua = new UnionAllEncoding();
     ua.argChildren = new Integer[] {cons1.opId, cons2.opId};
     ua.opId = 4;
-    SinkRootEncoding sink = new SinkRootEncoding();
+    EmptySinkEncoding sink = new EmptySinkEncoding();
     sink.opId = 5;
     sink.argChild = ua.opId;
     PlanFragmentEncoding consFrag = PlanFragmentEncoding.of(cons1, cons2, ua, sink);
@@ -123,7 +123,7 @@ public class JsonBadPlanTests {
     UnionAllEncoding ua = new UnionAllEncoding();
     ua.argChildren = new Integer[] {cons1.opId, cons2.opId};
     ua.opId = 6;
-    SinkRootEncoding sink = new SinkRootEncoding();
+    EmptySinkEncoding sink = new EmptySinkEncoding();
     sink.opId = 7;
     sink.argChild = ua.opId;
     PlanFragmentEncoding consFrag = PlanFragmentEncoding.of(cons1, cons2, ua, sink);

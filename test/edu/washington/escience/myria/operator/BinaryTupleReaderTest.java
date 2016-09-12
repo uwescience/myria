@@ -1,24 +1,25 @@
 package edu.washington.escience.myria.operator;
 
-import com.google.common.collect.ImmutableList;
-import edu.washington.escience.myria.DbException;
-import edu.washington.escience.myria.Schema;
-import edu.washington.escience.myria.Type;
-import edu.washington.escience.myria.io.ByteArraySource;
-import edu.washington.escience.myria.io.FileSource;
-import edu.washington.escience.myria.storage.TupleBatch;
-import org.junit.Test;
+import static org.junit.Assert.assertEquals;
 
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.util.Arrays;
 
-import static org.junit.Assert.assertEquals;
+import org.junit.Test;
+
+import com.google.common.collect.ImmutableList;
+
+import edu.washington.escience.myria.BinaryTupleReader;
+import edu.washington.escience.myria.DbException;
+import edu.washington.escience.myria.Schema;
+import edu.washington.escience.myria.Type;
+import edu.washington.escience.myria.io.FileSource;
+import edu.washington.escience.myria.storage.TupleBatch;
 
 /**
  * To test BinaryFileScan, and it is based on the code from FileScanTest
@@ -26,7 +27,7 @@ import static org.junit.Assert.assertEquals;
  * @author leelee
  *
  */
-public class BinaryFileScanTest {
+public class BinaryTupleReaderTest {
 
   @Test
   /**
@@ -39,8 +40,8 @@ public class BinaryFileScanTest {
     Schema schema = new Schema(ImmutableList.of(Type.INT_TYPE, Type.INT_TYPE));
     String filename =
         "testdata" + File.separatorChar + "binaryfilescan" + File.separatorChar + "testSimple";
-    BinaryFileScan bfs = new BinaryFileScan(schema, new FileSource(filename));
-    assertEquals(2, getRowCount(bfs));
+    TupleSource ts = new TupleSource(new BinaryTupleReader(schema), new FileSource(filename));
+    assertEquals(2, getRowCount(ts));
   }
 
   @Test
@@ -76,8 +77,8 @@ public class BinaryFileScanTest {
             + "binaryfilescan"
             + File.separatorChar
             + "testWithAstronomySchema";
-    BinaryFileScan bfs = new BinaryFileScan(schema, new FileSource(filename));
-    assertEquals(8, getRowCount(bfs));
+    TupleSource ts = new TupleSource(new BinaryTupleReader(schema), new FileSource(filename));
+    assertEquals(8, getRowCount(ts));
   }
 
   @Test
@@ -106,8 +107,8 @@ public class BinaryFileScanTest {
             + "binaryfilescan"
             + File.separatorChar
             + "cosmo50cmb.256g2bwK.00024.star.bin";
-    BinaryFileScan bfs = new BinaryFileScan(schema, new FileSource(filename), true);
-    assertEquals(1291, getRowCount(bfs));
+    TupleSource ts = new TupleSource(new BinaryTupleReader(schema, true), new FileSource(filename));
+    assertEquals(1291, getRowCount(ts));
   }
 
   @Test
@@ -121,64 +122,56 @@ public class BinaryFileScanTest {
                 Type.INT_TYPE,
                 Type.LONG_TYPE,
                 Type.STRING_TYPE));
-    byte[] buf;
-    {
-      ByteArrayOutputStream bos = new ByteArrayOutputStream(1000);
-      DataOutputStream stream = new DataOutputStream(bos);
-      generateBinaryData(stream, schema.getColumnTypes().toArray(new Type[0]), 10);
-      stream.close();
-      buf = bos.toByteArray();
-    }
-
-    BinaryFileScan bfs = new BinaryFileScan(schema, new ByteArraySource(buf));
-    assertEquals(10, getRowCount(bfs));
+    File file = File.createTempFile(this.getClass().getSimpleName(), null);
+    String filename = file.getCanonicalPath();
+    generateBinaryFile(filename, schema.getColumnTypes().toArray(new Type[0]), 10);
+    TupleSource ts = new TupleSource(new BinaryTupleReader(schema, true), new FileSource(filename));
+    assertEquals(10, getRowCount(ts));
   }
 
   /**
    * Generates a binary file with the given file name, type array and the number of rows.
-   */
-  @SuppressWarnings("unused")
-  private void generateBinaryFile(String filename, Type[] typeAr, int numrows) {
-    try (DataOutputStream raf = new DataOutputStream(new FileOutputStream(filename))) {
-      generateBinaryData(raf, typeAr, numrows);
-    } catch (IOException e) {
-      throw new RuntimeException("", e);
-    }
-  }
-
-  /**
-   * Write binary data to a stream, for given types and number of rows.
    *
-   * @param stream The data stream to write data to. Does not close the stream.
+   * @param filename The filename to create.
+   * @param typeAr The array of types.
+   * @param row The number of rows.
    */
   @SuppressWarnings("unused")
-  private void generateBinaryData(DataOutputStream stream, Type[] typeAr, int numrows)
-      throws IOException {
-    for (int i = 0; i < numrows; i++) {
-      for (Type element : typeAr) {
-        switch (element) {
-          case BOOLEAN_TYPE:
-            stream.writeBoolean(true);
-            break;
-          case DOUBLE_TYPE:
-            stream.writeDouble(i);
-            break;
-          case FLOAT_TYPE:
-            stream.writeFloat(i);
-            break;
-          case INT_TYPE:
-            stream.writeInt(i);
-            break;
-          case LONG_TYPE:
-            stream.writeLong(i);
-            break;
-          case STRING_TYPE:
-            stream.writeUTF("string" + i);
-            break;
-          default:
-            throw new UnsupportedOperationException("can only write fix length field to bin file");
+  private void generateBinaryFile(final String filename, final Type[] typeAr, final int row) {
+    try {
+      RandomAccessFile raf = new RandomAccessFile(filename, "rw");
+      for (int i = 0; i < row; i++) {
+        for (Type element : typeAr) {
+          switch (element) {
+            case BOOLEAN_TYPE:
+              raf.writeBoolean(true);
+              break;
+            case DOUBLE_TYPE:
+              raf.writeDouble(i);
+              break;
+            case FLOAT_TYPE:
+              raf.writeFloat(i);
+              break;
+            case INT_TYPE:
+              raf.writeInt(i);
+              break;
+            case LONG_TYPE:
+              raf.writeLong(i);
+              break;
+            case STRING_TYPE:
+              raf.writeUTF("string" + i);
+              break;
+            default:
+              throw new UnsupportedOperationException(
+                  "cannot write field of type " + element.getName() + " to binary file");
+          }
         }
       }
+      raf.close();
+    } catch (FileNotFoundException e) {
+      e.printStackTrace();
+    } catch (IOException e) {
+      e.printStackTrace();
     }
   }
 
@@ -190,7 +183,7 @@ public class BinaryFileScanTest {
    * @param row
    */
   @SuppressWarnings("unused")
-  private void generateSimpleBinaryFile(String filename, int row) {
+  private void generateSimpleBinaryFile(final String filename, final int row) {
     try {
       RandomAccessFile raf = new RandomAccessFile(filename, "rw");
       for (int i = 0; i < row; i++) {
@@ -212,13 +205,13 @@ public class BinaryFileScanTest {
    * @return the number of rows in the file.
    * @throws DbException if the file does not match the given Schema.
    */
-  private static int getRowCount(BinaryFileScan fileScan) throws DbException {
-    fileScan.open(null);
+  private static int getRowCount(final TupleSource input) throws DbException {
+    input.open(null);
 
     int count = 0;
     TupleBatch tb = null;
-    while (!fileScan.eos()) {
-      tb = fileScan.nextReady();
+    while (!input.eos()) {
+      tb = input.nextReady();
       if (tb != null) {
         count += tb.numTuples();
       }

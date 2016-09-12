@@ -15,7 +15,7 @@ import edu.washington.escience.myria.expression.ExpressionOperator;
 import edu.washington.escience.myria.expression.SplitExpression;
 import edu.washington.escience.myria.expression.VariableExpression;
 import edu.washington.escience.myria.operator.Apply;
-import edu.washington.escience.myria.operator.TupleSource;
+import edu.washington.escience.myria.operator.BatchTupleSource;
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
 import edu.washington.escience.myria.util.TestEnvVars;
@@ -47,7 +47,7 @@ public class ApplySplitTest {
     Expression expr = new Expression("joined_ints_splits", split);
     Expressions.add(expr);
 
-    Apply apply = new Apply(new TupleSource(input), Expressions.build());
+    Apply apply = new Apply(new BatchTupleSource(input), Expressions.build());
     apply.open(TestEnvVars.get());
     long rowIdx = 0;
     while (!apply.eos()) {

@@ -67,7 +67,7 @@ public class UserDefinedAggregatorTest {
         new UserDefinedAggregatorFactory(Initializers.build(), Updaters.build(), Emitters.build());
     factory = reader.readValue(writer.writeValueAsString(factory));
 
-    Aggregate agg = new Aggregate(new TupleSource(tbb), factory);
+    Aggregate agg = new Aggregate(new BatchTupleSource(tbb), factory);
     agg.open(TestEnvVars.get());
     TupleBatch result;
     int resultSize = 0;
@@ -120,7 +120,7 @@ public class UserDefinedAggregatorTest {
         new UserDefinedAggregatorFactory(Initializers.build(), Updaters.build(), Emitters.build());
     factory = reader.readValue(writer.writeValueAsString(factory));
 
-    Aggregate agg = new Aggregate(new TupleSource(tbb), factory);
+    Aggregate agg = new Aggregate(new BatchTupleSource(tbb), factory);
     agg.open(TestEnvVars.get());
     TupleBatch result;
     int resultSize = 0;
@@ -185,7 +185,7 @@ public class UserDefinedAggregatorTest {
         new UserDefinedAggregatorFactory(Initializers.build(), Updaters.build(), Emitters.build());
     factory = reader.readValue(writer.writeValueAsString(factory));
 
-    Aggregate agg = new Aggregate(new TupleSource(tbb), factory);
+    Aggregate agg = new Aggregate(new BatchTupleSource(tbb), factory);
     agg.open(TestEnvVars.get());
     TupleBatch result;
     int resultSize = 0;

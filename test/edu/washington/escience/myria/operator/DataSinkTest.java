@@ -9,10 +9,10 @@ import java.io.ByteArrayOutputStream;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 
 import org.junit.Test;
 
+import edu.washington.escience.myria.CsvTupleReader;
 import edu.washington.escience.myria.CsvTupleWriter;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
@@ -35,9 +35,10 @@ public class DataSinkTest {
     byte[] srcBytes = dataSrc.getBytes(Charset.forName("UTF-8"));
     Schema relationSchema = Schema.ofFields("x", Type.INT_TYPE, "y", Type.INT_TYPE);
     DataSource byteSource = new ByteArraySource(srcBytes);
-    FileScan fileScan = new FileScan(byteSource, relationSchema, ',', null, null, 1);
+    TupleSource dataInput =
+        new TupleSource(new CsvTupleReader(relationSchema, ',', null, null, 1), byteSource);
     ByteSink byteSink = new ByteSink();
-    DataOutput dataOutput = new DataOutput(fileScan, new CsvTupleWriter(), byteSink);
+    TupleSink dataOutput = new TupleSink(dataInput, new CsvTupleWriter(), byteSink);
 
     dataOutput.open(TestEnvVars.get());
     while (!dataOutput.eos()) {
@@ -61,7 +62,7 @@ public class DataSinkTest {
     FileScan fileScan = new FileScan(byteSource, relationSchema, ',', null, null, 1);
     Path tempFile = Files.createTempFile(this.getClass().getName(), ".tmp");
     FileSink sink = new FileSink(tempFile.toString());
-    DataOutput dataOutput = new DataOutput(fileScan, new CsvTupleWriter(), sink);
+    TupleSink dataOutput = new TupleSink(fileScan, new CsvTupleWriter(), sink);
 
     dataOutput.open(TestEnvVars.get());
     while (!dataOutput.eos()) {
