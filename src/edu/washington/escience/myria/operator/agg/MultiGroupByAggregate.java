@@ -145,7 +145,7 @@ public final class MultiGroupByAggregate extends UnaryOperator {
             LOGGER.info("item belongs to groupid: " + value);
             // LOGGER.info("Agg state size " + aggStates.size() + " Tbgroupstate " + tbgroupState.size());
             addBitSet(row, value);
-
+            updateGroup(tb, row, aggStates.get(value));
             found = true;
             break;
           }
@@ -223,6 +223,7 @@ public final class MultiGroupByAggregate extends UnaryOperator {
     bs.put(newIndex, curbitSet);
     addBitSet(row, newIndex);
     // updateGroup(tb, row, curAggStates, statelt, tokeeplist);
+    updateGroup(tb, row, curAggStates);
 
     Preconditions.checkState(groupKeys.numTuples() == aggStates.size(), "groupKeys %s != groupAggs %s", groupKeys
         .numTuples(), aggStates.size());
@@ -250,12 +251,10 @@ public final class MultiGroupByAggregate extends UnaryOperator {
    * @throws DbException if there is an error.
    */
 
-  private void updateGroup(final TupleBatch tb, final int row, final Object[] curAggStates, final List<Object> state)
-      throws DbException {
+  private void updateGroup(final TupleBatch tb, final int row, final Object[] curAggStates) throws DbException {
 
     for (int agg = 0; agg < aggregators.length; ++agg) {
-      if (!(aggregators[agg] instanceof StatefulUserDefinedAggregator)) {
-
+      if (!(aggregators[agg].getClass().getName().equals(StatefulUserDefinedAggregator.class.getName()))) {
         aggregators[agg].addRow(tb, row, curAggStates[agg]);
       }
 
@@ -291,13 +290,10 @@ public final class MultiGroupByAggregate extends UnaryOperator {
       Object[] rowAggs = aggStates.get(row);
       // Object[] rowAggs = aggStates.remove(row);
       List<TupleBatch> lt = tbgroupState.get(row);
-
       LOGGER.info("group row: " + row);
       int curCol = 0;
       for (int agg = 0; agg < aggregators.length; ++agg) {
-
         if (aggregators[agg].getClass().getName().equals(StatefulUserDefinedAggregator.class.getName())) {
-
           aggregators[agg].add(lt, rowAggs[agg]);
           aggregators[agg].getResult(curGroupAggs, curCol, rowAggs[agg]);
         } else {

@@ -1,7 +1,10 @@
 package edu.washington.escience.myria.operator.agg;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.BitSet;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
@@ -90,6 +93,8 @@ public class SingleGroupByAggregate extends UnaryOperator {
   /**
    * The aggregators that will initialize and update the state.
    */
+  private transient HashMap<Object, List<TupleBatch>> ltb;
+  private transient HashMap<Object, BitSet> tbbs;
   private Aggregator[] aggregators;
 
   /**
@@ -214,16 +219,239 @@ public class SingleGroupByAggregate extends UnaryOperator {
     LOGGER.info("processing tuple batch");
 
     for (int agg = 0; agg < aggregators.length; ++agg) {
-      if (aggregators[agg].getClass().getName().equals(StatefulUserDefinedAggregator.class.getName())) {
+      LOGGER.info("Aggclass in process tuplebatch: " + aggregators[agg].getClass().getName());
 
-        Object[] groupAgg = getAggState(tb, 0);
-        aggregators[agg].add(tb, groupAgg[agg]);
-      } else {
-        for (int i = 0; i < tb.numTuples(); ++i) {
-          Object[] groupAgg = getAggState(tb, i);
+      for (int i = 0; i < tb.numTuples(); ++i) {
+        Object[] groupAgg = getAggState(tb, i);
+        if (aggregators[agg].getClass().getName().equals(StatefulUserDefinedAggregator.class.getName())) {
+          setBitset(tb, i, groupAgg);
+        } else {
           aggregators[agg].addRow(tb, i, groupAgg[agg]);
         }
       }
+      if (aggregators[agg].getClass().getName().equals(StatefulUserDefinedAggregator.class.getName())) {
+        updateltbGroups(tb);
+      }
+    }
+
+  }
+
+  private void updateltbGroups(final TupleBatch table) throws DbException {
+    LOGGER.info("updating tuplebatch");
+    LOGGER.info("columntype " + gColumnType.toString());
+
+    switch (gColumnType) {
+      case BOOLEAN_TYPE:
+        for (int key = 0; key < 2; key++) {
+          BitSet bs = tbbs.get(key);
+          if (bs != null && !(bs.isEmpty())) {
+            LOGGER.info("bit set is not empty" + bs.toString());
+            List<TupleBatch> listTb = ltb.get(key);
+            if (listTb == null) {
+              List<TupleBatch> nlTb = new ArrayList<TupleBatch>();
+              nlTb.add(table.filter(bs));
+              ltb.put(key, nlTb);
+            } else {
+              listTb.add(table.filter(bs));
+            }
+            bs.clear();
+          }
+        }
+        break;
+      case STRING_TYPE:
+        for (String key : stringAggState.keySet()) {
+          BitSet bs = tbbs.get(key);
+          if (bs != null && !(bs.isEmpty())) {
+            LOGGER.info("bit set is not empty" + bs.toString());
+            List<TupleBatch> listTb = ltb.get(key);
+            if (listTb == null) {
+              List<TupleBatch> nlTb = new ArrayList<TupleBatch>();
+              nlTb.add(table.filter(bs));
+              ltb.put(key, nlTb);
+            } else {
+              listTb.add(table.filter(bs));
+            }
+            bs.clear();
+          }
+
+        }
+        break;
+      case DATETIME_TYPE:
+        for (DateTime key : datetimeAggState.keySet()) {
+          BitSet bs = tbbs.get(key);
+          if (bs != null && !(bs.isEmpty())) {
+            LOGGER.info("bit set is not empty" + bs.toString());
+            List<TupleBatch> listTb = ltb.get(key);
+            if (listTb == null) {
+              List<TupleBatch> nlTb = new ArrayList<TupleBatch>();
+              nlTb.add(table.filter(bs));
+              ltb.put(key, nlTb);
+            } else {
+              listTb.add(table.filter(bs));
+            }
+            bs.clear();
+          }
+        }
+        break;
+      case INT_TYPE:
+        for (Integer key : intAggState.keySet().toArray()) {
+          BitSet bs = tbbs.get(key);
+          if (bs != null && !(bs.isEmpty())) {
+            LOGGER.info("bit set is not empty" + bs.toString());
+            List<TupleBatch> listTb = ltb.get(key);
+            if (listTb == null) {
+              List<TupleBatch> nlTb = new ArrayList<TupleBatch>();
+              nlTb.add(table.filter(bs));
+              ltb.put(key, nlTb);
+            } else {
+              listTb.add(table.filter(bs));
+            }
+            bs.clear();
+          }
+        }
+        break;
+      case LONG_TYPE:
+        LOGGER.info("size of aggstate " + longAggState.keySet().size());
+        for (Long key : longAggState.keySet().toArray()) {
+          BitSet bs = tbbs.get(key);
+          if (bs != null && !(bs.isEmpty())) {
+            LOGGER.info("bit set is not empty" + bs.toString());
+            List<TupleBatch> listTb = ltb.get(key);
+            if (listTb == null) {
+              List<TupleBatch> nlTb = new ArrayList<TupleBatch>();
+              nlTb.add(table.filter(bs));
+              ltb.put(key, nlTb);
+            } else {
+              listTb.add(table.filter(bs));
+            }
+            bs.clear();
+          }
+        }
+        break;
+      case FLOAT_TYPE:
+        for (Float key : floatAggState.keySet().toArray()) {
+          BitSet bs = tbbs.get(key);
+          if (bs != null && !(bs.isEmpty())) {
+            LOGGER.info("bit set is not empty" + bs.toString());
+            List<TupleBatch> listTb = ltb.get(key);
+            if (listTb == null) {
+              List<TupleBatch> nlTb = new ArrayList<TupleBatch>();
+              nlTb.add(table.filter(bs));
+              ltb.put(key, nlTb);
+            } else {
+              listTb.add(table.filter(bs));
+            }
+            bs.clear();
+          }
+
+        }
+        break;
+      case DOUBLE_TYPE:
+        for (Double key : doubleAggState.keySet().toArray()) {
+          BitSet bs = tbbs.get(key);
+          if (bs != null && !(bs.isEmpty())) {
+            LOGGER.info("bit set is not empty" + bs.toString());
+            List<TupleBatch> listTb = ltb.get(key);
+            if (listTb == null) {
+              List<TupleBatch> nlTb = new ArrayList<TupleBatch>();
+              nlTb.add(table.filter(bs));
+              ltb.put(key, nlTb);
+            } else {
+              listTb.add(table.filter(bs));
+            }
+            bs.clear();
+          }
+        }
+        break;
+      default:
+        throw new DbException("type not supported for SingleColumnGroupby");
+    }
+
+  }
+
+  private void setBitset(final ReadableTable table, final int row, final Object[] groupAgg) throws DbException {
+    LOGGER.info("set bitset");
+    BitSet bs;
+    switch (gColumnType) {
+      case BOOLEAN_TYPE:
+        boolean groupByBool = table.getBoolean(gColumn, row);
+        bs = tbbs.get(groupByBool);
+        if (bs == null) {
+          bs = new BitSet(table.numTuples());
+          bs.set(row);
+          tbbs.put(groupByBool, bs);
+        } else {
+          bs.set(row);
+        }
+        break;
+      case STRING_TYPE:
+        String groupByString = table.getString(gColumn, row);
+        bs = tbbs.get(groupByString);
+        if (bs == null) {
+          bs = new BitSet(table.numTuples());
+          bs.set(row);
+          tbbs.put(groupByString, bs);
+        } else {
+          bs.set(row);
+        }
+        break;
+      case DATETIME_TYPE:
+        DateTime groupByDateTime = table.getDateTime(gColumn, row);
+        bs = tbbs.get(groupByDateTime);
+        if (bs == null) {
+          bs = new BitSet(table.numTuples());
+          bs.set(row);
+          tbbs.put(groupByDateTime, bs);
+        } else {
+          bs.set(row);
+        }
+        break;
+      case INT_TYPE:
+        int groupByInt = table.getInt(gColumn, row);
+        bs = tbbs.get(groupByInt);
+        if (bs == null) {
+          bs = new BitSet(table.numTuples());
+          bs.set(row);
+          tbbs.put(groupByInt, bs);
+        } else {
+          bs.set(row);
+        }
+        break;
+      case LONG_TYPE:
+        long groupByLong = table.getLong(gColumn, row);
+        bs = tbbs.get(groupByLong);
+        if (bs == null) {
+          bs = new BitSet(table.numTuples());
+          bs.set(row);
+          tbbs.put(groupByLong, bs);
+        } else {
+          bs.set(row);
+        }
+        break;
+      case FLOAT_TYPE:
+        float groupByFloat = table.getFloat(gColumn, row);
+        bs = tbbs.get(groupByFloat);
+        if (bs == null) {
+          bs = new BitSet(table.numTuples());
+          bs.set(row);
+          tbbs.put(groupByFloat, bs);
+        } else {
+          bs.set(row);
+        }
+        break;
+      case DOUBLE_TYPE:
+        double groupByDouble = table.getDouble(gColumn, row);
+        bs = tbbs.get(groupByDouble);
+        if (bs == null) {
+          bs = new BitSet(table.numTuples());
+          bs.set(row);
+          tbbs.put(groupByDouble, bs);
+        } else {
+          bs.set(row);
+        }
+        break;
+      default:
+        throw new DbException("type not supported for SingleColumnGroupby");
     }
   }
 
@@ -236,15 +464,38 @@ public class SingleGroupByAggregate extends UnaryOperator {
    * @throws DbException if there is an error.
    * @throws IOException
    */
-  private void concatResults(final TupleBatchBuffer resultBuffer, final Object[] aggState) throws DbException,
-      IOException {
+  private void concatResults(final TupleBatchBuffer resultBuffer, final Object[] aggState, final Object key)
+      throws DbException, IOException {
     LOGGER.info("concat results called");
     int index = 1;
     for (int agg = 0; agg < aggregators.length; ++agg) {
+      if (aggregators[agg].getClass().getName().equals(StatefulUserDefinedAggregator.class.getName())) {
+        LOGGER.info("get in here?");
+        LOGGER.info("key for sending tuples is" + key.toString());
+        @SuppressWarnings("unchecked")
+        List<TupleBatch> listTb = ltb.get(key);
+        if (listTb.size() > 0) {
+          LOGGER.info("size of tuples for key " + key.toString() + " is " + listTb.size());
+          aggregators[agg].add(listTb, aggState[agg]);
+        }
+      }
+
       aggregators[agg].getResult(resultBuffer, index, aggState[agg]);
       index += aggregators[agg].getResultSchema().numColumns();
     }
   }
+
+  // private void sendTuples(final Object key, final Object[] aggState) throws DbException {
+  // LOGGER.info("send tuples called!");
+  // for (int agg = 0; agg < aggregators.length; ++agg) {
+  //
+  // @SuppressWarnings("unchecked")
+  //
+  //
+  // }
+  //
+  // }
+  // }
 
   /**
    * @param resultBuffer where the results are stored.
@@ -261,44 +512,52 @@ public class SingleGroupByAggregate extends UnaryOperator {
           if (aggState != null) {
             /* True is index 0 in booleanAggState, False is index 1. */
             resultBuffer.putBoolean(0, boolBucket == 0);
-            concatResults(resultBuffer, aggState);
+            // sendTuples(boolBucket, aggState);
+            concatResults(resultBuffer, aggState, boolBucket);
           }
         }
         break;
       case STRING_TYPE:
         for (final Map.Entry<String, Object[]> e : stringAggState.entrySet()) {
           resultBuffer.putString(0, e.getKey());
-          concatResults(resultBuffer, e.getValue());
+          // sendTuples(e.getKey(), e.getValue());
+          concatResults(resultBuffer, e.getValue(), e.getKey());
         }
         break;
       case DATETIME_TYPE:
         for (final Map.Entry<DateTime, Object[]> e : datetimeAggState.entrySet()) {
           resultBuffer.putDateTime(0, e.getKey());
-          concatResults(resultBuffer, e.getValue());
+          // sendTuples(e.getKey(), e.getValue());
+          concatResults(resultBuffer, e.getValue(), e.getKey());
         }
         break;
       case INT_TYPE:
         for (int key : intAggState.keySet().toArray()) {
           resultBuffer.putInt(0, key);
-          concatResults(resultBuffer, intAggState.get(key));
+          // sendTuples(key, intAggState.get(key));
+          concatResults(resultBuffer, intAggState.get(key), key);
         }
         break;
       case LONG_TYPE:
         for (long key : longAggState.keySet().toArray()) {
+          LOGGER.info("key: " + key);
           resultBuffer.putLong(0, key);
-          concatResults(resultBuffer, longAggState.get(key));
+          // sendTuples(key, longAggState.get(key));
+          concatResults(resultBuffer, longAggState.get(key), key);
         }
         break;
       case FLOAT_TYPE:
         for (float key : floatAggState.keySet().toArray()) {
           resultBuffer.putFloat(0, key);
-          concatResults(resultBuffer, floatAggState.get(key));
+          // sendTuples(key, floatAggState.get(key));
+          concatResults(resultBuffer, floatAggState.get(key), key);
         }
         break;
       case DOUBLE_TYPE:
         for (double key : doubleAggState.keySet().toArray()) {
           resultBuffer.putDouble(0, key);
-          concatResults(resultBuffer, doubleAggState.get(key));
+          // sendTuples(key, doubleAggState.get(key));
+          concatResults(resultBuffer, doubleAggState.get(key), key);
         }
         break;
     }
@@ -342,9 +601,15 @@ public class SingleGroupByAggregate extends UnaryOperator {
     aggregators = AggUtils.allocateAggs(factories, getChild().getSchema(), getPythonFunctionRegistrar());
     resultBuffer = new TupleBatchBuffer(getSchema());
 
+    LOGGER.info("resultbuffer schema" + resultBuffer.getSchema().toString());
+    LOGGER.info("column type" + gColumnType);
+    ltb = new HashMap<Object, List<TupleBatch>>();
+    tbbs = new HashMap<Object, BitSet>();
+
     switch (gColumnType) {
       case BOOLEAN_TYPE:
         booleanAggState = new Object[2][];
+
         break;
       case INT_TYPE:
         intAggState = new IntObjectHashMap<Object[]>();
@@ -365,6 +630,7 @@ public class SingleGroupByAggregate extends UnaryOperator {
         datetimeAggState = new HashMap<DateTime, Object[]>();
         break;
     }
+
   }
 
   @Override
