@@ -6,6 +6,7 @@ import java.io.OutputStream;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import edu.washington.escience.myria.coordinator.CatalogException;
@@ -14,8 +15,9 @@ public class FileSink implements DataSink {
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
 
-  @JsonProperty private String filename;
+  private String filename;
 
+  @JsonCreator
   public FileSink(@JsonProperty(value = "filename", required = true) final String filename)
       throws CatalogException {
     this.filename = filename;

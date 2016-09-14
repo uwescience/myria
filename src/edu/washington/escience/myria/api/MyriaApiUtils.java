@@ -2,6 +2,7 @@ package edu.washington.escience.myria.api;
 
 import javax.ws.rs.core.CacheControl;
 import javax.ws.rs.core.Response.ResponseBuilder;
+import javax.ws.rs.core.Response.Status;
 
 /**
  * Helper functions for the API.
@@ -29,5 +30,32 @@ public final class MyriaApiUtils {
    */
   public static ResponseBuilder doNotCache(final ResponseBuilder response) {
     return response.cacheControl(doNotCache());
+  }
+
+  /**
+   * Helper function to parse a format string, with default value "csv".
+   *
+   * @param format the format string, with default value "csv".
+   * @return the cleaned-up format string.
+   */
+  public static String validateFormat(final String format) {
+    String cleanFormat = format;
+    if (cleanFormat == null) {
+      cleanFormat = "csv";
+    }
+    cleanFormat = cleanFormat.trim().toLowerCase();
+    /* CSV is legal */
+    if (cleanFormat.equals("csv")) {
+      return cleanFormat;
+    }
+    /* TSV is legal */
+    if (cleanFormat.equals("tsv")) {
+      return cleanFormat;
+    }
+    /* JSON is legal */
+    if (cleanFormat.equals("json")) {
+      return cleanFormat;
+    }
+    throw new MyriaApiException(Status.BAD_REQUEST, "format must be 'csv', 'tsv', or 'json'");
   }
 }

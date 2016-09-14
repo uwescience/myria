@@ -353,12 +353,12 @@ public class QueryConstruct {
    */
   private static void setAndVerifySingletonConstraints(
       final List<PlanFragmentEncoding> fragments, final ConstructArgs args) {
-    List<Integer> singletonWorkers =
-        ImmutableList.of(args.getServer().getAliveWorkers().iterator().next());
+    List<Integer> singletonWorkers = ImmutableList.of(MyriaConstants.MASTER_ID);
 
     for (PlanFragmentEncoding fragment : fragments) {
       for (OperatorEncoding<?> operator : fragment.operators) {
-        if (operator instanceof CollectConsumerEncoding
+        if (operator instanceof StreamingSinkEncoding
+            || operator instanceof CollectConsumerEncoding
             || operator instanceof SingletonEncoding
             || operator instanceof EOSControllerEncoding
             || operator instanceof TupleSourceEncoding

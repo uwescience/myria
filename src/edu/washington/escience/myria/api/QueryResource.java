@@ -1,7 +1,10 @@
 package edu.washington.escience.myria.api;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.SequenceInputStream;
 import java.net.URI;
+import java.util.Collections;
 import java.util.List;
 
 import javax.ws.rs.Consumes;
@@ -20,15 +23,22 @@ import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.core.UriBuilder;
 import javax.ws.rs.core.UriInfo;
 
+import org.glassfish.jersey.media.multipart.ContentDisposition;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.common.base.MoreObjects;
 import com.google.common.base.Preconditions;
 
+import edu.washington.escience.myria.CsvTupleWriter;
 import edu.washington.escience.myria.DbException;
+import edu.washington.escience.myria.JsonTupleWriter;
+import edu.washington.escience.myria.TupleWriter;
 import edu.washington.escience.myria.api.encoding.QueryEncoding;
 import edu.washington.escience.myria.api.encoding.QuerySearchResults;
 import edu.washington.escience.myria.api.encoding.QueryStatusEncoding;
 import edu.washington.escience.myria.coordinator.CatalogException;
+import edu.washington.escience.myria.io.PipeSink;
+import edu.washington.escience.myria.operator.TupleSink;
 import edu.washington.escience.myria.parallel.QueryFuture;
 import edu.washington.escience.myria.parallel.Server;
 import edu.washington.escience.myria.parallel.SubQueryId;
@@ -116,6 +126,75 @@ public final class QueryResource {
         .location(queryUri)
         .entity(qs)
         .build();
+  }
+
+  /**
+   * For now, simply echoes back its input.
+   *
+   * @param query the query to be executed.
+   * @param uriInfo the URI of the current request.
+   * @return the URI of the created query.
+   * @throws CatalogException if there is an error in the catalog.
+   */
+  @POST
+  @Path("stream")
+  public Response postNewStreamingQuery(
+      final QueryEncoding query,
+      @Context final UriInfo uriInfo,
+      @QueryParam("format") final String format)
+      throws CatalogException {
+    /* Validate the input. */
+    Preconditions.checkArgument(query != null, "Missing query encoding.");
+    query.validate();
+    /* Validate the request format. This will throw a MyriaApiException if format is invalid. */
+    //final String validFormat = MyriaApiUtils.validateFormat(format);
+    // TODO: figure out how to choose the TupleWriter class corresponding to the format (hardcode for now)
+    final String validFormat = "csv";
+
+    /* Start the query, and get its Server-assigned Query ID */
+    final QueryFuture qf;
+    try {
+      qf = server.getQueryManager().submitQuery(query, query.plan.getPlan());
+    } catch (final MyriaApiException e) {
+      /* Passthrough MyriaApiException. */
+      throw e;
+    } catch (final CatalogException e) {
+      throw new MyriaApiException(Status.INTERNAL_SERVER_ERROR, e);
+    } catch (final Throwable e) {
+      /* Other exceptions mean that the request itself was likely bad. */
+      throw new MyriaApiException(Status.BAD_REQUEST, e);
+    }
+
+    /* Check to see if the query was submitted successfully. */
+    if (qf == null) {
+      throw new MyriaApiException(
+          Status.SERVICE_UNAVAILABLE, "The server cannot accept new queries right now.");
+    }
+
+    final long queryId = qf.getQueryId();
+
+    /* Start building the response. */
+    final ResponseBuilder response = Response.ok();
+    response.entity(server.getQueryOutput(queryId));
+
+    if (validFormat.equals("csv") || validFormat.equals("tsv")) {
+      /* CSV or TSV : set application/octet-stream, attachment, and filename. */
+      final ContentDisposition contentDisposition =
+          ContentDisposition.type("attachment")
+              .fileName("query_" + queryId + '.' + validFormat)
+              .build();
+
+      response.header("Content-Disposition", contentDisposition);
+      response.type(MediaType.APPLICATION_OCTET_STREAM);
+    } else if (validFormat.equals("json")) {
+      /* JSON: set application/json. */
+      response.type(MyriaApiConstants.JSON_UTF_8);
+    } else {
+      /* Should not be possible to get here. */
+      throw new IllegalStateException(
+          "format should have been validated by now, and yet we got here");
+    }
+    return response.build();
   }
 
   /**
