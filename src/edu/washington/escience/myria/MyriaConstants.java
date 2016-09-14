@@ -321,8 +321,8 @@ public final class MyriaConstants {
   };
 
   /** Number of bytes per worker partition for parallel ingest - 100MB */
-  public static final long WORKER_PARALLEL_INGEST_MINIMUM_PARTITION_SIZE = 100 * MB;
+  public static final long PARALLEL_INGEST_WORKER_MINIMUM_PARTITION_SIZE = 100 * MB;
 
   /** Byte overlap range for parallel ingest **/
-  public static final long BYTE_OVERLAP_PARALLEL_INGEST = 16 * KB;
+  public static final long PARALLEL_INGEST_BYTE_OVERLAP = 16 * KB;
 }

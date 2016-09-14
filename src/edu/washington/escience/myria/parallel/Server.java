@@ -955,7 +955,7 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
       for (int i = allWorkers.length; i >= 1; i--) {
         totalNumberOfWorkersToIngest = i;
         long currentPartitionSize = fileSize / i;
-        if (currentPartitionSize > MyriaConstants.WORKER_PARALLEL_INGEST_MINIMUM_PARTITION_SIZE
+        if (currentPartitionSize > MyriaConstants.PARALLEL_INGEST_WORKER_MINIMUM_PARTITION_SIZE
             || totalNumberOfWorkersToIngest == 1) {
           partitionSize = currentPartitionSize;
           break;

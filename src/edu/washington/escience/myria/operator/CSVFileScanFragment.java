@@ -56,7 +56,7 @@ public class CSVFileScanFragment extends LeafOperator {
   private transient TupleBatchBuffer buffer;
   /** Which line of the file the scanner is currently on. */
   private long lineNumber = 0;
-  private long byteOverlap = MyriaConstants.BYTE_OVERLAP_PARALLEL_INGEST;
+  private long byteOverlap = MyriaConstants.PARALLEL_INGEST_BYTE_OVERLAP;
   private static final String truncatedQuoteErrorMessage =
       "EOF reached before encapsulated token finished";
 
