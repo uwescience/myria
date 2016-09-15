@@ -48,6 +48,8 @@ public final class MasterApplication extends ResourceConfig {
      * Disable WADL - throws error messages when using Swagger, and not needed.
      */
     property(ServerProperties.WADL_FEATURE_DISABLE, true);
+    // Disable buffering of server-side response entity
+    property(ServerProperties.OUTBOUND_CONTENT_LENGTH_BUFFER, 0);
 
     /* Enable Jackson's JSON Serialization/Deserialization. */
     register(JacksonJsonProvider.class);

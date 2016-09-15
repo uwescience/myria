@@ -147,9 +147,8 @@ public final class QueryResource {
     Preconditions.checkArgument(query != null, "Missing query encoding.");
     query.validate();
     /* Validate the request format. This will throw a MyriaApiException if format is invalid. */
-    //final String validFormat = MyriaApiUtils.validateFormat(format);
-    // TODO: figure out how to choose the TupleWriter class corresponding to the format (hardcode for now)
-    final String validFormat = "csv";
+    final String validFormat = MyriaApiUtils.validateFormat(format);
+    // TODO: figure out how to choose the TupleWriter class corresponding to the format (hardcode to CSV for now)
 
     /* Start the query, and get its Server-assigned Query ID */
     final QueryFuture qf;
@@ -175,7 +174,7 @@ public final class QueryResource {
 
     /* Start building the response. */
     final ResponseBuilder response = Response.ok();
-    response.entity(server.getQueryOutput(queryId));
+    response.entity(new PipedStreamingOutput(server.getQueryOutput(queryId)));
 
     if (validFormat.equals("csv") || validFormat.equals("tsv")) {
       /* CSV or TSV : set application/octet-stream, attachment, and filename. */
