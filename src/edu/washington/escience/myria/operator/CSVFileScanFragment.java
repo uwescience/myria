@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.Iterator;
+import java.util.Set;
 
 import javax.annotation.Nullable;
 
@@ -27,6 +28,7 @@ import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.io.AmazonS3Source;
 import edu.washington.escience.myria.io.DataSource;
 import edu.washington.escience.myria.io.FileSource;
+import edu.washington.escience.myria.parallel.WorkerSubQuery;
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
 import edu.washington.escience.myria.util.DateTimeUtils;
@@ -59,11 +61,11 @@ public class CSVFileScanFragment extends LeafOperator {
   private long byteOverlap = MyriaConstants.PARALLEL_INGEST_BYTE_OVERLAP;
   private static final String truncatedQuoteErrorMessage =
       "EOF reached before encapsulated token finished";
-
-  private final boolean isLastWorker;
+  
+  private  boolean isLastWorker;
   private final long maxByteRange;
-  private final long partitionStartByteRange;
-  private final long partitionEndByteRange;
+  private  long partitionStartByteRange;
+  private  long partitionEndByteRange;
 
   private long adjustedStartByteRange;
   private int byteOffsetFromTruncatedRowAtStart = 0;
@@ -72,6 +74,9 @@ public class CSVFileScanFragment extends LeafOperator {
   private boolean onLastRow;
   private boolean finishedReadingLastRow;
   private boolean flagAsIncomplete;
+  
+  private int liveWorkersCount;
+  private boolean readEntireTable;
 
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
@@ -81,6 +86,8 @@ public class CSVFileScanFragment extends LeafOperator {
    */
   private static final org.slf4j.Logger LOGGER =
       org.slf4j.LoggerFactory.getLogger(CSVFileScanFragment.class);
+  
+
 
   public CSVFileScanFragment(
       final String filename,
@@ -178,6 +185,34 @@ public class CSVFileScanFragment extends LeafOperator {
     finishedReadingLastRow = false;
     flagAsIncomplete = false;
   }
+  
+  public CSVFileScanFragment(
+	      final AmazonS3Source source,
+	      final Schema schema,
+	      final Set<Integer> liveWorkers,
+	      final Boolean readEntireTable,
+	      @Nullable final Character delimiter,
+	      @Nullable final Character quote,
+	      @Nullable final Character escape,
+	      @Nullable final Integer numberOfSkippedLines) {
+	  
+      this.source = (AmazonS3Source) Preconditions.checkNotNull(source, "source");
+      this.schema = Preconditions.checkNotNull(schema, "schema");
+      
+      this.delimiter = MoreObjects.firstNonNull(delimiter, CSVFormat.DEFAULT.getDelimiter());
+      this.quote = MoreObjects.firstNonNull(quote, CSVFormat.DEFAULT.getQuoteCharacter());
+      this.escape = escape;
+      this.numberOfSkippedLines = MoreObjects.firstNonNull(numberOfSkippedLines, 0);
+      
+      maxByteRange = ((AmazonS3Source) source).getFileSize();
+      
+      onLastRow = false;
+      finishedReadingLastRow = false;
+      flagAsIncomplete = false;
+      
+      this.readEntireTable = readEntireTable; 
+      this.liveWorkersCount = liveWorkers.size();
+	} 
 
   @Override
   protected TupleBatch fetchNextReady() throws IOException, DbException {
@@ -373,6 +408,30 @@ public class CSVFileScanFragment extends LeafOperator {
   @Override
   protected void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
     buffer = new TupleBatchBuffer(getSchema());
+    int workerID = ((WorkerSubQuery) getLocalSubQuery()).getWorker().getID();
+    
+	long fileSize = source.getFileSize();
+    long currentPartitionSize = fileSize / liveWorkersCount;
+	  
+	boolean isLastWorker = workerID == liveWorkersCount;
+    long startByteRange = currentPartitionSize * (workerID - 1);
+    long endByteRange;
+    if (isLastWorker) {
+  	  endByteRange = fileSize - 1;
+    } else {
+  	  endByteRange = (currentPartitionSize * workerID) - 1;
+    }
+    
+	  if(readEntireTable)
+	  {
+		  startByteRange = 0;
+		  endByteRange = fileSize;
+	  }
+    
+    this.partitionStartByteRange = startByteRange;
+    this.partitionEndByteRange = endByteRange;
+    this.isLastWorker = isLastWorker;
+
     try {
 
       adjustedStartByteRange = partitionStartByteRange;

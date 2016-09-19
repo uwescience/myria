@@ -12,9 +12,9 @@ import java.util.Objects;
 import javax.annotation.concurrent.NotThreadSafe;
 
 import org.apache.commons.httpclient.URIException;
+import org.apache.hadoop.fs.s3a.AnonymousAWSCredentialsProvider;
 
 import com.amazonaws.ClientConfiguration;
-import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.GetObjectRequest;
 import com.fasterxml.jackson.annotation.JsonCreator;
@@ -69,7 +69,8 @@ public class AmazonS3Source implements DataSource, Serializable {
     if (s3Client == null) {
       clientConfig = new ClientConfiguration();
       clientConfig.setMaxErrorRetry(3);
-      s3Client = new AmazonS3Client(new DefaultAWSCredentialsProviderChain());
+      //AWSCredentialsProviderChain credentialsChain = new AWSCredentialsProviderChain(new DefaultAWSCredentialsProviderChain(),new AnonymousAWSCredentialsProvider());
+      s3Client = new AmazonS3Client(new AnonymousAWSCredentialsProvider());
     }
     return s3Client;
   }
