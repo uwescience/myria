@@ -15,7 +15,7 @@ import edu.washington.escience.myria.expression.ExpressionOperator;
 import edu.washington.escience.myria.expression.NgramExpression;
 import edu.washington.escience.myria.expression.VariableExpression;
 import edu.washington.escience.myria.operator.Apply;
-import edu.washington.escience.myria.operator.TupleSource;
+import edu.washington.escience.myria.operator.BatchTupleSource;
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
 import edu.washington.escience.myria.util.TestEnvVars;
@@ -45,7 +45,7 @@ public class ApplyNgramTest {
     Expression expr = new Expression("ngrams", split);
     expressions.add(expr);
 
-    Apply apply = new Apply(new BatchTupleSource(input), Expressions.build());
+    Apply apply = new Apply(new BatchTupleSource(input), expressions.build());
     apply.open(TestEnvVars.get());
     long rowIdx = 0;
     while (!apply.eos()) {
