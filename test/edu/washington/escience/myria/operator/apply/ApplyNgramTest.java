@@ -45,7 +45,7 @@ public class ApplyNgramTest {
     Expression expr = new Expression("ngrams", split);
     expressions.add(expr);
 
-    Apply apply = new Apply(new TupleSource(input), expressions.build());
+    Apply apply = new Apply(new BatchTupleSource(input), Expressions.build());
     apply.open(TestEnvVars.get());
     long rowIdx = 0;
     while (!apply.eos()) {
