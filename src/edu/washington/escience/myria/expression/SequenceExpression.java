@@ -29,14 +29,14 @@ public class SequenceExpression extends UnaryExpression {
 
   @Override
   public Type getOutputType(final ExpressionOperatorParameter parameters) {
-    checkOperandType(Type.INT_TYPE, parameters);
-    return Type.INT_TYPE;
+    checkOperandType(Type.LONG_TYPE, parameters);
+    return Type.LONG_TYPE;
   }
 
   @Override
   public String getJavaString(final ExpressionOperatorParameter parameters) {
     return new StringBuilder()
-        .append("IntStream.range(0, (")
+        .append("LongStream.range(0, (")
         .append(getOperand().getJavaString(parameters))
         .append(")).toArray()")
         .toString();
@@ -50,11 +50,11 @@ public class SequenceExpression extends UnaryExpression {
         .append(getOperand().getJavaString(parameters))
         .append("));\n")
         // It would be nice to replace this loop with IntStream.forEach(), but Janino doesn't support lambdas.
-        .append("for (int i = 0; i < (int) (")
+        .append("for (long i = 0; i < (long) (")
         .append(getOperand().getJavaString(parameters))
         .append("); ++i) {\n")
         .append(Expression.RESULT)
-        .append(".appendInt(i);\n}")
+        .append(".appendLong(i);\n}")
         .toString();
   }
 
