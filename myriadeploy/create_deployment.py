@@ -90,7 +90,11 @@ def _get_workers(hostnames, ports=None, base_port=8001,
     workers = '[workers]\n'
 
     if not ports:
-        hostnames = sorted(hostnames)
+        # FIXME: we can't sort by hostname because cloud deployment scripts
+        # need to sort by a stable, monotonically increasing ID for elasticity.
+        # We should add an assert that verifies all duplicate hostnames are
+        # contiguous, even if the list is unsorted by hostname.
+        # hostnames = sorted(hostnames)
         ports = [offset + base_port
                  for hostname, group in groupby(hostnames)
                  for offset in xrange(len(list(group)))]
