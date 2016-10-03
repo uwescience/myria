@@ -85,12 +85,7 @@ public final class MultiGroupByAggregate extends UnaryOperator {
     this.factories = Objects.requireNonNull(factories, "factories");
     Preconditions.checkArgument(gfields.length > 1, "to use MultiGroupByAggregate, must group over multiple fields");
     Preconditions.checkArgument(factories.length != 0, "to use MultiGroupByAggregate, must specify some aggregates");
-    LOGGER.info("gfields: " + gfields.length);
-    // gfileds is the number of columns to group by
-    // but factory is only one since one aggregation
-    for (AggregatorFactory factorie : factories) {
-      LOGGER.info("factory name " + factorie.getClass().getName());
-    }
+
     grpRange = new int[gfields.length];
     for (int i = 0; i < gfields.length; ++i) {
       grpRange[i] = i;
@@ -219,8 +214,6 @@ public final class MultiGroupByAggregate extends UnaryOperator {
     BitSet curbitSet = new BitSet(tb.numTuples());
     bs.put(newIndex, curbitSet);
     addBitSet(row, newIndex);
-    updateGroup(tb, row, curAggStates);
-    // updateGroup(tb, row, curAggStates, statelt, tokeeplist);
     updateGroup(tb, row, curAggStates);
 
     Preconditions.checkState(groupKeys.numTuples() == aggStates.size(), "groupKeys %s != groupAggs %s", groupKeys
