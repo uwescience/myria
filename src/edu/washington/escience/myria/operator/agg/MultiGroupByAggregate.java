@@ -125,7 +125,6 @@ public final class MultiGroupByAggregate extends UnaryOperator {
     }
 
     TupleBatch tb = child.nextReady();
-    int tbnum = 0;
     while (tb != null) {
       for (int row = 0; row < tb.numTuples(); ++row) {
 
@@ -134,7 +133,7 @@ public final class MultiGroupByAggregate extends UnaryOperator {
         IntArrayList hashMatches = groupKeyMap.get(rowHash);
         if (hashMatches == null) {
           hashMatches = newKey(rowHash);
-          newGroup(tb, row, hashMatches, tbnum);
+          newGroup(tb, row, hashMatches);
           continue;
         }
         boolean found = false;
@@ -145,20 +144,19 @@ public final class MultiGroupByAggregate extends UnaryOperator {
             LOGGER.info("item belongs to groupid: " + value);
             // LOGGER.info("Agg state size " + aggStates.size() + " Tbgroupstate " + tbgroupState.size());
             addBitSet(row, value);
-
+            updateGroup(tb, row, aggStates.get(value));
             found = true;
             break;
           }
         }
 
         if (!found) {
-          newGroup(tb, row, hashMatches, tbnum);
+          newGroup(tb, row, hashMatches);
         }
 
         Preconditions.checkState(groupKeys.numTuples() == aggStates.size());
       }
-      updateGroups(tb, tbnum);
-      tbnum++;
+      updateGroups(tb);
       tb = child.nextReady();
     }
 
@@ -173,7 +171,7 @@ public final class MultiGroupByAggregate extends UnaryOperator {
     return null;
   }
 
-  private void updateGroups(final TupleBatch tb, final int numTupleBatch) {
+  private void updateGroups(final TupleBatch tb) {
     // LOGGER.info("updating groups for tuplebatch number " + numTupleBatch);
     // LOGGER.info("tbgroupState size = " + tbgroupState.size());
     // LOGGER.info("bs size = " + bs.size());
@@ -203,8 +201,7 @@ public final class MultiGroupByAggregate extends UnaryOperator {
    * @param hashMatches the list of all rows in the output {@link TupleBuffer}s that match this hash.
    * @throws DbException if there is an error.
    */
-  private void newGroup(final TupleBatch tb, final int row, final IntArrayList hashMatches, final int tbid)
-      throws DbException {
+  private void newGroup(final TupleBatch tb, final int row, final IntArrayList hashMatches) throws DbException {
     int newIndex = groupKeys.numTuples(); // LOGGER.info("new Index " + newIndex);
     for (int column = 0; column < gfields.length; ++column) {
       // LOGGER.info("copy value");
@@ -222,6 +219,7 @@ public final class MultiGroupByAggregate extends UnaryOperator {
     BitSet curbitSet = new BitSet(tb.numTuples());
     bs.put(newIndex, curbitSet);
     addBitSet(row, newIndex);
+    updateGroup(tb, row, curAggStates);
     // updateGroup(tb, row, curAggStates, statelt, tokeeplist);
 
     Preconditions.checkState(groupKeys.numTuples() == aggStates.size(), "groupKeys %s != groupAggs %s", groupKeys
@@ -250,12 +248,10 @@ public final class MultiGroupByAggregate extends UnaryOperator {
    * @throws DbException if there is an error.
    */
 
-  private void updateGroup(final TupleBatch tb, final int row, final Object[] curAggStates, final List<Object> state)
-      throws DbException {
+  private void updateGroup(final TupleBatch tb, final int row, final Object[] curAggStates) throws DbException {
 
     for (int agg = 0; agg < aggregators.length; ++agg) {
-      if (!(aggregators[agg] instanceof StatefulUserDefinedAggregator)) {
-
+      if (!(aggregators[agg].getClass().getName().equals(StatefulUserDefinedAggregator.class.getName()))) {
         aggregators[agg].addRow(tb, row, curAggStates[agg]);
       }
 
@@ -289,7 +285,6 @@ public final class MultiGroupByAggregate extends UnaryOperator {
     for (int row = 0; row < curGroupKeys.numTuples(); ++row) {
 
       Object[] rowAggs = aggStates.get(row);
-      // Object[] rowAggs = aggStates.remove(row);
       List<TupleBatch> lt = tbgroupState.get(row);
 
       LOGGER.info("group row: " + row);
@@ -297,7 +292,6 @@ public final class MultiGroupByAggregate extends UnaryOperator {
       for (int agg = 0; agg < aggregators.length; ++agg) {
 
         if (aggregators[agg].getClass().getName().equals(StatefulUserDefinedAggregator.class.getName())) {
-
           aggregators[agg].add(lt, rowAggs[agg]);
           aggregators[agg].getResult(curGroupAggs, curCol, rowAggs[agg]);
         } else {
