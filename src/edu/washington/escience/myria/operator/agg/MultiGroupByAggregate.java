@@ -221,6 +221,7 @@ public final class MultiGroupByAggregate extends UnaryOperator {
     addBitSet(row, newIndex);
     updateGroup(tb, row, curAggStates);
     // updateGroup(tb, row, curAggStates, statelt, tokeeplist);
+    updateGroup(tb, row, curAggStates);
 
     Preconditions.checkState(groupKeys.numTuples() == aggStates.size(), "groupKeys %s != groupAggs %s", groupKeys
         .numTuples(), aggStates.size());
@@ -286,11 +287,9 @@ public final class MultiGroupByAggregate extends UnaryOperator {
 
       Object[] rowAggs = aggStates.get(row);
       List<TupleBatch> lt = tbgroupState.get(row);
-
       LOGGER.info("group row: " + row);
       int curCol = 0;
       for (int agg = 0; agg < aggregators.length; ++agg) {
-
         if (aggregators[agg].getClass().getName().equals(StatefulUserDefinedAggregator.class.getName())) {
           aggregators[agg].add(lt, rowAggs[agg]);
           aggregators[agg].getResult(curGroupAggs, curCol, rowAggs[agg]);
