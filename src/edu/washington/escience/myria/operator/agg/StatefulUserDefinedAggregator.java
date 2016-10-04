@@ -66,7 +66,7 @@ public class StatefulUserDefinedAggregator extends UserDefinedAggregator {
 
   @Override
   public void add(final List<TupleBatch> from, final Object state) throws DbException {
-    // LOGGER.info("add tuple called");
+    LOGGER.info("add tuple called");
     ltb = from;
 
   }
@@ -96,7 +96,7 @@ public class StatefulUserDefinedAggregator extends UserDefinedAggregator {
     if (pyUDFEvaluators.size() > 0) {
       for (int i = 0; i < pyUDFEvaluators.size(); i++) {
         // LOGGER.info("trying to update state variable");
-        // LOGGER.info("calling evalbatch with tb list size " + ltb.size());
+        LOGGER.info("calling evalbatch with tb list size " + ltb.size());
         if (ltb != null && ltb.size() != 0) {
           pyUDFEvaluators.get(i).evalBatch(ltb, stateTuple, stateTuple);
         } else {

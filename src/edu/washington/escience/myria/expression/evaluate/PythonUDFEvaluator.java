@@ -83,6 +83,7 @@ public class PythonUDFEvaluator extends GenericEvaluator {
 
     List<ExpressionOperator> childops = op.getChildren();
     tupleSize = childops.size();
+    LOGGER.info("tuple size? " + tupleSize);
     columnIdxs = new int[tupleSize];
     isStateColumn = new boolean[tupleSize];
     Arrays.fill(columnIdxs, -1);
@@ -97,27 +98,43 @@ public class PythonUDFEvaluator extends GenericEvaluator {
     ExpressionOperator op = getExpression().getRootExpressionOperator();
 
     String pyFunc = ((PyUDFExpression) op).getName();
+    LOGGER.info("name of python function " + pyFunc);
     try {
-
-      String pyCodeString = pyFunction.getUDF(pyFunc);
-      if (pyCodeString == null) {
-        LOGGER.info("no python UDF with name " + pyFunc);
-        throw new DbException("No Python UDf with given name registered.");
-      } else {
-        // tuple size is
-        // LOGGER.info("tuple size is: " + tupleSize);
-        // LOGGER.info("does this eval need state? " + needsState);
-        pyWorker.sendCodePickle(pyCodeString, tupleSize, outputType, 0);
-      }
-      List<ExpressionOperator> childops = op.getChildren();
-
-      for (int i = 0; i < childops.size(); i++) {
-        if (childops.get(i).getClass().equals(StateExpression.class)) {
-          isStateColumn[i] = true;
-          columnIdxs[i] = ((StateExpression) childops.get(i)).getColumnIdx();
+      if (pyFunction != null) {
+        LOGGER.info("pyFunction is  not null!!");
+        String pyCodeString = pyFunction.getUDF(pyFunc);
+        if (pyCodeString == null) {
+          LOGGER.info("no python UDF with name " + pyFunc);
+          throw new DbException("No Python UDf with given name registered.");
         } else {
-          columnIdxs[i] = ((VariableExpression) childops.get(i)).getColumnIdx();
+          // tuple size is
+          LOGGER.info("tuple size is: " + tupleSize);
+          LOGGER.info("does this eval need state? " + needsState);
+          if (pyWorker != null) {
+            pyWorker.sendCodePickle(pyCodeString, tupleSize, outputType, 0);
+            LOGGER.info("sent code pickle?");
+          }
         }
+      } else {
+        LOGGER.info("pyFunction is null!");
+
+      }
+
+      List<ExpressionOperator> childops = op.getChildren();
+      if (childops != null) {
+        LOGGER.info("number of child ops " + childops.size());
+        for (int i = 0; i < childops.size(); i++) {
+          LOGGER.info("op id " + i);
+          if (childops.get(i).getClass().equals(StateExpression.class)) {
+            isStateColumn[i] = true;
+            columnIdxs[i] = ((StateExpression) childops.get(i)).getColumnIdx();
+
+          } else {
+            columnIdxs[i] = ((VariableExpression) childops.get(i)).getColumnIdx();
+          }
+        }
+      } else {
+        LOGGER.info("child ops is null ");
       }
 
     } catch (Exception e) {

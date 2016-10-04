@@ -114,6 +114,10 @@ public class SingleGroupByAggregate extends UnaryOperator {
     super(child);
     gColumn = Objects.requireNonNull(gfield, "gfield");
     this.factories = Objects.requireNonNull(factories, "factories");
+    if (child == null) {
+      LOGGER.info("child is null ...");
+    }
+
   }
 
   @Override
@@ -217,6 +221,7 @@ public class SingleGroupByAggregate extends UnaryOperator {
    */
   private void processTupleBatch(final TupleBatch tb) throws DbException {
     LOGGER.info("processing tuple batch");
+    LOGGER.info("input schema for tuplebatch " + tb.getSchema().toString());
 
     for (int agg = 0; agg < aggregators.length; ++agg) {
       LOGGER.info("Aggclass in process tuplebatch: " + aggregators[agg].getClass().getName());
@@ -472,7 +477,6 @@ public class SingleGroupByAggregate extends UnaryOperator {
       if (aggregators[agg].getClass().getName().equals(StatefulUserDefinedAggregator.class.getName())) {
         LOGGER.info("get in here?");
         LOGGER.info("key for sending tuples is" + key.toString());
-        @SuppressWarnings("unchecked")
         List<TupleBatch> listTb = ltb.get(key);
         if (listTb.size() > 0) {
           LOGGER.info("size of tuples for key " + key.toString() + " is " + listTb.size());
@@ -643,6 +647,7 @@ public class SingleGroupByAggregate extends UnaryOperator {
     if (inputSchema == null) {
       return null;
     }
+    LOGGER.info("input schema " + inputSchema.toString());
 
     Preconditions.checkElementIndex(gColumn, inputSchema.numColumns(), "group column");
 
@@ -650,7 +655,7 @@ public class SingleGroupByAggregate extends UnaryOperator {
 
     gColumnType = inputSchema.getColumnType(gColumn);
     try {
-      for (Aggregator a : AggUtils.allocateAggs(factories, inputSchema, null)) {
+      for (Aggregator a : AggUtils.allocateAggs(factories, inputSchema, getPythonFunctionRegistrar())) {
         outputSchema = Schema.merge(outputSchema, a.getResultSchema());
       }
     } catch (DbException e) {
