@@ -308,7 +308,10 @@ public class FlatteningApply extends UnaryOperator {
    */
   @Override
   protected void sendEos() throws DbException {
-    // TODO Auto-generated method stub
+    LOGGER.info("send EOS called");
+    for (int i = 0; i < emitEvaluators.size(); i++) {
+      emitEvaluators.get(i).sendEos();
+    }
 
   }
 }

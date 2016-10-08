@@ -260,4 +260,10 @@ public class StatefulApply extends Apply {
     }
     return new Schema(typesBuilder.build(), namesBuilder.build());
   }
+
+  @Override
+  protected void sendEos() throws DbException {
+    LOGGER.info("send EOS called");
+
+  }
 }

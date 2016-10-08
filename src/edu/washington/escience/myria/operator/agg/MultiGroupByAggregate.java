@@ -124,7 +124,6 @@ public final class MultiGroupByAggregate extends UnaryOperator {
     final Operator child = getChild();
 
     if (child.eos()) {
-      sendEos();
       return getResultBatch();
     }
 
@@ -169,7 +168,6 @@ public final class MultiGroupByAggregate extends UnaryOperator {
      * either EOS or we have to wait for more data.
      */
     if (child.eos()) {
-      sendEos();
       return getResultBatch();
     }
 

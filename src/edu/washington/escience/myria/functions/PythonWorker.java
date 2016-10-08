@@ -157,9 +157,9 @@ public class PythonWorker {
     String pythonWorker = MyriaConstants.PYTHONWORKER;
     ProcessBuilder pb = new ProcessBuilder(MyriaConstants.PYTHONEXEC, "-m", pythonWorker);
     final Map<String, String> env = pb.environment();
-    for (String envName : env.keySet()) {
-      LOGGER.info("%s=%s%n", envName, env.get(envName));
-    }
+    // for (String envName : env.keySet()) {
+    // LOGGER.info("%s=%s%n", envName, env.get(envName));
+    // }
 
     env.put("PYTHONUNBUFFERED", "YES");
     env.put("OMP_NUM_THREADS", "1");
@@ -217,8 +217,9 @@ public class PythonWorker {
       dOut.writeInt(EOS);
       close();
     } catch (Exception e) {
-      LOGGER.info("failed to write number of tuples to python process!");
-      throw new DbException(e);
+      LOGGER.info("closing python worker caused an exception: ");
+      LOGGER.info(e.getMessage());
+      LOGGER.info(e.getStackTrace().toString());
     }
   }
 
