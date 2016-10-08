@@ -19,38 +19,38 @@ import edu.washington.escience.myria.storage.TupleBatch;
  * <li>After delay expires, for each second, randomly decide if a failure should be injected, i.e. throw an
  * {@link InjectedFailureException}, according to the failure probability.</li>
  * </ul>
- * */
+ */
 public class SingleRandomFailureInjector extends UnaryOperator {
 
   /**
    * Logger.
-   * */
-  private static final org.slf4j.Logger LOGGER =
-      org.slf4j.LoggerFactory.getLogger(SingleRandomFailureInjector.class.getName());
+   */
+  private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(SingleRandomFailureInjector.class
+      .getName());
 
   /**
    * failure probability per second.
-   * */
+   */
   private final double failureProbabilityPerSecond;
 
   /**
    * Record if a failure is already injected. The class injects only a single failure.
-   * */
+   */
   private volatile boolean hasFailed;
 
   /**
    * Denoting if the next tuple retrieval event should trigger a failure.
-   * */
+   */
   private volatile boolean toFail;
 
   /**
    * failure inject thread. This thread decides if a failure should be injected.
-   * */
+   */
   private volatile Thread failureInjectThread;
 
   /**
    * delay in milliseconds.
-   * */
+   */
   private final long delayInMS;
 
   /**
@@ -58,12 +58,9 @@ public class SingleRandomFailureInjector extends UnaryOperator {
    * @param delayUnit the timeunit of the delay
    * @param failureProbabilityPerSecond per second failure probability.
    * @param child the child operator.
-   * */
-  public SingleRandomFailureInjector(
-      final long delay,
-      final TimeUnit delayUnit,
-      final double failureProbabilityPerSecond,
-      final Operator child) {
+   */
+  public SingleRandomFailureInjector(final long delay, final TimeUnit delayUnit,
+      final double failureProbabilityPerSecond, final Operator child) {
     super(child);
     this.failureProbabilityPerSecond = failureProbabilityPerSecond;
     hasFailed = false;
@@ -80,37 +77,36 @@ public class SingleRandomFailureInjector extends UnaryOperator {
   protected final void init(final ImmutableMap<String, Object> initProperties) throws DbException {
     toFail = false;
     if (!hasFailed) {
-      failureInjectThread =
-          new Thread() {
-            @Override
-            public void run() {
-              Random r = new Random();
-              try {
-                Thread.sleep(delayInMS);
-              } catch (InterruptedException e) {
-                if (LOGGER.isDebugEnabled()) {
-                  LOGGER.debug(SingleRandomFailureInjector.this + " exit during delay.");
-                }
-                return;
-              }
-              while (true) {
-                if (r.nextDouble() < failureProbabilityPerSecond) {
-                  toFail = true;
-                  hasFailed = true;
-                  return;
-                }
-
-                try {
-                  Thread.sleep(TimeUnit.SECONDS.toMillis(1));
-                } catch (InterruptedException e) {
-                  if (LOGGER.isDebugEnabled()) {
-                    LOGGER.debug(SingleRandomFailureInjector.this + " exit during 1 second sleep.");
-                  }
-                  return;
-                }
-              }
+      failureInjectThread = new Thread() {
+        @Override
+        public void run() {
+          Random r = new Random();
+          try {
+            Thread.sleep(delayInMS);
+          } catch (InterruptedException e) {
+            if (LOGGER.isDebugEnabled()) {
+              LOGGER.debug(SingleRandomFailureInjector.this + " exit during delay.");
             }
-          };
+            return;
+          }
+          while (true) {
+            if (r.nextDouble() < failureProbabilityPerSecond) {
+              toFail = true;
+              hasFailed = true;
+              return;
+            }
+
+            try {
+              Thread.sleep(TimeUnit.SECONDS.toMillis(1));
+            } catch (InterruptedException e) {
+              if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug(SingleRandomFailureInjector.this + " exit during 1 second sleep.");
+              }
+              return;
+            }
+          }
+        }
+      };
       failureInjectThread.start();
     } else {
       failureInjectThread = null;
@@ -142,5 +138,16 @@ public class SingleRandomFailureInjector extends UnaryOperator {
       return null;
     }
     return child.getSchema();
+  }
+
+  /*
+   * (non-Javadoc)
+   * 
+   * @see edu.washington.escience.myria.operator.Operator#sendEos()
+   */
+  @Override
+  protected void sendEos() throws DbException {
+    // TODO Auto-generated method stub
+
   }
 }

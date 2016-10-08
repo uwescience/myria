@@ -16,25 +16,25 @@ import edu.washington.escience.myria.util.HashUtils;
 /**
  * A simple implementation of duplicate eliminate. It keeps the references to all the TupleBatches which contain unique
  * tuples.
- * */
+ */
 public final class DupElimRefOnly extends UnaryOperator {
 
   /**
    * Pointer data structure for pointing to a tuple in a TupleBatch.
-   * */
+   */
   private class IndexedTuple {
     /**
      * The row index.
-     * */
+     */
     private int index;
     /**
      * The source data TB.
-     * */
+     */
     private final TupleBatch tb;
 
     /**
      * @param tb the source data TB.
-     * */
+     */
     public IndexedTuple(final TupleBatch tb) {
       this.tb = tb;
     }
@@ -42,7 +42,7 @@ public final class DupElimRefOnly extends UnaryOperator {
     /**
      * @param tb the source data TB.
      * @param index the row index.
-     * */
+     */
     public IndexedTuple(final TupleBatch tb, final int index) {
       this.tb = tb;
       this.index = index;
@@ -54,7 +54,7 @@ public final class DupElimRefOnly extends UnaryOperator {
      * @return true if equal.
      * @param another another source data TB.
      * @param colIndx columnIndex to compare
-     * */
+     */
     public boolean columnEquals(final IndexedTuple another, final int colIndx) {
       final Type type = tb.getSchema().getColumnType(colIndx);
       final int rowIndx1 = index;
@@ -73,11 +73,9 @@ public final class DupElimRefOnly extends UnaryOperator {
         case STRING_TYPE:
           return tb.getString(colIndx, rowIndx1).equals(another.tb.getString(colIndx, rowIndx2));
         case DATETIME_TYPE:
-          return tb.getDateTime(colIndx, rowIndx1)
-              .equals(another.tb.getDateTime(colIndx, rowIndx2));
+          return tb.getDateTime(colIndx, rowIndx1).equals(another.tb.getDateTime(colIndx, rowIndx2));
         case BYTES_TYPE:
-          return tb.getByteBuffer(colIndx, rowIndx1)
-              .equals(another.tb.getByteBuffer(colIndx, rowIndx2));
+          return tb.getByteBuffer(colIndx, rowIndx1).equals(another.tb.getByteBuffer(colIndx, rowIndx2));
       }
       return false;
     }
@@ -113,25 +111,26 @@ public final class DupElimRefOnly extends UnaryOperator {
 
   /**
    * Storing the unique tuples.
-   * */
+   */
   private transient HashMap<Integer, List<IndexedTuple>> uniqueTuples;
 
   /**
    * @param child the child
-   * */
+   */
   public DupElimRefOnly(final Operator child) {
     super(child);
   }
 
   @Override
-  protected void cleanup() throws DbException {}
+  protected void cleanup() throws DbException {
+  }
 
   /**
    * Do duplicate elimination for the tb.
    *
    * @param tb the TB.
    * @return a new TB with duplicates removed.
-   * */
+   */
   protected TupleBatch doDupElim(final TupleBatch tb) {
     final int numTuples = tb.numTuples();
     if (numTuples <= 0) {
@@ -193,5 +192,16 @@ public final class DupElimRefOnly extends UnaryOperator {
   @Override
   protected void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
     uniqueTuples = new HashMap<Integer, List<IndexedTuple>>();
+  }
+
+  /*
+   * (non-Javadoc)
+   * 
+   * @see edu.washington.escience.myria.operator.Operator#sendEos()
+   */
+  @Override
+  protected void sendEos() throws DbException {
+    // TODO Auto-generated method stub
+
   }
 }

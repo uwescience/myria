@@ -35,7 +35,7 @@ public final class Difference extends BinaryOperator {
 
   /**
    * Mapping from tuple hash code to indices in the tuplesToRemove buffer.
-   * */
+   */
   private transient IntObjectHashMap<IntArrayList> tupleIndices;
 
   /**
@@ -169,5 +169,16 @@ public final class Difference extends BinaryOperator {
   protected void cleanup() throws DbException {
     tuplesToRemove = null;
     tupleIndices = null;
+  }
+
+  /*
+   * (non-Javadoc)
+   * 
+   * @see edu.washington.escience.myria.operator.Operator#sendEos()
+   */
+  @Override
+  protected void sendEos() throws DbException {
+    // TODO Auto-generated method stub
+
   }
 }

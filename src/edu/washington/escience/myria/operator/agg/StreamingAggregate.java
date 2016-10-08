@@ -28,6 +28,8 @@ import edu.washington.escience.myria.storage.TupleUtils;
  * @see MultiGroupByAggregate
  */
 public class StreamingAggregate extends UnaryOperator {
+  /** logger for this class. */
+  private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(StreamingAggregate.class);
 
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
@@ -78,6 +80,16 @@ public class StreamingAggregate extends UnaryOperator {
     for (int i = 0; i < gRange.length; ++i) {
       gRange[i] = i;
     }
+  }
+
+  @Override
+  public void sendEos() throws DbException {
+    // send EOS for only emit evaluators
+    LOGGER.info("send eos called");
+    for (Aggregator aggregator : aggregators) {
+      aggregator.sendEos();
+    }
+
   }
 
   /**

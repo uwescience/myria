@@ -35,7 +35,8 @@ public final class UnionAll extends NAryOperator {
   }
 
   @Override
-  protected void cleanup() throws DbException {}
+  protected void cleanup() throws DbException {
+  }
 
   @Override
   protected TupleBatch fetchNextReady() throws DbException {
@@ -83,11 +84,8 @@ public final class UnionAll extends NAryOperator {
     for (Operator child : getChildren()) {
       Preconditions.checkNotNull(child, "child");
 
-      Preconditions.checkArgument(
-          getSchema().compatible(child.getSchema()),
-          "Child schema %s is incompatible with %s",
-          child.getSchema(),
-          getSchema());
+      Preconditions.checkArgument(getSchema().compatible(child.getSchema()), "Child schema %s is incompatible with %s",
+          child.getSchema(), getSchema());
       childrenWithData.add(child);
     }
   }
@@ -102,5 +100,16 @@ public final class UnionAll extends NAryOperator {
       return null;
     }
     return children[0].getSchema();
+  }
+
+  /*
+   * (non-Javadoc)
+   * 
+   * @see edu.washington.escience.myria.operator.Operator#sendEos()
+   */
+  @Override
+  protected void sendEos() throws DbException {
+    // TODO Auto-generated method stub
+
   }
 }

@@ -119,6 +119,19 @@ public class StatefulUserDefinedAggregator extends UserDefinedAggregator {
   }
 
   @Override
+  public void sendEos() throws DbException {
+    // send EOS for only emit evaluators
+    LOGGER.info("send eos called");
+    for (int index = 0; index < pyUDFEvaluators.size(); index++) {
+      pyUDFEvaluators.get(index).sendEos();
+    }
+    for (int index = 0; index < emitEvaluators.size(); index++) {
+      emitEvaluators.get(index).sendEos();
+    }
+
+  }
+
+  @Override
   public Schema getResultSchema() {
     return resultSchema;
   }

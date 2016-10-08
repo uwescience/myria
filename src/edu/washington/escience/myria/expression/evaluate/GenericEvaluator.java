@@ -47,6 +47,12 @@ public class GenericEvaluator extends Evaluator {
     super(expression, parameters);
   }
 
+  @Override
+  public void sendEos() throws DbException {
+    LOGGER.info("EOS called");
+    return;
+  }
+
   /**
    * Compiles the {@link #javaExpression}.
    *

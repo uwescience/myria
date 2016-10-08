@@ -26,7 +26,8 @@ public class CleanupFailureInjector extends UnaryOperator {
   private static final long serialVersionUID = 1L;
 
   @Override
-  protected final void init(final ImmutableMap<String, Object> initProperties) throws DbException {}
+  protected final void init(final ImmutableMap<String, Object> initProperties) throws DbException {
+  }
 
   @Override
   protected final void cleanup() throws DbException {
@@ -45,5 +46,16 @@ public class CleanupFailureInjector extends UnaryOperator {
       return null;
     }
     return child.getSchema();
+  }
+
+  /*
+   * (non-Javadoc)
+   * 
+   * @see edu.washington.escience.myria.operator.Operator#sendEos()
+   */
+  @Override
+  protected void sendEos() throws DbException {
+    // TODO Auto-generated method stub
+
   }
 }

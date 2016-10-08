@@ -18,7 +18,7 @@ import edu.washington.escience.myria.storage.TupleBatch;
 
 /**
  * Push a select query down into a JDBC based database and scan over the query result.
- * */
+ */
 public class DbQueryScan extends LeafOperator implements DbReader {
 
   /**
@@ -33,16 +33,16 @@ public class DbQueryScan extends LeafOperator implements DbReader {
 
   /**
    * Iterate over data from the JDBC database.
-   * */
+   */
   private transient Iterator<TupleBatch> tuples;
   /**
    * The result schema.
-   * */
+   */
   private final Schema outputSchema;
 
   /**
    * The SQL template.
-   * */
+   */
   private String baseSQL;
 
   /**
@@ -59,15 +59,14 @@ public class DbQueryScan extends LeafOperator implements DbReader {
   private static final long serialVersionUID = 1L;
 
   /** The logger for debug, trace, etc. messages in this class. */
-  private static final org.slf4j.Logger LOGGER =
-      org.slf4j.LoggerFactory.getLogger(DbQueryScan.class);
+  private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(DbQueryScan.class);
 
   /**
    * Constructor.
    *
    * @param baseSQL see the corresponding field.
    * @param outputSchema see the corresponding field.
-   * */
+   */
   public DbQueryScan(final String baseSQL, final Schema outputSchema) {
     this.baseSQL = Objects.requireNonNull(baseSQL);
     this.outputSchema = Objects.requireNonNull(outputSchema);
@@ -81,9 +80,8 @@ public class DbQueryScan extends LeafOperator implements DbReader {
    * @param connectionInfo see the corresponding field.
    * @param baseSQL see the corresponding field.
    * @param outputSchema see the corresponding field.
-   * */
-  public DbQueryScan(
-      final ConnectionInfo connectionInfo, final String baseSQL, final Schema outputSchema) {
+   */
+  public DbQueryScan(final ConnectionInfo connectionInfo, final String baseSQL, final Schema outputSchema) {
     this(baseSQL, outputSchema);
     this.connectionInfo = Objects.requireNonNull(connectionInfo);
   }
@@ -109,10 +107,7 @@ public class DbQueryScan extends LeafOperator implements DbReader {
    * @param relationKey the relation to be scanned.
    * @param outputSchema the Schema of the returned tuples.
    */
-  public DbQueryScan(
-      final ConnectionInfo connectionInfo,
-      final RelationKey relationKey,
-      final Schema outputSchema) {
+  public DbQueryScan(final ConnectionInfo connectionInfo, final RelationKey relationKey, final Schema outputSchema) {
     this(relationKey, outputSchema);
     this.connectionInfo = Objects.requireNonNull(connectionInfo);
   }
@@ -125,10 +120,7 @@ public class DbQueryScan extends LeafOperator implements DbReader {
    * @param sortedColumns the columns by which the tuples should be ordered by.
    * @param ascending true for columns that should be ordered ascending.
    */
-  public DbQueryScan(
-      final RelationKey relationKey,
-      final Schema outputSchema,
-      final int[] sortedColumns,
+  public DbQueryScan(final RelationKey relationKey, final Schema outputSchema, final int[] sortedColumns,
       final boolean[] ascending) {
     this.relationKey = Objects.requireNonNull(relationKey);
     this.outputSchema = Objects.requireNonNull(outputSchema);
@@ -146,12 +138,8 @@ public class DbQueryScan extends LeafOperator implements DbReader {
    * @param sortedColumns the columns by which the tuples should be ordered by.
    * @param ascending true for columns that should be ordered ascending.
    */
-  public DbQueryScan(
-      final ConnectionInfo connectionInfo,
-      final RelationKey relationKey,
-      final Schema outputSchema,
-      final int[] sortedColumns,
-      final boolean[] ascending) {
+  public DbQueryScan(final ConnectionInfo connectionInfo, final RelationKey relationKey, final Schema outputSchema,
+      final int[] sortedColumns, final boolean[] ascending) {
     this(relationKey, outputSchema, sortedColumns, ascending);
     Objects.requireNonNull(connectionInfo);
     this.connectionInfo = connectionInfo;
@@ -166,9 +154,8 @@ public class DbQueryScan extends LeafOperator implements DbReader {
   protected final TupleBatch fetchNextReady() throws DbException {
     Objects.requireNonNull(connectionInfo);
     if (tuples == null) {
-      tuples =
-          AccessMethod.of(connectionInfo.getDbms(), connectionInfo, true)
-              .tupleBatchIteratorFromQuery(baseSQL, outputSchema);
+      tuples = AccessMethod.of(connectionInfo.getDbms(), connectionInfo, true).tupleBatchIteratorFromQuery(baseSQL,
+          outputSchema);
     }
     if (tuples.hasNext()) {
       final TupleBatch tb = tuples.next();
@@ -192,8 +179,7 @@ public class DbQueryScan extends LeafOperator implements DbReader {
         throw new DbException("Unable to instantiate DbQueryScan: database system unknown");
       }
 
-      connectionInfo =
-          (ConnectionInfo) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_DATABASE_CONN_INFO);
+      connectionInfo = (ConnectionInfo) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_DATABASE_CONN_INFO);
       if (connectionInfo == null) {
         throw new DbException("Unable to instantiate DbQueryScan: connection information unknown");
       }
@@ -242,5 +228,16 @@ public class DbQueryScan extends LeafOperator implements DbReader {
       return ImmutableSet.of();
     }
     return ImmutableSet.of(relationKey);
+  }
+
+  /*
+   * (non-Javadoc)
+   * 
+   * @see edu.washington.escience.myria.operator.Operator#sendEos()
+   */
+  @Override
+  protected void sendEos() throws DbException {
+    // TODO Auto-generated method stub
+
   }
 }

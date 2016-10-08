@@ -22,7 +22,7 @@ public final class Filter extends UnaryOperator {
   private static final long serialVersionUID = 1L;
   /**
    * The operator.
-   * */
+   */
   private final Expression predicate;
 
   /**
@@ -73,8 +73,7 @@ public final class Filter extends UnaryOperator {
 
     Schema inputSchema = getChild().getSchema();
 
-    final ExpressionOperatorParameter parameters =
-        new ExpressionOperatorParameter(inputSchema, getNodeID());
+    final ExpressionOperatorParameter parameters = new ExpressionOperatorParameter(inputSchema, getNodeID());
 
     evaluator = new BooleanEvaluator(predicate, parameters);
     if (evaluator.needsCompiling()) {
@@ -89,5 +88,16 @@ public final class Filter extends UnaryOperator {
       return null;
     }
     return child.getSchema();
+  }
+
+  /*
+   * (non-Javadoc)
+   * 
+   * @see edu.washington.escience.myria.operator.Operator#sendEos()
+   */
+  @Override
+  protected void sendEos() throws DbException {
+    // TODO Auto-generated method stub
+
   }
 }

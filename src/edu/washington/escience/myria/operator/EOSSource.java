@@ -8,7 +8,7 @@ import edu.washington.escience.myria.storage.TupleBatch;
 
 /**
  * Emit an EOS directly and do nothing else.
- * */
+ */
 public class EOSSource extends LeafOperator {
 
   /**
@@ -17,10 +17,12 @@ public class EOSSource extends LeafOperator {
   private static final long serialVersionUID = 1L;
 
   @Override
-  protected void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {}
+  protected void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
+  }
 
   @Override
-  protected void cleanup() throws DbException {}
+  protected void cleanup() throws DbException {
+  }
 
   @Override
   protected final TupleBatch fetchNextReady() throws DbException {
@@ -31,5 +33,16 @@ public class EOSSource extends LeafOperator {
   @Override
   public final Schema generateSchema() {
     return Schema.EMPTY_SCHEMA;
+  }
+
+  /*
+   * (non-Javadoc)
+   * 
+   * @see edu.washington.escience.myria.operator.Operator#sendEos()
+   */
+  @Override
+  protected void sendEos() throws DbException {
+    // TODO Auto-generated method stub
+
   }
 }

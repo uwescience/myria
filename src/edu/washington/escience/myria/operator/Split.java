@@ -102,11 +102,8 @@ public final class Split extends UnaryOperator {
     final Schema inputSchema = child.getSchema();
     Preconditions.checkNotNull(inputSchema);
     final Type colType = inputSchema.getColumnType(splitColumnIndex);
-    Preconditions.checkState(
-        colType == Type.STRING_TYPE,
-        "Column to split at index %d (%s) must have type STRING_TYPE",
-        splitColumnIndex,
-        colType);
+    Preconditions.checkState(colType == Type.STRING_TYPE, "Column to split at index %d (%s) must have type STRING_TYPE",
+        splitColumnIndex, colType);
 
     outputBuffer = new TupleBatchBuffer(getSchema());
   }
@@ -118,5 +115,16 @@ public final class Split extends UnaryOperator {
     final String splitColumnName = inputSchema.getColumnNames().get(splitColumnIndex);
     final String splitResultsColumnName = splitColumnName + "_splits";
     return Schema.appendColumn(inputSchema, Type.STRING_TYPE, splitResultsColumnName);
+  }
+
+  /*
+   * (non-Javadoc)
+   * 
+   * @see edu.washington.escience.myria.operator.Operator#sendEos()
+   */
+  @Override
+  protected void sendEos() throws DbException {
+    // TODO Auto-generated method stub
+
   }
 }

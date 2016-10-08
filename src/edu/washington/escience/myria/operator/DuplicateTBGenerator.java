@@ -46,7 +46,8 @@ public class DuplicateTBGenerator extends LeafOperator {
   }
 
   @Override
-  protected final void cleanup() throws DbException {}
+  protected final void cleanup() throws DbException {
+  }
 
   @Override
   protected final TupleBatch fetchNextReady() throws DbException {
@@ -60,5 +61,16 @@ public class DuplicateTBGenerator extends LeafOperator {
   @Override
   public final Schema generateSchema() {
     return tb.getSchema();
+  }
+
+  /*
+   * (non-Javadoc)
+   * 
+   * @see edu.washington.escience.myria.operator.Operator#sendEos()
+   */
+  @Override
+  protected void sendEos() throws DbException {
+    // TODO Auto-generated method stub
+
   }
 }

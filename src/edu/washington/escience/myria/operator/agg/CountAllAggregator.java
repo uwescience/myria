@@ -59,4 +59,10 @@ public final class CountAllAggregator implements Aggregator {
   public void add(final List<TupleBatch> from, final Object state) throws DbException {
     throw new DbException(" method not implemented");
   }
+
+  @Override
+  public void sendEos() {
+    // do nothing!
+    return;
+  }
 }

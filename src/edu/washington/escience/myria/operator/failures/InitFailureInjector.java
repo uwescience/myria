@@ -15,7 +15,7 @@ public class InitFailureInjector extends UnaryOperator {
 
   /**
    * @param child the child operator.
-   * */
+   */
   public InitFailureInjector(final Operator child) {
     super(child);
   }
@@ -31,7 +31,8 @@ public class InitFailureInjector extends UnaryOperator {
   }
 
   @Override
-  protected final void cleanup() throws DbException {}
+  protected final void cleanup() throws DbException {
+  }
 
   @Override
   protected final TupleBatch fetchNextReady() throws DbException {
@@ -45,5 +46,16 @@ public class InitFailureInjector extends UnaryOperator {
       return null;
     }
     return child.getSchema();
+  }
+
+  /*
+   * (non-Javadoc)
+   * 
+   * @see edu.washington.escience.myria.operator.Operator#sendEos()
+   */
+  @Override
+  protected void sendEos() throws DbException {
+    // TODO Auto-generated method stub
+
   }
 }

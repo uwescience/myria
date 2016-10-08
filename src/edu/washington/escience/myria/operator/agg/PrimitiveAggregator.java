@@ -21,6 +21,9 @@ import edu.washington.escience.myria.storage.TupleBatch;
 @SuppressWarnings("checkstyle:visibilitymodifier")
 public abstract class PrimitiveAggregator implements Aggregator, Serializable {
 
+  /** logger for this class. */
+  private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(PrimitiveAggregator.class);
+
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
 
@@ -69,6 +72,13 @@ public abstract class PrimitiveAggregator implements Aggregator, Serializable {
    * Result schema. It's automatically generated according to the {@link #aggOps}.
    */
   private final Schema resultSchema;
+
+  @Override
+  public void sendEos() {
+    LOGGER.info("in send EOS");
+    // do nothing!
+    return;
+  }
 
   /**
    * Instantiate a PrimitiveAggregator that computes the specified aggregates.

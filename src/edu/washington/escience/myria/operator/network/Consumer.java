@@ -32,7 +32,7 @@ import edu.washington.escience.myria.util.MyriaArrayUtils;
 /**
  * A Consumer is the counterpart of a producer. It collects data from Producers through IPC. A Consumer can have a
  * single Producer data source or multiple Producer data sources.
- * */
+ */
 public class Consumer extends LeafOperator {
 
   /** The logger for this class. */
@@ -48,7 +48,7 @@ public class Consumer extends LeafOperator {
 
   /**
    * The operatorID of this Consumer.
-   * */
+   */
   private final ExchangePairID operatorID;
 
   /**
@@ -57,24 +57,24 @@ public class Consumer extends LeafOperator {
   private Schema schema;
   /**
    * Recording the worker EOS status.
-   * */
+   */
   private transient BitSet workerEOS;
   /**
    * Recording the worker EOI status.
-   * */
+   */
   private transient BitSet workerEOI;
   /**
    * workerID to index.
-   * */
+   */
   private transient IntIntHashMap workerIdToIndex;
   /**
    * From which workers to receive data.
-   * */
+   */
   private final ImmutableSet<Integer> sourceWorkers;
 
   /**
    * if current query execution is in non-blocking mode.
-   * */
+   */
   private transient boolean nonBlockingExecution;
 
   /**
@@ -103,21 +103,17 @@ public class Consumer extends LeafOperator {
    * @param schema output schema.
    * @param operatorID {@link Consumer#operatorID}
    * @param workerIDs {@link Consumer#sourceWorkers}
-   * */
+   */
   public Consumer(final Schema schema, final ExchangePairID operatorID, final int[] workerIDs) {
-    this(
-        schema,
-        operatorID,
-        MyriaArrayUtils.checkSet(org.apache.commons.lang3.ArrayUtils.toObject(workerIDs)));
+    this(schema, operatorID, MyriaArrayUtils.checkSet(org.apache.commons.lang3.ArrayUtils.toObject(workerIDs)));
   }
 
   /**
    * @param schema output schema.
    * @param operatorID {@link Consumer#operatorID}
    * @param workerIDs {@link Consumer#sourceWorkers}
-   * */
-  public Consumer(
-      final Schema schema, final ExchangePairID operatorID, final Set<Integer> workerIDs) {
+   */
+  public Consumer(final Schema schema, final ExchangePairID operatorID, final Set<Integer> workerIDs) {
     this.operatorID = operatorID;
     this.schema = schema;
     sourceWorkers = ImmutableSet.copyOf(workerIDs);
@@ -127,7 +123,7 @@ public class Consumer extends LeafOperator {
   /**
    * @param schema output schema.
    * @param operatorID {@link Consumer#operatorID}
-   * */
+   */
   public Consumer(final Schema schema, final ExchangePairID operatorID) {
     this(schema, operatorID, ImmutableSet.of(IPCConnectionPool.SELF_IPC_ID));
   }
@@ -151,12 +147,10 @@ public class Consumer extends LeafOperator {
       workerIdToIndex.put(sourceWorker, idx++);
     }
 
-    taskResourceManager =
-        (LocalFragmentResourceManager)
-            execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_FRAGMENT_RESOURCE_MANAGER);
-    nonBlockingExecution =
-        (QueryExecutionMode) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_EXECUTION_MODE)
-            == QueryExecutionMode.NON_BLOCKING;
+    taskResourceManager = (LocalFragmentResourceManager) execEnvVars.get(
+        MyriaConstants.EXEC_ENV_VAR_FRAGMENT_RESOURCE_MANAGER);
+    nonBlockingExecution = (QueryExecutionMode) execEnvVars.get(
+        MyriaConstants.EXEC_ENV_VAR_EXECUTION_MODE) == QueryExecutionMode.NON_BLOCKING;
 
     inputBuffer = taskResourceManager.getInputBuffer(this);
   }
@@ -218,8 +212,7 @@ public class Consumer extends LeafOperator {
     if (taskResourceManager.getFragment().getLocalSubQuery().getFTMode().equals(FTMode.ABANDON)) {
       Set<Integer> expectingWorkers = new HashSet<Integer>();
       expectingWorkers.addAll(sourceWorkers);
-      expectingWorkers.removeAll(
-          taskResourceManager.getFragment().getLocalSubQuery().getMissingWorkers());
+      expectingWorkers.removeAll(taskResourceManager.getFragment().getLocalSubQuery().getMissingWorkers());
       numExpecting = expectingWorkers.size();
     }
 
@@ -238,7 +231,7 @@ public class Consumer extends LeafOperator {
 
   /**
    * @return my IPC operatorID.
-   * */
+   */
   public final ExchangePairID getOperatorID() {
     return operatorID;
   }
@@ -246,7 +239,7 @@ public class Consumer extends LeafOperator {
   /**
    * @param myWorkerID for parsing self-references.
    * @return source worker IDs with self-reference parsed.
-   * */
+   */
   public final int[] getSourceWorkers(final int myWorkerID) {
     int[] result = new int[sourceWorkers.size()];
     int idx = 0;
@@ -263,7 +256,7 @@ public class Consumer extends LeafOperator {
 
   /**
    * @return my input buffer.
-   * */
+   */
   public final StreamInputBuffer<TupleBatch> getInputBuffer() {
     return inputBuffer;
   }
@@ -291,7 +284,7 @@ public class Consumer extends LeafOperator {
 
   /**
    * @return if there's any message buffered.
-   * */
+   */
   public final boolean hasNext() {
     return !inputBuffer.isEmpty();
   }
@@ -313,8 +306,19 @@ public class Consumer extends LeafOperator {
 
   /**
    * @param schema the schema to set
-   * */
+   */
   public final void setSchema(final Schema schema) {
     this.schema = schema;
+  }
+
+  /*
+   * (non-Javadoc)
+   * 
+   * @see edu.washington.escience.myria.operator.Operator#sendEos()
+   */
+  @Override
+  protected void sendEos() throws DbException {
+    // TODO Auto-generated method stub
+
   }
 }

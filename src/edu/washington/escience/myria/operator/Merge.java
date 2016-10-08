@@ -67,9 +67,7 @@ public final class Merge extends NAryOperator {
       Preconditions.checkArgument(leftTb.numTuples() > leftPointer);
       Preconditions.checkArgument(rightTb.numTuples() > rightPointer);
       for (int columnIndex = 0; columnIndex < sortedColumns.length; columnIndex++) {
-        int compared =
-            TupleUtils.cellCompare(
-                leftTb, columnIndex, leftPointer, rightTb, columnIndex, rightPointer);
+        int compared = TupleUtils.cellCompare(leftTb, columnIndex, leftPointer, rightTb, columnIndex, rightPointer);
         if (compared != 0) {
           if (ascending[columnIndex]) {
             return compared;
@@ -226,5 +224,16 @@ public final class Merge extends NAryOperator {
   void setSortedColumns(final int[] sortedColumns, final boolean[] ascending) {
     this.sortedColumns = sortedColumns;
     this.ascending = ascending;
+  }
+
+  /*
+   * (non-Javadoc)
+   * 
+   * @see edu.washington.escience.myria.operator.Operator#sendEos()
+   */
+  @Override
+  protected void sendEos() throws DbException {
+    // TODO Auto-generated method stub
+
   }
 }

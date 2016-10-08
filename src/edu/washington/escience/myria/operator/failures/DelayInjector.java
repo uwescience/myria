@@ -12,12 +12,12 @@ import edu.washington.escience.myria.storage.TupleBatch;
 
 /**
  * Inject delay in processing each TupleBatch.
- * */
+ */
 public class DelayInjector extends UnaryOperator {
 
   /**
    * Delay in milliseconds.
-   * */
+   */
   private final long delayInMS;
 
   /** if delay in fetchNextReady() for only one time. */
@@ -30,7 +30,7 @@ public class DelayInjector extends UnaryOperator {
    * @param delay the delay
    * @param unit time unit of the delay
    * @param child the child.
-   * */
+   */
   public DelayInjector(final long delay, final TimeUnit unit, final Operator child) {
     this(delay, unit, child, false);
   }
@@ -40,9 +40,8 @@ public class DelayInjector extends UnaryOperator {
    * @param unit time unit of the delay
    * @param child the child.
    * @param onetime if delay only at the first time of fetchNextReady.
-   * */
-  public DelayInjector(
-      final long delay, final TimeUnit unit, final Operator child, final boolean onetime) {
+   */
+  public DelayInjector(final long delay, final TimeUnit unit, final Operator child, final boolean onetime) {
     super(child);
     this.onetime = onetime;
     delayInMS = unit.toMillis(delay);
@@ -54,10 +53,12 @@ public class DelayInjector extends UnaryOperator {
   private static final long serialVersionUID = 1L;
 
   @Override
-  protected final void init(final ImmutableMap<String, Object> initProperties) throws DbException {}
+  protected final void init(final ImmutableMap<String, Object> initProperties) throws DbException {
+  }
 
   @Override
-  protected final void cleanup() throws DbException {}
+  protected final void cleanup() throws DbException {
+  }
 
   @Override
   protected final TupleBatch fetchNextReady() throws DbException {
@@ -80,5 +81,16 @@ public class DelayInjector extends UnaryOperator {
       return null;
     }
     return child.getSchema();
+  }
+
+  /*
+   * (non-Javadoc)
+   * 
+   * @see edu.washington.escience.myria.operator.Operator#sendEos()
+   */
+  @Override
+  protected void sendEos() throws DbException {
+    // TODO Auto-generated method stub
+
   }
 }

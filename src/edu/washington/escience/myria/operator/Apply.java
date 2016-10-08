@@ -78,6 +78,13 @@ public class Apply extends UnaryOperator {
   @Override
   protected TupleBatch fetchNextReady() throws DbException, InvocationTargetException, IOException {
     Operator child = getChild();
+    if (child.eos()) {
+      for (GenericEvaluator evaluator : emitEvaluators) {
+        LOGGER.info("calling send EOS for evaluator");
+        evaluator.sendEos();
+
+      }
+    }
 
     if (child.eoi() || child.eos()) {
       return null;
@@ -150,5 +157,20 @@ public class Apply extends UnaryOperator {
       namesBuilder.add(expr.getOutputName());
     }
     return new Schema(typesBuilder.build(), namesBuilder.build());
+  }
+
+  /*
+   * (non-Javadoc)
+   * 
+   * @see edu.washington.escience.myria.operator.Operator#sendEos()
+   */
+  @Override
+  protected void sendEos() throws DbException {
+    LOGGER.info("send EOS called");
+    for (int i = 0; i < emitEvaluators.size(); i++) {
+      emitEvaluators.get(i).sendEos();
+    }
+    // TODO Auto-generated method stub
+
   }
 }

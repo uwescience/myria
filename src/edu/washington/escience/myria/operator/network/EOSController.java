@@ -30,11 +30,10 @@ public class EOSController extends Producer {
   private static final long serialVersionUID = 1L;
 
   /** The logger for this class. */
-  private static final org.slf4j.Logger LOGGER =
-      org.slf4j.LoggerFactory.getLogger(EOSController.class);
+  private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(EOSController.class);
   /**
    * Recording the number of EOI received from each controlled {@link IDBController}.
-   * */
+   */
   private final int[][] numEOI;
   /**
    *
@@ -43,11 +42,11 @@ public class EOSController extends Producer {
 
   /**
    * If the number of empty reports at a time stamp is the same as this value, the iteration is done.
-   * */
+   */
   private final int eosZeroColValue;
   /**
    * Mapping from workerID to index.
-   * */
+   */
   private final ImmutableMap<Integer, Integer> workerIdToIndex;
 
   // /**
@@ -62,12 +61,11 @@ public class EOSController extends Producer {
    * @param child The child are responsible for receiving EOI report from all controlled IDBControllers.
    * @param workerIDs the workers where the IDBController operators resides
    * @param idbOpIDs the IDB operatorIDs in each Worker
-   * */
-  public EOSController(
-      final UnionAll child, final ExchangePairID[] idbOpIDs, final int[] workerIDs) {
+   */
+  public EOSController(final UnionAll child, final ExchangePairID[] idbOpIDs, final int[] workerIDs) {
     super(null, idbOpIDs, workerIDs, false);
     if (child != null) {
-      setChildren(new Operator[] {child});
+      setChildren(new Operator[] { child });
     }
     numEOI = new int[idbOpIDs.length][workerIDs.length];
     zeroCol = new ArrayList<Integer>();
@@ -89,20 +87,14 @@ public class EOSController extends Producer {
     }
 
     int numExpecting = eosZeroColValue;
-    if (getTaskResourceManager()
-        .getFragment()
-        .getLocalSubQuery()
-        .getFTMode()
-        .equals(FTMode.ABANDON)) {
-      Set<Integer> missingWorkers =
-          getTaskResourceManager().getFragment().getLocalSubQuery().getMissingWorkers();
+    if (getTaskResourceManager().getFragment().getLocalSubQuery().getFTMode().equals(FTMode.ABANDON)) {
+      Set<Integer> missingWorkers = getTaskResourceManager().getFragment().getLocalSubQuery().getMissingWorkers();
       for (Integer id : missingWorkers) {
         if (workerIdToIndex.containsKey(id)) {
           int workerIdx = workerIdToIndex.get(id);
           for (int[] numWorkerReportedEOI : numEOI) {
             /* for this IDB, the array of the number of EOIs reported by each worker. */
-            if (numWorkerReportedEOI[workerIdx] != -1
-                && numWorkerReportedEOI[workerIdx] < zeroCol.size()) {
+            if (numWorkerReportedEOI[workerIdx] != -1 && numWorkerReportedEOI[workerIdx] < zeroCol.size()) {
               int tmp = zeroCol.get(numWorkerReportedEOI[workerIdx]);
               if (tmp <= 0) {
                 /* no effect */
@@ -157,18 +149,31 @@ public class EOSController extends Producer {
 
   /**
    * EOS report schema.
-   * */
+   */
   public static final Schema EOS_REPORT_SCHEMA = Schema.EMPTY_SCHEMA;
 
   // TODO add Root operator init and cleanup.
   /**
    * If the EOS messages are sent.
-   * */
+   */
   private volatile boolean isEOSSent = false;
 
   @Override
-  protected void childEOS() throws DbException {}
+  protected void childEOS() throws DbException {
+  }
 
   @Override
-  protected void childEOI() throws DbException {}
+  protected void childEOI() throws DbException {
+  }
+
+  /*
+   * (non-Javadoc)
+   * 
+   * @see edu.washington.escience.myria.operator.Operator#sendEos()
+   */
+  @Override
+  protected void sendEos() throws DbException {
+    // TODO Auto-generated method stub
+
+  }
 }

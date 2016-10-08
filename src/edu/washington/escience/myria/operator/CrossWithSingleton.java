@@ -3,6 +3,7 @@ package edu.washington.escience.myria.operator;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 
+import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.column.Column;
 import edu.washington.escience.myria.column.ConstantValueColumn;
@@ -44,20 +45,15 @@ public class CrossWithSingleton extends BinaryOperator {
         }
         return null;
       }
-      Preconditions.checkState(
-          rightTuple == null,
-          "Expecting a singleton right child, but received a batch with %s additional tuples",
-          tb.numTuples());
-      Preconditions.checkState(
-          tb.numTuples() == 1,
-          "Expecting a singleton right child, instead received a batch with %s tuples",
-          tb.numTuples());
+      Preconditions.checkState(rightTuple == null,
+          "Expecting a singleton right child, but received a batch with %s additional tuples", tb.numTuples());
+      Preconditions.checkState(tb.numTuples() == 1,
+          "Expecting a singleton right child, instead received a batch with %s tuples", tb.numTuples());
       rightTuple = tb;
     }
 
     /* Verify that the right child did produce a tuple. */
-    Preconditions.checkState(
-        rightTuple != null,
+    Preconditions.checkState(rightTuple != null,
         "Expecting a singleton right child, but right child is EOS and no tuples received.");
 
     Operator left = getLeft();
@@ -96,5 +92,16 @@ public class CrossWithSingleton extends BinaryOperator {
     }
 
     return Schema.merge(leftSchema, rightSchema);
+  }
+
+  /*
+   * (non-Javadoc)
+   * 
+   * @see edu.washington.escience.myria.operator.Operator#sendEos()
+   */
+  @Override
+  protected void sendEos() throws DbException {
+    // TODO Auto-generated method stub
+
   }
 }

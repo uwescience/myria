@@ -100,8 +100,7 @@ public final class SymmetricHashCountingJoin extends BinaryOperator {
 
     @Override
     public void value(final int index) {
-      if (TupleUtils.tupleEquals(
-          inputTB, inputCmpColumns, row, joinAgainstHashTable, otherCmpColumns, index)) {
+      if (TupleUtils.tupleEquals(inputTB, inputCmpColumns, row, joinAgainstHashTable, otherCmpColumns, index)) {
         ans += occuredTimesOnJoinAgainstChild.get(index);
       }
     }
@@ -116,10 +115,7 @@ public final class SymmetricHashCountingJoin extends BinaryOperator {
    * @param compareIndx2 the columns of the right child to be compared with the left. Order matters.
    * @throw IllegalArgumentException if there are duplicated column names from the children.
    */
-  public SymmetricHashCountingJoin(
-      final Operator left,
-      final Operator right,
-      final int[] compareIndx1,
+  public SymmetricHashCountingJoin(final Operator left, final Operator right, final int[] compareIndx1,
       final int[] compareIndx2) {
     this("count", left, right, compareIndx1, compareIndx2);
   }
@@ -135,12 +131,8 @@ public final class SymmetricHashCountingJoin extends BinaryOperator {
    * @throw IllegalArgumentException if there are duplicated column names in <tt>outputSchema</tt>, or if
    *        <tt>outputSchema</tt> does not have the correct number of columns and column types.
    */
-  public SymmetricHashCountingJoin(
-      final String outputColumnName,
-      final Operator left,
-      final Operator right,
-      final int[] compareIndx1,
-      final int[] compareIndx2) {
+  public SymmetricHashCountingJoin(final String outputColumnName, final Operator left, final Operator right,
+      final int[] compareIndx1, final int[] compareIndx2) {
     super(left, right);
     leftCompareIndx = compareIndx1;
     rightCompareIndx = compareIndx2;
@@ -368,14 +360,8 @@ public final class SymmetricHashCountingJoin extends BinaryOperator {
 
       if (hashTable1Local != null) {
         // only build hash table on two sides if none of the children is EOS
-        updateHashTableAndOccureTimes(
-            tb,
-            row,
-            cntHashCode,
-            hashTable1Local,
-            hashTable1IndicesLocal,
-            doCountingJoin.inputCmpColumns,
-            ownOccuredTimes);
+        updateHashTableAndOccureTimes(tb, row, cntHashCode, hashTable1Local, hashTable1IndicesLocal,
+            doCountingJoin.inputCmpColumns, ownOccuredTimes);
       }
     }
   }
@@ -391,14 +377,9 @@ public final class SymmetricHashCountingJoin extends BinaryOperator {
       int rightIndex = rightCompareIndx[i];
       Type leftType = leftSchema.getColumnType(leftIndex);
       Type rightType = rightSchema.getColumnType(rightIndex);
-      Preconditions.checkState(
-          leftType == rightType,
-          "column types do not match for join at index %s: left column type %s [%s] != right column type %s [%s]",
-          i,
-          leftIndex,
-          leftType,
-          rightIndex,
-          rightType);
+      Preconditions.checkState(leftType == rightType,
+          "column types do not match for join at index %s: left column type %s [%s] != right column type %s [%s]", i,
+          leftIndex, leftType, rightIndex, rightType);
     }
 
     return Schema.of(ImmutableList.of(Type.LONG_TYPE), ImmutableList.of(columnName));
@@ -413,14 +394,9 @@ public final class SymmetricHashCountingJoin extends BinaryOperator {
    * @param compareColumns compareColumns of input tuple
    * @param occuredTimes occuredTimes array to be updated
    */
-  private void updateHashTableAndOccureTimes(
-      final TupleBatch tb,
-      final int row,
-      final int hashCode,
-      final MutableTupleBuffer hashTable,
-      final IntObjectHashMap<IntArrayList> hashTableIndices,
-      final int[] compareColumns,
-      final IntArrayList occuredTimes) {
+  private void updateHashTableAndOccureTimes(final TupleBatch tb, final int row, final int hashCode,
+      final MutableTupleBuffer hashTable, final IntObjectHashMap<IntArrayList> hashTableIndices,
+      final int[] compareColumns, final IntArrayList occuredTimes) {
 
     /* get the index of the tuple's hash code corresponding to */
     final int nextIndex = hashTable.numTuples();
@@ -453,5 +429,16 @@ public final class SymmetricHashCountingJoin extends BinaryOperator {
       }
       occuredTimes.add(1);
     }
+  }
+
+  /*
+   * (non-Javadoc)
+   * 
+   * @see edu.washington.escience.myria.operator.Operator#sendEos()
+   */
+  @Override
+  protected void sendEos() throws DbException {
+    // TODO Auto-generated method stub
+
   }
 }

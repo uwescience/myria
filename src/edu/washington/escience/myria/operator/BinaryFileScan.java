@@ -47,8 +47,7 @@ public class BinaryFileScan extends LeafOperator {
    * @param source The source of the binary input data.
    * @param isLittleEndian The flag that indicates the endianess of the binary file.
    */
-  public BinaryFileScan(
-      final Schema schema, final DataSource source, final boolean isLittleEndian) {
+  public BinaryFileScan(final Schema schema, final DataSource source, final boolean isLittleEndian) {
     this.schema = Objects.requireNonNull(schema, "schema");
     this.source = Objects.requireNonNull(source, "source");
     this.isLittleEndian = isLittleEndian;
@@ -137,5 +136,16 @@ public class BinaryFileScan extends LeafOperator {
   @Override
   protected Schema generateSchema() {
     return schema;
+  }
+
+  /*
+   * (non-Javadoc)
+   * 
+   * @see edu.washington.escience.myria.operator.Operator#sendEos()
+   */
+  @Override
+  protected void sendEos() throws DbException {
+    // TODO Auto-generated method stub
+
   }
 }

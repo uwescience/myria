@@ -21,7 +21,7 @@ public class CatalogQueryScan extends LeafOperator {
 
   /**
    * The result schema.
-   * */
+   */
   private final Schema outputSchema;
 
   /**
@@ -38,8 +38,7 @@ public class CatalogQueryScan extends LeafOperator {
   private static final long serialVersionUID = 1L;
 
   /** The logger for debug, trace, etc. messages in this class. */
-  private static final org.slf4j.Logger LOGGER =
-      org.slf4j.LoggerFactory.getLogger(CatalogQueryScan.class);
+  private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(CatalogQueryScan.class);
 
   /**
    * Constructor.
@@ -47,11 +46,9 @@ public class CatalogQueryScan extends LeafOperator {
    * @param sql see the corresponding field.
    * @param outputSchema see the corresponding field.
    * @param catalog see the corresponding field.
-   * */
-  public CatalogQueryScan(
-      final String sql, final Schema outputSchema, final MasterCatalog catalog) {
-    this.sql = Objects.requireNonNull(sql);
-    ;
+   */
+  public CatalogQueryScan(final String sql, final Schema outputSchema, final MasterCatalog catalog) {
+    this.sql = Objects.requireNonNull(sql);;
     this.outputSchema = Objects.requireNonNull(outputSchema);
     this.catalog = Objects.requireNonNull(catalog);
   }
@@ -82,5 +79,16 @@ public class CatalogQueryScan extends LeafOperator {
   @Override
   public final Schema generateSchema() {
     return outputSchema;
+  }
+
+  /*
+   * (non-Javadoc)
+   * 
+   * @see edu.washington.escience.myria.operator.Operator#sendEos()
+   */
+  @Override
+  protected void sendEos() throws DbException {
+    // TODO Auto-generated method stub
+
   }
 }

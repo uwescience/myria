@@ -132,6 +132,14 @@ public class SingleGroupByAggregate extends UnaryOperator {
     resultBuffer = null;
   }
 
+  @Override
+  public void sendEos() throws DbException {
+    for (Aggregator aggregator : aggregators) {
+      aggregator.sendEos();
+    }
+
+  }
+
   /**
    * Utility function to fetch or create/initialize the aggregation state for the group corresponding to the data in the
    * specified table and row.
@@ -587,6 +595,7 @@ public class SingleGroupByAggregate extends UnaryOperator {
 
     if (child.eos()) {
       generateResult(resultBuffer);
+
     }
     return resultBuffer.popAny();
   }

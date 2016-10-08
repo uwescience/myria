@@ -21,7 +21,7 @@ import edu.washington.escience.myria.storage.TupleBatch;
  * It uses the SQL statement: select xxx, yyy, zzz,... from ttt where column in (a,b,c,d,e....).
  *
  * Note that the result of the child must be a set. Otherwise the result may have duplicates.
- * */
+ */
 public class SQLiteSetFilter extends UnaryOperator {
 
   /**
@@ -31,22 +31,22 @@ public class SQLiteSetFilter extends UnaryOperator {
 
   /**
    * SQL template.
-   * */
+   */
   private final String sqlTemplate;
 
   /**
    * Output schema.
-   * */
+   */
   private final Schema outputSchema;
 
   /**
    * Iterator over a resultset of a SQLite query.
-   * */
+   */
   private transient Iterator<TupleBatch> tuples;
 
   /**
    * SQLite connection information.
-   * */
+   */
   private transient SQLiteInfo sqliteInfo;
 
   /**
@@ -55,21 +55,13 @@ public class SQLiteSetFilter extends UnaryOperator {
    * @param setColumnName the column to compare against.
    * @param resultColumnNames the columns to put into the result.
    * @param outputSchema output schema.
-   * */
-  public SQLiteSetFilter(
-      final Operator child,
-      final String tableName,
-      final String setColumnName,
-      final String[] resultColumnNames,
-      final Schema outputSchema) {
+   */
+  public SQLiteSetFilter(final Operator child, final String tableName, final String setColumnName,
+      final String[] resultColumnNames, final Schema outputSchema) {
     super(child);
     Preconditions.checkArgument(child.getSchema().numColumns() == 1);
-    sqlTemplate =
-        String.format(
-            "select %s from %s where %s in ( ",
-            StringUtils.join(resultColumnNames, ","),
-            tableName,
-            setColumnName);
+    sqlTemplate = String.format("select %s from %s where %s in ( ", StringUtils.join(resultColumnNames, ","), tableName,
+        setColumnName);
     this.outputSchema = outputSchema;
   }
 
@@ -116,9 +108,8 @@ public class SQLiteSetFilter extends UnaryOperator {
         }
         setValues.add(v);
       }
-      tuples =
-          SQLiteAccessMethod.tupleBatchIteratorFromQuery(
-              sqliteInfo, sqlTemplate + StringUtils.join(setValues, ",") + ")", outputSchema);
+      tuples = SQLiteAccessMethod.tupleBatchIteratorFromQuery(sqliteInfo, sqlTemplate + StringUtils.join(setValues, ",")
+          + ")", outputSchema);
       if (tuples.hasNext()) {
         return tuples.next();
       }
@@ -132,5 +123,16 @@ public class SQLiteSetFilter extends UnaryOperator {
   @Override
   protected final Schema generateSchema() {
     return outputSchema;
+  }
+
+  /*
+   * (non-Javadoc)
+   * 
+   * @see edu.washington.escience.myria.operator.Operator#sendEos()
+   */
+  @Override
+  protected void sendEos() throws DbException {
+    // TODO Auto-generated method stub
+
   }
 }

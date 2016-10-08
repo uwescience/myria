@@ -26,7 +26,7 @@ public final class TupleSource extends LeafOperator {
   /**
    * the current TupleBatch index of this TupleSource. Does not remove the TupleBatches in execution so that it can
    * rewinded.
-   * */
+   */
   private int index;
   /** The Schema of the tuples that this operator serves. */
   private Schema schema;
@@ -69,14 +69,12 @@ public final class TupleSource extends LeafOperator {
   public TupleSource(final List<TupleBatch> data, final Schema schema) {
     this.data = Objects.requireNonNull(data);
     if (data.size() == 0) {
-      this.schema =
-          Objects.requireNonNull(
-              schema, "either data.get(0) must be non-null, or schema must be supplied");
+      this.schema = Objects.requireNonNull(schema, "either data.get(0) must be non-null, or schema must be supplied");
     } else {
       this.schema = data.get(0).getSchema();
       if (schema != null) {
-        Preconditions.checkArgument(
-            this.schema.equals(schema), "supplied schema does not match the schema in data.get(0)");
+        Preconditions.checkArgument(this.schema.equals(schema),
+            "supplied schema does not match the schema in data.get(0)");
       }
     }
   }
@@ -114,5 +112,16 @@ public final class TupleSource extends LeafOperator {
   @Override
   protected void checkEOSAndEOI() {
     // do nothing since already done in fetchNextReady()
+  }
+
+  /*
+   * (non-Javadoc)
+   * 
+   * @see edu.washington.escience.myria.operator.Operator#sendEos()
+   */
+  @Override
+  protected void sendEos() throws DbException {
+    // TODO Auto-generated method stub
+
   }
 }

@@ -7,6 +7,7 @@ import javax.annotation.Nullable;
 
 import com.google.common.collect.ImmutableMap;
 
+import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleUtils;
@@ -91,9 +92,8 @@ public final class OrderedDupElim extends UnaryOperator {
 
     BitSet output = new BitSet(tb.numTuples());
     for (int row = 0; row < tb.numTuples(); ++row) {
-      if (lastTupleBatch == null
-          || !TupleUtils.tupleEquals(
-              tb, invSortColumns, row, lastTupleBatch, invSortColumns, lastTupleRow)) {
+      if (lastTupleBatch == null || !TupleUtils.tupleEquals(tb, invSortColumns, row, lastTupleBatch, invSortColumns,
+          lastTupleRow)) {
         output.set(row);
         lastTupleBatch = tb;
         lastTupleRow = row;
@@ -110,5 +110,16 @@ public final class OrderedDupElim extends UnaryOperator {
       return null;
     }
     return child.getSchema();
+  }
+
+  /*
+   * (non-Javadoc)
+   * 
+   * @see edu.washington.escience.myria.operator.Operator#sendEos()
+   */
+  @Override
+  protected void sendEos() throws DbException {
+    // TODO Auto-generated method stub
+
   }
 }

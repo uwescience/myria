@@ -1,10 +1,10 @@
 package edu.washington.escience.myria.operator;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.SortedMap;
 import java.util.TreeMap;
-import java.util.Map;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
@@ -19,24 +19,15 @@ import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.util.SamplingType;
 
 /**
- * Given the sizes of each worker, computes a distribution of how much each
- * worker should sample.
+ * Given the sizes of each worker, computes a distribution of how much each worker should sample.
  */
 public class SamplingDistribution extends UnaryOperator {
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
 
   /** The output schema. */
-  private static final Schema SCHEMA =
-      Schema.ofFields(
-          "WorkerID",
-          Type.INT_TYPE,
-          "StreamSize",
-          Type.INT_TYPE,
-          "SampleSize",
-          Type.INT_TYPE,
-          "SampleType",
-          Type.STRING_TYPE);
+  private static final Schema SCHEMA = Schema.ofFields("WorkerID", Type.INT_TYPE, "StreamSize", Type.INT_TYPE,
+      "SampleSize", Type.INT_TYPE, "SampleType", Type.STRING_TYPE);
 
   /** Total number of tuples to sample. */
   private int sampleSize = 0;
@@ -51,7 +42,7 @@ public class SamplingDistribution extends UnaryOperator {
   private final SamplingType sampleType;
 
   /** Random generator used for creating the distribution. */
-  private Random rand;
+  private final Random rand;
 
   /** Maps (worker_i) --> (sampling info for worker_i) */
   SortedMap<Integer, WorkerInfo> workerInfo = new TreeMap<>();
@@ -59,7 +50,7 @@ public class SamplingDistribution extends UnaryOperator {
   /** Total number of tuples across all workers. */
   int totalTupleCount = 0;
 
-  private SamplingDistribution(Operator child, SamplingType sampleType, Long randomSeed) {
+  private SamplingDistribution(final Operator child, final SamplingType sampleType, final Long randomSeed) {
     super(child);
     this.sampleType = sampleType;
     rand = new Random();
@@ -71,46 +62,33 @@ public class SamplingDistribution extends UnaryOperator {
   /**
    * Instantiate a SamplingDistribution operator using a specific sample size.
    *
-   * @param sampleSize
-   *          total samples to create a distribution for.
-   * @param sampleType
-   *          the type of sampling distribution to create
-   * @param child
-   *          extracts (WorkerID, PartitionSize, StreamSize) information from
-   *          this child.
-   * @param randomSeed
-   *          value to seed the random generator with. null if no specified seed
+   * @param sampleSize total samples to create a distribution for.
+   * @param sampleType the type of sampling distribution to create
+   * @param child extracts (WorkerID, PartitionSize, StreamSize) information from this child.
+   * @param randomSeed value to seed the random generator with. null if no specified seed
    */
-  public SamplingDistribution(
-      Operator child, int sampleSize, SamplingType sampleType, Long randomSeed) {
+  public SamplingDistribution(final Operator child, final int sampleSize, final SamplingType sampleType,
+      final Long randomSeed) {
     this(child, sampleType, randomSeed);
     Preconditions.checkArgument(sampleSize >= 0, "Sample Size must be >= 0: %s", sampleSize);
     this.sampleSize = sampleSize;
   }
 
   /**
-   * Instantiate a SamplingDistribution operator using a percentage of total
-   * tuples.
+   * Instantiate a SamplingDistribution operator using a percentage of total tuples.
    *
-   * @param samplePercentage
-   *          percentage of total samples to create a distribution for.
-   * @param sampleType
-   *          the type of sampling distribution to create
-   * @param child
-   *          extracts (WorkerID, PartitionSize, StreamSize) information from
-   *          this child.
-   * @param randomSeed
-   *          value to seed the random generator with. null if no specified seed
+   * @param samplePercentage percentage of total samples to create a distribution for.
+   * @param sampleType the type of sampling distribution to create
+   * @param child extracts (WorkerID, PartitionSize, StreamSize) information from this child.
+   * @param randomSeed value to seed the random generator with. null if no specified seed
    */
-  public SamplingDistribution(
-      Operator child, float samplePercentage, SamplingType sampleType, Long randomSeed) {
+  public SamplingDistribution(final Operator child, final float samplePercentage, final SamplingType sampleType,
+      final Long randomSeed) {
     this(child, sampleType, randomSeed);
-    this.isPercentageSample = true;
+    isPercentageSample = true;
     this.samplePercentage = samplePercentage;
-    Preconditions.checkArgument(
-        samplePercentage >= 0 && samplePercentage <= 100,
-        "Sample Percentage must be >= 0 && <= 100: %s",
-        samplePercentage);
+    Preconditions.checkArgument(samplePercentage >= 0 && samplePercentage <= 100,
+        "Sample Percentage must be >= 0 && <= 100: %s", samplePercentage);
   }
 
   @Override
@@ -132,11 +110,8 @@ public class SamplingDistribution extends UnaryOperator {
     if (isPercentageSample) {
       sampleSize = Math.round(totalTupleCount * (samplePercentage / 100));
     }
-    Preconditions.checkState(
-        sampleSize >= 0 && sampleSize <= totalTupleCount,
-        "Cannot extract %s samples from a population of size %s",
-        sampleSize,
-        totalTupleCount);
+    Preconditions.checkState(sampleSize >= 0 && sampleSize <= totalTupleCount,
+        "Cannot extract %s samples from a population of size %s", sampleSize, totalTupleCount);
 
     // Generate a sampling distribution across the workers.
     if (sampleType == SamplingType.WithReplacement) {
@@ -165,7 +140,7 @@ public class SamplingDistribution extends UnaryOperator {
   }
 
   /** Helper function to extract worker information from a tuple batch. */
-  private void extractWorkerInfo(TupleBatch tb) throws DbException {
+  private void extractWorkerInfo(final TupleBatch tb) throws DbException {
     Type col0Type = tb.getSchema().getColumnType(0);
     Type col1Type = tb.getSchema().getColumnType(1);
     boolean hasActualTupleCount = false;
@@ -195,8 +170,7 @@ public class SamplingDistribution extends UnaryOperator {
       } else {
         throw new DbException("TupleCount must be of type INT or LONG");
       }
-      Preconditions.checkState(
-          tupleCount >= 0, "Worker cannot have a negative TupleCount: %s", tupleCount);
+      Preconditions.checkState(tupleCount >= 0, "Worker cannot have a negative TupleCount: %s", tupleCount);
 
       int actualTupleCount = tupleCount;
       if (hasActualTupleCount) {
@@ -207,9 +181,7 @@ public class SamplingDistribution extends UnaryOperator {
         } else {
           throw new DbException("ActualTupleCount must be of type INT or LONG");
         }
-        Preconditions.checkState(
-            tupleCount >= 0,
-            "Worker cannot have a negative ActualTupleCount: %d",
+        Preconditions.checkState(tupleCount >= 0, "Worker cannot have a negative ActualTupleCount: %d",
             actualTupleCount);
       }
 
@@ -222,15 +194,12 @@ public class SamplingDistribution extends UnaryOperator {
   /**
    * Creates a WithReplacement distribution across the workers.
    *
-   * @param workerInfo
-   *          reference to the workerInfo to modify.
-   * @param totalTupleCount
-   *          total # of tuples across all workers.
-   * @param sampleSize
-   *          total # of samples to distribute across the workers.
+   * @param workerInfo reference to the workerInfo to modify.
+   * @param totalTupleCount total # of tuples across all workers.
+   * @param sampleSize total # of samples to distribute across the workers.
    */
-  private void withReplacementDistribution(
-      SortedMap<Integer, WorkerInfo> workerInfo, int totalTupleCount, int sampleSize) {
+  private void withReplacementDistribution(final SortedMap<Integer, WorkerInfo> workerInfo, final int totalTupleCount,
+      final int sampleSize) {
     for (int i = 0; i < sampleSize; i++) {
       int sampleTupleIdx = rand.nextInt(totalTupleCount);
       // Assign this tuple to the workerID that holds this sampleTupleIdx.
@@ -249,15 +218,12 @@ public class SamplingDistribution extends UnaryOperator {
   /**
    * Creates a WithoutReplacement distribution across the workers.
    *
-   * @param workerInfo
-   *          reference to the workerInfo to modify.
-   * @param totalTupleCount
-   *          total # of tuples across all workers.
-   * @param sampleSize
-   *          total # of samples to distribute across the workers.
+   * @param workerInfo reference to the workerInfo to modify.
+   * @param totalTupleCount total # of tuples across all workers.
+   * @param sampleSize total # of samples to distribute across the workers.
    */
-  private void withoutReplacementDistribution(
-      SortedMap<Integer, WorkerInfo> workerInfo, int totalTupleCount, int sampleSize) {
+  private void withoutReplacementDistribution(final SortedMap<Integer, WorkerInfo> workerInfo,
+      final int totalTupleCount, final int sampleSize) {
     SortedMap<Integer, Integer> logicalTupleCounts = new TreeMap<>();
     for (Map.Entry<Integer, WorkerInfo> wInfo : workerInfo.entrySet()) {
       logicalTupleCounts.put(wInfo.getKey(), wInfo.getValue().tupleCount);
@@ -282,16 +248,16 @@ public class SamplingDistribution extends UnaryOperator {
   }
 
   /**
-   * Returns the sample size of this operator. If operator was created using a
-   * samplePercentage, this value will be 0 until after fetchNextReady.
+   * Returns the sample size of this operator. If operator was created using a samplePercentage, this value will be 0
+   * until after fetchNextReady.
    */
   public int getSampleSize() {
     return sampleSize;
   }
 
   /**
-   * Returns the percentage of total tuples that this operator will distribute.
-   * Will be 0 if the operator was created using a specific sampleSize.
+   * Returns the percentage of total tuples that this operator will distribute. Will be 0 if the operator was created
+   * using a specific sampleSize.
    */
   public float getSamplePercentage() {
     return samplePercentage;
@@ -318,17 +284,28 @@ public class SamplingDistribution extends UnaryOperator {
     int tupleCount;
 
     /**
-     * Actual # of tuples that the worker has stored. May be different than
-     * tupleCount if the worker pre-sampled the data.
+     * Actual # of tuples that the worker has stored. May be different than tupleCount if the worker pre-sampled the
+     * data.
      **/
     int actualTupleCount;
 
     /** # of tuples that the distribution assigned to this worker. */
     int sampleSize = 0;
 
-    WorkerInfo(int tupleCount, int actualTupleCount) {
+    WorkerInfo(final int tupleCount, final int actualTupleCount) {
       this.tupleCount = tupleCount;
       this.actualTupleCount = actualTupleCount;
     }
+  }
+
+  /*
+   * (non-Javadoc)
+   * 
+   * @see edu.washington.escience.myria.operator.Operator#sendEos()
+   */
+  @Override
+  protected void sendEos() throws DbException {
+    // TODO Auto-generated method stub
+
   }
 }

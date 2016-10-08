@@ -65,4 +65,10 @@ public interface Aggregator extends Serializable {
    * @throws DbException
    */
   void add(List<TupleBatch> from, Object state) throws DbException;
+
+  /**
+   * @throws DbException
+   * 
+   */
+  void sendEos() throws DbException;
 }

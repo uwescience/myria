@@ -127,4 +127,16 @@ public class FlatteningGenericEvaluator extends Evaluator {
     }
     return count.build();
   }
+
+  /*
+   * (non-Javadoc)
+   * 
+   * @see edu.washington.escience.myria.expression.evaluate.Evaluator#sendEos()
+   */
+  @Override
+  public void sendEos() throws DbException {
+    // TODO Auto-generated method stub
+    LOGGER.info("sendEOS called");
+
+  }
 }

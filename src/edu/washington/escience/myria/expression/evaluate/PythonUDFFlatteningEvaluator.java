@@ -45,6 +45,7 @@ public class PythonUDFFlatteningEvaluator extends FlatteningGenericEvaluator {
 
   private final static int PYTHON_EXCEPTION = -3;
   private final static int NULL_LENGTH = -5;
+  private final static int EOS = -4;
 
   private PythonWorker pyWorker;
   private boolean needsState = false;
@@ -85,6 +86,11 @@ public class PythonUDFFlatteningEvaluator extends FlatteningGenericEvaluator {
     isStateColumn = new boolean[tupleSize];
     Arrays.fill(columnIdxs, -1);
     Arrays.fill(isStateColumn, false);
+
+  }
+
+  public void sendEos() throws DbException {
+    pyWorker.sendEos(EOS);
 
   }
 

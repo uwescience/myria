@@ -23,6 +23,9 @@ import edu.washington.escience.myria.storage.TupleBatchBuffer;
  */
 public final class Aggregate extends UnaryOperator {
 
+  /** logger for this class. */
+  private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(Aggregate.class);
+
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
 
@@ -55,6 +58,15 @@ public final class Aggregate extends UnaryOperator {
   }
 
   @Override
+  public void sendEos() throws DbException {
+    LOGGER.info("send EOS called");
+    for (Aggregator aggregator : aggregators) {
+      aggregator.sendEos();;
+    }
+
+  }
+
+  @Override
   protected TupleBatch fetchNextReady() throws DbException, IOException {
     TupleBatch tb = null;
     final Operator child = getChild();
@@ -75,6 +87,7 @@ public final class Aggregate extends UnaryOperator {
         aggregators[agg].getResult(aggBuffer, fromIndex, aggregatorStates[agg]);
         fromIndex += aggregators[agg].getResultSchema().numColumns();
       }
+
       return aggBuffer.popAny();
     }
     return null;

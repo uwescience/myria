@@ -37,13 +37,11 @@ public abstract class Evaluator {
     this.expression = Preconditions.checkNotNull(expression, "expression");
     this.parameters = Preconditions.checkNotNull(parameters, "parameters");
     if (getExpression().hasOperator(VariableExpression.class)) {
-      Preconditions.checkNotNull(
-          parameters.getSchema(), "ExpressionOperatorParameter input schema");
+      Preconditions.checkNotNull(parameters.getSchema(), "ExpressionOperatorParameter input schema");
     }
     needsState = getExpression().hasOperator(StateExpression.class);
     if (needsState) {
-      Preconditions.checkNotNull(
-          parameters.getStateSchema(), "ExpressionOperatorParameter state schema");
+      Preconditions.checkNotNull(parameters.getStateSchema(), "ExpressionOperatorParameter state schema");
     }
   }
 
@@ -87,7 +85,8 @@ public abstract class Evaluator {
    *
    * @throws DbException compilation failed
    */
-  public void compile() throws DbException {}
+  public void compile() throws DbException {
+  }
 
   /**
    * @return the Java form of this expression, including appending to the result.
@@ -138,4 +137,10 @@ public abstract class Evaluator {
   public boolean needsState() {
     return needsState;
   }
+
+  /**
+   * @return
+   * @throws DbException
+   */
+  public abstract void sendEos() throws DbException;
 }

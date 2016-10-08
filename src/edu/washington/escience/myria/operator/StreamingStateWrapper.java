@@ -2,6 +2,7 @@ package edu.washington.escience.myria.operator;
 
 import com.google.common.collect.ImmutableMap;
 
+import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.storage.TupleBatch;
 
@@ -65,5 +66,16 @@ public class StreamingStateWrapper extends UnaryOperator implements StreamingSta
       return null;
     }
     return getChild().getSchema();
+  }
+
+  /*
+   * (non-Javadoc)
+   * 
+   * @see edu.washington.escience.myria.operator.Operator#sendEos()
+   */
+  @Override
+  protected void sendEos() throws DbException {
+    // TODO Auto-generated method stub
+
   }
 }

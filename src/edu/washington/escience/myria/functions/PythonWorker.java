@@ -119,8 +119,10 @@ public class PythonWorker {
   /**
    *
    * @throws IOException
+   * @throws DbException
    */
-  public void close() throws IOException {
+  public void close() throws IOException, DbException {
+    LOGGER.info("close called!");
     if (clientSock != null) {
       clientSock.close();
     }
@@ -155,14 +157,13 @@ public class PythonWorker {
     String pythonWorker = MyriaConstants.PYTHONWORKER;
     ProcessBuilder pb = new ProcessBuilder(MyriaConstants.PYTHONEXEC, "-m", pythonWorker);
     final Map<String, String> env = pb.environment();
-    // StringBuilder sb = new StringBuilder();
-    // sb.append(System.getenv("HOME"));
-    // sb.append("/anaconda2/bin");
-    // sb.append(":");
-    // sb.append(env.get("PATH"));
-    // env.put("PATH", sb.toString());
+    for (String envName : env.keySet()) {
+      LOGGER.info("%s=%s%n", envName, env.get(envName));
+    }
 
     env.put("PYTHONUNBUFFERED", "YES");
+    env.put("OMP_NUM_THREADS", "1");
+    env.put("OPENBLAS_NUM_THREADS", "1");
 
     pb.redirectError(Redirect.INHERIT);
     pb.redirectOutput(Redirect.INHERIT);
@@ -207,6 +208,17 @@ public class PythonWorker {
         break;
       default:
         throw new DbException("Type not supported for python UDF ");
+    }
+  }
+
+  public void sendEos(final int EOS) throws DbException {
+    try {
+      LOGGER.info("send EOS called");
+      dOut.writeInt(EOS);
+      close();
+    } catch (Exception e) {
+      LOGGER.info("failed to write number of tuples to python process!");
+      throw new DbException(e);
     }
   }
 

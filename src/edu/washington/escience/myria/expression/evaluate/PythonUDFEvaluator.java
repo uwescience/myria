@@ -47,6 +47,7 @@ public class PythonUDFEvaluator extends GenericEvaluator {
 
   private final static int PYTHON_EXCEPTION = -3;
   private final static int NULL_LENGTH = -5;
+  private final static int EOS = -4;
 
   private PythonWorker pyWorker;
   private boolean needsState = false;
@@ -306,6 +307,13 @@ public class PythonUDFEvaluator extends GenericEvaluator {
 
       throw new DbException(e);
     }
+  }
+
+  @Override
+  public void sendEos() throws DbException {
+    LOGGER.info("sendEOS called");
+    pyWorker.sendEos(EOS);
+
   }
 
   /**

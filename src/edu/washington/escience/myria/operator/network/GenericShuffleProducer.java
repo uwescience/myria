@@ -21,7 +21,7 @@ public class GenericShuffleProducer extends Producer {
 
   /**
    * the partition function.
-   * */
+   */
   private final PartitionFunction partitionFunction;
 
   /**
@@ -37,18 +37,10 @@ public class GenericShuffleProducer extends Producer {
    * @param workerIDs set of destination workers
    * @param pf the partition function
    */
-  public GenericShuffleProducer(
-      final Operator child,
-      final ExchangePairID operatorID,
-      final int[] workerIDs,
+  public GenericShuffleProducer(final Operator child, final ExchangePairID operatorID, final int[] workerIDs,
       final PartitionFunction pf) {
-    this(
-        child,
-        new ExchangePairID[] {operatorID},
-        MyriaArrayUtils.create2DVerticalIndex(pf.numPartition()),
-        workerIDs,
-        pf,
-        false);
+    this(child, new ExchangePairID[] { operatorID }, MyriaArrayUtils.create2DVerticalIndex(pf.numPartition()),
+        workerIDs, pf, false);
     Preconditions.checkArgument(workerIDs.length == pf.numPartition());
   }
 
@@ -63,14 +55,10 @@ public class GenericShuffleProducer extends Producer {
    *          mapping from partitions to ioChannels.
    * @param workerIDs set of destination workers
    * @param pf the partition function
-   * */
-  public GenericShuffleProducer(
-      final Operator child,
-      final ExchangePairID operatorID,
-      final int[][] cellPartition,
-      final int[] workerIDs,
-      final PartitionFunction pf) {
-    this(child, new ExchangePairID[] {operatorID}, cellPartition, workerIDs, pf, false);
+   */
+  public GenericShuffleProducer(final Operator child, final ExchangePairID operatorID, final int[][] cellPartition,
+      final int[] workerIDs, final PartitionFunction pf) {
+    this(child, new ExchangePairID[] { operatorID }, cellPartition, workerIDs, pf, false);
     Preconditions.checkArgument(cellPartition.length == pf.numPartition());
   }
 
@@ -83,13 +71,9 @@ public class GenericShuffleProducer extends Producer {
    * @param workerIDs set of destination workers
    * @param pf the partition function
    * @param isOneToOneMapping the same as the one in Producer
-   * */
-  public GenericShuffleProducer(
-      final Operator child,
-      final ExchangePairID[] operatorIDs,
-      final int[][] partitionToChannel,
-      final int[] workerIDs,
-      final PartitionFunction pf,
+   */
+  public GenericShuffleProducer(final Operator child, final ExchangePairID[] operatorIDs,
+      final int[][] partitionToChannel, final int[] workerIDs, final PartitionFunction pf,
       final boolean isOneToOneMapping) {
     super(child, operatorIDs, workerIDs, isOneToOneMapping);
     Preconditions.checkArgument(partitionToChannel.length == pf.numPartition());
@@ -100,7 +84,7 @@ public class GenericShuffleProducer extends Producer {
 
   /**
    * @return return partition function.
-   * */
+   */
   public final PartitionFunction getPartitionFunction() {
     return partitionFunction;
   }
@@ -149,5 +133,16 @@ public class GenericShuffleProducer extends Producer {
       partitions[i] = TupleBatch.eoiTupleBatch(getSchema());
     }
     writePartitionsIntoChannels(false, partitionToChannel, partitions);
+  }
+
+  /*
+   * (non-Javadoc)
+   * 
+   * @see edu.washington.escience.myria.operator.Operator#sendEos()
+   */
+  @Override
+  protected void sendEos() throws DbException {
+    // TODO Auto-generated method stub
+
   }
 }

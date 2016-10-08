@@ -107,8 +107,14 @@ public abstract class Operator implements Serializable {
     return profilingLogger;
   }
 
+  /**
+   * Cache for python function registrar.
+   */
   protected PythonFunctionRegistrar pyFuncReg;
 
+  /**
+   * @return python function registrar
+   */
   public PythonFunctionRegistrar getPythonFunctionRegistrar() {
     // Preconditions.checkNotNull(pyFuncReg);
     return pyFuncReg;
@@ -204,6 +210,7 @@ public abstract class Operator implements Serializable {
     open = false;
     eos = true;
     eoi = false;
+    sendEos();
     Exception errors = null;
     try {
       cleanup();
@@ -297,6 +304,7 @@ public abstract class Operator implements Serializable {
       }
 
       if (allEOS) {
+        LOGGER.info("setting EOS in checkEOS");
         setEOS();
       }
 
@@ -324,6 +332,12 @@ public abstract class Operator implements Serializable {
     if (!open) {
       throw new DbException("Operator not yet open");
     }
+    if (eos()) {
+      LOGGER.info("calling sendEOS");
+      sendEos();
+      return null;
+    }
+
     if (eos() || eoi()) {
       return null;
     }
@@ -473,6 +487,10 @@ public abstract class Operator implements Serializable {
    * @return next ready output TupleBatch. null if either EOS or no output TupleBatch can be generated currently.
    */
   protected abstract TupleBatch fetchNextReady() throws Exception;
+
+  protected void sendEos() throws DbException {
+    LOGGER.info("send EOS called");
+  }
 
   /**
    * Explicitly set EOS for this operator.

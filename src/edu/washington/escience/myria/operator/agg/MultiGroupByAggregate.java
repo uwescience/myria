@@ -95,6 +95,14 @@ public final class MultiGroupByAggregate extends UnaryOperator {
   }
 
   @Override
+  protected void sendEos() throws DbException {
+    LOGGER.info("send eos called");
+    for (Aggregator aggregator : aggregators) {
+      aggregator.sendEos();
+    }
+  }
+
+  @Override
   protected void cleanup() throws DbException {
     groupKeys = null;
     aggStates = null;
@@ -116,6 +124,7 @@ public final class MultiGroupByAggregate extends UnaryOperator {
     final Operator child = getChild();
 
     if (child.eos()) {
+      sendEos();
       return getResultBatch();
     }
 
@@ -160,6 +169,7 @@ public final class MultiGroupByAggregate extends UnaryOperator {
      * either EOS or we have to wait for more data.
      */
     if (child.eos()) {
+      sendEos();
       return getResultBatch();
     }
 

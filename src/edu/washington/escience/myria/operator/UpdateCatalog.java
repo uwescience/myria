@@ -37,8 +37,7 @@ public class UpdateCatalog extends RootOperator {
   @Override
   protected void consumeTuples(final TupleBatch tuples) throws DbException {
     for (int i = 0; i < tuples.numTuples(); ++i) {
-      RelationKey relation =
-          RelationKey.of(tuples.getString(0, i), tuples.getString(1, i), tuples.getString(2, i));
+      RelationKey relation = RelationKey.of(tuples.getString(0, i), tuples.getString(1, i), tuples.getString(2, i));
       long count = tuples.getLong(3, i);
       server.updateRelationTupleCount(relation, count);
     }
@@ -52,5 +51,16 @@ public class UpdateCatalog extends RootOperator {
   @Override
   protected void childEOS() throws DbException {
     /* Do nothing. */
+  }
+
+  /*
+   * (non-Javadoc)
+   * 
+   * @see edu.washington.escience.myria.operator.Operator#sendEos()
+   */
+  @Override
+  protected void sendEos() throws DbException {
+    // TODO Auto-generated method stub
+
   }
 }

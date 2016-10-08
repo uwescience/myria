@@ -88,4 +88,15 @@ public final class TupleRangeSource extends LeafOperator {
   protected Schema generateSchema() {
     return schema;
   }
+
+  /*
+   * (non-Javadoc)
+   * 
+   * @see edu.washington.escience.myria.operator.Operator#sendEos()
+   */
+  @Override
+  protected void sendEos() throws DbException {
+    // TODO Auto-generated method stub
+
+  }
 }

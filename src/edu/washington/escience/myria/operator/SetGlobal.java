@@ -52,32 +52,23 @@ public class SetGlobal extends RootOperator {
 
   @Override
   protected void init(final ImmutableMap<String, Object> execEnvVars) throws Exception {
-    int nodeId =
-        (Integer)
-            Preconditions.checkNotNull(
-                execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_NODE_ID), "node ID in execEnvVars");
-    Preconditions.checkArgument(
-        nodeId == MyriaConstants.MASTER_ID, "%s can only be run on the master", SetGlobal.class);
+    int nodeId = (Integer) Preconditions.checkNotNull(execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_NODE_ID),
+        "node ID in execEnvVars");
+    Preconditions.checkArgument(nodeId == MyriaConstants.MASTER_ID, "%s can only be run on the master",
+        SetGlobal.class);
     Schema schema = Preconditions.checkNotNull(getSchema(), "schema cannot be null");
-    Preconditions.checkArgument(
-        schema.numColumns() == 1,
-        "the child of %s must be a singleton and have only 1 column, not %s",
-        SetGlobal.class,
-        schema.numColumns());
-    queryId =
-        (Long)
-            Preconditions.checkNotNull(
-                execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_QUERY_ID), "query ID in execEnvVars");
+    Preconditions.checkArgument(schema.numColumns() == 1,
+        "the child of %s must be a singleton and have only 1 column, not %s", SetGlobal.class, schema.numColumns());
+    queryId = (Long) Preconditions.checkNotNull(execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_QUERY_ID),
+        "query ID in execEnvVars");
   }
 
   @SuppressWarnings("deprecation")
   @Override
   protected void consumeTuples(final TupleBatch tuples) throws DbException {
     for (int i = 0; i < tuples.numTuples(); ++i) {
-      Preconditions.checkState(
-          !hasWritten,
-          "In query %s: have already written to the global variable %s. Further writes violate the invariant",
-          queryId,
+      Preconditions.checkState(!hasWritten,
+          "In query %s: have already written to the global variable %s. Further writes violate the invariant", queryId,
           key);
       server.setQueryGlobal(queryId, key, tuples.getObject(0, i));
       hasWritten = true;
@@ -92,5 +83,16 @@ public class SetGlobal extends RootOperator {
   @Override
   protected void childEOS() throws DbException {
     /* Do nothing. */
+  }
+
+  /*
+   * (non-Javadoc)
+   * 
+   * @see edu.washington.escience.myria.operator.Operator#sendEos()
+   */
+  @Override
+  protected void sendEos() throws DbException {
+    // TODO Auto-generated method stub
+
   }
 }
