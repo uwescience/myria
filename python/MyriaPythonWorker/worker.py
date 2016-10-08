@@ -35,14 +35,12 @@ def main(infile, outfile):
                 print ( "Done with the stream!")
                 break
             print ("number of tuples to be read: "+ str(numTuples))
-            if(numTuples >1):
-                tuplist =[]
-                for j in range(numTuples):
-                    tuplist.append(pickleSer.read_tuple(infile,tuplesize))
-                    print( "tuples read "+ str(j))
-                tup = (0,tuplist)
-            else:
-                tup = pickleSer.read_tuple(infile,tuplesize)
+            tuplist =[]
+            for j in range(numTuples):
+                tuplist.append(pickleSer.read_tuple(infile,tuplesize))
+                print( "tuples read "+ str(j))
+            tup = (0,tuplist)
+
 
             print("python process done reading tuple, now writing ")
             retval = func(tup)

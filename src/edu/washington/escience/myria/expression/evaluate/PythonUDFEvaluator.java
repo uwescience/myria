@@ -312,7 +312,9 @@ public class PythonUDFEvaluator extends GenericEvaluator {
   @Override
   public void sendEos() throws DbException {
     LOGGER.info("sendEOS called");
-    pyWorker.sendEos(EOS);
+    if (pyWorker != null) {
+      pyWorker.sendEos(EOS);
+    }
 
   }
 

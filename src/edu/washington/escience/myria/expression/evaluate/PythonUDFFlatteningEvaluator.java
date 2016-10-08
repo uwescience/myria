@@ -89,8 +89,11 @@ public class PythonUDFFlatteningEvaluator extends FlatteningGenericEvaluator {
 
   }
 
+  @Override
   public void sendEos() throws DbException {
-    pyWorker.sendEos(EOS);
+    if (pyWorker != null) {
+      pyWorker.sendEos(EOS);
+    }
 
   }
 
