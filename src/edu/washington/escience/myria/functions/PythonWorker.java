@@ -162,8 +162,8 @@ public class PythonWorker {
     // }
 
     env.put("PYTHONUNBUFFERED", "YES");
-    env.put("OMP_NUM_THREADS", "1");
-    env.put("OPENBLAS_NUM_THREADS", "1");
+    // env.put("OMP_NUM_THREADS", "1");
+    // env.put("OPENBLAS_NUM_THREADS", "1");
 
     pb.redirectError(Redirect.INHERIT);
     pb.redirectOutput(Redirect.INHERIT);
