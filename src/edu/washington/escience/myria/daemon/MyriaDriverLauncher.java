@@ -28,6 +28,7 @@ import org.apache.reef.client.LauncherStatus;
 import org.apache.reef.client.REEF;
 import org.apache.reef.client.RunningJob;
 import org.apache.reef.runtime.yarn.client.YarnClientConfiguration;
+import org.apache.reef.runtime.local.client.LocalRuntimeConfiguration;
 import org.apache.reef.tang.Configuration;
 import org.apache.reef.tang.Configurations;
 import org.apache.reef.tang.Injector;
@@ -87,7 +88,11 @@ public final class MyriaDriverLauncher {
     ConfigurationModule cm = (ConfigurationModule) runtimeClass.getField("CONF").get(null);
     // need to allow some room for non-heap memory in the Driver
     if (cm.equals(YarnClientConfiguration.CONF)) {
-      cm.set(YarnClientConfiguration.JVM_HEAP_SLACK, "0.1");
+      cm = cm.set(YarnClientConfiguration.JVM_HEAP_SLACK, "0.1");
+    }
+    // allow unlimited workers when running in local mode
+    if (cm.equals(LocalRuntimeConfiguration.CONF)) {
+      cm = cm.set(LocalRuntimeConfiguration.MAX_NUMBER_OF_EVALUATORS, 1024);
     }
     return cm.build();
   }
