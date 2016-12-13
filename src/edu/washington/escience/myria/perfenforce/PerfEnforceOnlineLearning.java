@@ -49,7 +49,7 @@ public class PerfEnforceOnlineLearning {
     this.server = server;
   }
 
-  public void findSLA(final String querySQL) throws PerfEnforceException {
+  public void findSLA(final String querySQL) throws PerfEnforceException, Exception {
 
     String highestFeatures = PerfEnforceUtils.getMaxFeature(server, querySQL, clusterSize);
 

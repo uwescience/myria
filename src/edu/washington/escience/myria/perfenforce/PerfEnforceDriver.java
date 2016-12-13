@@ -18,7 +18,6 @@ import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.GetObjectRequest;
 
-import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.api.encoding.PerfEnforceQueryMetadataEncoding;
 import edu.washington.escience.myria.api.encoding.PerfEnforceTableEncoding;
 import edu.washington.escience.myria.parallel.Server;
@@ -70,8 +69,7 @@ public final class PerfEnforceDriver {
     }
   }
 
-  public void preparePSLA(List<PerfEnforceTableEncoding> tableList)
-      throws PerfEnforceException, DbException, Exception {
+  public void preparePSLA(List<PerfEnforceTableEncoding> tableList) throws Exception {
     this.tableList = tableList;
     fetchS3Files();
 
@@ -107,7 +105,7 @@ public final class PerfEnforceDriver {
     perfenforceOnlineLearning = new PerfEnforceOnlineLearning(server, tier);
   }
 
-  public void findSLA(final String querySQL) throws PerfEnforceException {
+  public void findSLA(final String querySQL) throws PerfEnforceException, Exception {
     perfenforceOnlineLearning.findSLA(querySQL);
     perfenforceOnlineLearning.findBestClusterSize();
   }

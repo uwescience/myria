@@ -13,10 +13,12 @@ import javax.annotation.concurrent.NotThreadSafe;
 import javax.ws.rs.core.Response.Status;
 
 import org.apache.commons.httpclient.URIException;
+
 import org.apache.hadoop.conf.Configuration;
 
 import com.amazonaws.ClientConfiguration;
 import com.amazonaws.auth.AWSCredentialsProvider;
+
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.GetObjectRequest;
 import com.fasterxml.jackson.annotation.JsonCreator;

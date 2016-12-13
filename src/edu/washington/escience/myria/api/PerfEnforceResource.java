@@ -56,8 +56,7 @@ public final class PerfEnforceResource {
   @POST
   @Path("/findSLA")
   @Consumes(MediaType.MULTIPART_FORM_DATA)
-  public Response findSLA(@FormDataParam("querySQL") final String querySQL)
-      throws PerfEnforceException {
+  public Response findSLA(@FormDataParam("querySQL") final String querySQL) throws Exception {
     server.getPerfEnforceDriver().findSLA(querySQL);
     return Response.noContent().build();
   }

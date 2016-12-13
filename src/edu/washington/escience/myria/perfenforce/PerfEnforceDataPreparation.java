@@ -388,7 +388,7 @@ public class PerfEnforceDataPreparation {
     }
   }
 
-  public void collectFeaturesFromGeneratedQueries() throws PerfEnforceException {
+  public void collectFeaturesFromGeneratedQueries() throws Exception {
 
     for (Integer config : PerfEnforceDriver.configurations) {
       Path workerPath =
@@ -418,14 +418,15 @@ public class PerfEnforceDataPreparation {
               currentLine.replace(
                   factTableDescription.relationKey.getRelationName(),
                   factTableRelationMapper.get(config).getRelationName());
-          String explainQuery = "EXPLAIN " + currentLine;
-          String features = PerfEnforceUtils.getMaxFeature(server, explainQuery, config);
+
+          String features = PerfEnforceUtils.getMaxFeature(server, currentLine, config);
           featureWriter.write(features + "\n");
         }
         featureWriter.close();
         br.close();
       } catch (Exception e) {
-        throw new PerfEnforceException("Error creating table features");
+        throw e;
+        //throw new PerfEnforceException("Error creating table features");
       }
     }
   }
