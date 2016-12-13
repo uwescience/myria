@@ -34,8 +34,8 @@ import edu.washington.escience.myria.api.encoding.PerfEnforceTableEncoding;
 import edu.washington.escience.myria.operator.DbInsert;
 import edu.washington.escience.myria.operator.DbQueryScan;
 import edu.washington.escience.myria.operator.EOSSource;
+import edu.washington.escience.myria.operator.EmptySink;
 import edu.washington.escience.myria.operator.RootOperator;
-import edu.washington.escience.myria.operator.SinkRoot;
 import edu.washington.escience.myria.operator.network.GenericShuffleConsumer;
 import edu.washington.escience.myria.operator.network.GenericShuffleProducer;
 import edu.washington.escience.myria.operator.network.partition.FixValuePartitionFunction;
@@ -157,7 +157,7 @@ public class PerfEnforceDataPreparation {
           workerPlans.put(workerID, new RootOperator[] {insert});
         }
 
-        server.submitQueryPlan(new SinkRoot(new EOSSource()), workerPlans).get();
+        server.submitQueryPlan(new EmptySink(new EOSSource()), workerPlans).get();
         relationKeysToUnion.add(currentRelationKeyToUnion);
 
         RelationKey currentConfigRelationKey =
@@ -231,7 +231,7 @@ public class PerfEnforceDataPreparation {
         workerPlans.put(workerID, new RootOperator[] {producer, insert});
       }
 
-      server.submitQueryPlan(new SinkRoot(new EOSSource()), workerPlans).get();
+      server.submitQueryPlan(new EmptySink(new EOSSource()), workerPlans).get();
     } catch (Exception e) {
       throw e;
       //throw new PerfEnforceException("Error ingesting dimension tables");

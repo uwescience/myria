@@ -1,5 +1,6 @@
 package edu.washington.escience.myria.api;
 
+import java.io.FileNotFoundException;
 import java.util.List;
 
 import javax.ws.rs.Consumes;
@@ -45,11 +46,17 @@ public final class PerfEnforceResource {
     return Response.ok(server.getPerfEnforceDriver().isDonePSLA()).build();
   }
 
+  @GET
+  @Path("/getPSLA")
+  public Response getPSLA() throws FileNotFoundException {
+    return Response.ok(server.getPerfEnforceDriver().getPSLA()).build();
+  }
+
   @POST
   @Path("/setTier")
   @Consumes(MediaType.MULTIPART_FORM_DATA)
-  public Response setTier(@FormDataParam("tier") final int queryRuntime) {
-    server.getPerfEnforceDriver().setTier(queryRuntime);
+  public Response setTier(@FormDataParam("tier") final int tier) {
+    server.getPerfEnforceDriver().setTier(tier);
     return Response.noContent().build();
   }
 

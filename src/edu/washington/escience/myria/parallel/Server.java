@@ -1369,7 +1369,7 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
     }
     
     final Consumer consumer = new Consumer(outputSchema, operatorId, workers);
-    TupleSink output = new TupleSink(consumer, writer, byteSink);
+    TupleSink output = new TupleSink(consumer, writer, byteSink, false);
     
     final SubQueryPlan masterPlan = new SubQueryPlan(output);
 

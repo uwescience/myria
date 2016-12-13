@@ -5,12 +5,17 @@ package edu.washington.escience.myria.perfenforce;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileReader;
+import java.io.IOException;
+import java.io.Reader;
+import java.io.StringWriter;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
 
+import org.apache.commons.io.IOUtils;
 import org.slf4j.LoggerFactory;
 
 import com.amazonaws.auth.AnonymousAWSCredentials;
@@ -99,6 +104,17 @@ public final class PerfEnforceDriver {
 
   public boolean isDonePSLA() {
     return isDonePSLA;
+  }
+
+  public String getPSLA() throws FileNotFoundException {
+    Reader input = new FileReader(new File(configurationPath.resolve("PSLA.json").toString()));
+    StringWriter output = new StringWriter();
+    try {
+      IOUtils.copy(input, output);
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+    return output.toString();
   }
 
   public void setTier(final int tier) {

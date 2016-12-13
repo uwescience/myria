@@ -27,7 +27,7 @@ public final class TupleSink extends RootOperator {
 
   private boolean includeColumnHeader = true;
 
-  public DataOutput(
+  public TupleSink(
       final Operator child,
       final TupleWriter tupleWriter,
       final DataSink dataSink,
