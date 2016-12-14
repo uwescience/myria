@@ -56,6 +56,7 @@ public final class PerfEnforceResource {
   @Path("/setTier")
   @Consumes(MediaType.MULTIPART_FORM_DATA)
   public Response setTier(@FormDataParam("tier") final int tier) {
+    LOGGER.warn("TIER " + tier);
     server.getPerfEnforceDriver().setTier(tier);
     return Response.noContent().build();
   }

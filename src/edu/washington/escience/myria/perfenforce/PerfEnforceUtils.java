@@ -10,6 +10,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import org.slf4j.LoggerFactory;
+
 import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
@@ -19,6 +21,8 @@ import edu.washington.escience.myria.parallel.Server;
  * Helper Methods
  */
 public class PerfEnforceUtils {
+
+  protected static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(PerfEnforceUtils.class);
 
   public static Set<Integer> getWorkerRangeSet(final int limit) {
     Set<Integer> seq = new HashSet<Integer>();
@@ -84,8 +88,7 @@ public class PerfEnforceUtils {
     return keySchema;
   }
 
-  public static String getMaxFeature(
-      final Server server, final String sqlQuery, final int configuration)
+  public static String getMaxFeature(final Server server, String sqlQuery, final int configuration)
       throws PerfEnforceException, Exception {
 
     try {
@@ -99,6 +102,8 @@ public class PerfEnforceUtils {
               explainQuery,
               Schema.ofFields("explain", Type.STRING_TYPE),
               PerfEnforceUtils.getWorkerRangeSet(configuration));
+
+      LOGGER.warn("FEATURES " + allWorkerFeatures[0] + "," + allWorkerFeatures[1]);
 
       for (String currentWorkerFeatures : allWorkerFeatures) {
 
@@ -134,6 +139,7 @@ public class PerfEnforceUtils {
 
           currentWorkerFeatures += "," + configuration + ",0";
           featuresList.add(currentWorkerFeatures);
+          LOGGER.warn("FEATURES IN ");
         }
       }
 

@@ -33,25 +33,34 @@ public class PerfEnforceOnlineLearning {
   private final String onlineLearningPath;
   private final Double[] queryPredictions;
   private int clusterSize;
+  private int selectedTier;
   private int queryCounter;
 
   protected static final org.slf4j.Logger LOGGER =
       LoggerFactory.getLogger(PerfEnforceOnlineLearning.class);
 
   public PerfEnforceOnlineLearning(final Server server, final int tier) {
+    selectedTier = tier;
     clusterSize = PerfEnforceDriver.configurations.get(tier);
     currentQuery = new PerfEnforceQueryMetadataEncoding();
     previousQuery = new PerfEnforceQueryMetadataEncoding();
     queryPredictions = new Double[PerfEnforceDriver.configurations.size()];
     onlineLearningPath =
-        Paths.get(PerfEnforceDriver.configurationPath.toString(), "ScalingAlgorithms", "Live")
-            .toString();
+        PerfEnforceDriver.configurationPath.resolve("ScalingAlgorithms").toString();
+    previousDataPoints = new ArrayList<String>();
     this.server = server;
   }
 
   public void findSLA(final String querySQL) throws PerfEnforceException, Exception {
-
-    String highestFeatures = PerfEnforceUtils.getMaxFeature(server, querySQL, clusterSize);
+    int currentClusterSize = PerfEnforceDriver.configurations.get(selectedTier);
+    String currentQueryForState = "";
+    String factTableName = PerfEnforceDriver.factTableDesc.relationKey.getRelationName();
+    if (querySQL.contains(factTableName)) {
+      currentQueryForState = querySQL.replace(factTableName, factTableName + currentClusterSize);
+      LOGGER.warn(currentQueryForState);
+    }
+    String highestFeatures =
+        PerfEnforceUtils.getMaxFeature(server, currentQueryForState, clusterSize);
 
     try {
       PrintWriter featureWriter =
@@ -76,26 +85,35 @@ public class PerfEnforceOnlineLearning {
       String[] cmd = {
         "java",
         "-cp",
-        onlineLearningPath + "weka.jar",
+        Paths.get(onlineLearningPath, "weka.jar").toString(),
         "weka.classifiers.rules.M5Rules",
         "-M",
         "4.0",
         "-t",
-        onlineLearningPath + "WekaTraining/" + clusterSize + "_Workers/TRAINING.arff",
+        Paths.get(onlineLearningPath, "WekaTraining", clusterSize + "_Workers", "TRAINING.arff")
+            .toString(),
         "-T",
-        onlineLearningPath + "TESTING.arff",
+        Paths.get(onlineLearningPath, "TESTING.arff").toString(),
         "-p",
         "0",
         "-classifications",
-        " weka.classifiers.evaluation.output.prediction.CSV -file \""
-            + onlineLearningPath
-            + "results.txt"
+        "\"weka.classifiers.evaluation.output.prediction.CSV -file "
+            + Paths.get(onlineLearningPath, "results.txt").toString()
             + "\""
       };
-      ProcessBuilder pb = new ProcessBuilder(cmd);
+      //ProcessBuilder pb = new ProcessBuilder(cmd);
+      for (int c = 0; c < cmd.length; c++) {
+        LOGGER.warn(cmd[c]);
+      }
 
-      Process p = pb.start();
-      p.waitFor();
+      Process p = Runtime.getRuntime().exec(cmd);
+
+      String output = "";
+      BufferedReader reader = new BufferedReader(new InputStreamReader(p.getInputStream()));
+      while ((output = reader.readLine()) != null) {
+
+        LOGGER.warn(output);
+      }
 
       String querySLA = "";
       BufferedReader predictionReader =
@@ -106,7 +124,18 @@ public class PerfEnforceOnlineLearning {
       predictionReader.close();
 
       for (int c : PerfEnforceDriver.configurations) {
-        String maxFeatureForConfiguration = PerfEnforceUtils.getMaxFeature(server, querySQL, c);
+        // TEMP?
+        currentClusterSize = c;
+        currentQueryForState = "";
+        factTableName = PerfEnforceDriver.factTableDesc.relationKey.getRelationName();
+        if (querySQL.contains(factTableName)) {
+          currentQueryForState =
+              querySQL.replace(factTableName, factTableName + currentClusterSize);
+          LOGGER.warn(currentQueryForState);
+        }
+
+        String maxFeatureForConfiguration =
+            PerfEnforceUtils.getMaxFeature(server, currentQueryForState, c);
         FileWriter featureWriterForConfiguration;
         featureWriterForConfiguration =
             new FileWriter(
@@ -133,7 +162,7 @@ public class PerfEnforceOnlineLearning {
                 public void run() {
                   try {
                     trainOnlineQueries(clusterIndex, currentQuery.id);
-                  } catch (PerfEnforceException e) {
+                  } catch (Exception e) {
                     e.printStackTrace();
                   }
                 }
@@ -180,8 +209,7 @@ public class PerfEnforceOnlineLearning {
     clusterSize = PerfEnforceDriver.configurations.get(winnerIndex);
   }
 
-  public void trainOnlineQueries(final int clusterIndex, final int queryID)
-      throws PerfEnforceException {
+  public void trainOnlineQueries(final int clusterIndex, final int queryID) throws Exception {
     String MOAFileName = Paths.get(onlineLearningPath, "OMLFiles", "moa.jar").toString();
     String trainingFileName = Paths.get(onlineLearningPath, "OMLFiles", "training.arff").toString();
     String modifiedTrainingFileName =
@@ -218,6 +246,8 @@ public class PerfEnforceOnlineLearning {
               .04,
               modifiedTrainingFileName,
               predictionsFileName);
+
+      LOGGER.warn(moaCommand);
       String[] arrayCommand =
           new String[] {"java", "-classpath", MOAFileName, "moa.DoTask", moaCommand};
 
@@ -228,12 +258,13 @@ public class PerfEnforceOnlineLearning {
 
       parsingOnlineFile(clusterIndex, predictionsFileName);
     } catch (Exception e) {
-      throw new PerfEnforceException("Error during training");
+      //throw new PerfEnforceException("Error during training");
+      throw e;
     }
   }
 
   public void parsingOnlineFile(final int clusterIndex, final String predictionFileName)
-      throws PerfEnforceException {
+      throws Exception {
     try {
       BufferedReader streamReader = new BufferedReader(new FileReader(predictionFileName));
       String currentLine = "";
@@ -244,7 +275,8 @@ public class PerfEnforceOnlineLearning {
       streamReader.close();
       queryPredictions[clusterIndex] = nextQueryPrediction;
     } catch (Exception e) {
-      throw new PerfEnforceException("Error parsing online predictions file");
+      //throw new PerfEnforceException("Error parsing online predictions file");
+      throw e;
     }
   }
 
@@ -310,5 +342,9 @@ public class PerfEnforceOnlineLearning {
 
   public int getClusterSize() {
     return clusterSize;
+  }
+
+  public int getSelectedTier() {
+    return selectedTier;
   }
 }

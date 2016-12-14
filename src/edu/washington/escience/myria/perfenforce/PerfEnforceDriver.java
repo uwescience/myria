@@ -8,6 +8,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.io.Reader;
 import java.io.StringWriter;
 import java.nio.file.Path;
@@ -22,6 +23,7 @@ import com.amazonaws.auth.AnonymousAWSCredentials;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.GetObjectRequest;
+import com.google.gson.Gson;
 
 import edu.washington.escience.myria.api.encoding.PerfEnforceQueryMetadataEncoding;
 import edu.washington.escience.myria.api.encoding.PerfEnforceTableEncoding;
@@ -39,6 +41,7 @@ public final class PerfEnforceDriver {
 
   public static Path configurationPath;
   public static List<PerfEnforceTableEncoding> tableList;
+  public static PerfEnforceTableEncoding factTableDesc;
 
   private final Server server;
   private boolean isDonePSLA;
@@ -83,13 +86,25 @@ public final class PerfEnforceDriver {
     for (PerfEnforceTableEncoding currentTable : tableList) {
       if (currentTable.type.equalsIgnoreCase("fact")) {
         perfenforceDataPrepare.ingestFact(currentTable);
+        factTableDesc = currentTable;
       } else {
         perfenforceDataPrepare.ingestDimension(currentTable);
       }
       perfenforceDataPrepare.analyzeTable(currentTable);
     }
 
+    //here, need to write list to disk
     perfenforceDataPrepare.collectSelectivities();
+
+    Gson gson = new Gson();
+    String schemaDefinitionFile = gson.toJson(tableList);
+    PrintWriter out =
+        new PrintWriter(configurationPath.resolve("SchemaDefinition.json").toString());
+    out.print(schemaDefinitionFile);
+    LOGGER.warn("OUTPUT " + schemaDefinitionFile);
+    out.flush();
+    out.close();
+
     PSLAManagerWrapper pslaManager = new PSLAManagerWrapper();
     pslaManager.generateQueries();
     perfenforceDataPrepare.collectFeaturesFromGeneratedQueries();
@@ -107,8 +122,9 @@ public final class PerfEnforceDriver {
   }
 
   public String getPSLA() throws FileNotFoundException {
-    Reader input = new FileReader(new File(configurationPath.resolve("PSLA.json").toString()));
+    Reader input = new FileReader(new File(configurationPath.resolve("FinalPSLA.json").toString()));
     StringWriter output = new StringWriter();
+    LOGGER.warn("PSLA " + output);
     try {
       IOUtils.copy(input, output);
     } catch (IOException e) {
@@ -121,7 +137,7 @@ public final class PerfEnforceDriver {
     perfenforceOnlineLearning = new PerfEnforceOnlineLearning(server, tier);
   }
 
-  public void findSLA(final String querySQL) throws PerfEnforceException, Exception {
+  public void findSLA(String querySQL) throws PerfEnforceException, Exception {
     perfenforceOnlineLearning.findSLA(querySQL);
     perfenforceOnlineLearning.findBestClusterSize();
   }
