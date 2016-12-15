@@ -18,6 +18,7 @@ import edu.washington.escience.myria.proto.DataProto.FloatColumnMessage;
 import edu.washington.escience.myria.proto.DataProto.IntColumnMessage;
 import edu.washington.escience.myria.proto.DataProto.LongColumnMessage;
 import edu.washington.escience.myria.proto.DataProto.StringColumnMessage;
+import edu.washington.escience.myria.proto.DataProto.BytesColumnMessage;
 import edu.washington.escience.myria.storage.ReadableColumn;
 import edu.washington.escience.myria.util.ImmutableIntArray;
 
@@ -68,6 +69,11 @@ public abstract class Column<T extends Comparable<?>> implements ReadableColumn,
 
   @Override
   public String getString(final int row) {
+    throw new UnsupportedOperationException(getClass().getName());
+  }
+
+  @Override
+  public ByteBuffer getByteBuffer(final int row) {
     throw new UnsupportedOperationException(getClass().getName());
   }
 
@@ -126,6 +132,8 @@ public abstract class Column<T extends Comparable<?>> implements ReadableColumn,
         return new LongColumn(new long[] {}, 0);
       case STRING_TYPE:
         return new StringArrayColumn(new String[] {}, 0);
+      case BYTES_TYPE:
+        return new BytesColumn(new ByteBuffer[] {}, 0);
     }
     throw new UnsupportedOperationException("Allocating an empty column of type " + type);
   }
@@ -177,6 +185,42 @@ public abstract class Column<T extends Comparable<?>> implements ReadableColumn,
     return ColumnMessage.newBuilder()
         .setType(ColumnMessage.Type.DATETIME)
         .setDateColumn(inner)
+        .build();
+  }
+  /**
+   * A default implementation to serialize any Bytes Type column to a proto.
+   *
+   * @param column the column to be serialized.
+   * @return a ColumnMessage with a BytesType member.
+   */
+  protected static ColumnMessage defaultBytesProto(final Column<?> column) {
+    final BytesColumnMessage.Builder inner = BytesColumnMessage.newBuilder();
+    int bblen = 0;
+    int startP = 0, endP = 0;
+    for (int i = 0; i < column.size(); i++) {
+      bblen = bblen + column.getByteBuffer(i).array().length;
+    }
+    ByteBuffer bb = ByteBuffer.allocate(bblen);
+    int offset = bb.position();
+
+    for (int i = 0; i < column.size(); i++) {
+      int len = column.getByteBuffer(i).array().length;
+      endP = startP + len;
+      inner.addStartIndices(startP);
+      inner.addEndIndices(endP);
+
+      bb.put(column.getByteBuffer(i).array(), offset, len);
+      startP = endP;
+
+      offset = bb.position(); // offset + len;
+      len = 0;
+    }
+    bb.flip();
+    inner.setData(ByteString.copyFrom(bb));
+
+    return ColumnMessage.newBuilder()
+        .setType(ColumnMessage.Type.BYTES)
+        .setBytesColumn(inner)
         .build();
   }
 
@@ -276,6 +320,8 @@ public abstract class Column<T extends Comparable<?>> implements ReadableColumn,
         return defaultLongProto(column);
       case STRING_TYPE:
         return defaultStringProto(column);
+      case BYTES_TYPE:
+        return defaultBytesProto(column);
     }
     throw new UnsupportedOperationException("Serializing a column of type " + column.getType());
   }

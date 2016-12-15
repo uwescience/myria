@@ -6,6 +6,7 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
+import java.nio.ByteBuffer;
 import java.util.concurrent.ExecutionException;
 
 import org.apache.commons.lang3.StringUtils;
@@ -165,6 +166,10 @@ public final class SQLiteAccessMethod extends AccessMethod {
                             break;
                           case STRING_TYPE:
                             statement.bind(col + 1, tupleBatch.getString(col, row));
+                            break;
+                          case BYTES_TYPE:
+                            ByteBuffer bb = tupleBatch.getByteBuffer(col, row);
+                            statement.bind(col + 1, bb.array());
                             break;
                         }
                       }
@@ -389,6 +394,8 @@ public final class SQLiteAccessMethod extends AccessMethod {
         return "INTEGER";
       case STRING_TYPE:
         return "TEXT";
+      case BYTES_TYPE:
+        return "BLOB";
       default:
         throw new UnsupportedOperationException("Type " + type + " is not supported");
     }

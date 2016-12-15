@@ -126,6 +126,7 @@ import edu.washington.escience.myria.proto.TransportProto.TransportMessage;
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
 import edu.washington.escience.myria.storage.TupleBuffer;
+import edu.washington.escience.myria.storage.TupleUtils;
 import edu.washington.escience.myria.tools.MyriaGlobalConfigurationModule.DefaultInstancePath;
 import edu.washington.escience.myria.tools.MyriaGlobalConfigurationModule.FlowControlWriteBufferHighMarkBytes;
 import edu.washington.escience.myria.tools.MyriaGlobalConfigurationModule.FlowControlWriteBufferLowMarkBytes;
@@ -1542,7 +1543,7 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
 
     Random r = new Random();
     final TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
-    for (int i = 0; i < TupleBatch.BATCH_SIZE; i++) {
+    for (int i = 0; i < TupleUtils.get_Batch_size(schema); i++) {
       tbb.putLong(0, r.nextLong());
       tbb.putString(1, new java.util.Date().toString());
     }

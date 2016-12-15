@@ -4,6 +4,7 @@ import java.io.BufferedOutputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -149,6 +150,11 @@ public class PostgresBinaryTupleWriter implements TupleWriter {
             final byte[] utf8Bytes = string.getBytes("UTF-8");
             buffer.writeInt(utf8Bytes.length);
             buffer.write(utf8Bytes);
+            break;
+          case BYTES_TYPE:
+            ByteBuffer bb = tuples.getByteBuffer(j, i);
+            buffer.writeInt(bb.array().length);
+            buffer.write(bb.array());
             break;
         }
       }

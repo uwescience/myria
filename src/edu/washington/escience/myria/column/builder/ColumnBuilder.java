@@ -7,7 +7,7 @@ import java.sql.SQLException;
 import javax.annotation.Nonnull;
 
 import org.joda.time.DateTime;
-
+import java.nio.ByteBuffer;
 import com.almworks.sqlite4java.SQLiteException;
 import com.almworks.sqlite4java.SQLiteStatement;
 
@@ -65,6 +65,16 @@ public abstract class ColumnBuilder<T extends Comparable<?>>
 
   @Override
   public String getString(final int row) {
+    throw new UnsupportedOperationException(getClass().getName());
+  }
+
+  @Override
+  public ByteBuffer getByteBuffer(final int row) {
+    throw new UnsupportedOperationException(getClass().getName());
+  }
+
+  @Override
+  public ColumnBuilder<T> appendByteBuffer(final ByteBuffer value) throws BufferOverflowException {
     throw new UnsupportedOperationException(getClass().getName());
   }
 
@@ -180,6 +190,11 @@ public abstract class ColumnBuilder<T extends Comparable<?>>
 
   @Override
   public void replaceString(@Nonnull final String value, final int row) {
+    throw new UnsupportedOperationException(getClass().getName());
+  }
+
+  @Override
+  public void replaceByteBuffer(@Nonnull final ByteBuffer value, final int row) {
     throw new UnsupportedOperationException(getClass().getName());
   }
 }

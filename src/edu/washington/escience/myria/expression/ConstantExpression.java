@@ -111,6 +111,8 @@ public class ConstantExpression extends ZeroaryExpression {
         return value;
       case DATETIME_TYPE:
         throw new UnsupportedOperationException("using constant value of type DateTime");
+      case BYTES_TYPE:
+        throw new UnsupportedOperationException("using constant value of type BYTES");
       case STRING_TYPE:
         return '\"' + StringEscapeUtils.escapeJava(value) + '\"';
     }

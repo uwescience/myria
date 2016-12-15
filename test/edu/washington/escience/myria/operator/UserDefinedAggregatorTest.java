@@ -24,6 +24,7 @@ import edu.washington.escience.myria.operator.agg.AggregatorFactory;
 import edu.washington.escience.myria.operator.agg.UserDefinedAggregatorFactory;
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
+import edu.washington.escience.myria.storage.TupleUtils;
 import edu.washington.escience.myria.util.TestEnvVars;
 
 public class UserDefinedAggregatorTest {
@@ -31,7 +32,7 @@ public class UserDefinedAggregatorTest {
   private final ObjectReader reader =
       MyriaJsonMapperProvider.getReader().withType(AggregatorFactory.class);
   private final ObjectWriter writer = MyriaJsonMapperProvider.getWriter();
-  private final int NUM_TUPLES = 2 * TupleBatch.BATCH_SIZE;
+  private final int NUM_TUPLES = 2 * TupleUtils.get_Batch_size(Type.LONG_TYPE);
   private final int NUM_TUPLES_20K = 2 * 10000;
 
   /**

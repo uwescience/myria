@@ -3,7 +3,7 @@ package edu.washington.escience.myria.storage;
 import javax.annotation.Nonnull;
 
 import org.joda.time.DateTime;
-
+import java.nio.ByteBuffer;
 /**
  * An interface for a readable object holding a single column of tuples.
  */
@@ -81,4 +81,13 @@ public interface ReadableColumn extends ColumnInterface {
    */
   @Nonnull
   String getString(final int row);
+
+  /**
+   * Returns the long value at the specified row in this column.
+   *
+   * @param row row of element to return.
+   * @return the element at the specified row in this column.
+   * @throws UnsupportedOperationException if this column does not support this type.
+   */
+  ByteBuffer getByteBuffer(int row);
 }

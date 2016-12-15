@@ -13,12 +13,13 @@ import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.storage.TupleBatch;
+import edu.washington.escience.myria.storage.TupleUtils;
 
 public class TestCounter {
 
   @Test
   public void test() throws DbException {
-    long numTuples = 5 * TupleBatch.BATCH_SIZE + 3;
+    long numTuples = 5 * TupleUtils.get_Batch_size(Type.LONG_TYPE) + 3;
     String columnName = "Count";
 
     /* Plan: numTuples tuples, followed by a Counter. */

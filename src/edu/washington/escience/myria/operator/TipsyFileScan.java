@@ -28,6 +28,7 @@ import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
+import edu.washington.escience.myria.storage.TupleUtils;
 
 /**
  * Read and merge Tipsy bin file, iOrder ascii file and group number ascii file.
@@ -196,7 +197,7 @@ public class TipsyFileScan extends LeafOperator {
    * @throws DbException if error reading from file.
    */
   private void processGasRecords() throws DbException {
-    while (ngas > 0 && (buffer.numTuples() < TupleBatch.BATCH_SIZE)) {
+    while (ngas > 0 && (buffer.numTuples() < TupleUtils.get_Batch_size(generateSchema()))) {
       lineNumber++;
       try {
         int count = 0;
@@ -246,7 +247,7 @@ public class TipsyFileScan extends LeafOperator {
    * @throws DbException if error reading from file.
    */
   private void processDarkRecords() throws DbException {
-    while (ndark > 0 && (buffer.numTuples() < TupleBatch.BATCH_SIZE)) {
+    while (ndark > 0 && (buffer.numTuples() < TupleUtils.get_Batch_size(generateSchema()))) {
       lineNumber++;
       try {
         int count = 0;
@@ -296,7 +297,7 @@ public class TipsyFileScan extends LeafOperator {
    * @throws DbException if error reading from file.
    */
   private void processStarRecords() throws DbException {
-    while (nstar > 0 && (buffer.numTuples() < TupleBatch.BATCH_SIZE)) {
+    while (nstar > 0 && (buffer.numTuples() < TupleUtils.get_Batch_size(generateSchema()))) {
       lineNumber++;
       try {
         int count = 0;

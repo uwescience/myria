@@ -6,10 +6,15 @@ import java.nio.BufferOverflowException;
 
 import org.junit.Test;
 
+import com.google.inject.util.Types;
+import edu.washington.escience.myria.Type;
+//import com.sun.org.apache.xalan.internal.xsltc.compiler.util.Type;
+
 import edu.washington.escience.myria.column.BooleanColumn;
 import edu.washington.escience.myria.column.builder.BooleanColumnBuilder;
 import edu.washington.escience.myria.proto.DataProto.ColumnMessage;
 import edu.washington.escience.myria.storage.TupleBatch;
+import edu.washington.escience.myria.storage.TupleUtils;
 
 public class BooleanColumnTest {
 
@@ -40,7 +45,7 @@ public class BooleanColumnTest {
   @Test
   public void testFull() {
     final BooleanColumnBuilder builder = new BooleanColumnBuilder();
-    for (int i = 0; i < TupleBatch.BATCH_SIZE; i++) {
+    for (int i = 0; i < TupleUtils.get_Batch_size(Type.BOOLEAN_TYPE); i++) {
       builder.appendBoolean(true);
     }
     builder.build();
@@ -49,7 +54,7 @@ public class BooleanColumnTest {
   @Test(expected = BufferOverflowException.class)
   public void testOverflow() {
     final BooleanColumnBuilder builder = new BooleanColumnBuilder();
-    for (int i = 0; i < TupleBatch.BATCH_SIZE; i++) {
+    for (int i = 0; i < TupleUtils.get_Batch_size(Type.BOOLEAN_TYPE); i++) {
       builder.appendBoolean(false);
     }
     builder.appendBoolean(true);

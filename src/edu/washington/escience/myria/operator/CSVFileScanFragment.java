@@ -7,6 +7,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.nio.ByteBuffer;
 import java.util.Iterator;
 
 import javax.annotation.Nullable;
@@ -14,6 +15,7 @@ import javax.annotation.Nullable;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.BooleanUtils;
 
 import com.google.common.base.MoreObjects;
@@ -29,6 +31,7 @@ import edu.washington.escience.myria.io.DataSource;
 import edu.washington.escience.myria.io.FileSource;
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
+import edu.washington.escience.myria.storage.TupleUtils;
 import edu.washington.escience.myria.util.DateTimeUtils;
 
 /**
@@ -184,7 +187,7 @@ public class CSVFileScanFragment extends LeafOperator {
     long lineNumberBegin = lineNumber;
     boolean nextRecordTruncated = false;
 
-    while ((buffer.numTuples() < TupleBatch.BATCH_SIZE) && !flagAsIncomplete) {
+    while ((buffer.numTuples() < TupleUtils.get_Batch_size(schema)) && !flagAsIncomplete) {
       lineNumber++;
       if (parser.isClosed()) {
         break;
@@ -331,6 +334,9 @@ public class CSVFileScanFragment extends LeafOperator {
               case DATETIME_TYPE:
                 buffer.putDateTime(column, DateTimeUtils.parse(cell));
                 break;
+              case BYTES_TYPE:
+                buffer.putByteBuffer(column, getByteBuffer(cell));
+                break;
             }
           } catch (final IllegalArgumentException e) {
             throw new DbException(
@@ -456,5 +462,19 @@ public class CSVFileScanFragment extends LeafOperator {
     } catch (IOException e) {
       throw new DbException(e);
     }
+  }
+
+  protected ByteBuffer getByteBuffer(final String filename) throws DbException, IOException {
+    Preconditions.checkNotNull(filename, "s3 uri was null");
+    AmazonS3Source file = new AmazonS3Source(filename, null, null); // ??
+    InputStream is = file.getInputStream();
+
+    byte[] data = null;
+    try {
+      data = IOUtils.toByteArray(is);
+    } catch (IOException e) {
+      throw new DbException(e);
+    }
+    return ByteBuffer.wrap(data);
   }
 }

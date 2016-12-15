@@ -18,6 +18,7 @@ import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.io.ByteArraySource;
 import edu.washington.escience.myria.io.FileSource;
 import edu.washington.escience.myria.storage.TupleBatch;
+import edu.washington.escience.myria.storage.TupleUtils;
 
 public class CsvTupleReaderTest {
 
@@ -226,7 +227,7 @@ public class CsvTupleReaderTest {
     ByteArrayOutputStream bytes = new ByteArrayOutputStream();
     PrintStream printedBytes = new PrintStream(bytes);
     /* Print 2*TupleBatch.BATCH_SIZE lines */
-    for (int i = 0; i < TupleBatch.BATCH_SIZE * 2; ++i) {
+    for (int i = 0; i < TupleUtils.get_Batch_size(Type.INT_TYPE) * 2; ++i) {
       printedBytes.print(i);
       printedBytes.print('\n');
     }
@@ -236,7 +237,7 @@ public class CsvTupleReaderTest {
             new CsvTupleReader(
                 Schema.of(ImmutableList.of(Type.INT_TYPE), ImmutableList.of("col1"))),
             new ByteArraySource(bytes.toByteArray()));
-    assertEquals(2 * TupleBatch.BATCH_SIZE, getRowCount(scanBytes));
+    assertEquals(2 * TupleUtils.get_Batch_size(Type.INT_TYPE), getRowCount(scanBytes));
   }
 
   @Test

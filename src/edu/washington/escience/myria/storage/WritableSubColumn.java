@@ -4,7 +4,7 @@ import java.nio.BufferOverflowException;
 import java.util.Objects;
 
 import org.joda.time.DateTime;
-
+import java.nio.ByteBuffer;
 import com.google.common.base.Preconditions;
 
 import edu.washington.escience.myria.column.builder.WritableColumn;
@@ -76,6 +76,12 @@ public final class WritableSubColumn implements WritableColumn {
   @Override
   public WritableColumn appendString(final String value) throws BufferOverflowException {
     inner.putString(column, value);
+    return this;
+  }
+
+  @Override
+  public WritableColumn appendByteBuffer(final ByteBuffer value) throws BufferOverflowException {
+    inner.putByteBuffer(column, value);
     return this;
   }
 }

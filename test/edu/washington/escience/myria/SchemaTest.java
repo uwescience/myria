@@ -175,5 +175,9 @@ public class SchemaTest {
             .compatible(
                 Schema.ofFields(
                     Type.INT_TYPE, Type.DOUBLE_TYPE, Type.LONG_TYPE, Type.BOOLEAN_TYPE)));
+    assertFalse(
+        Schema.ofFields(Type.INT_TYPE, Type.DOUBLE_TYPE, Type.LONG_TYPE, Type.DATETIME_TYPE)
+            .compatible(
+                Schema.ofFields(Type.INT_TYPE, Type.DOUBLE_TYPE, Type.LONG_TYPE, Type.BYTES_TYPE)));
   }
 }

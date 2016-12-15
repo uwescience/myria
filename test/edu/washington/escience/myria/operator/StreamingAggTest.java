@@ -19,6 +19,7 @@ import edu.washington.escience.myria.operator.agg.SingleGroupByAggregate;
 import edu.washington.escience.myria.operator.agg.StreamingAggregate;
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
+import edu.washington.escience.myria.storage.TupleUtils;
 
 /**
  * Test cases for {@link StreamingAggregate} class. Source tuples are generated in sorted order on group keys, if any.
@@ -1064,8 +1065,9 @@ public class StreamingAggTest {
 
   @Test
   public void testSingleGroupAllAggLargeInput() throws DbException {
-    final int numTuples = 2 * TupleBatch.BATCH_SIZE;
+
     final Schema schema = Schema.ofFields(Type.LONG_TYPE, "gkey", Type.LONG_TYPE, "value");
+    final int numTuples = 2 * TupleUtils.get_Batch_size(schema);
 
     final TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
     // {0, i}
@@ -1118,10 +1120,11 @@ public class StreamingAggTest {
 
   @Test
   public void testMultiGroupAllAggLargeInput() throws DbException {
-    final int numTuples = 3 * TupleBatch.BATCH_SIZE;
+
     final Schema schema =
         Schema.ofFields(Type.LONG_TYPE, "g0", Type.LONG_TYPE, "g1", Type.LONG_TYPE, "value");
     final TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
+    final int numTuples = 3 * TupleUtils.get_Batch_size(schema);
     // split into 4 groups, each group may spread across different batches
     // {0, 0, i} in first group, {0, 1, i} in second, {0, 2, i} in third, {0, 3, i} in fourth
     int sumFirst = 0;
@@ -1226,9 +1229,11 @@ public class StreamingAggTest {
 
   @Test
   public void testMultiBatchResult() throws DbException {
-    final int numTuples = 3 * TupleBatch.BATCH_SIZE + 3;
+
     final Schema schema = Schema.ofFields(Type.LONG_TYPE, "gkey", Type.LONG_TYPE, "value");
     final TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
+    final int numTuples = 3 * TupleUtils.get_Batch_size(schema) + 3;
+    final int batchSize = TupleUtils.get_Batch_size(schema);
     // gkey: 0, 1, 2, ..., numTuples-1; value: 1, 1, 1, ...
     for (long i = 0; i < numTuples; i++) {
       tbb.putLong(0, i);
@@ -1243,18 +1248,18 @@ public class StreamingAggTest {
     agg.open(null);
     TupleBatch result = agg.nextReady();
     assertNotNull(result);
-    assertEquals(TupleBatch.BATCH_SIZE, result.numTuples());
+    assertEquals(batchSize, result.numTuples());
     assertEquals(2, result.getSchema().numColumns());
     // aggregator should return filled tuple batch, even if it hasn't finished processing all input
     assertFalse(agg.getChild().eos());
     // get second tuple batch
     result = agg.nextReady();
-    assertEquals(TupleBatch.BATCH_SIZE, result.numTuples());
+    assertEquals(batchSize, result.numTuples());
     assertEquals(2, result.getSchema().numColumns());
     assertFalse(agg.getChild().eos());
     // get third tuple batch
     result = agg.nextReady();
-    assertEquals(TupleBatch.BATCH_SIZE, result.numTuples());
+    assertEquals(batchSize, result.numTuples());
     assertEquals(2, result.getSchema().numColumns());
     assertFalse(agg.getChild().eos());
     // get last, non-filled tuple batch

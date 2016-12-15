@@ -2,6 +2,7 @@ package edu.washington.escience.myria.storage;
 
 import com.google.common.base.Preconditions;
 
+import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.builder.ColumnBuilder;
 
@@ -44,6 +45,9 @@ public final class TupleUtils {
       case STRING_TYPE:
         to.appendString(from.getString(fromRow));
         break;
+      case BYTES_TYPE:
+        to.appendByteBuffer(from.getByteBuffer(fromRow));
+        break;
     }
   }
 
@@ -79,6 +83,9 @@ public final class TupleUtils {
         break;
       case STRING_TYPE:
         to.putString(toColumn, from.getString(fromRow));
+        break;
+      case BYTES_TYPE:
+        to.putByteBuffer(toColumn, from.getByteBuffer(fromRow));
         break;
     }
   }
@@ -121,6 +128,9 @@ public final class TupleUtils {
       case STRING_TYPE:
         to.appendString(from.getString(fromColumn, fromRow));
         break;
+      case BYTES_TYPE:
+        to.appendByteBuffer(from.getByteBuffer(fromColumn, fromRow));
+        break;
     }
   }
 
@@ -162,6 +172,9 @@ public final class TupleUtils {
       case STRING_TYPE:
         to.putString(toColumn, from.getString(fromColumn, fromRow));
         break;
+      case BYTES_TYPE:
+        to.putByteBuffer(toColumn, from.getByteBuffer(fromColumn, fromRow));
+        break;
     }
   }
 
@@ -200,6 +213,9 @@ public final class TupleUtils {
       case DATETIME_TYPE:
         return Type.compareRaw(
             table1.getDateTime(column1, row1), table2.getDateTime(column2, row2));
+      case BYTES_TYPE:
+        return Type.compareRaw(
+            table1.getByteBuffer(column1, row1), table2.getByteBuffer(column2, row2));
     }
 
     throw new IllegalStateException("Invalid type.");
@@ -331,6 +347,12 @@ public final class TupleUtils {
             return false;
           }
           break;
+        case BYTES_TYPE:
+          if (!table1
+              .getByteBuffer(compareColumns1[i], row1)
+              .equals(table2.getByteBuffer(compareColumns2[i], row2))) {
+            return false;
+          }
       }
     }
     return true;
@@ -384,6 +406,11 @@ public final class TupleUtils {
           break;
         case DATETIME_TYPE:
           if (!table1.getDateTime(i, row1).equals(table2.getDateTime(i, row2))) {
+            return false;
+          }
+          break;
+        case BYTES_TYPE:
+          if (!table1.getByteBuffer(i, row1).equals(table2.getByteBuffer(i, row2))) {
             return false;
           }
           break;
@@ -449,8 +476,35 @@ public final class TupleUtils {
             return false;
           }
           break;
+        case BYTES_TYPE:
+          if (!table1
+              .getByteBuffer(compareColumns[i], row1)
+              .equals(table2.getByteBuffer(i, index))) {
+            return false;
+          }
+          break;
       }
     }
     return true;
+  }
+
+  public static int get_Batch_size(Schema schema) {
+    int batchSize = 1000 * 10;
+    for (int j = 0; j < schema.numColumns(); ++j) {
+      Type type = schema.getColumnType(j);
+      if (type == Type.BYTES_TYPE) {
+        batchSize = 1;
+      }
+    }
+    return batchSize;
+  }
+
+  public static int get_Batch_size(Type type) {
+    int batchSize = 1000 * 10;
+    if (type == Type.BYTES_TYPE) {
+      batchSize = 1;
+    }
+
+    return batchSize;
   }
 }

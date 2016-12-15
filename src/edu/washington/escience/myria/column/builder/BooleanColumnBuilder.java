@@ -3,17 +3,20 @@ package edu.washington.escience.myria.column.builder;
 import java.nio.BufferOverflowException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Arrays;
 import java.util.BitSet;
 
 import com.almworks.sqlite4java.SQLiteException;
 import com.almworks.sqlite4java.SQLiteStatement;
 import com.google.common.base.Preconditions;
 
+import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.BooleanColumn;
 import edu.washington.escience.myria.column.mutable.BooleanMutableColumn;
 import edu.washington.escience.myria.proto.DataProto.ColumnMessage;
 import edu.washington.escience.myria.storage.TupleBatch;
+import edu.washington.escience.myria.storage.TupleUtils;
 import edu.washington.escience.myria.util.MyriaUtils;
 
 /**
@@ -39,7 +42,9 @@ public final class BooleanColumnBuilder extends ColumnBuilder<Boolean> {
   public BooleanColumnBuilder() {
     data = new BitSet();
     numBits = 0;
-    capacity = TupleBatch.BATCH_SIZE;
+    Schema schema = new Schema(Arrays.asList(Type.BOOLEAN_TYPE));
+    int batchSize = TupleUtils.get_Batch_size(schema);
+    capacity = batchSize;
   }
 
   /**
@@ -87,7 +92,8 @@ public final class BooleanColumnBuilder extends ColumnBuilder<Boolean> {
   public BooleanColumnBuilder appendBoolean(final boolean value) throws BufferOverflowException {
     Preconditions.checkArgument(
         !built, "No further changes are allowed after the builder has built the column.");
-    if (numBits >= TupleBatch.BATCH_SIZE) {
+
+    if (numBits >= TupleUtils.get_Batch_size(Type.BOOLEAN_TYPE)) {
       throw new BufferOverflowException();
     }
     data.set(numBits++, value);

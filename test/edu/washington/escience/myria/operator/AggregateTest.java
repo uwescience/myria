@@ -43,6 +43,7 @@ import edu.washington.escience.myria.operator.agg.SingleGroupByAggregate;
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
 import edu.washington.escience.myria.storage.TupleBuffer;
+import edu.washington.escience.myria.storage.TupleUtils;
 import edu.washington.escience.myria.util.HashUtils;
 import edu.washington.escience.myria.util.TestEnvVars;
 import edu.washington.escience.myria.util.TestUtils;
@@ -392,7 +393,7 @@ public class AggregateTest {
 
   @Test
   public void testSingleGroupAvg() throws DbException, InterruptedException {
-    final int numTuples = 2 * TupleBatch.BATCH_SIZE + 1;
+    final int numTuples = 2 * TupleUtils.get_Batch_size(Type.DOUBLE_TYPE) + 1;
 
     final TupleBatchBuffer testBase = generateRandomTuples(numTuples);
     // group by name, aggregate on id
@@ -417,7 +418,7 @@ public class AggregateTest {
 
   @Test
   public void testSingleGroupMax() throws DbException, InterruptedException {
-    final int numTuples = 2 * TupleBatch.BATCH_SIZE + 1;
+    final int numTuples = 2 * TupleUtils.get_Batch_size(Type.LONG_TYPE) + 1;
 
     final TupleBatchBuffer testBase = generateRandomTuples(numTuples);
     // group by name, aggregate on id
@@ -460,7 +461,7 @@ public class AggregateTest {
 
   @Test
   public void testSingleGroupMin() throws DbException, InterruptedException {
-    final int numTuples = 2 * TupleBatch.BATCH_SIZE + 1;
+    final int numTuples = 2 * TupleUtils.get_Batch_size(Type.LONG_TYPE) + 1;
 
     final TupleBatchBuffer testBase = generateRandomTuples(numTuples);
     // group by name, aggregate on id
@@ -503,7 +504,7 @@ public class AggregateTest {
 
   @Test
   public void testSingleGroupSum() throws DbException, InterruptedException {
-    final int numTuples = 2 * TupleBatch.BATCH_SIZE + 1;
+    final int numTuples = 2 * TupleUtils.get_Batch_size(Type.DOUBLE_TYPE) + 1;
 
     final TupleBatchBuffer testBase = generateRandomTuples(numTuples);
     // group by name, aggregate on id
@@ -575,7 +576,7 @@ public class AggregateTest {
 
   @Test
   public void testMultiGroupSum() throws DbException {
-    final int numTuples = 2 * TupleBatch.BATCH_SIZE + 2;
+    final int numTuples = 2 * TupleUtils.get_Batch_size(Type.DOUBLE_TYPE) + 2;
     final Schema schema =
         new Schema(
             ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE, Type.LONG_TYPE, Type.LONG_TYPE),

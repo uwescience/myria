@@ -3,7 +3,7 @@ package edu.washington.escience.myria.storage;
 import java.util.Objects;
 
 import org.joda.time.DateTime;
-
+import java.nio.ByteBuffer;
 import com.google.common.base.Preconditions;
 
 import edu.washington.escience.myria.Type;
@@ -77,5 +77,10 @@ public final class ReadableSubColumn implements ReadableColumn {
   @Override
   public String getString(final int row) {
     return inner.getString(column, row);
+  }
+
+  @Override
+  public ByteBuffer getByteBuffer(final int row) {
+    return inner.getByteBuffer(column, row);
   }
 }

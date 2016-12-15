@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.Objects;
 
 import org.joda.time.DateTime;
-
+import java.nio.ByteBuffer;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 
@@ -69,10 +69,10 @@ public class TupleBuffer implements ReadableTable, AppendableTable {
    */
   private void finishBatch() {
     Preconditions.checkState(
-        currentBatchSize == TupleBatch.BATCH_SIZE,
+        currentBatchSize == TupleUtils.get_Batch_size(schema),
         "cannot finish a batch with %s < %s rows ready",
         currentBatchSize,
-        TupleBatch.BATCH_SIZE);
+        TupleUtils.get_Batch_size(schema));
     finishBatchEvenIfSmall();
     currentBatch = ColumnFactory.allocateColumns(schema);
   }
@@ -111,8 +111,8 @@ public class TupleBuffer implements ReadableTable, AppendableTable {
   @Deprecated
   public final Object getObject(final int column, final int row) {
     Preconditions.checkElementIndex(row, numTuples());
-    int batchIndex = row / TupleBatch.BATCH_SIZE;
-    int localRow = row % TupleBatch.BATCH_SIZE;
+    int batchIndex = row / TupleUtils.get_Batch_size(schema);
+    int localRow = row % TupleUtils.get_Batch_size(schema);
     if (batchIndex < readyBatches.size()) {
       return readyBatches.get(batchIndex).getObject(column, localRow);
     }
@@ -122,8 +122,8 @@ public class TupleBuffer implements ReadableTable, AppendableTable {
   @Override
   public final boolean getBoolean(final int column, final int row) {
     Preconditions.checkElementIndex(row, numTuples());
-    int batchIndex = row / TupleBatch.BATCH_SIZE;
-    int localRow = row % TupleBatch.BATCH_SIZE;
+    int batchIndex = row / TupleUtils.get_Batch_size(schema);
+    int localRow = row % TupleUtils.get_Batch_size(schema);
     if (batchIndex < readyBatches.size()) {
       return readyBatches.get(batchIndex).getBoolean(column, localRow);
     }
@@ -133,8 +133,8 @@ public class TupleBuffer implements ReadableTable, AppendableTable {
   @Override
   public final DateTime getDateTime(final int column, final int row) {
     Preconditions.checkElementIndex(row, numTuples());
-    int batchIndex = row / TupleBatch.BATCH_SIZE;
-    int localRow = row % TupleBatch.BATCH_SIZE;
+    int batchIndex = row / TupleUtils.get_Batch_size(schema);
+    int localRow = row % TupleUtils.get_Batch_size(schema);
     if (batchIndex < readyBatches.size()) {
       return readyBatches.get(batchIndex).getDateTime(column, localRow);
     }
@@ -144,8 +144,8 @@ public class TupleBuffer implements ReadableTable, AppendableTable {
   @Override
   public final double getDouble(final int column, final int row) {
     Preconditions.checkElementIndex(row, numTuples());
-    int batchIndex = row / TupleBatch.BATCH_SIZE;
-    int localRow = row % TupleBatch.BATCH_SIZE;
+    int batchIndex = row / TupleUtils.get_Batch_size(schema);
+    int localRow = row % TupleUtils.get_Batch_size(schema);
     if (batchIndex < readyBatches.size()) {
       return readyBatches.get(batchIndex).getDouble(column, localRow);
     }
@@ -155,8 +155,8 @@ public class TupleBuffer implements ReadableTable, AppendableTable {
   @Override
   public final float getFloat(final int column, final int row) {
     Preconditions.checkElementIndex(row, numTuples());
-    int batchIndex = row / TupleBatch.BATCH_SIZE;
-    int localRow = row % TupleBatch.BATCH_SIZE;
+    int batchIndex = row / TupleUtils.get_Batch_size(schema);
+    int localRow = row % TupleUtils.get_Batch_size(schema);
     if (batchIndex < readyBatches.size()) {
       return readyBatches.get(batchIndex).getFloat(column, localRow);
     }
@@ -166,8 +166,8 @@ public class TupleBuffer implements ReadableTable, AppendableTable {
   @Override
   public final long getLong(final int column, final int row) {
     Preconditions.checkElementIndex(row, numTuples());
-    int batchIndex = row / TupleBatch.BATCH_SIZE;
-    int localRow = row % TupleBatch.BATCH_SIZE;
+    int batchIndex = row / TupleUtils.get_Batch_size(schema);
+    int localRow = row % TupleUtils.get_Batch_size(schema);
     if (batchIndex < readyBatches.size()) {
       return readyBatches.get(batchIndex).getLong(column, localRow);
     }
@@ -177,8 +177,8 @@ public class TupleBuffer implements ReadableTable, AppendableTable {
   @Override
   public final int getInt(final int column, final int row) {
     Preconditions.checkElementIndex(row, numTuples());
-    int batchIndex = row / TupleBatch.BATCH_SIZE;
-    int localRow = row % TupleBatch.BATCH_SIZE;
+    int batchIndex = row / TupleUtils.get_Batch_size(schema);
+    int localRow = row % TupleUtils.get_Batch_size(schema);
     if (batchIndex < readyBatches.size()) {
       return readyBatches.get(batchIndex).getInt(column, localRow);
     }
@@ -188,12 +188,23 @@ public class TupleBuffer implements ReadableTable, AppendableTable {
   @Override
   public final String getString(final int column, final int row) {
     Preconditions.checkElementIndex(row, numTuples());
-    int batchIndex = row / TupleBatch.BATCH_SIZE;
-    int localRow = row % TupleBatch.BATCH_SIZE;
+    int batchIndex = row / TupleUtils.get_Batch_size(schema);
+    int localRow = row % TupleUtils.get_Batch_size(schema);
     if (batchIndex < readyBatches.size()) {
       return readyBatches.get(batchIndex).getString(column, localRow);
     }
     return currentBatch.get(column).getString(localRow);
+  }
+
+  @Override
+  public final ByteBuffer getByteBuffer(final int column, final int row) {
+    Preconditions.checkElementIndex(row, numTuples());
+    int batchIndex = row / TupleUtils.get_Batch_size(schema);
+    int localRow = row % TupleUtils.get_Batch_size(schema);
+    if (batchIndex < readyBatches.size()) {
+      return readyBatches.get(batchIndex).getByteBuffer(column, localRow);
+    }
+    return currentBatch.get(column).getByteBuffer(localRow);
   }
 
   @Override
@@ -258,6 +269,13 @@ public class TupleBuffer implements ReadableTable, AppendableTable {
     columnPut(column);
   }
 
+  @Override
+  public final void putByteBuffer(final int column, final ByteBuffer value) {
+    checkPutIndex(column);
+    currentBatch.get(column).appendByteBuffer(value);
+    columnPut(column);
+  }
+
   /**
    * Helper function: checks whether the specified column can be inserted into.
    *
@@ -283,7 +301,7 @@ public class TupleBuffer implements ReadableTable, AppendableTable {
       numTuples++;
       numColumnsReady = 0;
       columnsReady.clear();
-      if (currentBatchSize == TupleBatch.BATCH_SIZE) {
+      if (currentBatchSize == TupleUtils.get_Batch_size(schema)) {
         finishBatch();
       }
     }

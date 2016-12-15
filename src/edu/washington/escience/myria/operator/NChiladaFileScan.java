@@ -29,6 +29,7 @@ import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
+import edu.washington.escience.myria.storage.TupleUtils;
 
 /**
  * Parse NChilada file formats. See <a
@@ -495,7 +496,7 @@ public class NChiladaFileScan extends LeafOperator {
         throw new DbException("Invalide pType: " + pType);
     }
     // TODO(leelee): Put 0 for now to replace null values.
-    while (numRows > 0 && buffer.numTuples() < TupleBatch.BATCH_SIZE) {
+    while (numRows > 0 && buffer.numTuples() < TupleUtils.get_Batch_size(generateSchema())) {
       lineNumber++;
       int column = 0;
       // -2 to exclude grp, and type.

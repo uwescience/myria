@@ -5,7 +5,7 @@ import java.util.Arrays;
 import java.util.BitSet;
 import java.util.List;
 import java.util.Objects;
-
+import java.nio.ByteBuffer;
 import org.joda.time.DateTime;
 
 import com.google.common.base.Preconditions;
@@ -29,7 +29,7 @@ public class TupleBatch implements ReadableTable, Serializable {
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
   /** The hard-coded number of tuples in a batch. */
-  public static final int BATCH_SIZE = 10 * 1000;
+  //private  int BATCH_SIZE; //= 10 * 1000;
   /** Schema of tuples in this batch. */
   private final Schema schema;
   /** Tuple data stored as columns in this batch. */
@@ -54,9 +54,11 @@ public class TupleBatch implements ReadableTable, Serializable {
     }
     columns = b.build();
     isEOI = isEoi;
+    //BATCH_SIZE = batch_size;
+
   }
 
-  /**
+  /*
    * @param columnNames the new column names.
    * @return a shallow copy of the specified TupleBatch with the new column names.
    */
@@ -227,6 +229,11 @@ public class TupleBatch implements ReadableTable, Serializable {
   @Override
   public final DateTime getDateTime(final int column, final int row) {
     return columns.get(column).getDateTime(row);
+  }
+
+  @Override
+  public ByteBuffer getByteBuffer(final int column, final int row) {
+    return columns.get(column).getByteBuffer(row);
   }
 
   @Override

@@ -5,7 +5,7 @@ import java.util.BitSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
-
+import java.nio.ByteBuffer;
 import org.joda.time.DateTime;
 
 import com.google.common.base.Preconditions;
@@ -117,7 +117,7 @@ public class TupleBatchBuffer implements AppendableTable {
       numColumnsReady = 0;
       columnsReady.clear();
       /* See if the current batch is full and finish it if so. */
-      if (currentInProgressTuples == TupleBatch.BATCH_SIZE) {
+      if (currentInProgressTuples == TupleUtils.get_Batch_size(schema)) {
         finishBatch();
       }
     }
@@ -346,7 +346,7 @@ public class TupleBatchBuffer implements AppendableTable {
           currentBuildingColumns.get(i + leftAnswerColumns.length));
     }
     currentInProgressTuples++;
-    if (currentInProgressTuples == TupleBatch.BATCH_SIZE) {
+    if (currentInProgressTuples == TupleUtils.get_Batch_size(schema)) {
       finishBatch();
     }
   }
@@ -395,7 +395,9 @@ public class TupleBatchBuffer implements AppendableTable {
    */
   public final void append(final MutableTupleBuffer tuples, final int col, final int row) {
     appendFromColumn(
-        columnsReady.nextClearBit(0), tuples.getColumn(col, row), row % TupleBatch.BATCH_SIZE);
+        columnsReady.nextClearBit(0),
+        tuples.getColumn(col, row),
+        row % TupleUtils.get_Batch_size(schema));
   }
 
   /**
@@ -464,6 +466,13 @@ public class TupleBatchBuffer implements AppendableTable {
   public final void putString(final int column, final String value) {
     checkPutIndex(column);
     currentBuildingColumns.get(column).appendString(value);
+    columnPut(column);
+  }
+
+  @Override
+  public final void putByteBuffer(final int column, final ByteBuffer value) {
+    checkPutIndex(column);
+    currentBuildingColumns.get(column).appendByteBuffer(value);
     columnPut(column);
   }
 

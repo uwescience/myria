@@ -1,7 +1,7 @@
 package edu.washington.escience.myria.storage;
 
 import javax.annotation.Nonnull;
-
+import java.nio.ByteBuffer;
 import org.joda.time.DateTime;
 
 /**
@@ -70,4 +70,13 @@ public interface ReplaceableColumn extends ReadableColumn {
    * @throws UnsupportedOperationException if this column does not support this type.
    */
   void replaceString(@Nonnull final String value, final int row);
+
+  /**
+   * Replaces the value at the specified row in this column.
+   *
+   * @param value the new value.
+   * @param row row of element to replace.
+   * @throws UnsupportedOperationException if this column does not support this type.
+   */
+  void replaceByteBuffer(final ByteBuffer value, final int row);
 }

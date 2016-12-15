@@ -6,10 +6,12 @@ import java.nio.BufferOverflowException;
 
 import org.junit.Test;
 
+import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.LongColumn;
 import edu.washington.escience.myria.column.builder.LongColumnBuilder;
 import edu.washington.escience.myria.proto.DataProto.ColumnMessage;
 import edu.washington.escience.myria.storage.TupleBatch;
+import edu.washington.escience.myria.storage.TupleUtils;
 
 public class LongColumnTest {
 
@@ -26,7 +28,7 @@ public class LongColumnTest {
   @Test
   public void testFull() {
     final LongColumnBuilder builder = new LongColumnBuilder();
-    for (int i = 0; i < TupleBatch.BATCH_SIZE; i++) {
+    for (int i = 0; i < TupleUtils.get_Batch_size(Type.LONG_TYPE); i++) {
       builder.appendLong(i);
     }
     builder.build();
@@ -35,7 +37,7 @@ public class LongColumnTest {
   @Test(expected = BufferOverflowException.class)
   public void testOverflow() {
     final LongColumnBuilder builder = new LongColumnBuilder();
-    for (int i = 0; i < TupleBatch.BATCH_SIZE; i++) {
+    for (int i = 0; i < TupleUtils.get_Batch_size(Type.LONG_TYPE); i++) {
       builder.appendLong(i);
     }
     builder.appendLong(0);
