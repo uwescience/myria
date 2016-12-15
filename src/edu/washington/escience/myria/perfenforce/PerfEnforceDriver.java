@@ -5,7 +5,6 @@ package edu.washington.escience.myria.perfenforce;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -40,10 +39,12 @@ public final class PerfEnforceDriver {
   final public static List<Integer> configurations = Arrays.asList(4, 6, 8, 10, 12);
 
   public static Path configurationPath;
+  
   public static List<PerfEnforceTableEncoding> tableList;
   public static PerfEnforceTableEncoding factTableDesc;
 
   private final Server server;
+  private String dataPreparationStatus;
   private boolean isDonePSLA;
 
   private PerfEnforceOnlineLearning perfenforceOnlineLearning;
@@ -51,6 +52,7 @@ public final class PerfEnforceDriver {
   public PerfEnforceDriver(final Server server, final String instancePath) {
     configurationPath = (Paths.get(instancePath, "perfenforce_files"));
     this.server = server;
+    dataPreparationStatus="";
     isDonePSLA = false;
   }
 
@@ -72,17 +74,17 @@ public final class PerfEnforceDriver {
       }
       bufferedReader.close();
     } catch (Exception e) {
-      throw e;
-      //throw new PerfEnforceException("Error while fetching files from S3");
+      throw new PerfEnforceException("Error while fetching files from S3");
     }
   }
 
   public void preparePSLA(List<PerfEnforceTableEncoding> tableList) throws Exception {
-    this.tableList = tableList;
+    PerfEnforceDriver.tableList = tableList;
     fetchS3Files();
 
     PerfEnforceDataPreparation perfenforceDataPrepare = new PerfEnforceDataPreparation(server);
 
+    dataPreparationStatus = "Ingesting Data";
     for (PerfEnforceTableEncoding currentTable : tableList) {
       if (currentTable.type.equalsIgnoreCase("fact")) {
         perfenforceDataPrepare.ingestFact(currentTable);
@@ -90,21 +92,22 @@ public final class PerfEnforceDriver {
       } else {
         perfenforceDataPrepare.ingestDimension(currentTable);
       }
+      dataPreparationStatus = "Analyzing Data";
       perfenforceDataPrepare.analyzeTable(currentTable);
     }
 
-    //here, need to write list to disk
+    dataPreparationStatus = "Collecting Statistics";
     perfenforceDataPrepare.collectSelectivities();
 
     Gson gson = new Gson();
     String schemaDefinitionFile = gson.toJson(tableList);
     PrintWriter out =
-        new PrintWriter(configurationPath.resolve("SchemaDefinition.json").toString());
+        new PrintWriter(configurationPath.resolve("PSLAGeneration")
+        								.resolve("SchemaDefinition.json").toString());
     out.print(schemaDefinitionFile);
-    LOGGER.warn("OUTPUT " + schemaDefinitionFile);
-    out.flush();
     out.close();
 
+    dataPreparationStatus = "Generating Queries for PSLA";
     PSLAManagerWrapper pslaManager = new PSLAManagerWrapper();
     pslaManager.generateQueries();
     perfenforceDataPrepare.collectFeaturesFromGeneratedQueries();
@@ -112,23 +115,22 @@ public final class PerfEnforceDriver {
     pslaManager.generatePSLA();
     isDonePSLA = true;
   }
-
-  /*
-   * Start the tier and begin the new query session
-   */
-
+  public String getDataPreparationStatus()
+  {
+	  return dataPreparationStatus;
+  }
   public boolean isDonePSLA() {
     return isDonePSLA;
   }
 
-  public String getPSLA() throws FileNotFoundException {
-    Reader input = new FileReader(new File(configurationPath.resolve("FinalPSLA.json").toString()));
+  public String getPSLA() throws PerfEnforceException {
     StringWriter output = new StringWriter();
-    LOGGER.warn("PSLA " + output);
     try {
+      Reader input = new FileReader(new File(configurationPath.resolve("PSLAGeneration")
+    		  												  .resolve("FinalPSLA.json").toString()));
       IOUtils.copy(input, output);
     } catch (IOException e) {
-      e.printStackTrace();
+     throw new PerfEnforceException();
     }
     return output.toString();
   }
@@ -137,7 +139,7 @@ public final class PerfEnforceDriver {
     perfenforceOnlineLearning = new PerfEnforceOnlineLearning(server, tier);
   }
 
-  public void findSLA(String querySQL) throws PerfEnforceException, Exception {
+  public void findSLA(String querySQL) throws PerfEnforceException{
     perfenforceOnlineLearning.findSLA(querySQL);
     perfenforceOnlineLearning.findBestClusterSize();
   }
@@ -148,10 +150,6 @@ public final class PerfEnforceDriver {
 
   public PerfEnforceQueryMetadataEncoding getCurrentQuery() {
     return perfenforceOnlineLearning.getCurrentQuery();
-  }
-
-  public PerfEnforceQueryMetadataEncoding getPreviousQuery() {
-    return perfenforceOnlineLearning.getPreviousQuery();
   }
 
   public int getClusterSize() {

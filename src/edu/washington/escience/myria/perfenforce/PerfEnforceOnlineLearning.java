@@ -29,7 +29,6 @@ public class PerfEnforceOnlineLearning {
 
   List<String> previousDataPoints;
   private PerfEnforceQueryMetadataEncoding currentQuery;
-  private final PerfEnforceQueryMetadataEncoding previousQuery;
   private final String onlineLearningPath;
   private final Double[] queryPredictions;
   private int clusterSize;
@@ -43,28 +42,28 @@ public class PerfEnforceOnlineLearning {
     selectedTier = tier;
     clusterSize = PerfEnforceDriver.configurations.get(tier);
     currentQuery = new PerfEnforceQueryMetadataEncoding();
-    previousQuery = new PerfEnforceQueryMetadataEncoding();
     queryPredictions = new Double[PerfEnforceDriver.configurations.size()];
     onlineLearningPath =
-        PerfEnforceDriver.configurationPath.resolve("ScalingAlgorithms").toString();
+        PerfEnforceDriver.configurationPath.resolve("PerfEnforceScaling").toString();
     previousDataPoints = new ArrayList<String>();
     this.server = server;
   }
 
-  public void findSLA(final String querySQL) throws PerfEnforceException, Exception {
+  public void findSLA(final String querySQL) throws PerfEnforceException {
+	String pslaPath = PerfEnforceDriver.configurationPath.resolve("PSLAGeneration").toString();
+	  
     int currentClusterSize = PerfEnforceDriver.configurations.get(selectedTier);
     String currentQueryForState = "";
     String factTableName = PerfEnforceDriver.factTableDesc.relationKey.getRelationName();
     if (querySQL.contains(factTableName)) {
       currentQueryForState = querySQL.replace(factTableName, factTableName + currentClusterSize);
-      LOGGER.warn(currentQueryForState);
     }
     String highestFeatures =
-        PerfEnforceUtils.getMaxFeature(server, currentQueryForState, clusterSize);
+        PerfEnforceUtils.getMaxFeature(server, currentQueryForState, currentClusterSize);
 
     try {
       PrintWriter featureWriter =
-          new PrintWriter(Paths.get(onlineLearningPath, "TESTING.arff").toString(), "UTF-8");
+          new PrintWriter(Paths.get(pslaPath, "current-q-features.arff").toString(), "UTF-8");
 
       featureWriter.write("@relation testing \n");
 
@@ -84,54 +83,46 @@ public class PerfEnforceOnlineLearning {
       // predict the runtime
       String[] cmd = {
         "java",
-        "-cp",
-        Paths.get(onlineLearningPath, "weka.jar").toString(),
+        "-classpath",
+        Paths.get(pslaPath, "weka.jar").toString(),
         "weka.classifiers.rules.M5Rules",
         "-M",
         "4.0",
         "-t",
-        Paths.get(onlineLearningPath, "WekaTraining", clusterSize + "_Workers", "TRAINING.arff")
+        Paths.get(pslaPath, "TRAINING.arff")
             .toString(),
         "-T",
-        Paths.get(onlineLearningPath, "TESTING.arff").toString(),
+        Paths.get(pslaPath, "current-q-features.arff").toString(),
         "-p",
         "0",
         "-classifications",
-        "\"weka.classifiers.evaluation.output.prediction.CSV -file "
-            + Paths.get(onlineLearningPath, "results.txt").toString()
+        "weka.classifiers.evaluation.output.prediction.CSV -file \""
+            + Paths.get(pslaPath, "current-q-results.txt").toString()
             + "\""
       };
-      //ProcessBuilder pb = new ProcessBuilder(cmd);
-      for (int c = 0; c < cmd.length; c++) {
-        LOGGER.warn(cmd[c]);
-      }
 
       Process p = Runtime.getRuntime().exec(cmd);
-
-      String output = "";
       BufferedReader reader = new BufferedReader(new InputStreamReader(p.getInputStream()));
-      while ((output = reader.readLine()) != null) {
-
-        LOGGER.warn(output);
+      while ((reader.readLine()) != null) {
       }
 
       String querySLA = "";
       BufferedReader predictionReader =
           new BufferedReader(
-              new FileReader(Paths.get(onlineLearningPath, "results.txt").toString()));
+              new FileReader(Paths.get(pslaPath, "current-q-results.txt").toString()));
       predictionReader.readLine();
       querySLA = predictionReader.readLine().split(",")[2];
       predictionReader.close();
 
+      /**TODO: Split this section to another call **/
       for (int c : PerfEnforceDriver.configurations) {
-        // TEMP?
+    	 /**TODO: Should this subsection be here? **/
         currentClusterSize = c;
         currentQueryForState = "";
         factTableName = PerfEnforceDriver.factTableDesc.relationKey.getRelationName();
         if (querySQL.contains(factTableName)) {
           currentQueryForState =
               querySQL.replace(factTableName, factTableName + currentClusterSize);
-          LOGGER.warn(currentQueryForState);
         }
 
         String maxFeatureForConfiguration =
@@ -190,7 +181,6 @@ public class PerfEnforceOnlineLearning {
       double onlinePrediction = queryPredictions[currentState];
 
       onlinePrediction = (onlinePrediction < 0) ? 0 : onlinePrediction;
-
       double currentRatio = 0;
       if (currentQuery.slaRuntime == 0) {
         currentRatio = onlinePrediction / 1;
@@ -205,11 +195,10 @@ public class PerfEnforceOnlineLearning {
       }
     }
 
-    // Officially record the winner
     clusterSize = PerfEnforceDriver.configurations.get(winnerIndex);
   }
 
-  public void trainOnlineQueries(final int clusterIndex, final int queryID) throws Exception {
+  public void trainOnlineQueries(final int clusterIndex, final int queryID) throws PerfEnforceException {
     String MOAFileName = Paths.get(onlineLearningPath, "OMLFiles", "moa.jar").toString();
     String trainingFileName = Paths.get(onlineLearningPath, "OMLFiles", "training.arff").toString();
     String modifiedTrainingFileName =
@@ -246,8 +235,7 @@ public class PerfEnforceOnlineLearning {
               .04,
               modifiedTrainingFileName,
               predictionsFileName);
-
-      LOGGER.warn(moaCommand);
+      
       String[] arrayCommand =
           new String[] {"java", "-classpath", MOAFileName, "moa.DoTask", moaCommand};
 
@@ -258,13 +246,12 @@ public class PerfEnforceOnlineLearning {
 
       parsingOnlineFile(clusterIndex, predictionsFileName);
     } catch (Exception e) {
-      //throw new PerfEnforceException("Error during training");
-      throw e;
+      throw new PerfEnforceException("Error during training");
     }
   }
 
   public void parsingOnlineFile(final int clusterIndex, final String predictionFileName)
-      throws Exception {
+      throws PerfEnforceException {
     try {
       BufferedReader streamReader = new BufferedReader(new FileReader(predictionFileName));
       String currentLine = "";
@@ -275,8 +262,7 @@ public class PerfEnforceOnlineLearning {
       streamReader.close();
       queryPredictions[clusterIndex] = nextQueryPrediction;
     } catch (Exception e) {
-      //throw new PerfEnforceException("Error parsing online predictions file");
-      throw e;
+      throw new PerfEnforceException("Error parsing online predictions file");
     }
   }
 
@@ -284,14 +270,11 @@ public class PerfEnforceOnlineLearning {
       final int clusterIndex, final int queryID, final double queryRuntime)
       throws PerfEnforceException {
     String featureFilePath =
-        Paths.get(onlineLearningPath, "OMLFiles", "features", String.valueOf(clusterSize))
+        Paths.get(onlineLearningPath, "OMLFiles", "features", String.valueOf(PerfEnforceDriver.configurations.get(clusterIndex)))
             .toString();
 
     try {
       BufferedReader featureReader = new BufferedReader(new FileReader(featureFilePath));
-      for (int i = 0; i < queryID; i++) {
-        featureReader.readLine();
-      }
       String result = featureReader.readLine();
       if (queryRuntime != 0) {
         String[] parts = result.split(",");
@@ -332,10 +315,6 @@ public class PerfEnforceOnlineLearning {
             PerfEnforceDriver.configurations.indexOf(clusterSize), currentQuery.id, queryRuntime));
   }
 
-  public PerfEnforceQueryMetadataEncoding getPreviousQuery() {
-    return previousQuery;
-  }
-
   public PerfEnforceQueryMetadataEncoding getCurrentQuery() {
     return currentQuery;
   }
@@ -348,3 +327,4 @@ public class PerfEnforceOnlineLearning {
     return selectedTier;
   }
 }
+

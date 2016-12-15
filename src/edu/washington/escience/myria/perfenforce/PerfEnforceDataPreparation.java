@@ -9,7 +9,6 @@ import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.PrintWriter;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -50,9 +49,9 @@ import edu.washington.escience.myria.util.MyriaUtils;
 public class PerfEnforceDataPreparation {
 
   private final Server server;
-
   private HashMap<Integer, RelationKey> factTableRelationMapper;
   private PerfEnforceTableEncoding factTableDescription;
+  
 
   /** Logger. */
   protected static final org.slf4j.Logger LOGGER =
@@ -66,7 +65,7 @@ public class PerfEnforceDataPreparation {
    * Ingesting the fact table in a parallel sequence
    */
   public HashMap<Integer, RelationKey> ingestFact(final PerfEnforceTableEncoding factTableDesc)
-      throws Exception {
+      throws PerfEnforceException {
     factTableDescription = factTableDesc;
     factTableRelationMapper = new HashMap<Integer, RelationKey>();
 
@@ -177,16 +176,14 @@ public class PerfEnforceDataPreparation {
       }
       return factTableRelationMapper;
     } catch (Exception e) {
-      throw e;
-      //throw new PerfEnforceException("Error while ingesting fact table");
+      throw new PerfEnforceException("Error while ingesting fact table");
     }
   }
 
   /*
    * Ingesting dimension tables for broadcasting
    */
-  public void ingestDimension(final PerfEnforceTableEncoding dimTableDesc) throws Exception {
-
+  public void ingestDimension(final PerfEnforceTableEncoding dimTableDesc) throws PerfEnforceException {
     Set<Integer> totalWorkers =
         PerfEnforceUtils.getWorkerRangeSet(Collections.max(PerfEnforceDriver.configurations));
 
@@ -233,8 +230,7 @@ public class PerfEnforceDataPreparation {
 
       server.submitQueryPlan(new EmptySink(new EOSSource()), workerPlans).get();
     } catch (Exception e) {
-      throw e;
-      //throw new PerfEnforceException("Error ingesting dimension tables");
+      throw new PerfEnforceException("Error ingesting dimension tables");
     }
   }
 
@@ -287,14 +283,14 @@ public class PerfEnforceDataPreparation {
         workers);
   }
 
-  public void collectSelectivities() throws PerfEnforceException, Exception {
-
+  public void collectSelectivities() throws PerfEnforceException{
     try {
       /* record the stats for each configuration */
       for (Integer currentConfig : PerfEnforceDriver.configurations) {
 
         Path statsWorkerPath =
             PerfEnforceDriver.configurationPath
+            	.resolve("PSLAGeneration")
                 .resolve(currentConfig + "_Workers")
                 .resolve("stats.json");
         List<PerfEnforceStatisticsEncoding> statsEncodingList =
@@ -334,8 +330,7 @@ public class PerfEnforceDataPreparation {
         statsObjectWriter.close();
       }
     } catch (Exception e) {
-      throw e;
-      //throw new PerfEnforceException("Error collecting table statistics");
+      throw new PerfEnforceException("Error collecting table statistics");
     }
   }
 
@@ -376,7 +371,7 @@ public class PerfEnforceDataPreparation {
         selectivityKeys.add(sqlResult[0]);
       }
 
-      // HACK: We can't properly "count" tuples for tables that are broadcast
+      // HACK: we can't properly "count" tuples for tables that are broadcast
       long modifiedSize = tableSize;
       if (type.equalsIgnoreCase("dimension")) {
         modifiedSize = tableSize / Collections.max(PerfEnforceDriver.configurations);
@@ -389,10 +384,9 @@ public class PerfEnforceDataPreparation {
   }
 
   public void collectFeaturesFromGeneratedQueries() throws Exception {
-
     for (Integer config : PerfEnforceDriver.configurations) {
       Path workerPath =
-          Paths.get(PerfEnforceDriver.configurationPath.toString(), config + "_Workers");
+          PerfEnforceDriver.configurationPath.resolve("PSLAGeneration").resolve(config + "_Workers");
       String currentLine = "";
 
       try {
@@ -425,8 +419,7 @@ public class PerfEnforceDataPreparation {
         featureWriter.close();
         br.close();
       } catch (Exception e) {
-        throw e;
-        //throw new PerfEnforceException("Error creating table features");
+        throw new PerfEnforceException("Error creating table features");
       }
     }
   }

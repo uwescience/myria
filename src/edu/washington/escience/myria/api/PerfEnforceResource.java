@@ -1,6 +1,5 @@
 package edu.washington.escience.myria.api;
 
-import java.io.FileNotFoundException;
 import java.util.List;
 
 import javax.ws.rs.Consumes;
@@ -39,6 +38,12 @@ public final class PerfEnforceResource {
     server.getPerfEnforceDriver().preparePSLA(tableList);
     return Response.noContent().build();
   }
+  
+  @GET
+  @Path("/getDataPreparationStatus")
+  public String getDataPreparationStatus() {
+    return server.getPerfEnforceDriver().getDataPreparationStatus();
+  }
 
   @GET
   @Path("/isDonePSLA")
@@ -48,7 +53,7 @@ public final class PerfEnforceResource {
 
   @GET
   @Path("/getPSLA")
-  public Response getPSLA() throws FileNotFoundException {
+  public Response getPSLA() throws PerfEnforceException {
     return Response.ok(server.getPerfEnforceDriver().getPSLA()).build();
   }
 
@@ -82,12 +87,6 @@ public final class PerfEnforceResource {
   @Path("/getClusterSize")
   public Response getClusterSize() {
     return Response.ok(server.getPerfEnforceDriver().getClusterSize()).build();
-  }
-
-  @GET
-  @Path("/getPreviousQuery")
-  public PerfEnforceQueryMetadataEncoding getPreviousQuery() {
-    return server.getPerfEnforceDriver().getPreviousQuery();
   }
 
   @GET

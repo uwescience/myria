@@ -89,7 +89,7 @@ public class PerfEnforceUtils {
   }
 
   public static String getMaxFeature(final Server server, String sqlQuery, final int configuration)
-      throws PerfEnforceException, Exception {
+      throws PerfEnforceException{
 
     try {
       String explainQuery = "EXPLAIN " + sqlQuery;
@@ -103,13 +103,8 @@ public class PerfEnforceUtils {
               Schema.ofFields("explain", Type.STRING_TYPE),
               PerfEnforceUtils.getWorkerRangeSet(configuration));
 
-      LOGGER.warn("FEATURES " + allWorkerFeatures[0] + "," + allWorkerFeatures[1]);
-
       for (String currentWorkerFeatures : allWorkerFeatures) {
-
-        //if it matches the following pattern -- change it to a REGEX
         if (currentWorkerFeatures.contains("cost")) {
-
           currentWorkerFeatures =
               currentWorkerFeatures.substring(currentWorkerFeatures.indexOf("cost"));
           currentWorkerFeatures = currentWorkerFeatures.replace("\"", " ");
@@ -121,9 +116,7 @@ public class PerfEnforceUtils {
                 + "\" | sed -e 's/.*cost=//' -e 's/\\.\\./,/' -e 's/ rows=/,/' -e 's/ width=/,/' -e 's/)//'"
           };
           ProcessBuilder pb = new ProcessBuilder(cmd);
-          Process p;
-
-          p = pb.start();
+          Process p = pb.start();
           BufferedReader input = new BufferedReader(new InputStreamReader(p.getInputStream()));
           currentWorkerFeatures = input.readLine();
 
@@ -139,7 +132,6 @@ public class PerfEnforceUtils {
 
           currentWorkerFeatures += "," + configuration + ",0";
           featuresList.add(currentWorkerFeatures);
-          LOGGER.warn("FEATURES IN ");
         }
       }
 
@@ -154,8 +146,7 @@ public class PerfEnforceUtils {
       return maxFeature;
 
     } catch (Exception e) {
-      throw e;
-      //throw new PerfEnforceException("Error collecting the max feature");
+      throw new PerfEnforceException("Error collecting the max feature");
     }
   }
 }
