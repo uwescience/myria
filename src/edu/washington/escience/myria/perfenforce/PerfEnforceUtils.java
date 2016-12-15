@@ -89,7 +89,7 @@ public class PerfEnforceUtils {
   }
 
   public static String getMaxFeature(final Server server, String sqlQuery, final int configuration)
-      throws PerfEnforceException{
+      throws PerfEnforceException {
 
     try {
       String explainQuery = "EXPLAIN " + sqlQuery;

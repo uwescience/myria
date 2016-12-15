@@ -49,17 +49,24 @@ public class PerfEnforceOnlineLearning {
     this.server = server;
   }
 
-  public void findSLA(final String querySQL) throws PerfEnforceException {
-	String pslaPath = PerfEnforceDriver.configurationPath.resolve("PSLAGeneration").toString();
-	  
-    int currentClusterSize = PerfEnforceDriver.configurations.get(selectedTier);
-    String currentQueryForState = "";
+  public String convertQueryForConfiguration(String queryText, int configuration) {
+    String convertedQuery = "";
+
     String factTableName = PerfEnforceDriver.factTableDesc.relationKey.getRelationName();
-    if (querySQL.contains(factTableName)) {
-      currentQueryForState = querySQL.replace(factTableName, factTableName + currentClusterSize);
+    if (queryText.contains(factTableName)) {
+      convertedQuery = queryText.replace(factTableName, factTableName + configuration);
     }
-    String highestFeatures =
-        PerfEnforceUtils.getMaxFeature(server, currentQueryForState, currentClusterSize);
+    return convertedQuery;
+  }
+
+  public void findSLA(final String querySQL) throws PerfEnforceException {
+    String pslaPath = PerfEnforceDriver.configurationPath.resolve("PSLAGeneration").toString();
+
+    int currentClusterSize = PerfEnforceDriver.configurations.get(selectedTier);
+    String currentQueryForConfiguration =
+        convertQueryForConfiguration(querySQL, currentClusterSize);
+    String currentQueryFeatures =
+        PerfEnforceUtils.getMaxFeature(server, currentQueryForConfiguration, currentClusterSize);
 
     try {
       PrintWriter featureWriter =
@@ -77,7 +84,7 @@ public class PerfEnforceOnlineLearning {
 
       featureWriter.write("\n");
       featureWriter.write("@data \n");
-      featureWriter.write(highestFeatures + "\n");
+      featureWriter.write(currentQueryFeatures + "\n");
       featureWriter.close();
 
       // predict the runtime
@@ -89,8 +96,7 @@ public class PerfEnforceOnlineLearning {
         "-M",
         "4.0",
         "-t",
-        Paths.get(pslaPath, "TRAINING.arff")
-            .toString(),
+        Paths.get(pslaPath, "training.arff").toString(),
         "-T",
         Paths.get(pslaPath, "current-q-features.arff").toString(),
         "-p",
@@ -103,8 +109,7 @@ public class PerfEnforceOnlineLearning {
 
       Process p = Runtime.getRuntime().exec(cmd);
       BufferedReader reader = new BufferedReader(new InputStreamReader(p.getInputStream()));
-      while ((reader.readLine()) != null) {
-      }
+      while ((reader.readLine()) != null) {}
 
       String querySLA = "";
       BufferedReader predictionReader =
@@ -114,35 +119,38 @@ public class PerfEnforceOnlineLearning {
       querySLA = predictionReader.readLine().split(",")[2];
       predictionReader.close();
 
-      /**TODO: Split this section to another call **/
-      for (int c : PerfEnforceDriver.configurations) {
-    	 /**TODO: Should this subsection be here? **/
-        currentClusterSize = c;
-        currentQueryForState = "";
-        factTableName = PerfEnforceDriver.factTableDesc.relationKey.getRelationName();
-        if (querySQL.contains(factTableName)) {
-          currentQueryForState =
-              querySQL.replace(factTableName, factTableName + currentClusterSize);
-        }
-
-        String maxFeatureForConfiguration =
-            PerfEnforceUtils.getMaxFeature(server, currentQueryForState, c);
-        FileWriter featureWriterForConfiguration;
-        featureWriterForConfiguration =
-            new FileWriter(
-                Paths.get(onlineLearningPath, "OMLFiles", "features", String.valueOf(c))
-                    .toString());
-        featureWriterForConfiguration.write(maxFeatureForConfiguration + '\n');
-        featureWriterForConfiguration.close();
-      }
       currentQuery =
-          new PerfEnforceQueryMetadataEncoding(queryCounter, Double.parseDouble(querySLA));
+          new PerfEnforceQueryMetadataEncoding(
+              queryCounter, Double.parseDouble(querySLA), querySQL);
     } catch (Exception e) {
       throw new PerfEnforceException("Error finding SLA");
     }
   }
 
-  public void findBestClusterSize() {
+  public void findBestClusterSize() throws PerfEnforceException {
+    try {
+      for (int c : PerfEnforceDriver.configurations) {
+
+        int currentClusterSize = c;
+        String currentQueryForConfiguration =
+            convertQueryForConfiguration(currentQuery.getQueryText(), currentClusterSize);
+        String currentQueryFeatures =
+            PerfEnforceUtils.getMaxFeature(
+                server, currentQueryForConfiguration, currentClusterSize);
+
+        String maxFeatureForConfiguration =
+            PerfEnforceUtils.getMaxFeature(server, currentQueryFeatures, c);
+
+        FileWriter featureWriterForConfiguration;
+        featureWriterForConfiguration =
+            new FileWriter(Paths.get(onlineLearningPath, "features", String.valueOf(c)).toString());
+        featureWriterForConfiguration.write(maxFeatureForConfiguration + '\n');
+        featureWriterForConfiguration.close();
+      }
+    } catch (Exception e) {
+      throw new PerfEnforceException("Error selecting best cluster size");
+    }
+
     List<Thread> threadList = new ArrayList<Thread>();
     for (int i = 0; i < PerfEnforceDriver.configurations.size(); i++) {
       final int clusterIndex = i;
@@ -198,14 +206,14 @@ public class PerfEnforceOnlineLearning {
     clusterSize = PerfEnforceDriver.configurations.get(winnerIndex);
   }
 
-  public void trainOnlineQueries(final int clusterIndex, final int queryID) throws PerfEnforceException {
-    String MOAFileName = Paths.get(onlineLearningPath, "OMLFiles", "moa.jar").toString();
-    String trainingFileName = Paths.get(onlineLearningPath, "OMLFiles", "training.arff").toString();
+  public void trainOnlineQueries(final int clusterIndex, final int queryID)
+      throws PerfEnforceException {
+    String MOAFileName = Paths.get(onlineLearningPath, "moa.jar").toString();
+    String trainingFileName = Paths.get(onlineLearningPath, "training.arff").toString();
     String modifiedTrainingFileName =
-        Paths.get(onlineLearningPath, "OMLFiles", "training-modified-" + clusterIndex + ".arff")
-            .toString();
+        Paths.get(onlineLearningPath, "training-modified-" + clusterIndex + ".arff").toString();
     String predictionsFileName =
-        Paths.get(onlineLearningPath, "OMLFiles", "predictions" + clusterIndex + ".txt").toString();
+        Paths.get(onlineLearningPath, "predictions" + clusterIndex + ".txt").toString();
 
     try {
       PrintWriter outputWriter = new PrintWriter(modifiedTrainingFileName);
@@ -235,7 +243,7 @@ public class PerfEnforceOnlineLearning {
               .04,
               modifiedTrainingFileName,
               predictionsFileName);
-      
+
       String[] arrayCommand =
           new String[] {"java", "-classpath", MOAFileName, "moa.DoTask", moaCommand};
 
@@ -270,7 +278,10 @@ public class PerfEnforceOnlineLearning {
       final int clusterIndex, final int queryID, final double queryRuntime)
       throws PerfEnforceException {
     String featureFilePath =
-        Paths.get(onlineLearningPath, "OMLFiles", "features", String.valueOf(PerfEnforceDriver.configurations.get(clusterIndex)))
+        Paths.get(
+                onlineLearningPath,
+                "features",
+                String.valueOf(PerfEnforceDriver.configurations.get(clusterIndex)))
             .toString();
 
     try {
@@ -327,4 +338,3 @@ public class PerfEnforceOnlineLearning {
     return selectedTier;
   }
 }
-

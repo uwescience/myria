@@ -16,7 +16,10 @@ public class PSLAManagerWrapper {
 
   public PSLAManagerWrapper() {
     PSLAManagerExePath =
-        PerfEnforceDriver.configurationPath.resolve("PSLAGeneration").resolve("PSLAManager").resolve("PSLAManager.exe");
+        PerfEnforceDriver.configurationPath
+            .resolve("PSLAGeneration")
+            .resolve("PSLAManager")
+            .resolve("PSLAManager.exe");
   }
 
   public void generateQueries() throws Exception {

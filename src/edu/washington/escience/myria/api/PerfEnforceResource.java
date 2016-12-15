@@ -38,7 +38,7 @@ public final class PerfEnforceResource {
     server.getPerfEnforceDriver().preparePSLA(tableList);
     return Response.noContent().build();
   }
-  
+
   @GET
   @Path("/getDataPreparationStatus")
   public String getDataPreparationStatus() {

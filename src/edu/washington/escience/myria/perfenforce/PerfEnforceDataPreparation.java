@@ -51,7 +51,6 @@ public class PerfEnforceDataPreparation {
   private final Server server;
   private HashMap<Integer, RelationKey> factTableRelationMapper;
   private PerfEnforceTableEncoding factTableDescription;
-  
 
   /** Logger. */
   protected static final org.slf4j.Logger LOGGER =
@@ -183,7 +182,8 @@ public class PerfEnforceDataPreparation {
   /*
    * Ingesting dimension tables for broadcasting
    */
-  public void ingestDimension(final PerfEnforceTableEncoding dimTableDesc) throws PerfEnforceException {
+  public void ingestDimension(final PerfEnforceTableEncoding dimTableDesc)
+      throws PerfEnforceException {
     Set<Integer> totalWorkers =
         PerfEnforceUtils.getWorkerRangeSet(Collections.max(PerfEnforceDriver.configurations));
 
@@ -283,14 +283,14 @@ public class PerfEnforceDataPreparation {
         workers);
   }
 
-  public void collectSelectivities() throws PerfEnforceException{
+  public void collectSelectivities() throws PerfEnforceException {
     try {
       /* record the stats for each configuration */
       for (Integer currentConfig : PerfEnforceDriver.configurations) {
 
         Path statsWorkerPath =
             PerfEnforceDriver.configurationPath
-            	.resolve("PSLAGeneration")
+                .resolve("PSLAGeneration")
                 .resolve(currentConfig + "_Workers")
                 .resolve("stats.json");
         List<PerfEnforceStatisticsEncoding> statsEncodingList =
@@ -386,7 +386,9 @@ public class PerfEnforceDataPreparation {
   public void collectFeaturesFromGeneratedQueries() throws Exception {
     for (Integer config : PerfEnforceDriver.configurations) {
       Path workerPath =
-          PerfEnforceDriver.configurationPath.resolve("PSLAGeneration").resolve(config + "_Workers");
+          PerfEnforceDriver.configurationPath
+              .resolve("PSLAGeneration")
+              .resolve(config + "_Workers");
       String currentLine = "";
 
       try {

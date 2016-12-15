@@ -39,7 +39,7 @@ public final class PerfEnforceDriver {
   final public static List<Integer> configurations = Arrays.asList(4, 6, 8, 10, 12);
 
   public static Path configurationPath;
-  
+
   public static List<PerfEnforceTableEncoding> tableList;
   public static PerfEnforceTableEncoding factTableDesc;
 
@@ -52,7 +52,7 @@ public final class PerfEnforceDriver {
   public PerfEnforceDriver(final Server server, final String instancePath) {
     configurationPath = (Paths.get(instancePath, "perfenforce_files"));
     this.server = server;
-    dataPreparationStatus="";
+    dataPreparationStatus = "";
     isDonePSLA = false;
   }
 
@@ -102,8 +102,11 @@ public final class PerfEnforceDriver {
     Gson gson = new Gson();
     String schemaDefinitionFile = gson.toJson(tableList);
     PrintWriter out =
-        new PrintWriter(configurationPath.resolve("PSLAGeneration")
-        								.resolve("SchemaDefinition.json").toString());
+        new PrintWriter(
+            configurationPath
+                .resolve("PSLAGeneration")
+                .resolve("SchemaDefinition.json")
+                .toString());
     out.print(schemaDefinitionFile);
     out.close();
 
@@ -115,10 +118,11 @@ public final class PerfEnforceDriver {
     pslaManager.generatePSLA();
     isDonePSLA = true;
   }
-  public String getDataPreparationStatus()
-  {
-	  return dataPreparationStatus;
+
+  public String getDataPreparationStatus() {
+    return dataPreparationStatus;
   }
+
   public boolean isDonePSLA() {
     return isDonePSLA;
   }
@@ -126,11 +130,16 @@ public final class PerfEnforceDriver {
   public String getPSLA() throws PerfEnforceException {
     StringWriter output = new StringWriter();
     try {
-      Reader input = new FileReader(new File(configurationPath.resolve("PSLAGeneration")
-    		  												  .resolve("FinalPSLA.json").toString()));
+      Reader input =
+          new FileReader(
+              new File(
+                  configurationPath
+                      .resolve("PSLAGeneration")
+                      .resolve("FinalPSLA.json")
+                      .toString()));
       IOUtils.copy(input, output);
     } catch (IOException e) {
-     throw new PerfEnforceException();
+      throw new PerfEnforceException();
     }
     return output.toString();
   }
@@ -139,7 +148,7 @@ public final class PerfEnforceDriver {
     perfenforceOnlineLearning = new PerfEnforceOnlineLearning(server, tier);
   }
 
-  public void findSLA(String querySQL) throws PerfEnforceException{
+  public void findSLA(String querySQL) throws PerfEnforceException {
     perfenforceOnlineLearning.findSLA(querySQL);
     perfenforceOnlineLearning.findBestClusterSize();
   }
