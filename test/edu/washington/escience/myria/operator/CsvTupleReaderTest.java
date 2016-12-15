@@ -19,6 +19,7 @@ import edu.washington.escience.myria.io.ByteArraySource;
 import edu.washington.escience.myria.io.FileSource;
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleUtils;
+import edu.washington.escience.myria.util.TestEnvVars;
 
 public class CsvTupleReaderTest {
 
@@ -104,7 +105,7 @@ public class CsvTupleReaderTest {
    */
   private static int getRowCount(final TupleSource dataInput)
       throws DbException, InterruptedException {
-    dataInput.open(null);
+    dataInput.open(TestEnvVars.get());
 
     int count = 0;
     TupleBatch tb = null;

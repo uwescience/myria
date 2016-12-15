@@ -13,6 +13,7 @@ import org.junit.Test;
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
+import edu.washington.escience.myria.util.TestEnvVars;
 import edu.washington.escience.myria.util.TestUtils;
 
 public class MergeTest {
@@ -33,7 +34,7 @@ public class MergeTest {
     children[1] = new BatchTupleSource(TestUtils.generateRandomTuples(4200, 2000, true));
     children[2] = new BatchTupleSource(TestUtils.generateRandomTuples(9900, 5000, true));
     NAryOperator merge = new Merge(children, new int[] {0}, new boolean[] {true});
-    merge.open(null);
+    merge.open(TestEnvVars.get());
     TupleBatch tb = null;
     int count = 0;
     while (!merge.eos()) {
@@ -59,7 +60,7 @@ public class MergeTest {
     children[2] = new BatchTupleSource(randomTuples[2]);
 
     NAryOperator merge = new Merge(children, new int[] {0, 1}, new boolean[] {true, true});
-    merge.open(null);
+    merge.open(TestEnvVars.get());
     TupleBatch tb;
     final ArrayList<Entry<Long, String>> entries = new ArrayList<Entry<Long, String>>();
     while (!merge.eos()) {

@@ -50,7 +50,7 @@ public class LeapFrogJoinTest {
     int[][][] fieldMap = new int[][][] {{{0, 0}, {1, 0}}};
     int[][] outputMap = new int[][] {{0, 0}, {0, 1}, {1, 0}, {1, 1}};
     NAryOperator join = new LeapFrogJoin(children, fieldMap, outputMap, outputColumnNames, null);
-    join.open(null);
+    join.open(TestEnvVars.get());
     TupleBatch tb;
     TupleBatchBuffer batches = new TupleBatchBuffer(outputSchema);
     while (!join.eos()) {
@@ -103,7 +103,7 @@ public class LeapFrogJoinTest {
             outputMap,
             outputColumnNames,
             new boolean[] {true, true, true});
-    join.open(null);
+    join.open(TestEnvVars.get());
     TupleBatch tb;
     TupleBatchBuffer batches = new TupleBatchBuffer(outputSchema);
     while (!join.eos()) {
@@ -149,7 +149,7 @@ public class LeapFrogJoinTest {
             outputMap,
             outputColumnNames,
             new boolean[] {false, false});
-    join.open(null);
+    join.open(TestEnvVars.get());
     TupleBatch tb;
     TupleBatchBuffer batches = new TupleBatchBuffer(outputSchema);
     while (!join.eos()) {
@@ -204,7 +204,7 @@ public class LeapFrogJoinTest {
             outputMap,
             outputColumnNames,
             new boolean[] {true, true, false});
-    join.open(null);
+    join.open(TestEnvVars.get());
     TupleBatch tb;
     TupleBatchBuffer batches = new TupleBatchBuffer(outputSchema);
     while (!join.eos()) {
@@ -325,7 +325,7 @@ public class LeapFrogJoinTest {
             outputMap,
             outputColumnNames,
             new boolean[] {false, false, false});
-    join.open(null);
+    join.open(TestEnvVars.get());
     TupleBatch tb;
     TupleBatchBuffer batches = new TupleBatchBuffer(outputSchema);
     while (!join.eos()) {
@@ -367,7 +367,7 @@ public class LeapFrogJoinTest {
             outputMap,
             outputColumnNames,
             new boolean[] {false, false, true});
-    join.open(null);
+    join.open(TestEnvVars.get());
     TupleBatch tb;
     TupleBatchBuffer batches = new TupleBatchBuffer(outputSchema);
     while (!join.eos()) {

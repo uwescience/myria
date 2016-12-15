@@ -44,7 +44,7 @@ public class UnionAllTest {
     children[1] = new BatchTupleSource(randomTuples[1]);
 
     UnionAll union = new UnionAll(children);
-    union.open(null);
+    union.open(TestEnvVars.get());
     TupleBatch tb;
 
     Multiset<Long> actualCounts = HashMultiset.create();
@@ -82,7 +82,7 @@ public class UnionAllTest {
     children[1] = new BatchTupleSource(TestUtils.generateRandomTuples(4200, 2000, false));
     children[2] = new BatchTupleSource(TestUtils.generateRandomTuples(19900, 5000, false));
     UnionAll union = new UnionAll(children);
-    union.open(null);
+    union.open(TestEnvVars.get());
     TupleBatch tb = null;
     int count = 0;
     while (!union.eos()) {
@@ -117,7 +117,7 @@ public class UnionAllTest {
     children[2] = new BatchTupleSource(tuples2renamed);
 
     UnionAll union = new UnionAll(children);
-    union.open(null);
+    union.open(TestEnvVars.get());
     TupleBatch tb = null;
     int count = 0;
     while (!union.eos()) {

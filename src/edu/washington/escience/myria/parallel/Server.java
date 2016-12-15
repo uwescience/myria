@@ -27,6 +27,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.nio.ByteBuffer;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -76,6 +77,7 @@ import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.TupleWriter;
 import edu.washington.escience.myria.Type;
+import edu.washington.escience.myria.accessmethod.ConnectionInfo;
 import edu.washington.escience.myria.accessmethod.AccessMethod.IndexRef;
 import edu.washington.escience.myria.api.MyriaJsonMapperProvider;
 import edu.washington.escience.myria.api.encoding.DatasetStatus;
@@ -91,6 +93,7 @@ import edu.washington.escience.myria.io.DataSink;
 import edu.washington.escience.myria.io.UriSink;
 import edu.washington.escience.myria.operator.Apply;
 import edu.washington.escience.myria.operator.CSVFileScanFragment;
+import edu.washington.escience.myria.operator.DbCreateFunction;
 import edu.washington.escience.myria.operator.DbCreateIndex;
 import edu.washington.escience.myria.operator.DbCreateView;
 import edu.washington.escience.myria.operator.DbDelete;
@@ -145,7 +148,7 @@ import edu.washington.escience.myria.util.IPCUtils;
 import edu.washington.escience.myria.util.MyriaUtils;
 import edu.washington.escience.myria.util.concurrent.ErrorLoggingTimerTask;
 import edu.washington.escience.myria.util.concurrent.RenamingThreadFactory;
-
+import edu.washington.escience.myria.MyriaConstants.FunctionLanguage;
 /**
  * The master entrance.
  */
@@ -1208,14 +1211,17 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
   public String createFunction(
       final String name,
       final String definition,
-      final String outputSchema,
+      final Schema outputSchema,
+      final MyriaConstants.FunctionLanguage lang,
+      final String binary,
       final Set<Integer> workers)
       throws DbException, InterruptedException {
-    String response = "Created Function";
+    String response = "";
     Set<Integer> actualWorkers = workers;
     if (workers == null) {
       actualWorkers = getWorkers().keySet();
     }
+    String modifiedReplaceFunction;
 
     /* Postgres specific syntax - Validate the command */
     Pattern pattern = Pattern.compile("(CREATE FUNCTION)([\\s\\S]*)(LANGUAGE SQL;)");
@@ -1223,18 +1229,33 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
 
     if (matcher.matches()) {
       /* Add a replace statement */
-      String modifiedReplaceFunction =
-          definition.replace("CREATE FUNCTION", "CREATE OR REPLACE FUNCTION");
+      modifiedReplaceFunction = definition.replace("CREATE FUNCTION", "CREATE OR REPLACE FUNCTION");
 
       /* Create the function */
       try {
         Map<Integer, SubQueryPlan> workerPlans = new HashMap<>();
         for (Integer workerId : actualWorkers) {
-          workerPlans.put(
-              workerId,
-              new SubQueryPlan(
-                  new DbExecute(
-                      EmptyRelation.of(Schema.EMPTY_SCHEMA), modifiedReplaceFunction, null)));
+          if (lang == FunctionLanguage.POSTGRES) {
+            workerPlans.put(
+                workerId,
+                new SubQueryPlan(
+                    new DbExecute(
+                        EmptyRelation.of(Schema.EMPTY_SCHEMA), modifiedReplaceFunction, null)));
+          } else {
+            if (lang == FunctionLanguage.PYTHON) {
+              workerPlans.put(
+                  workerId,
+                  new SubQueryPlan(
+                      new DbCreateFunction(
+                          EmptyRelation.of(Schema.EMPTY_SCHEMA),
+                          name,
+                          definition,
+                          lang,
+                          outputSchema,
+                          binary,
+                          null)));
+            }
+          }
         }
         ListenableFuture<Query> qf =
             queryManager.submitQuery(
@@ -1243,6 +1264,7 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
                 "create function",
                 new SubQueryPlan(new EmptySink(new EOSSource())),
                 workerPlans);
+
         try {
           qf.get().getQueryId();
         } catch (ExecutionException e) {
@@ -1252,16 +1274,31 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
         throw new DbException(e);
       }
 
-      /* Register the function to the catalog */
-      try {
-        catalog.registerFunction(name, definition, outputSchema);
-      } catch (CatalogException e) {
-        throw new DbException(e);
-      }
     } else {
       response = "Function is not valid";
     }
+    if (response == "") {
+      /* Register the function to the catalog */
+      try {
+        catalog.registerFunction(name, definition, outputSchema.toString(), lang, binary);
+        response = "Created Function";
+      } catch (CatalogException e) {
+        throw new DbException(e);
+      }
+    }
     return response;
+  }
+  /**
+   *
+   * @return list of functions from the catalog
+   * @throws DbException
+   */
+  public List<String> getFunctions() throws DbException {
+    try {
+      return catalog.getFunctions();
+    } catch (CatalogException e) {
+      throw new DbException(e);
+    }
   }
 
   /**

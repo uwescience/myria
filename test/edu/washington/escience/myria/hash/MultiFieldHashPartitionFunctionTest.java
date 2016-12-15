@@ -17,6 +17,7 @@ import edu.washington.escience.myria.operator.BatchTupleSource;
 import edu.washington.escience.myria.operator.network.partition.MultiFieldHashPartitionFunction;
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
+import edu.washington.escience.myria.util.TestEnvVars;
 
 public class MultiFieldHashPartitionFunctionTest {
 
@@ -36,7 +37,7 @@ public class MultiFieldHashPartitionFunctionTest {
     int tuplesPerGroup = rand.nextInt(10) + 1;
     BatchTupleSource source = generateTupleBatchSource(numGroups, tuplesPerGroup);
     try {
-      source.open(null);
+      source.open(TestEnvVars.get());
       TupleBatch tb = source.nextReady();
       assertNotNull(tb);
       int[] partitions = multiFieldPartitionFunction.partition(tb);

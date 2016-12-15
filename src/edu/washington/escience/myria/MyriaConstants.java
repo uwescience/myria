@@ -68,6 +68,11 @@ public final class MyriaConstants {
   public static final String EXEC_ENV_VAR_FRAGMENT_RESOURCE_MANAGER = "fragmentResourceManager";
 
   /**
+   * Test mode is true
+   */
+  public static final String EXEC_ENV_VAR_TEST_MODE = "testMode";
+
+  /**
    * Query ID.
    */
   public static final String EXEC_ENV_VAR_QUERY_ID = "queryId";
@@ -319,6 +324,24 @@ public final class MyriaConstants {
      */
     QUERY
   };
+
+  public static enum FunctionLanguage {
+    /** Postgres UDF */
+    POSTGRES,
+    /** Python UDF */
+    PYTHON
+  };
+
+  public static final RelationKey PYUDF_RELATION = new RelationKey("public", "UDF", "Python");
+
+  public static final Schema PYUDF_SCHEMA =
+      Schema.ofFields(
+          "function_name",
+          Type.STRING_TYPE,
+          "binary",
+          Type.BYTES_TYPE,
+          "output_type",
+          Type.STRING_TYPE);
 
   /** Number of bytes per worker partition for parallel ingest - 100MB */
   public static final long PARALLEL_INGEST_WORKER_MINIMUM_PARTITION_SIZE = 100 * MB;

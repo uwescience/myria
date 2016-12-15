@@ -3,6 +3,7 @@ package edu.washington.escience.myria.coordinator;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -23,6 +24,7 @@ import javax.annotation.Nullable;
 import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import sun.misc.BASE64Decoder;
 
 import com.almworks.sqlite4java.SQLiteConnection;
 import com.almworks.sqlite4java.SQLiteException;
@@ -39,6 +41,7 @@ import com.google.common.collect.Lists;
 import com.google.common.primitives.Ints;
 
 import edu.washington.escience.myria.MyriaConstants.FTMode;
+import edu.washington.escience.myria.MyriaConstants.FunctionLanguage;
 import edu.washington.escience.myria.MyriaConstants.ProfilingMode;
 import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.Schema;
@@ -157,6 +160,7 @@ public final class MasterCatalog {
       "CREATE TABLE registered_functions (\n"
           + "    function_name TEXT PRIMARY KEY, \n"
           + "    function_definition TEXT NOT NULL,\n"
+          + "    function_binary BLOB,\n"
           + "    function_outputSchema TEXT NOT NULL);";
 
   /** CREATE TABLE statements @formatter:on */
@@ -355,7 +359,44 @@ public final class MasterCatalog {
       throw new CatalogException(e);
     }
   }
+  /**
+   * @return the list of known functions in the Catalog.
+   * +   * @throws CatalogException if the relation is already in the catalog or there is an error in the database.
+   * +   */
+  public List<String> getFunctions() throws CatalogException {
+    if (isClosed) {
+      throw new CatalogException("Catalog is closed.");
+    }
+    try {
+      return queue
+          .execute(
+              new SQLiteJob<List<String>>() {
+                @Override
+                protected List<String> job(final SQLiteConnection sqliteConnection)
+                    throws SQLiteException, CatalogException {
+                  final List<String> udfnames = new ArrayList<String>();
 
+                  try {
+                    final SQLiteStatement statement =
+                        sqliteConnection.prepare(
+                            "SELECT function_name FROM registered_functions;", false);
+                    while (statement.step()) {
+                      udfnames.add(statement.columnString(0));
+                    }
+                    statement.dispose();
+                  } catch (final SQLiteException e) {
+                    LOGGER.error(e.toString());
+                    throw new CatalogException(e);
+                  }
+
+                  return udfnames;
+                }
+              })
+          .get();
+    } catch (InterruptedException | ExecutionException e) {
+      throw new CatalogException(e);
+    }
+  }
   /**
    * Private helper to add the metadata for a relation into the Catalog.
    *
@@ -1715,11 +1756,17 @@ public final class MasterCatalog {
   public void registerFunction(
       @Nonnull final String name,
       @Nonnull final String definition,
-      @Nonnull final String outputSchema)
+      @Nonnull final String outputSchema,
+      @Nonnull final FunctionLanguage lang,
+      String binary)
       throws CatalogException {
     Objects.requireNonNull(name, "function name");
     Objects.requireNonNull(definition, "function definition");
     Objects.requireNonNull(outputSchema, "function output schema");
+    Objects.requireNonNull(lang, "function language");
+    if (lang == FunctionLanguage.PYTHON)
+      Objects.requireNonNull(binary, "function pickle for python");
+
     if (isClosed) {
       throw new CatalogException("Catalog is closed.");
     }
@@ -1731,14 +1778,21 @@ public final class MasterCatalog {
               new SQLiteJob<Void>() {
                 @Override
                 protected Void job(final SQLiteConnection sqliteConnection)
-                    throws CatalogException, SQLiteException {
+                    throws CatalogException, SQLiteException, IOException {
+
                   try {
                     SQLiteStatement statement =
                         sqliteConnection.prepare(
-                            "INSERT OR REPLACE INTO registered_functions (function_name, function_definition, function_outputSchema) VALUES (?,?,?);");
+                            "INSERT OR REPLACE INTO registered_functions (function_name, function_definition, function_outputSchema, function_binary) VALUES (?,?,?,?);");
                     statement.bind(1, name);
                     statement.bind(2, definition);
                     statement.bind(3, outputSchema);
+                    if (binary != null) {
+                      // unencode the blob
+                      BASE64Decoder decoder = new BASE64Decoder();
+                      byte[] decodedBytes = decoder.decodeBuffer(binary);
+                      statement.bind(5, decodedBytes);
+                    }
                     statement.stepThrough();
                     statement.dispose();
                     statement = null;

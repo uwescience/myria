@@ -13,6 +13,7 @@ import org.junit.Test;
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
+import edu.washington.escience.myria.util.TestEnvVars;
 import edu.washington.escience.myria.util.TestUtils;
 
 public class InMemoryOrderByTest {
@@ -25,7 +26,7 @@ public class InMemoryOrderByTest {
 
     InMemoryOrderBy order =
         new InMemoryOrderBy(child, new int[] {0, 1}, new boolean[] {true, true});
-    order.open(null);
+    order.open(TestEnvVars.get());
     TupleBatch tb;
     final ArrayList<Entry<Long, String>> entries = new ArrayList<Entry<Long, String>>();
     while (!order.eos()) {
@@ -59,7 +60,7 @@ public class InMemoryOrderByTest {
     BatchTupleSource child = new BatchTupleSource(randomTuples);
 
     InMemoryOrderBy order = new InMemoryOrderBy(child, new int[] {1}, new boolean[] {false});
-    order.open(null);
+    order.open(TestEnvVars.get());
     TupleBatch tb;
     final ArrayList<String> entries = new ArrayList<String>();
     while (!order.eos()) {

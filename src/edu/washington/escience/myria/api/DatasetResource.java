@@ -452,7 +452,7 @@ public final class DatasetResource {
    * Creates an function based on DbCreateFunctionEncoding
    */
   @POST
-  @Path("/createFunction/")
+  @Path("/function/")
   @Consumes(MediaType.APPLICATION_JSON)
   public Response createFunction(final CreateFunctionEncoding encoding) throws DbException {
     String functionCreationResponse;
@@ -461,7 +461,9 @@ public final class DatasetResource {
           server.createFunction(
               encoding.name,
               encoding.definition,
-              encoding.outputSchema.toString(),
+              encoding.outputSchema,
+              encoding.lang,
+              encoding.binary,
               encoding.workers);
     } catch (Exception e) {
       throw new DbException();
@@ -469,6 +471,16 @@ public final class DatasetResource {
     /* Build the response to return the queryId */
     ResponseBuilder response = Response.ok();
     return response.entity(functionCreationResponse).build();
+  }
+  /**
+   * @param queryId an optional query ID specifying which datasets to get.
+   * @return a list of datasets.
+   * @throws DbException if there is an error accessing the Catalog.
+   */
+  @GET
+  @Path("/function/")
+  public List<String> getFunctions() throws DbException {
+    return server.getFunctions();
   }
 
   /**

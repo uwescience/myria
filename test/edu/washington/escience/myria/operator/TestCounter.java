@@ -14,6 +14,7 @@ import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleUtils;
+import edu.washington.escience.myria.util.TestEnvVars;
 
 public class TestCounter {
 
@@ -27,7 +28,7 @@ public class TestCounter {
     final Counter counter = new Counter(source, columnName);
 
     /* Open and sanity check the counter. */
-    counter.open(null);
+    counter.open(TestEnvVars.get());
     Objects.requireNonNull(counter.getSchema(), "Even after opening, Counter has null Schema.");
     Schema expected = Schema.appendColumn(source.getSchema(), Type.LONG_TYPE, columnName);
     assertEquals(expected, counter.getSchema());

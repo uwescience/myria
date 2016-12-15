@@ -17,6 +17,7 @@ import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.MyriaConstants.ProfilingMode;
 import edu.washington.escience.myria.Schema;
+import edu.washington.escience.myria.functions.PythonFunctionRegistrar;
 import edu.washington.escience.myria.parallel.LocalFragment;
 import edu.washington.escience.myria.parallel.LocalFragmentResourceManager;
 import edu.washington.escience.myria.parallel.LocalSubQuery;
@@ -104,6 +105,13 @@ public abstract class Operator implements Serializable {
   public ProfilingLogger getProfilingLogger() {
     Preconditions.checkNotNull(profilingLogger);
     return profilingLogger;
+  }
+
+  private PythonFunctionRegistrar pyFuncReg;
+
+  public PythonFunctionRegistrar getPythonFunctionRegistrar() {
+    Preconditions.checkNotNull(pyFuncReg);
+    return pyFuncReg;
   }
 
   /**
@@ -407,7 +415,14 @@ public abstract class Operator implements Serializable {
     eoi = false;
     numOutputTBs = 0;
     numOutputTuples = 0;
+
     // do my initialization
+    if (execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_TEST_MODE) != null
+        && execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_TEST_MODE).equals("false")) {
+      if (getLocalSubQuery() instanceof WorkerSubQuery) {
+        pyFuncReg = ((WorkerSubQuery) getLocalSubQuery()).getWorker().getPythonFunctionRegistrar();
+      }
+    }
     try {
       init(this.execEnvVars);
     } catch (DbException | RuntimeException e) {
@@ -415,10 +430,12 @@ public abstract class Operator implements Serializable {
     } catch (Exception e) {
       throw new DbException(e);
     }
+
     open = true;
 
     if (getProfilingMode().size() > 0) {
       if (getLocalSubQuery() instanceof WorkerSubQuery) {
+
         profilingLogger = ((WorkerSubQuery) getLocalSubQuery()).getWorker().getProfilingLogger();
       }
     }
