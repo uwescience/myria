@@ -31,7 +31,7 @@ public class PSLAManagerWrapper {
                   "mono "
                       + PSLAManagerExePath.toString()
                       + " -f "
-                      + PerfEnforceDriver.configurationPath.toString()
+                      + PerfEnforceDriver.configurationPath.resolve("PSLAGeneration").toString()
                       + " -q");
 
       System.out.println(IOUtils.toString(p.getErrorStream()));
@@ -50,7 +50,7 @@ public class PSLAManagerWrapper {
                   "mono "
                       + PSLAManagerExePath.toString()
                       + " -f "
-                      + PerfEnforceDriver.configurationPath.toString()
+                      + PerfEnforceDriver.configurationPath.resolve("PSLAGeneration").toString()
                       + " -p");
 
       p.waitFor();

@@ -10,7 +10,7 @@ PSLAGeneration/weka.jar
 PSLAGeneration/tiers.txt
 PSLAGeneration/training.arff
 PerfEnforceScaling/moa.jar
-PerfEnforceScaling/training.jar
+PerfEnforceScaling/training.arff
 PerfEnforceScaling/features/4
 PerfEnforceScaling/features/6
 PerfEnforceScaling/features/8

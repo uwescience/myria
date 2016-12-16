@@ -18,6 +18,7 @@ public class PerfEnforceQueryMetadataEncoding {
 
     this.id = id;
     this.slaRuntime = slaRuntime;
+    this.queryText = queryText;
   }
 
   public double getSLA() {

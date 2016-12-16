@@ -41,8 +41,8 @@ public final class PerfEnforceResource {
 
   @GET
   @Path("/getDataPreparationStatus")
-  public String getDataPreparationStatus() {
-    return server.getPerfEnforceDriver().getDataPreparationStatus();
+  public Response getDataPreparationStatus() {
+    return Response.ok(server.getPerfEnforceDriver().getDataPreparationStatus()).build();
   }
 
   @GET

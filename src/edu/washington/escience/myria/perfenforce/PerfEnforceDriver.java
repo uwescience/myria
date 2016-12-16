@@ -79,6 +79,7 @@ public final class PerfEnforceDriver {
   }
 
   public void preparePSLA(List<PerfEnforceTableEncoding> tableList) throws Exception {
+    isDonePSLA = false;
     PerfEnforceDriver.tableList = tableList;
     fetchS3Files();
 
@@ -114,8 +115,9 @@ public final class PerfEnforceDriver {
     PSLAManagerWrapper pslaManager = new PSLAManagerWrapper();
     pslaManager.generateQueries();
     perfenforceDataPrepare.collectFeaturesFromGeneratedQueries();
-
     pslaManager.generatePSLA();
+
+    dataPreparationStatus = "Finished";
     isDonePSLA = true;
   }
 

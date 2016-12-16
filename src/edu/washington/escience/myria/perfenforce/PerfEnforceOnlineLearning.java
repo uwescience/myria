@@ -138,13 +138,10 @@ public class PerfEnforceOnlineLearning {
             PerfEnforceUtils.getMaxFeature(
                 server, currentQueryForConfiguration, currentClusterSize);
 
-        String maxFeatureForConfiguration =
-            PerfEnforceUtils.getMaxFeature(server, currentQueryFeatures, c);
-
         FileWriter featureWriterForConfiguration;
         featureWriterForConfiguration =
             new FileWriter(Paths.get(onlineLearningPath, "features", String.valueOf(c)).toString());
-        featureWriterForConfiguration.write(maxFeatureForConfiguration + '\n');
+        featureWriterForConfiguration.write(currentQueryFeatures + '\n');
         featureWriterForConfiguration.close();
       }
     } catch (Exception e) {
