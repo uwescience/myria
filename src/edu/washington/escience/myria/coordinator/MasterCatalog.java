@@ -50,7 +50,7 @@ import edu.washington.escience.myria.api.encoding.DatasetStatus;
 import edu.washington.escience.myria.api.encoding.QueryEncoding;
 import edu.washington.escience.myria.api.encoding.QueryStatusEncoding;
 import edu.washington.escience.myria.api.encoding.plan.SubPlanEncoding;
-import edu.washington.escience.myria.operator.network.partition.HowPartitioned;
+import edu.washington.escience.myria.operator.network.distribute.HowDistributed;
 import edu.washington.escience.myria.parallel.Query;
 import edu.washington.escience.myria.parallel.RelationWriteMetadata;
 import edu.washington.escience.myria.parallel.SubQueryId;
@@ -129,7 +129,7 @@ public final class MasterCatalog {
           + "    program_name TEXT NOT NULL,\n"
           + "    relation_name TEXT NOT NULL,\n"
           + "    num_shards INTEGER NOT NULL,\n"
-          + "    how_partitioned TEXT NOT NULL,\n"
+          + "    how_distributed TEXT NOT NULL,\n"
           + "    FOREIGN KEY (user_name,program_name,relation_name) REFERENCES relations ON DELETE CASCADE);";
   /** Create an index on the stored_relations table. */
   private static final String CREATE_STORED_RELATIONS_INDEX =
@@ -419,26 +419,26 @@ public final class MasterCatalog {
    * @param sqliteConnection the connection to the SQLite database.
    * @param relation the relation to create.
    * @param workers the IDs of the workers storing this copy of the relation.
-   * @param howPartitioned how this copy of the relation is partitioned.
+   * @param howDistributed how this copy of the relation is distributed.
    * @throws CatalogException if there is an error in the database.
    */
   private void addStoredRelation(
       final SQLiteConnection sqliteConnection,
       final RelationKey relation,
       final Set<Integer> workers,
-      final HowPartitioned howPartitioned)
+      final HowDistributed howDistributed)
       throws CatalogException {
     try {
       /* First, populate the stored_relation table. */
       SQLiteStatement statement =
           sqliteConnection.prepare(
-              "INSERT INTO stored_relations (user_name,program_name,relation_name,num_shards,how_partitioned) VALUES (?,?,?,?,?);");
+              "INSERT INTO stored_relations (user_name,program_name,relation_name,num_shards,how_distributed) VALUES (?,?,?,?,?);");
       statement.bind(1, relation.getUserName());
       statement.bind(2, relation.getProgramName());
       statement.bind(3, relation.getRelationName());
       statement.bind(4, workers.size());
       try {
-        statement.bind(5, MyriaJsonMapperProvider.getMapper().writeValueAsString(howPartitioned));
+        statement.bind(5, MyriaJsonMapperProvider.getMapper().writeValueAsString(howDistributed));
       } catch (JsonProcessingException e) {
         throw new CatalogException(e);
       }
@@ -565,7 +565,7 @@ public final class MasterCatalog {
                   try {
                     SQLiteStatement statement =
                         sqliteConnection.prepare(
-                            "SELECT user_name, program_name, relation_name, num_tuples, query_id, finish_time, how_partitioned FROM relations JOIN queries USING (query_id) JOIN stored_relations USING (user_name,program_name,relation_name) WHERE is_deleted=0 ORDER BY user_name, program_name, relation_name ASC");
+                            "SELECT user_name, program_name, relation_name, num_tuples, query_id, finish_time, how_distributed FROM relations JOIN queries USING (query_id) JOIN stored_relations USING (user_name,program_name,relation_name) WHERE is_deleted=0 ORDER BY user_name, program_name, relation_name ASC");
                     return datasetStatusListHelper(statement, sqliteConnection);
                   } catch (final SQLiteException e) {
                     throw new CatalogException(e);
@@ -599,7 +599,7 @@ public final class MasterCatalog {
                   try {
                     SQLiteStatement statement =
                         sqliteConnection.prepare(
-                            "SELECT user_name, program_name, relation_name, num_tuples, query_id, finish_time, how_partitioned FROM relations JOIN queries USING (query_id) JOIN stored_relations USING (user_name,program_name,relation_name) WHERE user_name=? AND is_deleted=0 ORDER BY user_name, program_name, relation_name ASC");
+                            "SELECT user_name, program_name, relation_name, num_tuples, query_id, finish_time, how_distributed FROM relations JOIN queries USING (query_id) JOIN stored_relations USING (user_name,program_name,relation_name) WHERE user_name=? AND is_deleted=0 ORDER BY user_name, program_name, relation_name ASC");
                     statement.bind(1, userName);
                     return datasetStatusListHelper(statement, sqliteConnection);
                   } catch (final SQLiteException e) {
@@ -636,7 +636,7 @@ public final class MasterCatalog {
                   try {
                     SQLiteStatement statement =
                         sqliteConnection.prepare(
-                            "SELECT user_name, program_name, relation_name, num_tuples, query_id, finish_time, how_partitioned FROM relations JOIN queries USING (query_id) JOIN stored_relations USING (user_name,program_name,relation_name) WHERE user_name=? AND program_name=? AND is_deleted=0 ORDER BY user_name, program_name, relation_name ASC");
+                            "SELECT user_name, program_name, relation_name, num_tuples, query_id, finish_time, how_distributed FROM relations JOIN queries USING (query_id) JOIN stored_relations USING (user_name,program_name,relation_name) WHERE user_name=? AND program_name=? AND is_deleted=0 ORDER BY user_name, program_name, relation_name ASC");
                     statement.bind(1, userName);
                     statement.bind(2, programName);
                     return datasetStatusListHelper(statement, sqliteConnection);
@@ -672,7 +672,7 @@ public final class MasterCatalog {
                   try {
                     SQLiteStatement statement =
                         sqliteConnection.prepare(
-                            "SELECT user_name, program_name, relation_name, num_tuples, query_id, finish_time, how_partitioned FROM relations JOIN queries USING (query_id) JOIN stored_relations USING (user_name,program_name,relation_name) WHERE query_id=? AND is_deleted=0 ORDER BY user_name, program_name, relation_name ASC");
+                            "SELECT user_name, program_name, relation_name, num_tuples, query_id, finish_time, how_distributed FROM relations JOIN queries USING (query_id) JOIN stored_relations USING (user_name,program_name,relation_name) WHERE query_id=? AND is_deleted=0 ORDER BY user_name, program_name, relation_name ASC");
                     statement.bind(1, queryId);
                     return datasetStatusListHelper(statement, sqliteConnection);
                   } catch (final SQLiteException e) {
@@ -705,14 +705,14 @@ public final class MasterCatalog {
         long numTuples = statement.columnLong(3);
         long queryId = statement.columnLong(4);
         String created = statement.columnString(5);
-        HowPartitioned howPartitioned;
+        HowDistributed howDistributed;
         try {
-          howPartitioned =
+          howDistributed =
               MyriaJsonMapperProvider.getMapper()
-                  .readValue(statement.columnString(6), HowPartitioned.class);
+                  .readValue(statement.columnString(6), HowDistributed.class);
         } catch (final IOException e) {
-          LOGGER.debug("Error deserializing howPartitioned for dataset #{}", relationKey, e);
-          howPartitioned = new HowPartitioned(null, null);
+          LOGGER.debug("Error deserializing howDistributed for dataset #{}", relationKey, e);
+          howDistributed = new HowDistributed(null, null);
         }
         result.add(
             new DatasetStatus(
@@ -721,7 +721,7 @@ public final class MasterCatalog {
                 numTuples,
                 queryId,
                 created,
-                howPartitioned));
+                howDistributed));
       }
       statement.dispose();
       return result.build();
@@ -1249,10 +1249,10 @@ public final class MasterCatalog {
    * Update the partition function of an ingested dataset.
    *
    * @param key the relation key.
-   * @param howPartitioned how the dataset was partitioned.
+   * @param howDistributed how the dataset was distributed.
    * @throws CatalogException if there is an error in the catalog.
    */
-  public void updateHowPartitioned(final RelationKey key, final HowPartitioned howPartitioned)
+  public void updateHowPartitioned(final RelationKey key, final HowDistributed howDistributed)
       throws CatalogException {
     if (isClosed) {
       throw new CatalogException("Catalog is closed.");
@@ -1268,11 +1268,11 @@ public final class MasterCatalog {
                   try {
                     SQLiteStatement statement =
                         sqliteConnection.prepare(
-                            "UPDATE stored_relations set how_partitioned=? WHERE user_name=? AND program_name=? AND relation_name=?");
+                            "UPDATE stored_relations set how_distributed=? WHERE user_name=? AND program_name=? AND relation_name=?");
                     try {
                       statement.bind(
                           1,
-                          MyriaJsonMapperProvider.getMapper().writeValueAsString(howPartitioned));
+                          MyriaJsonMapperProvider.getMapper().writeValueAsString(howDistributed));
                     } catch (JsonProcessingException e) {
                       throw new CatalogException(e);
                     }
@@ -1317,7 +1317,7 @@ public final class MasterCatalog {
                   try {
                     SQLiteStatement statement =
                         sqliteConnection.prepare(
-                            "SELECT num_tuples, query_id, finish_time, how_partitioned FROM relations JOIN queries USING (query_id) JOIN stored_relations USING (user_name,program_name,relation_name) WHERE user_name=? AND program_name=? AND relation_name=?");
+                            "SELECT num_tuples, query_id, finish_time, how_distributed FROM relations JOIN queries USING (query_id) JOIN stored_relations USING (user_name,program_name,relation_name) WHERE user_name=? AND program_name=? AND relation_name=?");
                     statement.bind(1, relationKey.getUserName());
                     statement.bind(2, relationKey.getProgramName());
                     statement.bind(3, relationKey.getRelationName());
@@ -1328,17 +1328,17 @@ public final class MasterCatalog {
                     long numTuples = statement.columnLong(0);
                     long queryId = statement.columnLong(1);
                     String created = statement.columnString(2);
-                    HowPartitioned howPartitioned;
+                    HowDistributed howPartitioned;
                     try {
                       howPartitioned =
                           MyriaJsonMapperProvider.getMapper()
-                              .readValue(statement.columnString(3), HowPartitioned.class);
+                              .readValue(statement.columnString(3), HowDistributed.class);
                     } catch (final IOException e) {
                       LOGGER.debug(
                           "Error deserializing howPartitioned for dataset #{}",
                           relationKey.toString(),
                           e);
-                      howPartitioned = new HowPartitioned(null, null);
+                      howPartitioned = new HowDistributed(null, null);
                     }
                     statement.dispose();
                     return new DatasetStatus(
@@ -1796,7 +1796,8 @@ public final class MasterCatalog {
                             sqliteConnection,
                             relation,
                             workers,
-                            new HowPartitioned(meta.getPartitionFunction(), Ints.toArray(workers)));
+                            new HowDistributed(
+                                meta.getDistributeFunction(), Ints.toArray(workers)));
                         LOGGER.debug(
                             "SubQuery #{} - adding {} to store shard of {}",
                             subQueryId,

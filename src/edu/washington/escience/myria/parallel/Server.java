@@ -4,6 +4,7 @@ import java.io.ByteArrayInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.ObjectInputStream;
+import java.net.BindException;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -38,7 +39,6 @@ import org.apache.reef.tang.Configuration;
 import org.apache.reef.tang.Injector;
 import org.apache.reef.tang.Tang;
 import org.apache.reef.tang.annotations.Parameter;
-import org.apache.reef.tang.exceptions.BindException;
 import org.apache.reef.tang.exceptions.InjectionException;
 import org.apache.reef.tang.formats.AvroConfigurationSerializer;
 import org.apache.reef.tang.formats.ConfigurationSerializer;
@@ -64,6 +64,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
+import com.google.common.primitives.Ints;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.Striped;
 import com.google.protobuf.InvalidProtocolBufferException;
@@ -109,12 +110,11 @@ import edu.washington.escience.myria.operator.agg.MultiGroupByAggregate;
 import edu.washington.escience.myria.operator.agg.PrimitiveAggregator.AggregationOp;
 import edu.washington.escience.myria.operator.agg.SingleColumnAggregatorFactory;
 import edu.washington.escience.myria.operator.agg.SingleGroupByAggregate;
-import edu.washington.escience.myria.operator.network.CollectConsumer;
 import edu.washington.escience.myria.operator.network.CollectProducer;
-import edu.washington.escience.myria.operator.network.GenericShuffleConsumer;
+import edu.washington.escience.myria.operator.network.Consumer;
 import edu.washington.escience.myria.operator.network.GenericShuffleProducer;
-import edu.washington.escience.myria.operator.network.partition.HowPartitioned;
-import edu.washington.escience.myria.operator.network.partition.PartitionFunction;
+import edu.washington.escience.myria.operator.network.distribute.DistributeFunction;
+import edu.washington.escience.myria.operator.network.distribute.HowDistributed;
 import edu.washington.escience.myria.parallel.ipc.IPCConnectionPool;
 import edu.washington.escience.myria.parallel.ipc.IPCMessage;
 import edu.washington.escience.myria.parallel.ipc.InJVMLoopbackChannelSink;
@@ -145,14 +145,10 @@ import edu.washington.escience.myria.util.MyriaUtils;
 import edu.washington.escience.myria.util.concurrent.ErrorLoggingTimerTask;
 import edu.washington.escience.myria.util.concurrent.RenamingThreadFactory;
 
-/**
- * The master entrance.
- */
+/** The master entrance. */
 public final class Server implements TaskMessageSource, EventHandler<DriverMessage> {
 
-  /**
-   * Master message processor.
-   */
+  /** Master message processor. */
   private final class MessageProcessor implements Runnable {
 
     /** Constructor, set the thread name. */
@@ -254,10 +250,8 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
 
   /*
    * (non-Javadoc)
-   *
-   * @see org.apache.reef.task.TaskMessageSource#getMessage()
-   *
-   * To be used to instruct the driver to launch or abort workers.
+   * @see org.apache.reef.task.TaskMessageSource#getMessage() To be used to instruct the driver to launch or abort
+   * workers.
    */
   @Override
   public Optional<TaskMessage> getMessage() {
@@ -267,9 +261,7 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
 
   private Striped<Lock> workerAddRemoveLock;
 
-  /**
-   * REEF event handler for driver messages indicating worker failure.
-   */
+  /** REEF event handler for driver messages indicating worker failure. */
   @Override
   public void onNext(final DriverMessage driverMessage) {
     LOGGER.info("Driver message received");
@@ -341,94 +333,64 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
   /** The logger for this class. */
   private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(Server.class);
 
-  /**
-   * Initial worker list.
-   */
+  /** Initial worker list. */
   private ImmutableMap<Integer, SocketInfo> workers = null;
 
   /** Manages the queries executing in this instance of Myria. */
   private QueryManager queryManager = null;
 
-  /**
-   * @return the query manager.
-   */
+  /** @return the query manager. */
   public QueryManager getQueryManager() {
     return queryManager;
   }
 
-  /**
-   * Current alive worker set.
-   */
+  /** Current alive worker set. */
   private final Set<Integer> aliveWorkers;
 
-  /**
-   * Execution environment variables for operators.
-   */
+  /** Execution environment variables for operators. */
   private final ConcurrentHashMap<String, Object> execEnvVars;
 
-  /**
-   * All message queue.
+  /** All message queue.
    *
-   * @TODO remove this queue as in {@link Worker}s.
-   */
+   * @TODO remove this queue as in {@link Worker}s. */
   private final LinkedBlockingQueue<IPCMessage.Data<TransportMessage>> messageQueue;
 
-  /**
-   * The IPC Connection Pool.
-   */
+  /** The IPC Connection Pool. */
   private IPCConnectionPool connectionPool;
 
-  /**
-   * {@link ExecutorService} for message processing.
-   */
+  /** {@link ExecutorService} for message processing. */
   private volatile ExecutorService messageProcessingExecutor;
 
   /** The Catalog stores the metadata about the Myria instance. */
   private MasterCatalog catalog;
 
-  /**
-   * The {@link OrderedMemoryAwareThreadPoolExecutor} who gets messages from {@link workerExecutor} and further process
-   * them using application specific message handlers, e.g. {@link MasterShortMessageProcessor}.
-   */
+  /** The {@link OrderedMemoryAwareThreadPoolExecutor} who gets messages from {@link workerExecutor} and further process
+   * them using application specific message handlers, e.g. {@link MasterShortMessageProcessor}. */
   private volatile OrderedMemoryAwareThreadPoolExecutor ipcPipelineExecutor;
 
-  /**
-   * The {@link ExecutorService} who executes the master-side subqueries.
-   */
+  /** The {@link ExecutorService} who executes the master-side subqueries. */
   private volatile ExecutorService serverQueryExecutor;
 
-  /**
-   * Absolute path of the directory containing the master catalog files
-   */
+  /** Absolute path of the directory containing the master catalog files */
   private final String catalogPath;
 
-  /**
-   * The URI to persist relations
-   */
+  /** The URI to persist relations */
   private final String persistURI;
 
-  /**
-   * @return the query executor used in this worker.
-   */
+  /** @return the query executor used in this worker. */
   ExecutorService getQueryExecutor() {
     return serverQueryExecutor;
   }
 
-  /**
-   * max number of seconds for elegant cleanup.
-   */
+  /** max number of seconds for elegant cleanup. */
   public static final int NUM_SECONDS_FOR_ELEGANT_CLEANUP = 10;
 
-  /**
-   * @return my connection pool for IPC.
-   */
+  /** @return my connection pool for IPC. */
   IPCConnectionPool getIPCConnectionPool() {
     return connectionPool;
   }
 
-  /**
-   * @return my pipeline executor.
-   */
+  /** @return my pipeline executor. */
   OrderedMemoryAwareThreadPoolExecutor getPipelineExecutor() {
     return ipcPipelineExecutor;
   }
@@ -436,16 +398,12 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
   /** The socket info for the master. */
   private final SocketInfo masterSocketInfo;
 
-  /**
-   * @return my execution environment variables for init of operators.
-   */
+  /** @return my execution environment variables for init of operators. */
   ConcurrentHashMap<String, Object> getExecEnvVars() {
     return execEnvVars;
   }
 
-  /**
-   * @return execution mode.
-   */
+  /** @return execution mode. */
   QueryExecutionMode getExecutionMode() {
     return QueryExecutionMode.NON_BLOCKING;
   }
@@ -459,8 +417,7 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
   private final int inputBufferRecoverTrigger;
   private final Injector injector;
 
-  /**
-   * Construct a server object, with configuration stored in the specified catalog file.
+  /** Construct a server object, with configuration stored in the specified catalog file.
    *
    * @param masterHost hostname of the master
    * @param masterPort RPC port of the master
@@ -474,8 +431,7 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
    * @param inputBufferCapacity size of the input buffer in bytes
    * @param inputBufferRecoverTrigger number of bytes in the input buffer to trigger recovery after overflow
    * @param persistURI the storage endpoint URI for persisting partitioned relations
-   * @param injector a Tang injector for instantiating objects from configuration
-   */
+   * @param injector a Tang injector for instantiating objects from configuration */
   @Inject
   public Server(
       @Parameter(MasterHost.class) final String masterHost,
@@ -514,19 +470,13 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
     messageQueue = new LinkedBlockingQueue<>();
   }
 
-  /**
-   * timer task executor.
-   */
+  /** timer task executor. */
   private ScheduledExecutorService scheduledTaskExecutor;
 
-  /**
-   * This class presents only for the purpose of debugging. No other usage.
-   */
+  /** This class presents only for the purpose of debugging. No other usage. */
   private class DebugHelper extends ErrorLoggingTimerTask {
 
-    /**
-     * Interval of execution.
-     */
+    /** Interval of execution. */
     public static final int INTERVAL = MyriaConstants.WAITING_INTERVAL_1_SECOND_IN_MS;
 
     @Override
@@ -565,9 +515,7 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
     return injector.getNamedInstance(MyriaWorkerConfigurationModule.WorkerPort.class);
   }
 
-  /**
-   * Master cleanup.
-   */
+  /** Master cleanup. */
   private void cleanup() {
     LOGGER.info("{} is going to shutdown", MyriaConstants.SYSTEM_NAME);
 
@@ -596,18 +544,14 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
     LOGGER.info("Master finishes cleanup.");
   }
 
-  /**
-   * Shutdown the master.
-   */
+  /** Shutdown the master. */
   public void shutdown() {
     cleanup();
   }
 
-  /**
-   * Start all the threads that do work for the server.
+  /** Start all the threads that do work for the server.
    *
-   * @throws Exception if any error occurs.
-   */
+   * @throws Exception if any error occurs. */
   public void start() throws Exception {
     LOGGER.info("Server starting on {}", masterSocketInfo);
 
@@ -668,33 +612,28 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
     serverQueryExecutor =
         Executors.newCachedThreadPool(new RenamingThreadFactory("Master query executor"));
 
-    /**
-     * The {@link Executor} who deals with IPC connection setup/cleanup.
-     */
+    /** The {@link Executor} who deals with IPC connection setup/cleanup. */
     ExecutorService ipcBossExecutor =
         Executors.newCachedThreadPool(new RenamingThreadFactory("Master IPC boss"));
-    /**
-     * The {@link Executor} who deals with IPC message delivering and transformation.
-     */
+    /** The {@link Executor} who deals with IPC message delivering and transformation. */
     ExecutorService ipcWorkerExecutor =
         Executors.newCachedThreadPool(new RenamingThreadFactory("Master IPC worker"));
 
     ipcPipelineExecutor = null; // Remove the pipeline executor.
-    // new OrderedMemoryAwareThreadPoolExecutor(Runtime.getRuntime().availableProcessors() * 2 + 1,
-    // 5 * MyriaConstants.MB, 0, MyriaConstants.THREAD_POOL_KEEP_ALIVE_TIME_IN_MS,
+    // new
+    // OrderedMemoryAwareThreadPoolExecutor(Runtime.getRuntime().availableProcessors()
+    // * 2 + 1,
+    // 5 * MyriaConstants.MB, 0,
+    // MyriaConstants.THREAD_POOL_KEEP_ALIVE_TIME_IN_MS,
     // TimeUnit.MILLISECONDS,
     // new RenamingThreadFactory("Master Pipeline executor"));
 
-    /**
-     * The {@link ChannelFactory} for creating client side connections.
-     */
+    /** The {@link ChannelFactory} for creating client side connections. */
     ChannelFactory clientChannelFactory =
         new NioClientSocketChannelFactory(
             ipcBossExecutor, ipcWorkerExecutor, Runtime.getRuntime().availableProcessors() * 2 + 1);
 
-    /**
-     * The {@link ChannelFactory} for creating server side accepted connections.
-     */
+    /** The {@link ChannelFactory} for creating server side accepted connections. */
     ChannelFactory serverChannelFactory =
         new NioServerSocketChannelFactory(
             ipcBossExecutor, ipcWorkerExecutor, Runtime.getRuntime().availableProcessors() * 2 + 1);
@@ -719,7 +658,7 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
     LOGGER.info("Server started on {}", masterSocketInfo);
 
     if (getDBMS().equals(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL)) {
-      final Set<Integer> workerIds = workers.keySet();
+      final List<Integer> workerIds = ImmutableList.copyOf(workers.keySet());
       addRelationToCatalog(
           MyriaConstants.EVENT_PROFILING_RELATION,
           MyriaConstants.EVENT_PROFILING_SCHEMA,
@@ -738,20 +677,17 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
     }
   }
 
-  /**
-   * Manually add a relation to the catalog.
+  /** Manually add a relation to the catalog.
    *
    * @param relationKey the relation to add
    * @param schema the schema of the relation to add
    * @param workers the workers that have the relation
    * @param force force add the relation; will replace an existing entry.
-   *
-   * @throws DbException if the catalog cannot be accessed
-   */
+   * @throws DbException if the catalog cannot be accessed */
   private void addRelationToCatalog(
       final RelationKey relationKey,
       final Schema schema,
-      final Set<Integer> workers,
+      final List<Integer> workers,
       final boolean force)
       throws DbException {
     try {
@@ -790,23 +726,18 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
     }
   }
 
-  /**
-   * @return the dbms from {@link #execEnvVars}.
-   */
+  /** @return the dbms from {@link #execEnvVars}. */
   public String getDBMS() {
     return (String) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_DATABASE_SYSTEM);
   }
 
-  /**
-   *
-   * Can be only used in test.
+  /** Can be only used in test.
    *
    * @return true if the query plan is accepted and scheduled for execution.
    * @param masterRoot the root operator of the master plan
    * @param workerRoots the roots of the worker part of the plan, {workerID -> RootOperator[]}
    * @throws DbException if any error occurs.
-   * @throws CatalogException catalog errors.
-   */
+   * @throws CatalogException catalog errors. */
   public QueryFuture submitQueryPlan(
       final RootOperator masterRoot, final Map<Integer, RootOperator[]> workerRoots)
       throws DbException, CatalogException {
@@ -823,19 +754,15 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
         workerPlans);
   }
 
-  /**
-   * @return the set of workers that are currently alive.
-   */
+  /** @return the set of workers that are currently alive. */
   public Set<Integer> getAliveWorkers() {
     return ImmutableSet.copyOf(aliveWorkers);
   }
 
-  /**
-   * Return a random subset of workers.
+  /** Return a random subset of workers.
    *
    * @param number the number of alive workers returned
-   * @return a subset of workers that are currently alive.
-   */
+   * @return a subset of workers that are currently alive. */
   public Set<Integer> getRandomWorkers(final int number) {
     Preconditions.checkArgument(
         number <= getAliveWorkers().size(),
@@ -848,50 +775,44 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
     return ImmutableSet.copyOf(workerList.subList(0, number));
   }
 
-  /**
-   * @return the set of known workers in this Master.
-   */
+  /** @return the set of known workers in this Master. */
   public Map<Integer, SocketInfo> getWorkers() {
     return workers;
   }
 
-  /**
-   * Ingest the given dataset.
+  /** Ingest the given dataset.
    *
    * @param relationKey the name of the dataset.
    * @param workersToIngest restrict the workers to ingest data (null for all)
    * @param indexes the indexes created.
    * @param source the source of tuples to be ingested.
-   * @param pf the PartitionFunction used to partition the ingested relation.
+   * @param df the distribute function.
    * @return the status of the ingested dataset.
    * @throws InterruptedException interrupted
-   * @throws DbException if there is an error
-   */
+   * @throws DbException if there is an error */
   public DatasetStatus ingestDataset(
       final RelationKey relationKey,
-      final Set<Integer> workersToIngest,
+      List<Integer> workersToIngest,
       final List<List<IndexRef>> indexes,
       final Operator source,
-      final PartitionFunction pf)
+      final DistributeFunction df)
       throws InterruptedException, DbException {
     /* Figure out the workers we will use. If workersToIngest is null, use all active workers. */
-    Set<Integer> actualWorkers = workersToIngest;
     if (workersToIngest == null) {
-      actualWorkers = getAliveWorkers();
+      workersToIngest = ImmutableList.copyOf(getAliveWorkers());
     }
-    Preconditions.checkArgument(actualWorkers.size() > 0, "Must use > 0 workers");
-    int[] workersArray = MyriaUtils.integerSetToIntArray(actualWorkers);
+    int[] workersArray = Ints.toArray(workersToIngest);
+    Preconditions.checkArgument(workersArray.length > 0, "Must use > 0 workers");
 
     /* The master plan: send the tuples out. */
     ExchangePairID scatterId = ExchangePairID.newID();
-    pf.setNumPartitions(workersArray.length);
+    df.setNumDestinations(workersArray.length, 1);
     GenericShuffleProducer scatter =
-        new GenericShuffleProducer(source, scatterId, workersArray, pf);
+        new GenericShuffleProducer(source, new ExchangePairID[] {scatterId}, workersArray, df);
 
     /* The workers' plan */
-    GenericShuffleConsumer gather =
-        new GenericShuffleConsumer(
-            source.getSchema(), scatterId, new int[] {MyriaConstants.MASTER_ID});
+    Consumer gather =
+        new Consumer(source.getSchema(), scatterId, ImmutableSet.of(MyriaConstants.MASTER_ID));
     DbInsert insert = new DbInsert(gather, relationKey, true, indexes);
     Map<Integer, SubQueryPlan> workerPlans = new HashMap<>();
     for (Integer workerId : workersArray) {
@@ -917,19 +838,17 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
     }
 
     // updating the partition function only after it's successfully ingested.
-    updateHowPartitioned(relationKey, new HowPartitioned(pf, workersArray));
+    updateHowPartitioned(relationKey, new HowDistributed(df, workersArray));
     return getDatasetStatus(relationKey);
   }
 
-  /**
-   * Parallel Ingest
+  /** Parallel Ingest
    *
    * @param relationKey the name of the dataset.
    * @param workersToIngest restrict the workers to ingest data (null for all)
    * @throws URIException
    * @throws DbException
-   * @throws InterruptedException
-   */
+   * @throws InterruptedException */
   public DatasetStatus parallelIngestDataset(
       final RelationKey relationKey,
       final Schema schema,
@@ -939,7 +858,7 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
       @Nullable final Integer numberOfSkippedLines,
       final AmazonS3Source s3Source,
       final Set<Integer> workersToIngest,
-      final PartitionFunction partitionFunction)
+      final DistributeFunction distributeFunction)
       throws URIException, DbException, InterruptedException {
     /* Figure out the workers we will use */
     Set<Integer> actualWorkers = workersToIngest;
@@ -1013,27 +932,26 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
       throw new DbException("Error executing query", e.getCause());
     }
 
-    updateHowPartitioned(relationKey, new HowPartitioned(partitionFunction, workersArray));
+    updateHowPartitioned(relationKey, new HowDistributed(distributeFunction, workersArray));
     return getDatasetStatus(relationKey);
   }
 
-  /**
-   * @param relationKey the relationalKey of the dataset to import
+  /** @param relationKey the relationalKey of the dataset to import
    * @param schema the schema of the dataset to import
    * @param workersToImportFrom the set of workers
    * @throws DbException if there is an error
-   * @throws InterruptedException interrupted
-   */
+   * @throws InterruptedException interrupted */
   public void addDatasetToCatalog(
-      final RelationKey relationKey, final Schema schema, final Set<Integer> workersToImportFrom)
+      final RelationKey relationKey, final Schema schema, final List<Integer> workersToImportFrom)
       throws DbException, InterruptedException {
 
-    /* Figure out the workers we will use. If workersToImportFrom is null, use all active workers. */
-    Set<Integer> actualWorkers = workersToImportFrom;
+    /*
+     * Figure out the workers we will use. If workersToImportFrom is null, use all active workers.
+     */
+    List<Integer> actualWorkers = workersToImportFrom;
     if (workersToImportFrom == null) {
-      actualWorkers = getWorkers().keySet();
+      actualWorkers = ImmutableList.copyOf(getWorkers().keySet());
     }
-
     addRelationToCatalog(relationKey, schema, workersToImportFrom, true);
 
     try {
@@ -1059,12 +977,10 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
     }
   }
 
-  /**
-   * @param relationKey the relationKey of the dataset to delete
+  /** @param relationKey the relationKey of the dataset to delete
    * @return the status
    * @throws DbException if there is an error
-   * @throws InterruptedException interrupted
-   */
+   * @throws InterruptedException interrupted */
   public void deleteDataset(final RelationKey relationKey)
       throws DbException, InterruptedException {
 
@@ -1108,9 +1024,7 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
     }
   }
 
-  /**
-   * Create indexes and add the metadata to the catalog
-   */
+  /** Create indexes and add the metadata to the catalog */
   public long addIndexesToRelation(
       final RelationKey relationKey, final Schema schema, final List<IndexRef> indexes)
       throws DbException, InterruptedException {
@@ -1155,9 +1069,7 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
     return queryID;
   }
 
-  /**
-   * Create a view
-   */
+  /** Create a view */
   public long createView(
       final String viewName, final String viewDefinition, final Set<Integer> workers)
       throws DbException, InterruptedException {
@@ -1196,14 +1108,12 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
     return queryID;
   }
 
-  /**
-   * Create a function and register it in the catalog
+  /** Create a function and register it in the catalog
    *
    * @param name the name of the function
    * @param definition the function definition (must be postgres specific)
    * @param outputSchema the output schema of the function
-   * @return the status of the function
-   */
+   * @return the status of the function */
   public String createFunction(
       final String name,
       final String definition,
@@ -1263,12 +1173,10 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
     return response;
   }
 
-  /**
-   * @param relationKey the relationKey of the dataset to persist
+  /** @param relationKey the relationKey of the dataset to persist
    * @return the queryID
    * @throws DbException if there is an error
-   * @throws InterruptedException interrupted
-   */
+   * @throws InterruptedException interrupted */
   public long persistDataset(final RelationKey relationKey)
       throws DbException, InterruptedException, URISyntaxException {
     long queryID;
@@ -1319,21 +1227,17 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
     return queryID;
   }
 
-  /**
-   * @param relationKey the key of the desired relation.
+  /** @param relationKey the key of the desired relation.
    * @return the schema of the specified relation, or null if not found.
-   * @throws CatalogException if there is an error getting the Schema out of the catalog.
-   */
+   * @throws CatalogException if there is an error getting the Schema out of the catalog. */
   public Schema getSchema(final RelationKey relationKey) throws CatalogException {
     return catalog.getSchema(relationKey);
   }
 
-  /**
-   * @param key the relation key.
+  /** @param key the relation key.
    * @param howPartitioned how the dataset was partitioned.
-   * @throws DbException if there is an catalog exception.
-   */
-  public void updateHowPartitioned(final RelationKey key, final HowPartitioned howPartitioned)
+   * @throws DbException if there is an catalog exception. */
+  public void updateHowPartitioned(final RelationKey key, final HowDistributed howPartitioned)
       throws DbException {
     try {
       catalog.updateHowPartitioned(key, howPartitioned);
@@ -1342,38 +1246,30 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
     }
   }
 
-  /**
-   * @param relationKey the key of the desired relation.
+  /** @param relationKey the key of the desired relation.
    * @param storedRelationId indicates which copy of the desired relation we want to scan.
    * @return the list of workers that store the specified relation.
-   * @throws CatalogException if there is an error accessing the catalog.
-   */
+   * @throws CatalogException if there is an error accessing the catalog. */
   public Set<Integer> getWorkersForRelation(
       final RelationKey relationKey, final Integer storedRelationId) throws CatalogException {
     return catalog.getWorkersForRelation(relationKey, storedRelationId);
   }
 
-  /**
-   * @param queryId the query that owns the desired temp relation.
+  /** @param queryId the query that owns the desired temp relation.
    * @param relationKey the key of the desired temp relation.
-   * @return the list of workers that store the specified relation.
-   */
+   * @return the list of workers that store the specified relation. */
   public Set<Integer> getWorkersForTempRelation(
       @Nonnull final Long queryId, @Nonnull final RelationKey relationKey) {
     return queryManager.getQuery(queryId).getWorkersForTempRelation(relationKey);
   }
 
-  /**
-   * @return the socket info for the master.
-   */
+  /** @return the socket info for the master. */
   protected SocketInfo getSocketInfo() {
     return masterSocketInfo;
   }
 
-  /**
-   * @return A list of datasets in the system.
-   * @throws DbException if there is an error accessing the desired Schema.
-   */
+  /** @return A list of datasets in the system.
+   * @throws DbException if there is an error accessing the desired Schema. */
   public List<DatasetStatus> getDatasets() throws DbException {
     try {
       return catalog.getDatasets();
@@ -1382,13 +1278,11 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
     }
   }
 
-  /**
-   * Get the metadata about a relation.
+  /** Get the metadata about a relation.
    *
    * @param relationKey specified which relation to get the metadata about.
    * @return the metadata of the specified relation.
-   * @throws DbException if there is an error getting the status.
-   */
+   * @throws DbException if there is an error getting the status. */
   public DatasetStatus getDatasetStatus(final RelationKey relationKey) throws DbException {
     try {
       return catalog.getDatasetStatus(relationKey);
@@ -1397,11 +1291,9 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
     }
   }
 
-  /**
-   * @param searchTerm the search term
+  /** @param searchTerm the search term
    * @return the relations that match the search term
-   * @throws DbException if there is an error getting the relation keys.
-   */
+   * @throws DbException if there is an error getting the relation keys. */
   public List<RelationKey> getMatchingRelationKeys(final String searchTerm) throws DbException {
     try {
       return catalog.getMatchingRelationKeys(searchTerm);
@@ -1410,11 +1302,9 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
     }
   }
 
-  /**
-   * @param userName the user whose datasets we want to access.
+  /** @param userName the user whose datasets we want to access.
    * @return a list of datasets belonging to the specified user.
-   * @throws DbException if there is an error accessing the Catalog.
-   */
+   * @throws DbException if there is an error accessing the Catalog. */
   public List<DatasetStatus> getDatasetsForUser(final String userName) throws DbException {
     try {
       return catalog.getDatasetsForUser(userName);
@@ -1423,12 +1313,10 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
     }
   }
 
-  /**
-   * @param userName the user whose datasets we want to access.
+  /** @param userName the user whose datasets we want to access.
    * @param programName the program by that user whose datasets we want to access.
    * @return a list of datasets belonging to the specified program.
-   * @throws DbException if there is an error accessing the Catalog.
-   */
+   * @throws DbException if there is an error accessing the Catalog. */
   public List<DatasetStatus> getDatasetsForProgram(final String userName, final String programName)
       throws DbException {
     try {
@@ -1438,11 +1326,9 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
     }
   }
 
-  /**
-   * @param queryId the id of the query.
+  /** @param queryId the id of the query.
    * @return a list of datasets belonging to the specified program.
-   * @throws DbException if there is an error accessing the Catalog.
-   */
+   * @throws DbException if there is an error accessing the Catalog. */
   public List<DatasetStatus> getDatasetsForQuery(final int queryId) throws DbException {
     try {
       return catalog.getDatasetsForQuery(queryId);
@@ -1451,33 +1337,27 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
     }
   }
 
-  /**
-   * @return the maximum query id that matches the search.
+  /** @return the maximum query id that matches the search.
    * @param searchTerm a token to match against the raw queries. If null, all queries match.
-   * @throws CatalogException if an error occurs
-   */
+   * @throws CatalogException if an error occurs */
   public long getMaxQuery(final String searchTerm) throws CatalogException {
     return catalog.getMaxQuery(searchTerm);
   }
 
-  /**
-   * @return the minimum query id that matches the search.
+  /** @return the minimum query id that matches the search.
    * @param searchTerm a token to match against the raw queries. If null, all queries match.
-   * @throws CatalogException if an error occurs
-   */
+   * @throws CatalogException if an error occurs */
   public long getMinQuery(final String searchTerm) throws CatalogException {
     return catalog.getMinQuery(searchTerm);
   }
 
-  /**
-   * Start a query that streams tuples from the specified relation to the specified {@link TupleWriter}.
+  /** Start a query that streams tuples from the specified relation to the specified {@link TupleWriter}.
    *
    * @param relationKey the relation to be downloaded.
    * @param writer the {@link TupleWriter} which will serialize the tuples.
    * @param dataSink the {@link DataSink} for the tuple destination
    * @return the query future from which the query status can be looked up.
-   * @throws DbException if there is an error in the system.
-   */
+   * @throws DbException if there is an error in the system. */
   public ListenableFuture<Query> startDataStream(
       final RelationKey relationKey, final TupleWriter writer, final DataSink dataSink)
       throws DbException {
@@ -1510,8 +1390,7 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
     }
 
     /* Construct the master plan. */
-    final CollectConsumer consumer =
-        new CollectConsumer(schema, operatorId, ImmutableSet.copyOf(scanWorkers));
+    final Consumer consumer = new Consumer(schema, operatorId, ImmutableSet.copyOf(scanWorkers));
     TupleSink output = new TupleSink(consumer, writer, dataSink);
     final SubQueryPlan masterPlan = new SubQueryPlan(output);
 
@@ -1524,15 +1403,13 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
     }
   }
 
-  /**
-   * Start a query that streams tuples from the specified relation to the specified {@link TupleWriter}.
+  /** Start a query that streams tuples from the specified relation to the specified {@link TupleWriter}.
    *
    * @param numTB the number of {@link TupleBatch}es to download from each worker.
    * @param writer the {@link TupleWriter} which will serialize the tuples.
    * @param dataSink the {@link DataSink} for the tuple destination
    * @return the query future from which the query status can be looked up.
-   * @throws DbException if there is an error in the system.
-   */
+   * @throws DbException if there is an error in the system. */
   public ListenableFuture<Query> startTestDataStream(
       final int numTB, final TupleWriter writer, final DataSink dataSink) throws DbException {
 
@@ -1565,8 +1442,7 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
     }
 
     /* Construct the master plan. */
-    final CollectConsumer consumer =
-        new CollectConsumer(schema, operatorId, ImmutableSet.copyOf(scanWorkers));
+    final Consumer consumer = new Consumer(schema, operatorId, ImmutableSet.copyOf(scanWorkers));
     TupleSink output = new TupleSink(consumer, writer, dataSink);
     final SubQueryPlan masterPlan = new SubQueryPlan(output);
 
@@ -1579,14 +1455,12 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
     }
   }
 
-  /**
-   * @param subqueryId the subquery id.
+  /** @param subqueryId the subquery id.
    * @param fragmentId the fragment id to return data for. All fragments, if < 0.
    * @param writer writer to get data.
    * @param dataSink the {@link DataSink} for the tuple destination
    * @return profiling logs for the query.
-   * @throws DbException if there is an error when accessing profiling logs.
-   */
+   * @throws DbException if there is an error when accessing profiling logs. */
   public ListenableFuture<Query> startSentLogDataStream(
       final SubQueryId subqueryId,
       final long fragmentId,
@@ -1639,9 +1513,8 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
       workerPlans.put(worker, workerPlan);
     }
 
-    final CollectConsumer consumer =
-        new CollectConsumer(
-            addWorkerId.getSchema(), operatorId, ImmutableSet.copyOf(actualWorkers));
+    final Consumer consumer =
+        new Consumer(addWorkerId.getSchema(), operatorId, ImmutableSet.copyOf(actualWorkers));
 
     final MultiGroupByAggregate aggregate =
         new MultiGroupByAggregate(
@@ -1676,12 +1549,10 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
     }
   }
 
-  /**
-   * Extracts the set of workers used in a saved, encoded physical plan.
+  /** Extracts the set of workers used in a saved, encoded physical plan.
    *
    * @param plan a {@link List<PlanFragmentEncoding>}, cached during execution.
-   * @return the set of workers used during the execution of this subquery.
-   */
+   * @return the set of workers used during the execution of this subquery. */
   @Nonnull
   private Set<Integer> getWorkersFromSubqueryPlan(final String plan) {
     /*
@@ -1720,13 +1591,11 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
     return actualWorkers;
   }
 
-  /**
-   * Returns the set of workers that executed a particular subquery.
+  /** Returns the set of workers that executed a particular subquery.
    *
    * @param subQueryId the subquery.
    * @return the set of workers that executed a particular subquery.
-   * @throws DbException if there is an error in the catalog.
-   */
+   * @throws DbException if there is an error in the catalog. */
   private Set<Integer> getWorkersForSubQuery(final SubQueryId subQueryId) throws DbException {
     String serializedPlan;
     try {
@@ -1739,13 +1608,11 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
     return getWorkersFromSubqueryPlan(serializedPlan);
   }
 
-  /**
-   * @param subqueryId the subquery id.
+  /** @param subqueryId the subquery id.
    * @param writer writer to get data.
    * @param dataSink the {@link DataSink} for the tuple destination
    * @return profiling logs for the query.
-   * @throws DbException if there is an error when accessing profiling logs.
-   */
+   * @throws DbException if there is an error when accessing profiling logs. */
   public ListenableFuture<Query> startAggregatedSentLogDataStream(
       final SubQueryId subqueryId, final TupleWriter writer, final DataSink dataSink)
       throws DbException {
@@ -1784,8 +1651,8 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
       workerPlans.put(worker, workerPlan);
     }
 
-    final CollectConsumer consumer =
-        new CollectConsumer(scan.getSchema(), operatorId, ImmutableSet.copyOf(actualWorkers));
+    final Consumer consumer =
+        new Consumer(scan.getSchema(), operatorId, ImmutableSet.copyOf(actualWorkers));
 
     final SingleGroupByAggregate aggregate =
         new SingleGroupByAggregate(
@@ -1823,8 +1690,7 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
     }
   }
 
-  /**
-   * @param subqueryId the desired subquery.
+  /** @param subqueryId the desired subquery.
    * @param fragmentId the fragment id to return data for. All fragments, if < 0.
    * @param start the earliest time where we need data
    * @param end the latest time
@@ -1833,9 +1699,7 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
    * @param writer writer to get data.
    * @param dataSink the {@link DataSink} for the tuple destination
    * @return profiling logs for the query.
-   *
-   * @throws DbException if there is an error when accessing profiling logs.
-   */
+   * @throws DbException if there is an error when accessing profiling logs. */
   public QueryFuture startLogDataStream(
       final SubQueryId subqueryId,
       final long fragmentId,
@@ -1925,9 +1789,8 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
       workerPlans.put(worker, workerPlan);
     }
 
-    final CollectConsumer consumer =
-        new CollectConsumer(
-            addWorkerId.getSchema(), operatorId, ImmutableSet.copyOf(actualWorkers));
+    final Consumer consumer =
+        new Consumer(addWorkerId.getSchema(), operatorId, ImmutableSet.copyOf(actualWorkers));
 
     TupleSink output = new TupleSink(consumer, writer, dataSink);
     final SubQueryPlan masterPlan = new SubQueryPlan(output);
@@ -1956,8 +1819,7 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
   /** Upper bound on the number of bins a profiler can ask for. */
   private static final long MAX_BINS = 10000;
 
-  /**
-   * @param subqueryId subquery id.
+  /** @param subqueryId subquery id.
    * @param fragmentId the fragment id to return data for. All fragments, if < 0.
    * @param start start of the histogram
    * @param end the end of the histogram
@@ -1966,9 +1828,7 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
    * @param writer writer to get data.
    * @param dataSink the {@link DataSink} for the tuple destination
    * @return profiling logs for the query.
-   *
-   * @throws DbException if there is an error when accessing profiling logs.
-   */
+   * @throws DbException if there is an error when accessing profiling logs. */
   public QueryFuture startHistogramDataStream(
       final SubQueryId subqueryId,
       final long fragmentId,
@@ -2041,8 +1901,8 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
     }
 
     /* Aggregate histogram on master */
-    final CollectConsumer consumer =
-        new CollectConsumer(scan.getSchema(), operatorId, ImmutableSet.copyOf(actualWorkers));
+    final Consumer consumer =
+        new Consumer(scan.getSchema(), operatorId, ImmutableSet.copyOf(actualWorkers));
 
     // sum up the number of workers working
     final MultiGroupByAggregate sumAggregate =
@@ -2079,14 +1939,12 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
     }
   }
 
-  /**
-   * @param subqueryId the subquery id.
+  /** @param subqueryId the subquery id.
    * @param fragmentId the fragment id
    * @param writer writer to get data
    * @param dataSink the {@link DataSink} for the tuple destination
    * @return profiling logs for the query.
-   * @throws DbException if there is an error when accessing profiling logs.
-   */
+   * @throws DbException if there is an error when accessing profiling logs. */
   public QueryFuture startRangeDataStream(
       final SubQueryId subqueryId,
       final long fragmentId,
@@ -2122,8 +1980,8 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
     }
 
     /* Construct the master plan. */
-    final CollectConsumer consumer =
-        new CollectConsumer(scan.getSchema(), operatorId, ImmutableSet.copyOf(actualWorkers));
+    final Consumer consumer =
+        new Consumer(scan.getSchema(), operatorId, ImmutableSet.copyOf(actualWorkers));
 
     // Aggregate range on master
     final Aggregate sumAggregate =
@@ -2153,15 +2011,12 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
     }
   }
 
-  /**
-   * @param subqueryId subquery id.
+  /** @param subqueryId subquery id.
    * @param fragmentId the fragment id to return data for. All fragments, if < 0.
    * @param writer writer to get data.
    * @param dataSink the {@link DataSink} for the tuple destination
    * @return contributions for operator.
-   *
-   * @throws DbException if there is an error when accessing profiling logs.
-   */
+   * @throws DbException if there is an error when accessing profiling logs. */
   public QueryFuture startContributionsStream(
       final SubQueryId subqueryId,
       final long fragmentId,
@@ -2202,8 +2057,8 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
     }
 
     /* Aggregate on master */
-    final CollectConsumer consumer =
-        new CollectConsumer(scan.getSchema(), operatorId, ImmutableSet.copyOf(actualWorkers));
+    final Consumer consumer =
+        new Consumer(scan.getSchema(), operatorId, ImmutableSet.copyOf(actualWorkers));
 
     // sum up contributions
     final SingleGroupByAggregate sumAggregate =
@@ -2237,13 +2092,11 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
     }
   }
 
-  /**
-   * Update the {@link MasterCatalog} so that the specified relation has the specified tuple count.
+  /** Update the {@link MasterCatalog} so that the specified relation has the specified tuple count.
    *
    * @param relation the relation to update
    * @param count the number of tuples in that relation
-   * @throws DbException if there is an error in the catalog
-   */
+   * @throws DbException if there is an error in the catalog */
   public void updateRelationTupleCount(final RelationKey relation, final long count)
       throws DbException {
     try {
@@ -2253,13 +2106,11 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
     }
   }
 
-  /**
-   * Set the global variable owned by the specified query and named by the specified key to the specified value.
+  /** Set the global variable owned by the specified query and named by the specified key to the specified value.
    *
    * @param queryId the query to whom the variable belongs.
    * @param key the name of the variable
-   * @param value the new value for the variable
-   */
+   * @param value the new value for the variable */
   public void setQueryGlobal(
       final long queryId, @Nonnull final String key, @Nonnull final Object value) {
     Preconditions.checkNotNull(key, "key");
@@ -2267,35 +2118,29 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
     queryManager.getQuery(queryId).setGlobal(key, value);
   }
 
-  /**
-   * Get the value of global variable owned by the specified query and named by the specified key.
+  /** Get the value of global variable owned by the specified query and named by the specified key.
    *
    * @param queryId the query to whom the variable belongs.
    * @param key the name of the variable
-   * @return the value of the variable
-   */
+   * @return the value of the variable */
   @Nullable
   public Object getQueryGlobal(final long queryId, @Nonnull final String key) {
     Preconditions.checkNotNull(key, "key");
     return queryManager.getQuery(queryId).getGlobal(key);
   }
 
-  /**
-   * Return the schema of the specified temp relation in the specified query.
+  /** Return the schema of the specified temp relation in the specified query.
    *
    * @param queryId the query that owns the temp relation
    * @param name the name of the temporary relation
-   * @return the schema of the specified temp relation in the specified query
-   */
+   * @return the schema of the specified temp relation in the specified query */
   public Schema getTempSchema(@Nonnull final Long queryId, @Nonnull final String name) {
     return queryManager.getQuery(queryId).getTempSchema(RelationKey.ofTemp(queryId, name));
   }
 
-  /**
-   * @param queryId the query id to fetch
+  /** @param queryId the query id to fetch
    * @param writerOutput the output stream to write results to.
-   * @throws DbException if there is an error in the database.
-   */
+   * @throws DbException if there is an error in the database. */
   public void getResourceUsage(final long queryId, final DataSink dataSink) throws DbException {
     Schema schema =
         Schema.appendColumn(MyriaConstants.RESOURCE_PROFILING_SCHEMA, Type.INT_TYPE, "workerId");
@@ -2315,12 +2160,10 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
     }
   }
 
-  /**
-   * @param queryId query id.
+  /** @param queryId query id.
    * @param writer writer to get data.
    * @return resource logs for the query.
-   * @throws DbException if there is an error when accessing profiling logs.
-   */
+   * @throws DbException if there is an error when accessing profiling logs. */
   public ListenableFuture<Query> getResourceLog(
       final long queryId, final TupleWriter writer, final DataSink dataSink) throws DbException {
     SubQueryId sqId = new SubQueryId(queryId, 0);
@@ -2360,9 +2203,8 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
     for (Integer worker : actualWorkers) {
       workerPlans.put(worker, workerPlan);
     }
-    final CollectConsumer consumer =
-        new CollectConsumer(
-            addWorkerId.getSchema(), operatorId, ImmutableSet.copyOf(actualWorkers));
+    final Consumer consumer =
+        new Consumer(addWorkerId.getSchema(), operatorId, ImmutableSet.copyOf(actualWorkers));
 
     TupleSink output = new TupleSink(consumer, writer, dataSink);
     final SubQueryPlan masterPlan = new SubQueryPlan(output);
@@ -2376,13 +2218,11 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
     }
   }
 
-  /**
-   * Record the fact that this subquery executed this in the catalog.
+  /** Record the fact that this subquery executed this in the catalog.
    *
    * @param subQueryId the id of the subquery.
    * @param encodedPlan the plan.
-   * @throws DbException if there is an error in the catalog.
-   */
+   * @throws DbException if there is an error in the catalog. */
   public void setQueryPlan(final SubQueryId subQueryId, @Nonnull final String encodedPlan)
       throws DbException {
     try {
@@ -2392,11 +2232,9 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
     }
   }
 
-  /**
-   * @param subQueryId the query whose plan to look up.
+  /** @param subQueryId the query whose plan to look up.
    * @return the execution plan for this query.
-   * @throws DbException if there is an error getting the query status.
-   */
+   * @throws DbException if there is an error getting the query status. */
   @Nullable
   public String getQueryPlan(@Nonnull final SubQueryId subQueryId) throws DbException {
     try {
@@ -2406,9 +2244,7 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
     }
   }
 
-  /**
-   * @return the master catalog.
-   */
+  /** @return the master catalog. */
   public MasterCatalog getCatalog() {
     return catalog;
   }

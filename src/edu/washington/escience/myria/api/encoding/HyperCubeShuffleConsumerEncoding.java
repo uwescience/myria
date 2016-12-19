@@ -4,8 +4,10 @@ import edu.washington.escience.myria.api.encoding.QueryConstruct.ConstructArgs;
 import edu.washington.escience.myria.operator.network.Consumer;
 import edu.washington.escience.myria.util.MyriaUtils;
 
-/** JSON wrapper for BroadcastConsumer */
-public class BroadcastConsumerEncoding extends AbstractConsumerEncoding<Consumer> {
+/**
+ * Consumer part of JSON encoding for HyperCube Join.
+ */
+public class HyperCubeShuffleConsumerEncoding extends AbstractConsumerEncoding<Consumer> {
 
   @Override
   public Consumer construct(ConstructArgs args) {

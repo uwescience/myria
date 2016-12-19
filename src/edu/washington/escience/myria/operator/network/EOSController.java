@@ -65,7 +65,7 @@ public class EOSController extends Producer {
    * */
   public EOSController(
       final UnionAll child, final ExchangePairID[] idbOpIDs, final int[] workerIDs) {
-    super(null, idbOpIDs, workerIDs, false);
+    super(null, idbOpIDs, workerIDs);
     if (child != null) {
       setChildren(new Operator[] {child});
     }

@@ -21,6 +21,7 @@ import org.junit.Assume;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 
 import edu.washington.escience.myria.MyriaConstants;
@@ -33,9 +34,9 @@ import edu.washington.escience.myria.operator.EOSSource;
 import edu.washington.escience.myria.operator.EmptySink;
 import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.operator.failures.InitFailureInjector;
-import edu.washington.escience.myria.operator.network.GenericShuffleConsumer;
+import edu.washington.escience.myria.operator.network.Consumer;
 import edu.washington.escience.myria.operator.network.GenericShuffleProducer;
-import edu.washington.escience.myria.operator.network.partition.PartitionFunction;
+import edu.washington.escience.myria.operator.network.distribute.DistributeFunction;
 import edu.washington.escience.myria.parallel.ExchangePairID;
 import edu.washington.escience.myria.parallel.SubQuery;
 import edu.washington.escience.myria.parallel.SubQueryPlan;
@@ -57,26 +58,20 @@ public final class TestUtils {
 
   private static Random random = null;
 
-  /**
-   * See http://docs.travis-ci.com/user/ci-environment/#Environment-variables
+  /** See http://docs.travis-ci.com/user/ci-environment/#Environment-variables
    *
-   * @return <code>true</code> if the system is currently in a Travis CI build.
-   */
+   * @return <code>true</code> if the system is currently in a Travis CI build. */
   public static boolean inTravis() {
     String travis = System.getenv("TRAVIS");
     return (travis != null) && travis.equals("true");
   }
 
-  /**
-   * Only run this test in Travis.
-   */
+  /** Only run this test in Travis. */
   public static void requireTravis() {
     Assume.assumeTrue(inTravis());
   }
 
-  /**
-   * Skip this test if in Travis.
-   */
+  /** Skip this test if in Travis. */
   public static void skipIfInTravis() {
     Assume.assumeFalse(inTravis());
   }
@@ -181,9 +176,7 @@ public final class TestUtils {
       final int child1JoinColumn,
       final int child2JoinColumn) {
 
-    /**
-     * join key -> {tuple->num occur}
-     * */
+    /** join key -> {tuple->num occur} */
     final HashMap<Comparable, HashMap<Tuple, Integer>> child1Hash =
         new HashMap<Comparable, HashMap<Tuple, Integer>>();
 
@@ -421,12 +414,10 @@ public final class TestUtils {
     return result;
   }
 
-  /**
-   * @param numTuples how many tuples in output
+  /** @param numTuples how many tuples in output
    * @param sampleSize how many different values should be created at random (around numTuples/sampleSize duplicates)
    * @param sorted Generate sorted tuples, sorted by id
-   * @return
-   */
+   * @return */
   public static TupleBatchBuffer generateRandomTuples(
       final int numTuples, final int sampleSize, final boolean sorted) {
     final ArrayList<Entry<Long, String>> entries = new ArrayList<Entry<Long, String>>();
@@ -456,54 +447,50 @@ public final class TestUtils {
     return tbb;
   }
 
-  /**
-   * Construct a SubQuery that will insert the given tuples (starting on the master) on the specified workers using the
+  /** Construct a SubQuery that will insert the given tuples (starting on the master) on the specified workers using the
    * specified relation key and partition function.
    *
    * @param masterSource the source of tuples, from the master.
    * @param dest the name of the relation into which tuples will be inserted (using overwrite!).
-   * @param pf how tuples will be partitioned on the cluster.
+   * @param df
    * @param workers the set of workers on which the data will be stored.
    * @return a SubQuery that will insert the given tuples (starting on the master) on the specified workers using the
-   *         specified relation key and partition function.
-   */
+   *         specified relation key and partition function. */
   public static final SubQuery insertRelation(
       @Nonnull final Operator masterSource,
       @Nonnull final RelationKey dest,
-      @Nonnull final PartitionFunction pf,
+      @Nonnull final DistributeFunction df,
       @Nonnull final Set<Integer> workers) {
     return insertRelation(
         masterSource,
         dest,
-        pf,
+        df,
         ArrayUtils.toPrimitive(workers.toArray(new Integer[workers.size()])));
   }
 
-  /**
-   * Construct a SubQuery that will insert the given tuples (starting on the master) on the specified workers using the
+  /** Construct a SubQuery that will insert the given tuples (starting on the master) on the specified workers using the
    * specified relation key and partition function.
    *
    * @param masterSource the source of tuples, from the master.
    * @param dest the name of the relation into which tuples will be inserted (using overwrite!).
-   * @param pf how tuples will be partitioned on the cluster.
+   * @param df
    * @param workers the set of workers on which the data will be stored.
    * @return a SubQuery that will insert the given tuples (starting on the master) on the specified workers using the
-   *         specified relation key and partition function.
-   */
+   *         specified relation key and partition function. */
   public static final SubQuery insertRelation(
       @Nonnull final Operator masterSource,
       @Nonnull final RelationKey dest,
-      @Nonnull final PartitionFunction pf,
+      @Nonnull final DistributeFunction df,
       @Nonnull final int[] workers) {
     final ExchangePairID id = ExchangePairID.newID();
     /* Master plan */
-    GenericShuffleProducer sp = new GenericShuffleProducer(masterSource, id, workers, pf);
+    GenericShuffleProducer sp =
+        new GenericShuffleProducer(masterSource, new ExchangePairID[] {id}, workers, df);
     SubQueryPlan masterPlan = new SubQueryPlan(sp);
 
     /* Worker plan */
-    GenericShuffleConsumer sc =
-        new GenericShuffleConsumer(
-            masterSource.getSchema(), id, new int[] {MyriaConstants.MASTER_ID});
+    Consumer sc =
+        new Consumer(masterSource.getSchema(), id, ImmutableSet.of(MyriaConstants.MASTER_ID));
     DbInsert insert = new DbInsert(sc, dest, true);
     Map<Integer, SubQueryPlan> workerPlans = Maps.newHashMap();
     for (int i : workers) {
@@ -513,9 +500,7 @@ public final class TestUtils {
     return new SubQuery(masterPlan, workerPlans);
   }
 
-  /**
-   * Construct a SubQuery that will fail on the master during initialization. Useful for testing failures.
-   */
+  /** Construct a SubQuery that will fail on the master during initialization. Useful for testing failures. */
   public static final SubQuery failOnMasterInit() {
     /* Master plan */
     EOSSource src = new EOSSource();
@@ -527,9 +512,7 @@ public final class TestUtils {
     return new SubQuery(new SubQueryPlan(root), workerPlans);
   }
 
-  /**
-   * Construct a SubQuery that will fail on one worker during initialization. Useful for testing failures.
-   */
+  /** Construct a SubQuery that will fail on one worker during initialization. Useful for testing failures. */
   public static final SubQuery failOnFirstWorkerInit(@Nonnull final int[] workers) {
     Preconditions.checkElementIndex(1, workers.length);
 
@@ -544,13 +527,11 @@ public final class TestUtils {
     return new SubQuery(masterPlan, workerPlans);
   }
 
-  /**
-   * Returns a {@link TupleBatchBuffer} containing the values 0 to {@code n-1}. The column is of type {@Link
-   * Type#INT_TYPE} and the column name is {@code "val"}.
+  /** Returns a {@link TupleBatchBuffer} containing the values 0 to {@code n-1}. The column is of type
+   * {@Link Type#INT_TYPE} and the column name is {@code "val"}.
    *
    * @param n the number of values in the buffer.
-   * @return a {@link TupleBatchBuffer} containing the values 0 to {@code n-1}
-   */
+   * @return a {@link TupleBatchBuffer} containing the values 0 to {@code n-1} */
   public static TupleBatchBuffer range(final int n) {
     TupleBatchBuffer sourceBuffer = new TupleBatchBuffer(Schema.ofFields(Type.INT_TYPE, "val"));
     for (int i = 0; i < n; ++i) {

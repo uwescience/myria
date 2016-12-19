@@ -1,16 +1,17 @@
 package edu.washington.escience.myria.api.encoding;
 
 import edu.washington.escience.myria.api.encoding.QueryConstruct.ConstructArgs;
-import edu.washington.escience.myria.operator.network.CollectConsumer;
+import edu.washington.escience.myria.operator.network.Consumer;
 import edu.washington.escience.myria.util.MyriaUtils;
 
-public class CollectConsumerEncoding extends AbstractConsumerEncoding<CollectConsumer> {
+/**
+ * JSON wrapper for CollectConsumer
+ */
+public class CollectConsumerEncoding extends AbstractConsumerEncoding<Consumer> {
 
   @Override
-  public CollectConsumer construct(ConstructArgs args) {
-    return new CollectConsumer(
-        null,
-        MyriaUtils.getSingleElement(getRealOperatorIds()),
-        MyriaUtils.integerSetToIntArray(getRealWorkerIds()));
+  public Consumer construct(ConstructArgs args) {
+    return new Consumer(
+        null, MyriaUtils.getSingleElement(getRealOperatorIds()), getRealWorkerIds());
   }
 }
