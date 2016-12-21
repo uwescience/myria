@@ -5,6 +5,8 @@ import com.google.common.base.Preconditions;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.storage.TupleBatch;
 
+import java.util.Arrays;
+
 /**
  * A column of Double values.
  *
@@ -33,7 +35,7 @@ public final class DoubleColumn extends Column<Double> {
 
   @Override
   public Double getObject(final int row) {
-    return Double.valueOf(getDouble(row));
+    return getDouble(row);
   }
 
   /**
@@ -60,15 +62,7 @@ public final class DoubleColumn extends Column<Double> {
 
   @Override
   public String toString() {
-    final StringBuilder sb = new StringBuilder();
-    sb.append(size()).append(" elements: [");
-    for (int i = 0; i < size(); ++i) {
-      if (i > 0) {
-        sb.append(", ");
-      }
-      sb.append(data[i]);
-    }
-    sb.append(']');
-    return sb.toString();
+    return String.format("%d elements: [%s]", size(),
+        Arrays.stream(data).mapToObj(Double::toString).reduce("", (a, b) -> a + ", " + b));
   }
 }
