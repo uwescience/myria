@@ -1,4 +1,4 @@
-myria
+Myria
 =====
 [![Build Status](https://travis-ci.org/uwescience/myria.svg)](https://travis-ci.org/uwescience/myria) [![Coverage Status](https://coveralls.io/repos/uwescience/myria/badge.png)](https://coveralls.io/r/uwescience/myria)
 
