@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.Iterator;
+import java.util.Set;
 
 import javax.annotation.Nullable;
 
@@ -27,6 +28,7 @@ import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.io.AmazonS3Source;
 import edu.washington.escience.myria.io.DataSource;
 import edu.washington.escience.myria.io.FileSource;
+import edu.washington.escience.myria.parallel.WorkerSubQuery;
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
 import edu.washington.escience.myria.util.DateTimeUtils;
@@ -60,10 +62,10 @@ public class CSVFileScanFragment extends LeafOperator {
   private static final String truncatedQuoteErrorMessage =
       "EOF reached before encapsulated token finished";
 
-  private final boolean isLastWorker;
+  private boolean isLastWorker;
   private final long maxByteRange;
-  private final long partitionStartByteRange;
-  private final long partitionEndByteRange;
+  private long partitionStartByteRange;
+  private long partitionEndByteRange;
 
   private long adjustedStartByteRange;
   private int byteOffsetFromTruncatedRowAtStart = 0;
@@ -72,6 +74,8 @@ public class CSVFileScanFragment extends LeafOperator {
   private boolean onLastRow;
   private boolean finishedReadingLastRow;
   private boolean flagAsIncomplete;
+  private boolean flagAsRangeSelected;
+  private int liveWorkersCount;
 
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
@@ -177,6 +181,32 @@ public class CSVFileScanFragment extends LeafOperator {
     onLastRow = false;
     finishedReadingLastRow = false;
     flagAsIncomplete = false;
+    flagAsRangeSelected = true;
+  }
+
+  public CSVFileScanFragment(
+      final AmazonS3Source source,
+      final Schema schema,
+      final Set<Integer> liveWorkers,
+      @Nullable final Character delimiter,
+      @Nullable final Character quote,
+      @Nullable final Character escape,
+      @Nullable final Integer numberOfSkippedLines) {
+
+    this.source = (AmazonS3Source) Preconditions.checkNotNull(source, "source");
+    this.schema = Preconditions.checkNotNull(schema, "schema");
+    this.liveWorkersCount = liveWorkers.size();
+
+    this.delimiter = MoreObjects.firstNonNull(delimiter, CSVFormat.DEFAULT.getDelimiter());
+    this.quote = MoreObjects.firstNonNull(quote, CSVFormat.DEFAULT.getQuoteCharacter());
+    this.escape = escape;
+    this.numberOfSkippedLines = MoreObjects.firstNonNull(numberOfSkippedLines, 0);
+
+    maxByteRange = ((AmazonS3Source) source).getFileSize();
+    onLastRow = false;
+    finishedReadingLastRow = false;
+    flagAsIncomplete = false;
+    flagAsRangeSelected = false;
   }
 
   @Override
@@ -373,88 +403,125 @@ public class CSVFileScanFragment extends LeafOperator {
   @Override
   protected void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
     buffer = new TupleBatchBuffer(getSchema());
-    try {
 
-      adjustedStartByteRange = partitionStartByteRange;
-      /* Optimization */
-      if (partitionStartByteRange != 0) {
-        adjustedStartByteRange -= 1;
+    if (!flagAsRangeSelected) {
+      int workerID = ((WorkerSubQuery) getLocalSubQuery()).getWorker().getID();
+      long fileSize = source.getFileSize();
+      long currentPartitionSize = 0;
+      int totalNumberOfWorkersToIngest = 0;
+      for (int i = liveWorkersCount; i >= 1; i--) {
+        totalNumberOfWorkersToIngest = i;
+        currentPartitionSize = fileSize / i;
+        if (currentPartitionSize > MyriaConstants.PARALLEL_INGEST_WORKER_MINIMUM_PARTITION_SIZE
+            || totalNumberOfWorkersToIngest == 1) {
+          break;
+        }
       }
-      partitionInputStream = source.getInputStream(adjustedStartByteRange, partitionEndByteRange);
 
-      /* If the file is empty, mark the partition as incomplete */
-      if (maxByteRange == 0) {
+      if (workerID <= totalNumberOfWorkersToIngest) {
+        boolean isLastWorker = workerID == liveWorkersCount;
+        long startByteRange = currentPartitionSize * (workerID - 1);
+        long endByteRange;
+        if (isLastWorker) {
+          endByteRange = fileSize - 1;
+        } else {
+          endByteRange = (currentPartitionSize * workerID) - 1;
+        }
+
+        this.partitionStartByteRange = startByteRange;
+        this.partitionEndByteRange = endByteRange;
+        this.isLastWorker = isLastWorker;
+      } else {
+        /* do not read bytes for this worker */
         flagAsIncomplete = true;
       }
+    }
 
-      /*
-       * If this is not the first worker, we make sure to read until we hit a new line character. We do this to skip
-       * partial rows at the beginning of the partition.
-       */
-      if (partitionStartByteRange != 0) {
-        int firstChar = partitionInputStream.read();
-        byteOffsetFromTruncatedRowAtStart = 1;
-        if (firstChar != '\n' && firstChar != '\r') {
-          boolean newLineFound = false;
-          while (!newLineFound) {
-            int currentChar = partitionInputStream.read();
-            byteOffsetFromTruncatedRowAtStart++;
-            if (currentChar == '\n' || currentChar == '\r' || currentChar == -1) {
-              newLineFound = true;
-              /*
-               * If we never reach a new line (this could happen for a partial row at the last worker), mark as
-               * incomplete
-               */
-              if (currentChar == -1) {
-                flagAsIncomplete = true;
-              } else if (currentChar == '\r') {
-                currentChar = partitionInputStream.read();
-                byteOffsetFromTruncatedRowAtStart++;
-                if (currentChar != '\n') {
-                  byteOffsetFromTruncatedRowAtStart--;
-                  partitionInputStream =
-                      source.getInputStream(
-                          adjustedStartByteRange + byteOffsetFromTruncatedRowAtStart,
-                          partitionEndByteRange);
+    if (flagAsIncomplete) {
+      try {
+
+        adjustedStartByteRange = partitionStartByteRange;
+        /* Optimization */
+        if (partitionStartByteRange != 0) {
+          adjustedStartByteRange -= 1;
+        }
+        partitionInputStream = source.getInputStream(adjustedStartByteRange, partitionEndByteRange);
+
+        /* If the file is empty, mark the partition as incomplete */
+        if (maxByteRange == 0) {
+          flagAsIncomplete = true;
+        }
+
+        /*
+         * If this is not the first worker, we make sure to read until we hit a new line character. We do this to skip
+         * partial rows at the beginning of the partition.
+         */
+        if (partitionStartByteRange != 0) {
+          int firstChar = partitionInputStream.read();
+          byteOffsetFromTruncatedRowAtStart = 1;
+          if (firstChar != '\n' && firstChar != '\r') {
+            boolean newLineFound = false;
+            while (!newLineFound) {
+              int currentChar = partitionInputStream.read();
+              byteOffsetFromTruncatedRowAtStart++;
+              if (currentChar == '\n' || currentChar == '\r' || currentChar == -1) {
+                newLineFound = true;
+                /*
+                 * If we never reach a new line (this could happen for a partial row at the last worker), mark as
+                 * incomplete
+                 */
+                if (currentChar == -1) {
+                  flagAsIncomplete = true;
+                } else if (currentChar == '\r') {
+                  currentChar = partitionInputStream.read();
+                  byteOffsetFromTruncatedRowAtStart++;
+                  if (currentChar != '\n') {
+                    byteOffsetFromTruncatedRowAtStart--;
+                    partitionInputStream =
+                        source.getInputStream(
+                            adjustedStartByteRange + byteOffsetFromTruncatedRowAtStart,
+                            partitionEndByteRange);
+                  }
                 }
               }
             }
-          }
-        } else if (firstChar == '\r') {
-          int currentChar = partitionInputStream.read();
-          byteOffsetFromTruncatedRowAtStart++;
-          if (currentChar != '\n') {
-            byteOffsetFromTruncatedRowAtStart--;
-            partitionInputStream =
-                source.getInputStream(
-                    adjustedStartByteRange + byteOffsetFromTruncatedRowAtStart,
-                    partitionEndByteRange);
-          }
-        }
-      }
-
-      /* If we hit the end of the partition then mark it as incomplete.*/
-      if (adjustedStartByteRange + byteOffsetFromTruncatedRowAtStart - 1 == partitionEndByteRange) {
-        flagAsIncomplete = true;
-      }
-
-      /* If the partition is incomplete, do not instantiate the parser */
-      if (!flagAsIncomplete) {
-        parser =
-            new CSVParser(
-                new BufferedReader(new InputStreamReader(partitionInputStream)),
-                CSVFormat.newFormat(delimiter).withQuote(quote).withEscape(escape));
-        iterator = parser.iterator();
-
-        /* FIX ME: For now, we only support cases where all skipped lines are contained within the first partition. */
-        if (partitionStartByteRange == 0) {
-          for (int i = 0; i < numberOfSkippedLines; i++) {
-            iterator.next();
+          } else if (firstChar == '\r') {
+            int currentChar = partitionInputStream.read();
+            byteOffsetFromTruncatedRowAtStart++;
+            if (currentChar != '\n') {
+              byteOffsetFromTruncatedRowAtStart--;
+              partitionInputStream =
+                  source.getInputStream(
+                      adjustedStartByteRange + byteOffsetFromTruncatedRowAtStart,
+                      partitionEndByteRange);
+            }
           }
         }
+
+        /* If we hit the end of the partition then mark it as incomplete.*/
+        if (adjustedStartByteRange + byteOffsetFromTruncatedRowAtStart - 1
+            == partitionEndByteRange) {
+          flagAsIncomplete = true;
+        }
+
+        /* If the partition is incomplete, do not instantiate the parser */
+        if (!flagAsIncomplete) {
+          parser =
+              new CSVParser(
+                  new BufferedReader(new InputStreamReader(partitionInputStream)),
+                  CSVFormat.newFormat(delimiter).withQuote(quote).withEscape(escape));
+          iterator = parser.iterator();
+
+          /* FIX ME: For now, we only support cases where all skipped lines are contained within the first partition. */
+          if (partitionStartByteRange == 0) {
+            for (int i = 0; i < numberOfSkippedLines; i++) {
+              iterator.next();
+            }
+          }
+        }
+      } catch (IOException e) {
+        throw new DbException(e);
       }
-    } catch (IOException e) {
-      throw new DbException(e);
     }
   }
 }
