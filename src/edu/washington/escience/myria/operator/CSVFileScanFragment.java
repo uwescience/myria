@@ -437,7 +437,7 @@ public class CSVFileScanFragment extends LeafOperator {
       }
     }
 
-    if (flagAsIncomplete) {
+    if (!flagAsIncomplete) {
       try {
 
         adjustedStartByteRange = partitionStartByteRange;
