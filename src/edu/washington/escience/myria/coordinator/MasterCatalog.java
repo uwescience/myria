@@ -1252,7 +1252,7 @@ public final class MasterCatalog {
    * @param howDistributed how the dataset was distributed.
    * @throws CatalogException if there is an error in the catalog.
    */
-  public void updateHowPartitioned(final RelationKey key, final HowDistributed howDistributed)
+  public void updateHowDistributed(final RelationKey key, final HowDistributed howDistributed)
       throws CatalogException {
     if (isClosed) {
       throw new CatalogException("Catalog is closed.");
@@ -1328,21 +1328,21 @@ public final class MasterCatalog {
                     long numTuples = statement.columnLong(0);
                     long queryId = statement.columnLong(1);
                     String created = statement.columnString(2);
-                    HowDistributed howPartitioned;
+                    HowDistributed howDistributed;
                     try {
-                      howPartitioned =
+                      howDistributed =
                           MyriaJsonMapperProvider.getMapper()
                               .readValue(statement.columnString(3), HowDistributed.class);
                     } catch (final IOException e) {
                       LOGGER.debug(
-                          "Error deserializing howPartitioned for dataset #{}",
+                          "Error deserializing howDistributed for dataset #{}",
                           relationKey.toString(),
                           e);
-                      howPartitioned = new HowDistributed(null, null);
+                      howDistributed = new HowDistributed(null, null);
                     }
                     statement.dispose();
                     return new DatasetStatus(
-                        relationKey, schema, numTuples, queryId, created, howPartitioned);
+                        relationKey, schema, numTuples, queryId, created, howDistributed);
                   } catch (final SQLiteException e) {
                     throw new CatalogException(e);
                   }

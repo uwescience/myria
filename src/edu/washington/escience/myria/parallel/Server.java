@@ -113,6 +113,7 @@ import edu.washington.escience.myria.operator.agg.SingleGroupByAggregate;
 import edu.washington.escience.myria.operator.network.CollectProducer;
 import edu.washington.escience.myria.operator.network.Consumer;
 import edu.washington.escience.myria.operator.network.GenericShuffleProducer;
+import edu.washington.escience.myria.operator.network.distribute.BroadcastDistributeFunction;
 import edu.washington.escience.myria.operator.network.distribute.DistributeFunction;
 import edu.washington.escience.myria.operator.network.distribute.HowDistributed;
 import edu.washington.escience.myria.parallel.ipc.IPCConnectionPool;
@@ -838,7 +839,7 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
     }
 
     // updating the partition function only after it's successfully ingested.
-    updateHowPartitioned(relationKey, new HowDistributed(df, workersArray));
+    updateHowDistributed(relationKey, new HowDistributed(df, workersArray));
     return getDatasetStatus(relationKey);
   }
 
@@ -932,7 +933,7 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
       throw new DbException("Error executing query", e.getCause());
     }
 
-    updateHowPartitioned(relationKey, new HowDistributed(distributeFunction, workersArray));
+    updateHowDistributed(relationKey, new HowDistributed(distributeFunction, workersArray));
     return getDatasetStatus(relationKey);
   }
 
@@ -1237,10 +1238,10 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
   /** @param key the relation key.
    * @param howPartitioned how the dataset was partitioned.
    * @throws DbException if there is an catalog exception. */
-  public void updateHowPartitioned(final RelationKey key, final HowDistributed howPartitioned)
+  public void updateHowDistributed(final RelationKey key, final HowDistributed howDistributed)
       throws DbException {
     try {
-      catalog.updateHowPartitioned(key, howPartitioned);
+      catalog.updateHowDistributed(key, howDistributed);
     } catch (CatalogException e) {
       throw new DbException(e);
     }
@@ -1376,6 +1377,12 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
       scanWorkers = getWorkersForRelation(relationKey, null);
     } catch (CatalogException e) {
       throw new DbException(e);
+    }
+
+    /* If relation is broadcast, pick random worker to scan. */
+    DistributeFunction df = getDatasetStatus(relationKey).getHowDistributed().getDf();
+    if (df instanceof BroadcastDistributeFunction) {
+      scanWorkers = ImmutableSet.of(scanWorkers.iterator().next());
     }
 
     /* Construct the operators that go elsewhere. */
