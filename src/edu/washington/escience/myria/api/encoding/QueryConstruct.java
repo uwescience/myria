@@ -20,6 +20,7 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 
+import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.MyriaConstants.FTMode;
 import edu.washington.escience.myria.MyriaConstants.ProfilingMode;
@@ -43,6 +44,8 @@ import edu.washington.escience.myria.operator.agg.SingleColumnAggregatorFactory;
 import edu.washington.escience.myria.operator.network.CollectProducer;
 import edu.washington.escience.myria.operator.network.Consumer;
 import edu.washington.escience.myria.operator.network.EOSController;
+import edu.washington.escience.myria.operator.network.distribute.BroadcastDistributeFunction;
+import edu.washington.escience.myria.operator.network.distribute.DistributeFunction;
 import edu.washington.escience.myria.parallel.ExchangePairID;
 import edu.washington.escience.myria.parallel.JsonSubQuery;
 import edu.washington.escience.myria.parallel.RelationWriteMetadata;
@@ -66,7 +69,7 @@ public class QueryConstruct {
    */
   public static Map<Integer, SubQueryPlan> instantiate(
       final List<PlanFragmentEncoding> fragments, final ConstructArgs args)
-      throws CatalogException {
+      throws CatalogException, DbException {
 
     // Assign fragment index before everything else
     int idx = 0;
@@ -146,6 +149,7 @@ public class QueryConstruct {
   private static boolean setOrVerifyFragmentWorkers(
       @Nonnull final PlanFragmentEncoding fragment,
       @Nonnull final Collection<Integer> workers,
+      final boolean isBroadcastScan,
       @Nonnull final String currentTask) {
     Preconditions.checkNotNull(fragment, "fragment");
     Preconditions.checkNotNull(workers, "workers");
@@ -153,7 +157,7 @@ public class QueryConstruct {
     if (fragment.workers == null) {
       fragment.workers = ImmutableList.copyOf(workers);
       return true;
-    } else {
+    } else if (!isBroadcastScan) {
       Preconditions.checkArgument(
           HashMultiset.create(fragment.workers).equals(HashMultiset.create(workers)),
           "During %s, cannot change workers for fragment %s from %s to %s",
@@ -161,8 +165,8 @@ public class QueryConstruct {
           fragment.fragmentIndex,
           fragment.workers,
           workers);
-      return false;
     }
+    return false;
   }
 
   /**
@@ -177,7 +181,7 @@ public class QueryConstruct {
    */
   private static void setAndVerifyScans(
       final List<PlanFragmentEncoding> fragments, final ConstructArgs args)
-      throws CatalogException {
+      throws CatalogException, DbException {
     Server server = args.getServer();
 
     for (PlanFragmentEncoding fragment : fragments) {
@@ -185,18 +189,18 @@ public class QueryConstruct {
         Set<Integer> scanWorkers;
         String scanRelation;
 
+        RelationKey relationKey = null;
         if (operator instanceof TableScanEncoding) {
           TableScanEncoding scan = ((TableScanEncoding) operator);
-          scanRelation = scan.relationKey.toString();
+          relationKey = scan.relationKey;
+          scanRelation = relationKey.toString();
           scanWorkers = server.getWorkersForRelation(scan.relationKey, scan.storedRelationId);
         } else if (operator instanceof TempTableScanEncoding) {
           TempTableScanEncoding scan = ((TempTableScanEncoding) operator);
+          relationKey = RelationKey.ofTemp(args.getQueryId(), scan.table);
           scanRelation = "temporary relation " + scan.table;
           scanWorkers =
-              server
-                  .getQueryManager()
-                  .getWorkersForTempRelation(
-                      args.getQueryId(), RelationKey.ofTemp(args.getQueryId(), scan.table));
+              server.getQueryManager().getWorkersForTempRelation(args.getQueryId(), relationKey);
         } else {
           continue;
         }
@@ -206,7 +210,10 @@ public class QueryConstruct {
          * Note: the current assumption is that all the partitions need to be scanned. This will not be true if we have
          * data replication, or allow to scan only a subset of the partitions. Revise if needed.
          */
-        setOrVerifyFragmentWorkers(fragment, scanWorkers, "Setting workers for " + scanRelation);
+        DistributeFunction df = server.getDatasetStatus(relationKey).getHowDistributed().getDf();
+        boolean isBroadcastScan = (df instanceof BroadcastDistributeFunction);
+        setOrVerifyFragmentWorkers(
+            fragment, scanWorkers, isBroadcastScan, "Setting workers for " + scanRelation);
       }
     }
   }
@@ -340,7 +347,8 @@ public class QueryConstruct {
 
         // Verify that all fragments match the workers we found (and propagate if null)
         for (PlanFragmentEncoding frag : allFrags) {
-          anyUpdates |= setOrVerifyFragmentWorkers(frag, workers, "propagating edge constraints");
+          anyUpdates |=
+              setOrVerifyFragmentWorkers(frag, workers, false, "propagating edge constraints");
         }
       }
     } while (anyUpdates);
@@ -466,7 +474,7 @@ public class QueryConstruct {
    */
   private static void assignWorkersToFragments(
       final List<PlanFragmentEncoding> fragments, final ConstructArgs args)
-      throws CatalogException {
+      throws CatalogException, DbException {
 
     /* 1. Honor user overrides. Note this is unchecked, but we may find constraint violations later. */
     for (PlanFragmentEncoding fragment : fragments) {
