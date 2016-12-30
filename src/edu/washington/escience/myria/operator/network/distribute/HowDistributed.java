@@ -9,16 +9,18 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableList;
 import com.google.common.primitives.Ints;
 
-/** How is a dataset distributed. */
+/** How a dataset is distributed. */
 public class HowDistributed {
 
-  /** The distribute function used to distirbute the dataset. Null means unknown. */
+  /** The distribute function used to distribute the dataset. Null means unknown. */
   @JsonProperty private DistributeFunction df = null;
   /** The sequence of workers that the dataset is partitioned on. Null means unknown. */
   @JsonProperty private ImmutableList<Integer> workers = null;
 
-  /** @param df the distribute function.
-   * @param workers the sequence of workers. */
+  /**
+   * @param df the distribute function.
+   * @param workers the sequence of workers.
+   */
   public HowDistributed(@Nullable final DistributeFunction df, @Nullable final int[] workers) {
     this.df = df;
     if (workers != null) {
@@ -26,11 +28,13 @@ public class HowDistributed {
     }
   }
 
-  /** Static function to create a HowPartitioned object.
+  /**
+   * Static function to create a HowPartitioned object.
    *
    * @param df the distribute function.
    * @param workers the sequence of workers. *
-   * @return a new HowPartitioned reference to the specified relation. */
+   * @return a new HowPartitioned reference to the specified relation.
+   */
   @JsonCreator
   public static HowDistributed of(
       @JsonProperty("df") final DistributeFunction df,

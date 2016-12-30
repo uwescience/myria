@@ -31,7 +31,7 @@ public abstract class PartitionFunction implements Serializable {
   private Integer numPartitions = null;
 
   /** @return the number of partitions. */
-  public final int numPartition() {
+  public final int numPartitions() {
     Preconditions.checkState(numPartitions != null, "numPartitions has not been set");
     return numPartitions;
   }

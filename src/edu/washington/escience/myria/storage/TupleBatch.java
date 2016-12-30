@@ -20,7 +20,10 @@ import edu.washington.escience.myria.proto.TransportProto.TransportMessage;
 import edu.washington.escience.myria.util.IPCUtils;
 import net.jcip.annotations.ThreadSafe;
 
-/** Container class for a batch of tuples. The goal is to amortize memory management overhead. */
+/**
+ * Container class for a batch of tuples. The goal is to amortize memory management overhead and processing overhead
+ * from code/data locality.
+ */
 @ThreadSafe
 public class TupleBatch implements ReadableTable, Serializable {
   /** Required for Java serialization. */
@@ -36,10 +39,12 @@ public class TupleBatch implements ReadableTable, Serializable {
   /** Whether this TB is an EOI TB. */
   private final boolean isEOI;
 
-  /** EOI TB constructor.
+  /**
+   * EOI TB constructor.
    *
    * @param schema schema of the tuples in this batch.
-   * @param isEoi whether this TupleBatch is an EOI TupleBatch. */
+   * @param isEoi whether this TupleBatch is an EOI TupleBatch.
+   */
   private TupleBatch(final Schema schema, final boolean isEoi) {
     this.schema = schema;
     numTuples = 0;
@@ -51,38 +56,46 @@ public class TupleBatch implements ReadableTable, Serializable {
     isEOI = isEoi;
   }
 
-  /** @param columnNames the new column names.
-   * @return a shallow copy of the specified TupleBatch with the new column names. */
+  /**
+   * @param columnNames the new column names.
+   * @return a shallow copy of the specified TupleBatch with the new column names.
+   */
   public TupleBatch rename(final List<String> columnNames) {
     Schema newSchema =
         Schema.of(schema.getColumnTypes(), Objects.requireNonNull(columnNames, "columnNames"));
     return new TupleBatch(newSchema, columns, numTuples, isEOI);
   }
 
-  /** Standard immutable TupleBatch constructor. All fields must be populated before creation and cannot be changed.
+  /**
+   * Standard immutable TupleBatch constructor. All fields must be populated before creation and cannot be changed.
    *
    * @param schema schema of the tuples in this batch. Must match columns.
    * @param columns contains the column-stored data. Must match schema.
-   * @param numTuples the number of tuples in this TupleBatch. */
+   * @param numTuples the number of tuples in this TupleBatch.
+   */
   public TupleBatch(
       final Schema schema, final List<? extends Column<?>> columns, final int numTuples) {
     this(schema, columns, numTuples, false);
   }
 
-  /** Constructor that gets the number of tuples from the columns.
+  /**
+   * Constructor that gets the number of tuples from the columns.
    *
    * @param schema schema of the tuples in this batch. Must match columns.
-   * @param columns contains the column-stored data. Must match schema. */
+   * @param columns contains the column-stored data. Must match schema.
+   */
   public TupleBatch(final Schema schema, final List<? extends Column<?>> columns) {
     this(schema, columns, columns.get(0).size());
   }
 
-  /** Construct a TupleBatch from the specified components.
+  /**
+   * Construct a TupleBatch from the specified components.
    *
    * @param schema schema of the tuples in this batch. Must match columns.
    * @param columns schema of the tuples in this batch. Must match columns.
    * @param numTuples the number of tuples in this batch. Must match columns.
-   * @param isEOI whether this is an EOI TupleBatch. */
+   * @param isEOI whether this is an EOI TupleBatch.
+   */
   public TupleBatch(
       final Schema schema,
       final List<? extends Column<?>> columns,
@@ -106,9 +119,11 @@ public class TupleBatch implements ReadableTable, Serializable {
     this.isEOI = isEOI;
   }
 
-  /** put the tuple batch into TBB by smashing it into cells and putting them one by one.
+  /**
+   * put the tuple batch into TBB by smashing it into cells and putting them one by one.
    *
-   * @param tbb the TBB buffer. */
+   * @param tbb the TBB buffer.
+   */
   public final void compactInto(final TupleBatchBuffer tbb) {
     if (isEOI()) {
       /* an EOI TB has no data */
@@ -120,12 +135,14 @@ public class TupleBatch implements ReadableTable, Serializable {
     }
   }
 
-  /** Return a new TupleBatch that contains only the filtered rows of the current dataset. Note that if some of the
+  /**
+   * Return a new TupleBatch that contains only the filtered rows of the current dataset. Note that if some of the
    * tuples in this batch are invalid, we will have to map the indices in the specified filter to the "real" indices in
    * the tuple.
    *
    * @param filter the rows to be retained.
-   * @return a TupleBatch that contains only the filtered rows of the current dataset. */
+   * @return a TupleBatch that contains only the filtered rows of the current dataset.
+   */
   public final TupleBatch filter(final BitSet filter) {
     Preconditions.checkArgument(
         filter.length() <= numTuples(),
@@ -146,10 +163,12 @@ public class TupleBatch implements ReadableTable, Serializable {
     return new TupleBatch(schema, newColumns.build(), newNumTuples, isEOI);
   }
 
-  /** Return a new TupleBatch that contains only first <code>prefix</code> rows of this batch.
+  /**
+   * Return a new TupleBatch that contains only first <code>prefix</code> rows of this batch.
    *
    * @param prefix the number of rows in the prefix to be retained.
-   * @return a TupleBatch that contains only the filtered rows of the current dataset. */
+   * @return a TupleBatch that contains only the filtered rows of the current dataset.
+   */
   @SuppressWarnings({"rawtypes", "unchecked"})
   public final TupleBatch prefix(final int prefix) {
     Preconditions.checkArgument(
@@ -220,25 +239,29 @@ public class TupleBatch implements ReadableTable, Serializable {
     return numTuples;
   }
 
-  /** Partition this TB using the partition function. The method is implemented by shallow copy of TupleBatches.
+  /**
+   * Partition this TB using the partition function. The method is implemented by shallow copy of TupleBatches.
    *
    * @return an array of TBs. The length of the array is the same as the number of partitions. If no tuple presents in a
    *         partition, say the i'th partition, the i'th element in the result array is null.
-   * @param pf the partition function. */
+   * @param pf the partition function.
+   */
   public final TupleBatch[] partition(final PartitionFunction pf) {
     if (isEOI) {
-      TupleBatch[] result = new TupleBatch[pf.numPartition()];
+      TupleBatch[] result = new TupleBatch[pf.numPartitions()];
       Arrays.fill(result, this);
       return result;
     }
     return pf.partition(this);
   }
 
-  /** Creates a new TupleBatch with only the indicated columns. Internal implementation of a (non-duplicate-eliminating)
+  /**
+   * Creates a new TupleBatch with only the indicated columns. Internal implementation of a (non-duplicate-eliminating)
    * PROJECT statement.
    *
    * @param remainingColumns zero-indexed array of columns to retain.
-   * @return a projected TupleBatch. */
+   * @return a projected TupleBatch.
+   */
   public final TupleBatch selectColumns(final int[] remainingColumns) {
     Objects.requireNonNull(remainingColumns);
     final ImmutableList.Builder<Column<?>> newColumns = new ImmutableList.Builder<Column<?>>();
@@ -249,8 +272,10 @@ public class TupleBatch implements ReadableTable, Serializable {
         getSchema().getSubSchema(remainingColumns), newColumns.build(), numTuples, isEOI);
   }
 
-  /** @param rows a BitSet flagging the rows to be removed.
-   * @return a new TB with the specified rows removed. */
+  /**
+   * @param rows a BitSet flagging the rows to be removed.
+   * @return a new TB with the specified rows removed.
+   */
   public final TupleBatch filterOut(final BitSet rows) {
     BitSet inverted = (BitSet) rows.clone();
     inverted.flip(0, numTuples);
@@ -285,10 +310,12 @@ public class TupleBatch implements ReadableTable, Serializable {
     return IPCUtils.normalDataMessage(columns, numTuples);
   }
 
-  /** Create an EOI TupleBatch.
+  /**
+   * Create an EOI TupleBatch.
    *
    * @param schema schema.
-   * @return EOI TB for the schema. */
+   * @return EOI TB for the schema.
+   */
   public static final TupleBatch eoiTupleBatch(final Schema schema) {
     return new TupleBatch(schema, true);
   }
@@ -298,12 +325,14 @@ public class TupleBatch implements ReadableTable, Serializable {
     return isEOI;
   }
 
-  /** Construct a new TupleBatch that equals the current batch with the specified column appended. The number of valid
+  /**
+   * Construct a new TupleBatch that equals the current batch with the specified column appended. The number of valid
    * tuples in this batch must be the same as the size of the other batch. If this batch is not dense, then
    *
    * @param columnName the name of the column to be added.
    * @param column the column to be added.
-   * @return a new TupleBatch containing the tuples of this column plus the tuples of the other. */
+   * @return a new TupleBatch containing the tuples of this column plus the tuples of the other.
+   */
   public TupleBatch appendColumn(final String columnName, final Column<?> column) {
     Preconditions.checkArgument(
         numTuples() == column.size(),

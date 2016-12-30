@@ -5,12 +5,13 @@ import java.util.List;
 
 import javax.ws.rs.core.Response.Status;
 
+import com.google.common.primitives.Ints;
+
 import edu.washington.escience.myria.api.MyriaApiException;
 import edu.washington.escience.myria.api.encoding.QueryConstruct.ConstructArgs;
 import edu.washington.escience.myria.operator.network.GenericShuffleProducer;
 import edu.washington.escience.myria.operator.network.distribute.HyperCubeDistributeFunction;
 import edu.washington.escience.myria.parallel.ExchangePairID;
-import edu.washington.escience.myria.util.MyriaUtils;
 
 /**
  * JSON Encoding for HyperCubeShuffle.
@@ -26,7 +27,7 @@ public class HyperCubeShuffleProducerEncoding
     return new GenericShuffleProducer(
         null,
         getRealOperatorIds().toArray(new ExchangePairID[] {}),
-        MyriaUtils.integerSetToIntArray(
+        Ints.toArray(
             args.getServer().getRandomWorkers(distributeFunction.getAllDestinations().size())),
         distributeFunction);
   }

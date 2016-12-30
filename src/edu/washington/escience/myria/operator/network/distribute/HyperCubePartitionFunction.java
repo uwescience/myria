@@ -34,7 +34,7 @@ public final class HyperCubePartitionFunction extends PartitionFunction {
 
   @Override
   public TupleBatch[] partition(final TupleBatch tb) {
-    BitSet[] partitions = new BitSet[numPartition()];
+    BitSet[] partitions = new BitSet[numPartitions()];
     for (int i = 0; i < tb.numTuples(); i++) {
       int p = 0;
       for (int j = 0; j < hashedColumns.length; j++) {
@@ -48,7 +48,7 @@ public final class HyperCubePartitionFunction extends PartitionFunction {
       }
       partitions[p].set(i);
     }
-    TupleBatch[] tbs = new TupleBatch[numPartition()];
+    TupleBatch[] tbs = new TupleBatch[numPartitions()];
     for (int i = 0; i < tbs.length; ++i) {
       tbs[i] = tb.filter(partitions[i]);
     }

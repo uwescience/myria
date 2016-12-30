@@ -61,6 +61,7 @@ public class QueryConstruct {
    *
    * @param fragments the JSON-encoded query fragments to be executed in parallel
    * @param server the server on which the query will be executed
+   * @param args construct args containing the server and query ID.
    * @return the physical plan
    * @throws CatalogException if there is an error instantiating the plan
    */
@@ -92,11 +93,9 @@ public class QueryConstruct {
     }
     int loopCount = 0;
     while (setConsumerSchema(fragments, allOperators)) {
-      /*
-       * Do it iteratively until no new consumer has its schema to be set. Add a loop count to prevent us from having an
+      /* Do it iteratively until no new consumer has its schema to be set. Add a loop count to prevent us from having an
        * infinite loop (which should NOT happen). Since each iteration should set the schema of at least one consumer,
-       * setting the threshold to be the number of operators is enough.
-       */
+       * setting the threshold to be the number of operators is enough. */
       loopCount++;
       if (loopCount == allOperators.size()) {
         break;
@@ -170,7 +169,6 @@ public class QueryConstruct {
    * existing constraints.
    *
    * @see #assignWorkersToFragments(List, ConstructArgs)
-   *
    * @param fragments the fragments of the plan
    * @param args other arguments necessary for query construction
    * @throws CatalogException if there is an error getting information from the Catalog
@@ -202,10 +200,8 @@ public class QueryConstruct {
         }
         Preconditions.checkArgument(
             scanWorkers != null, "Unable to find workers that store %s", scanRelation);
-        /*
-         * Note: the current assumption is that all the partitions need to be scanned. This will not be true if we have
-         * data replication, or allow to scan only a subset of the partitions. Revise if needed.
-         */
+        /* Note: the current assumption is that all the partitions need to be scanned. This will not be true if we have
+         * data replication, or allow to scan only a subset of the partitions. Revise if needed. */
         setOrVerifyFragmentWorkers(fragment, scanWorkers, "Setting workers for " + scanRelation);
       }
     }
@@ -216,7 +212,6 @@ public class QueryConstruct {
    * support multiple consumers (LocalMultiwayProducer, EOSController) can have multiple consumers.
    *
    * @see #assignWorkersToFragments(List, ConstructArgs)
-   *
    * @param fragments the fragments of the plan
    */
   public static void sanityCheckEdges(final List<PlanFragmentEncoding> fragments) {
@@ -281,7 +276,6 @@ public class QueryConstruct {
    * LocalMultiwayProducers/Consumers with the same operator ID need to be assigned to the same set of workers.
    *
    * @see #assignWorkersToFragments(List, ConstructArgs)
-   *
    * @param fragments the fragments of the plan
    */
   private static void verifyAndPropagateLocalEdgeConstraints(
@@ -351,7 +345,6 @@ public class QueryConstruct {
    * existing constraints.
    *
    * @see #assignWorkersToFragments(List, ConstructArgs)
-   *
    * @param fragments the fragments of the plan
    * @param args other arguments necessary for query construction
    * @throws CatalogException if there is an error getting information from the Catalog
@@ -397,7 +390,6 @@ public class QueryConstruct {
    * Actually allocate the real operator IDs and real worker IDs for the producers and consumers.
    *
    * @see #assignWorkersToFragments(List, ConstructArgs)
-   *
    * @param fragments the fragments of the plan
    */
   private static void fillInRealOperatorAndWorkerIDs(final List<PlanFragmentEncoding> fragments) {
@@ -405,10 +397,8 @@ public class QueryConstruct {
     Map<Integer, List<Integer>> producerWorkerMap = Maps.newHashMap();
     Map<Integer, List<Integer>> consumerWorkerMap = Maps.newHashMap();
 
-    /*
-     * First pass: create a new ExchangePairID for each Consumer, and set it. Also track the workers for each producer
-     * and consumer.
-     */
+    /* First pass: create a new ExchangePairID for each Consumer, and set it. Also track the workers for each producer
+     * and consumer. */
     for (PlanFragmentEncoding fragment : fragments) {
       for (OperatorEncoding<?> operator : fragment.operators) {
         if (operator instanceof AbstractConsumerEncoding<?>) {
@@ -447,9 +437,8 @@ public class QueryConstruct {
   }
 
   /**
-   * Given an abstract execution plan, assign the workers to the fragments.
-   *
-   * This assignment follows the following five rules, in precedence order:
+   * Given an abstract execution plan, assign the workers to the fragments. This assignment follows the following five
+   * rules, in precedence order:
    * <ol>
    * <li>Obey user-overrides of fragment workers.</li>
    * <li>Fragments that scan tables must use the workers that contain the data.</li>
@@ -470,10 +459,8 @@ public class QueryConstruct {
 
     /* 1. Honor user overrides. Note this is unchecked, but we may find constraint violations later. */
     for (PlanFragmentEncoding fragment : fragments) {
-      /*
-       * First, set it to be null since the fragment may have been instantiated in a previous iteration, but affected
-       * relations now may have different partitioning schemes than in the previous iteration.
-       */
+      /* First, set it to be null since the fragment may have been instantiated in a previous iteration, but affected
+       * relations now may have different partitioning schemes than in the previous iteration. */
       fragment.workers = null;
       if (fragment.overrideWorkers != null && fragment.overrideWorkers.size() > 0) {
         /* The workers are set in the plan. */
@@ -512,7 +499,7 @@ public class QueryConstruct {
    * Instantiate operators in the given fragment.
    *
    * @param planFragment the encoded plan fragment.
-   * @param args args
+   * @param args construct args containing the server and query ID.
    * @param allOperators a map to keep instantiated operators.
    */
   private static void instantiateFragmentOperators(
@@ -582,7 +569,6 @@ public class QueryConstruct {
   }
 
   /**
-   *
    * @param fragments the JSON-encoded query fragments to be executed in parallel
    * @param allOperators a map to keep instantiated operators.
    * @return if any more consumer has its schema to be set.
@@ -642,10 +628,8 @@ public class QueryConstruct {
     Preconditions.checkState(
         dbms != null, "Server must have a configured DBMS environment variable");
 
-    /*
-     * Worker plans: for each relation, create a {@link DbQueryScan} to get the count, an {@link Apply} to add the
-     * {@link RelationKey}, then a {@link CollectProducer} to send the count to the master.
-     */
+    /* Worker plans: for each relation, create a {@link DbQueryScan} to get the count, an {@link Apply} to add the
+     * {@link RelationKey}, then a {@link CollectProducer} to send the count to the master. */
     Map<Integer, SubQueryPlan> workerPlans = Maps.newHashMap();
     for (RelationWriteMetadata meta : relationsWritten.values()) {
       Set<Integer> workers = meta.getWorkers();

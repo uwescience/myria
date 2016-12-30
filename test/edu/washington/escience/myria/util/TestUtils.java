@@ -58,9 +58,11 @@ public final class TestUtils {
 
   private static Random random = null;
 
-  /** See http://docs.travis-ci.com/user/ci-environment/#Environment-variables
+  /**
+   * See http://docs.travis-ci.com/user/ci-environment/#Environment-variables
    *
-   * @return <code>true</code> if the system is currently in a Travis CI build. */
+   * @return <code>true</code> if the system is currently in a Travis CI build.
+   */
   public static boolean inTravis() {
     String travis = System.getenv("TRAVIS");
     return (travis != null) && travis.equals("true");
@@ -414,10 +416,12 @@ public final class TestUtils {
     return result;
   }
 
-  /** @param numTuples how many tuples in output
+  /**
+   * @param numTuples how many tuples in output
    * @param sampleSize how many different values should be created at random (around numTuples/sampleSize duplicates)
    * @param sorted Generate sorted tuples, sorted by id
-   * @return */
+   * @return
+   */
   public static TupleBatchBuffer generateRandomTuples(
       final int numTuples, final int sampleSize, final boolean sorted) {
     final ArrayList<Entry<Long, String>> entries = new ArrayList<Entry<Long, String>>();
@@ -447,15 +451,17 @@ public final class TestUtils {
     return tbb;
   }
 
-  /** Construct a SubQuery that will insert the given tuples (starting on the master) on the specified workers using the
+  /**
+   * Construct a SubQuery that will insert the given tuples (starting on the master) on the specified workers using the
    * specified relation key and partition function.
    *
    * @param masterSource the source of tuples, from the master.
    * @param dest the name of the relation into which tuples will be inserted (using overwrite!).
-   * @param df
+   * @param df how tuples will be distributed on the cluster.
    * @param workers the set of workers on which the data will be stored.
    * @return a SubQuery that will insert the given tuples (starting on the master) on the specified workers using the
-   *         specified relation key and partition function. */
+   *         specified relation key and partition function.
+   */
   public static final SubQuery insertRelation(
       @Nonnull final Operator masterSource,
       @Nonnull final RelationKey dest,
@@ -468,15 +474,17 @@ public final class TestUtils {
         ArrayUtils.toPrimitive(workers.toArray(new Integer[workers.size()])));
   }
 
-  /** Construct a SubQuery that will insert the given tuples (starting on the master) on the specified workers using the
+  /**
+   * Construct a SubQuery that will insert the given tuples (starting on the master) on the specified workers using the
    * specified relation key and partition function.
    *
    * @param masterSource the source of tuples, from the master.
    * @param dest the name of the relation into which tuples will be inserted (using overwrite!).
-   * @param df
+   * @param df how tuples will be distributed on the cluster.
    * @param workers the set of workers on which the data will be stored.
    * @return a SubQuery that will insert the given tuples (starting on the master) on the specified workers using the
-   *         specified relation key and partition function. */
+   *         specified relation key and partition function.
+   */
   public static final SubQuery insertRelation(
       @Nonnull final Operator masterSource,
       @Nonnull final RelationKey dest,
@@ -527,11 +535,13 @@ public final class TestUtils {
     return new SubQuery(masterPlan, workerPlans);
   }
 
-  /** Returns a {@link TupleBatchBuffer} containing the values 0 to {@code n-1}. The column is of type
+  /**
+   * Returns a {@link TupleBatchBuffer} containing the values 0 to {@code n-1}. The column is of type
    * {@Link Type#INT_TYPE} and the column name is {@code "val"}.
    *
    * @param n the number of values in the buffer.
-   * @return a {@link TupleBatchBuffer} containing the values 0 to {@code n-1} */
+   * @return a {@link TupleBatchBuffer} containing the values 0 to {@code n-1}
+   */
   public static TupleBatchBuffer range(final int n) {
     TupleBatchBuffer sourceBuffer = new TupleBatchBuffer(Schema.ofFields(Type.INT_TYPE, "val"));
     for (int i = 0; i < n; ++i) {

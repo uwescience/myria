@@ -3,11 +3,12 @@ package edu.washington.escience.myria.api.encoding;
 import java.util.List;
 import java.util.Set;
 
+import com.google.common.primitives.Ints;
+
 import edu.washington.escience.myria.api.encoding.QueryConstruct.ConstructArgs;
 import edu.washington.escience.myria.operator.network.GenericShuffleProducer;
 import edu.washington.escience.myria.operator.network.distribute.DistributeFunction;
 import edu.washington.escience.myria.parallel.ExchangePairID;
-import edu.washington.escience.myria.util.MyriaUtils;
 
 /** JSON wrapper for GenericShuffleProducer encoding. */
 public class GenericShuffleProducerEncoding
@@ -28,7 +29,7 @@ public class GenericShuffleProducerEncoding
         new GenericShuffleProducer(
             null,
             operatorIds.toArray(new ExchangePairID[] {}),
-            MyriaUtils.integerSetToIntArray(workerIds),
+            Ints.toArray(workerIds),
             distributeFunction);
     if (argBufferStateType != null) {
       producer.setBackupBuffer(argBufferStateType);

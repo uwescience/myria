@@ -74,7 +74,7 @@ public final class HashUtils {
    * @param table the table containing the values to be hashed
    * @param column the column containing the value to be hashed
    * @param row the row containing the value to be hashed
-   * @param seedIndex the index of the chosen hashcode
+   * @param seedIndex the index of the chosen hash function
    * @return hash code of the specified seed
    */
   public static int hashValue(

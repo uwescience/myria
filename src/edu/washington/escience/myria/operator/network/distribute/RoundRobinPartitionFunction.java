@@ -18,12 +18,12 @@ public final class RoundRobinPartitionFunction extends PartitionFunction {
 
   @Override
   public TupleBatch[] partition(@Nonnull final TupleBatch tb) {
-    BitSet[] partitions = new BitSet[numPartition()];
+    BitSet[] partitions = new BitSet[numPartitions()];
     for (int i = 0; i < tb.numTuples(); i++) {
       partitions[curPartition].set(i);
-      curPartition = (curPartition + 1) % numPartition();
+      curPartition = (curPartition + 1) % numPartitions();
     }
-    TupleBatch[] tbs = new TupleBatch[numPartition()];
+    TupleBatch[] tbs = new TupleBatch[numPartitions()];
     for (int i = 0; i < tbs.length; ++i) {
       tbs[i] = tb.filter(partitions[i]);
     }

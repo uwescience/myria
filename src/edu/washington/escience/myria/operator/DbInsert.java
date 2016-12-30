@@ -147,8 +147,10 @@ public class DbInsert extends AbstractDbInsert {
     Preconditions.checkArgument(
         overwriteTable || indexes == null || indexes.size() == 0,
         "Cannot create indexes when appending to a relation.");
-    /* 1) construct immutable copies of the given indexes. 2) ensure that the index requests are valid: - lists of
-     * column references must be non-null. - column references are unique per index. */
+    /* 1) construct immutable copies of the given indexes.
+     * 2) ensure that the index requests are valid:
+     *    - lists of column references must be non-null.
+     *    - column references are unique per index. */
     if (indexes != null) {
       ImmutableList.Builder<List<IndexRef>> index = ImmutableList.builder();
       for (List<IndexRef> i : indexes) {

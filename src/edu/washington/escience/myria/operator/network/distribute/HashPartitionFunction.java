@@ -8,10 +8,10 @@ import com.google.common.base.Preconditions;
 
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.util.HashUtils;
+import edu.washington.escience.myria.util.MyriaArrayUtils;
 
 /**
- * Implementation that uses multiple fields as the key to hash The partition of a tuple is decided by the hash code of a
- * group of fields of the tuple.
+ * The partition of a tuple is decided by the hash code of a group of fields of the tuple.
  */
 public final class HashPartitionFunction extends PartitionFunction {
 
@@ -49,6 +49,7 @@ public final class HashPartitionFunction extends PartitionFunction {
           i,
           indexes[i]);
     }
+    MyriaArrayUtils.checkSet(indexes);
     this.indexes = indexes;
     this.seedIndex = seedIndex % HashUtils.NUM_OF_HASHFUNCTIONS;
   }
@@ -62,15 +63,15 @@ public final class HashPartitionFunction extends PartitionFunction {
 
   @Override
   public TupleBatch[] partition(@Nonnull final TupleBatch tb) {
-    BitSet[] partitions = new BitSet[numPartition()];
+    BitSet[] partitions = new BitSet[numPartitions()];
     for (int i = 0; i < partitions.length; ++i) {
       partitions[i] = new BitSet();
     }
     for (int i = 0; i < tb.numTuples(); i++) {
-      int p = Math.floorMod(HashUtils.hashSubRow(tb, indexes, i, seedIndex), numPartition());
+      int p = Math.floorMod(HashUtils.hashSubRow(tb, indexes, i, seedIndex), numPartitions());
       partitions[p].set(i);
     }
-    TupleBatch[] tbs = new TupleBatch[numPartition()];
+    TupleBatch[] tbs = new TupleBatch[numPartitions()];
     for (int i = 0; i < tbs.length; ++i) {
       tbs[i] = tb.filter(partitions[i]);
     }

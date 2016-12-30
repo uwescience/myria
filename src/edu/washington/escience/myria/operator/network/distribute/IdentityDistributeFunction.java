@@ -6,8 +6,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import edu.washington.escience.myria.util.MyriaArrayUtils;
 
 /**
- * Implementation of a DistributeFunction that use the trivial identity hash. (i.e. a --> a) The attribute to hash on
- * must be an INT column and should represent a workerID
+ * Implementation of a DistributeFunction that maps a tuple to a worker as specified in an INT column (i.e. a --> a).
  */
 public final class IdentityDistributeFunction extends DistributeFunction {
 

@@ -38,7 +38,7 @@ public abstract class Producer extends RootOperator implements StreamingStateful
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
 
-  /** The worker this operator is located at. */
+  /** The worker where this operator is located. */
   private transient LocalFragmentResourceManager taskResourceManager;
 
   /** the netty channels doing the true IPC IO. */

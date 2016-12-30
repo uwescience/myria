@@ -9,8 +9,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import edu.washington.escience.myria.storage.TupleBatch;
 
 /**
- * Implementation that uses multiple fields as the key to hash The partition of
- * a tuple is decided by the hash code of a group of fields of the tuple.
+ * Implementation of a PartitionFunction that maps a tuple to a partition as specified in an INT column (i.e. a --> a).
  */
 public final class IdentityPartitionFunction extends PartitionFunction {
 
@@ -29,11 +28,11 @@ public final class IdentityPartitionFunction extends PartitionFunction {
 
   @Override
   public TupleBatch[] partition(@Nonnull final TupleBatch tb) {
-    BitSet[] partitions = new BitSet[numPartition()];
+    BitSet[] partitions = new BitSet[numPartitions()];
     for (int i = 0; i < tb.numTuples(); i++) {
       partitions[tb.getInt(index, i) - 1].set(i);
     }
-    TupleBatch[] tbs = new TupleBatch[numPartition()];
+    TupleBatch[] tbs = new TupleBatch[numPartitions()];
     for (int i = 0; i < tbs.length; ++i) {
       tbs[i] = tb.filter(partitions[i]);
     }

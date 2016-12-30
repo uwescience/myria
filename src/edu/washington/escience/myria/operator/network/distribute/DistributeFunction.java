@@ -15,8 +15,8 @@ import edu.washington.escience.myria.storage.TupleBatch;
 
 /**
  * A dataset is distributed by two steps: First, using a partition function to generate a partition for each tuple;
- * Second, mapping each partition to a set of destinations. A destination corresponds to an output channel, which is
- * determined by a worker ID + an operator ID.
+ * Second, mapping each partition to a set of destinations. A destination corresponds to an output channel ID
+ * corresponding to a (worker ID, operator ID) pair.
  */
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type")
 @JsonSubTypes({

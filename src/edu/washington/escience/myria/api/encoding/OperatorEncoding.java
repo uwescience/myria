@@ -12,9 +12,11 @@ import edu.washington.escience.myria.api.MyriaApiException;
 import edu.washington.escience.myria.api.encoding.QueryConstruct.ConstructArgs;
 import edu.washington.escience.myria.operator.Operator;
 
-/** A JSON-able wrapper for the expected wire message for an operator. To add a new operator, two things need to be
- * done. 1. Create an Encoding class that extends OperatorEncoding. 2. Add the operator to the list of (alphabetically
- * sorted) JsonSubTypes below. */
+/**
+ * A JSON-able wrapper for the expected wire message for an operator. To add a new operator, two things need to be done.
+ * 1. Create an Encoding class that extends OperatorEncoding.
+ * 2. Add the operator to the list of (alphabetically sorted) JsonSubTypes below.
+ */
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "opType")
 @JsonSubTypes({
   @Type(name = "Aggregate", value = AggregateEncoding.class),
@@ -81,7 +83,9 @@ public abstract class OperatorEncoding<T extends Operator> extends MyriaApiEncod
   /** Connect any operators to this one. */
   public abstract void connect(Operator operator, Map<Integer, Operator> operators);
 
-  /** @param args TODO
-   * @return an instantiated operator. */
+  /**
+   * @param args construct args containing the server and query ID.
+   * @return an instantiated operator.
+   */
   public abstract T construct(@Nonnull ConstructArgs args) throws MyriaApiException;
 }
