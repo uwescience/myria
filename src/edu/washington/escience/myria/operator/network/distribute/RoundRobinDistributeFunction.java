@@ -16,7 +16,7 @@ public final class RoundRobinDistributeFunction extends DistributeFunction {
    */
   @JsonCreator
   public RoundRobinDistributeFunction() {
-    super(new RoundRobinPartitionFunction(), null);
+    super(new RoundRobinPartitionFunction());
   }
 
   @Override

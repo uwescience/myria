@@ -24,9 +24,8 @@ public final class HyperCubeDistributeFunction extends DistributeFunction {
       @JsonProperty("hashedColumns") final int[] hashedColumns,
       @JsonProperty("mappedHCDimensions") final int[] mappedHCDimensions,
       @JsonProperty("cellPartition") final List<List<Integer>> cellPartition) {
-    super(
-        new HyperCubePartitionFunction(hyperCubeDimensions, hashedColumns, mappedHCDimensions),
-        cellPartition);
+    super(new HyperCubePartitionFunction(hyperCubeDimensions, hashedColumns, mappedHCDimensions));
+    partitionToDestination = cellPartition;
   }
 
   /** @return all destinations */

@@ -20,7 +20,7 @@ public final class HashDistributeFunction extends DistributeFunction {
    */
   @JsonCreator
   public HashDistributeFunction(@JsonProperty("indexes") final int[] indexes) {
-    super(new HashPartitionFunction(indexes), null);
+    super(new HashPartitionFunction(indexes));
     this.indexes = indexes;
   }
 

@@ -18,7 +18,7 @@ public final class IdentityDistributeFunction extends DistributeFunction {
    */
   @JsonCreator
   public IdentityDistributeFunction(@JsonProperty("index") final int index) {
-    super(new IdentityPartitionFunction(index), null);
+    super(new IdentityPartitionFunction(index));
   }
 
   @Override

@@ -16,7 +16,7 @@ public final class BroadcastDistributeFunction extends DistributeFunction {
    */
   @JsonCreator
   public BroadcastDistributeFunction() {
-    super(new SinglePartitionFunction(), null);
+    super(new SinglePartitionFunction());
   }
 
   /**

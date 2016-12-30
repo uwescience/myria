@@ -42,12 +42,9 @@ public abstract class DistributeFunction implements Serializable {
 
   /**
    * @param partitionFunction partition function.
-   * @param partitionToDestination mapping from partitions to destinations
    */
-  public DistributeFunction(
-      final PartitionFunction partitionFunction, final List<List<Integer>> partitionToDestination) {
+  public DistributeFunction(final PartitionFunction partitionFunction) {
     this.partitionFunction = partitionFunction;
-    this.partitionToDestination = partitionToDestination;
   }
 
   /**
