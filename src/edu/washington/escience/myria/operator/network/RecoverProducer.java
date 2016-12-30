@@ -23,53 +23,53 @@ public final class RecoverProducer extends CollectProducer {
       org.slf4j.LoggerFactory.getLogger(RecoverProducer.class);
 
   /** the original producer. */
-  private final Producer oriProducer;
+  private final Producer origProducer;
   /** the channel index that this operator is recovering for. */
-  private final int channelIndx;
+  private final int channelIdx;
 
   /**
    * @param child the child who provides data for this producer to distribute.
    * @param operatorID destination operator the data goes
    * @param consumerWorkerID destination worker the data goes.
-   * @param oriProducer the original producer.
-   * @param channelInx the channel index that this operator is recovering for. *
+   * @param origProducer the original producer.
+   * @param channelIdx the channel index that this operator is recovering for. *
    */
   public RecoverProducer(
       final Operator child,
       final ExchangePairID operatorID,
       final int consumerWorkerID,
-      final Producer oriProducer,
-      final int channelInx) {
+      final Producer origProducer,
+      final int channelIdx) {
     super(child, operatorID, consumerWorkerID);
-    this.oriProducer = oriProducer;
-    this.channelIndx = channelInx;
+    this.origProducer = origProducer;
+    this.channelIdx = channelIdx;
   }
 
   @Override
   protected void childEOS() throws DbException {
     writePartitionsIntoChannels(null);
     Preconditions.checkArgument(getChild() instanceof BatchTupleSource);
-    if (!oriProducer.eos()) {
+    if (!origProducer.eos()) {
       StreamOutputChannel<TupleBatch> tmp = getChannels()[0];
       if (LOGGER.isTraceEnabled()) {
         LOGGER.trace(
             "recovery task {} detach & attach channel {} old channel {} new channel {}",
             getOpName(),
             tmp.getID(),
-            oriProducer.getChannels()[channelIndx],
+            origProducer.getChannels()[channelIdx],
             tmp);
       }
-      oriProducer.getChannels()[channelIndx] = tmp;
+      origProducer.getChannels()[channelIdx] = tmp;
       /* have to do this otherwise the channel will be released in resourceManager.cleanup() */
       getTaskResourceManager().removeOutputChannel(tmp);
       /* have to do this otherwise the channel will be released in Producer.cleanup() */
       getChannels()[0] = null;
       /* set the channel to be available again */
-      oriProducer.getChannelsAvail()[channelIndx] = true;
+      origProducer.getChannelsAvail()[channelIdx] = true;
       /* if the channel was disabled before crash, need to give the task a chance to enable it. */
-      oriProducer.getTaskResourceManager().getFragment().notifyOutputEnabled(tmp.getID());
+      origProducer.getTaskResourceManager().getFragment().notifyOutputEnabled(tmp.getID());
       /* if the task has no new input, but needs to produce potential EOSs & push TBs in its buffers out. */
-      oriProducer.getTaskResourceManager().getFragment().notifyNewInput();
+      origProducer.getTaskResourceManager().getFragment().notifyNewInput();
     } else {
       channelEnds(0);
     }
