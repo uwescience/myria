@@ -20,6 +20,7 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 
+import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.MyriaConstants.FTMode;
 import edu.washington.escience.myria.MyriaConstants.ProfilingMode;
@@ -43,6 +44,8 @@ import edu.washington.escience.myria.operator.agg.SingleColumnAggregatorFactory;
 import edu.washington.escience.myria.operator.network.CollectProducer;
 import edu.washington.escience.myria.operator.network.Consumer;
 import edu.washington.escience.myria.operator.network.EOSController;
+import edu.washington.escience.myria.operator.network.distribute.BroadcastDistributeFunction;
+import edu.washington.escience.myria.operator.network.distribute.DistributeFunction;
 import edu.washington.escience.myria.parallel.ExchangePairID;
 import edu.washington.escience.myria.parallel.JsonSubQuery;
 import edu.washington.escience.myria.parallel.RelationWriteMetadata;
@@ -52,8 +55,7 @@ import edu.washington.escience.myria.parallel.SubQueryPlan;
 
 public class QueryConstruct {
 
-  private static final org.slf4j.Logger LOGGER =
-      org.slf4j.LoggerFactory.getLogger(QueryConstruct.class);
+  private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(QueryConstruct.class);
 
   /**
    * Instantiate the server's desired physical plan from a list of JSON encodings of fragments. This list must contain a
@@ -65,9 +67,8 @@ public class QueryConstruct {
    * @return the physical plan
    * @throws CatalogException if there is an error instantiating the plan
    */
-  public static Map<Integer, SubQueryPlan> instantiate(
-      final List<PlanFragmentEncoding> fragments, final ConstructArgs args)
-      throws CatalogException {
+  public static Map<Integer, SubQueryPlan> instantiate(final List<PlanFragmentEncoding> fragments,
+      final ConstructArgs args) throws CatalogException, DbException {
 
     // Assign fragment index before everything else
     int idx = 0;
@@ -123,9 +124,7 @@ public class QueryConstruct {
    * @param ftMode the fault tolerance mode under which the query will be executed
    * @param profilingMode how the query should be profiled
    */
-  public static void setQueryExecutionOptions(
-      final Map<Integer, SubQueryPlan> plans,
-      final FTMode ftMode,
+  public static void setQueryExecutionOptions(final Map<Integer, SubQueryPlan> plans, final FTMode ftMode,
       @Nonnull final Set<ProfilingMode> profilingMode) {
     for (SubQueryPlan plan : plans.values()) {
       plan.setFTMode(ftMode);
@@ -142,26 +141,20 @@ public class QueryConstruct {
    * @return <code>true</code> if the workers were newly assigned
    * @throws IllegalArgumentException if the fragment already has workers, and the new set does not match
    */
-  private static boolean setOrVerifyFragmentWorkers(
-      @Nonnull final PlanFragmentEncoding fragment,
-      @Nonnull final Collection<Integer> workers,
-      @Nonnull final String currentTask) {
+  private static boolean setOrVerifyFragmentWorkers(@Nonnull final PlanFragmentEncoding fragment,
+      @Nonnull final Collection<Integer> workers, final boolean isBroadcastScan, @Nonnull final String currentTask) {
     Preconditions.checkNotNull(fragment, "fragment");
     Preconditions.checkNotNull(workers, "workers");
     Preconditions.checkNotNull(currentTask, "currentTask");
     if (fragment.workers == null) {
       fragment.workers = ImmutableList.copyOf(workers);
       return true;
-    } else {
-      Preconditions.checkArgument(
-          HashMultiset.create(fragment.workers).equals(HashMultiset.create(workers)),
-          "During %s, cannot change workers for fragment %s from %s to %s",
-          currentTask,
-          fragment.fragmentIndex,
-          fragment.workers,
-          workers);
-      return false;
+    } else if (!isBroadcastScan) {
+      Preconditions.checkArgument(HashMultiset.create(fragment.workers).equals(HashMultiset.create(workers)),
+          "During %s, cannot change workers for fragment %s from %s to %s", currentTask, fragment.fragmentIndex,
+          fragment.workers, workers);
     }
+    return false;
   }
 
   /**
@@ -173,9 +166,8 @@ public class QueryConstruct {
    * @param args other arguments necessary for query construction
    * @throws CatalogException if there is an error getting information from the Catalog
    */
-  private static void setAndVerifyScans(
-      final List<PlanFragmentEncoding> fragments, final ConstructArgs args)
-      throws CatalogException {
+  private static void setAndVerifyScans(final List<PlanFragmentEncoding> fragments, final ConstructArgs args)
+      throws CatalogException, DbException {
     Server server = args.getServer();
 
     for (PlanFragmentEncoding fragment : fragments) {
@@ -183,26 +175,24 @@ public class QueryConstruct {
         Set<Integer> scanWorkers;
         String scanRelation;
 
+        RelationKey relationKey = null;
         if (operator instanceof TableScanEncoding) {
           TableScanEncoding scan = ((TableScanEncoding) operator);
-          scanRelation = scan.relationKey.toString();
+          relationKey = scan.relationKey;
+          scanRelation = relationKey.toString();
           scanWorkers = server.getWorkersForRelation(scan.relationKey, scan.storedRelationId);
         } else if (operator instanceof TempTableScanEncoding) {
           TempTableScanEncoding scan = ((TempTableScanEncoding) operator);
+          relationKey = RelationKey.ofTemp(args.getQueryId(), scan.table);
           scanRelation = "temporary relation " + scan.table;
-          scanWorkers =
-              server
-                  .getQueryManager()
-                  .getWorkersForTempRelation(
-                      args.getQueryId(), RelationKey.ofTemp(args.getQueryId(), scan.table));
+          scanWorkers = server.getQueryManager().getWorkersForTempRelation(args.getQueryId(), relationKey);
         } else {
           continue;
         }
-        Preconditions.checkArgument(
-            scanWorkers != null, "Unable to find workers that store %s", scanRelation);
-        /* Note: the current assumption is that all the partitions need to be scanned. This will not be true if we have
-         * data replication, or allow to scan only a subset of the partitions. Revise if needed. */
-        setOrVerifyFragmentWorkers(fragment, scanWorkers, "Setting workers for " + scanRelation);
+        Preconditions.checkArgument(scanWorkers != null, "Unable to find workers that store %s", scanRelation);
+        DistributeFunction df = server.getDatasetStatus(relationKey).getHowDistributed().getDf();
+        boolean isBroadcastScan = (df instanceof BroadcastDistributeFunction);
+        setOrVerifyFragmentWorkers(fragment, scanWorkers, isBroadcastScan, "Setting workers for " + scanRelation);
       }
     }
   }
@@ -228,20 +218,15 @@ public class QueryConstruct {
         if (operator instanceof AbstractConsumerEncoding) {
           AbstractConsumerEncoding<?> consumer = (AbstractConsumerEncoding<?>) operator;
           consumerMap.put(consumer.argOperatorId, fragment);
-        } else if (operator instanceof AbstractProducerEncoding
-            || operator instanceof IDBControllerEncoding) {
+        } else if (operator instanceof AbstractProducerEncoding || operator instanceof IDBControllerEncoding) {
           Integer opId = operator.opId;
           PlanFragmentEncoding oldFragment = producerMap.put(opId, fragment);
           if (oldFragment != null) {
-            Preconditions.checkArgument(
-                false,
-                "Two different operators cannot produce the same opId %s. Fragments: %s %s",
-                opId,
-                fragment.fragmentIndex,
-                oldFragment.fragmentIndex);
+            Preconditions.checkArgument(false,
+                "Two different operators cannot produce the same opId %s. Fragments: %s %s", opId,
+                fragment.fragmentIndex, oldFragment.fragmentIndex);
           }
-          if (!(operator instanceof LocalMultiwayProducerEncoding
-              || operator instanceof EOSControllerEncoding)) {
+          if (!(operator instanceof LocalMultiwayProducerEncoding || operator instanceof EOSControllerEncoding)) {
             soleConsumer.add(opId);
           }
         }
@@ -250,23 +235,16 @@ public class QueryConstruct {
 
     /* Sanity check 1: Producer must have corresponding consumers, and vice versa. */
     Set<Integer> consumedNotProduced = Sets.difference(consumerMap.keySet(), producerMap.keySet());
-    Preconditions.checkArgument(
-        consumedNotProduced.isEmpty(),
-        "Missing producer(s) for consumer(s): %s",
+    Preconditions.checkArgument(consumedNotProduced.isEmpty(), "Missing producer(s) for consumer(s): %s",
         consumedNotProduced);
     Set<Integer> producedNotConsumed = Sets.difference(producerMap.keySet(), consumerMap.keySet());
-    Preconditions.checkArgument(
-        producedNotConsumed.isEmpty(),
-        "Missing consumer(s) for producer(s): %s",
+    Preconditions.checkArgument(producedNotConsumed.isEmpty(), "Missing consumer(s) for producer(s): %s",
         producedNotConsumed);
 
     /* Sanity check 2: Operators that only admit a single consumer should have exactly one consumer. */
     for (Integer opId : soleConsumer) {
       Collection<PlanFragmentEncoding> consumers = consumerMap.get(opId);
-      Preconditions.checkArgument(
-          consumers.size() == 1,
-          "Producer %s only supports a single consumer, not %s",
-          opId,
+      Preconditions.checkArgument(consumers.size() == 1, "Producer %s only supports a single consumer, not %s", opId,
           consumers.size());
     }
   }
@@ -278,8 +256,7 @@ public class QueryConstruct {
    * @see #assignWorkersToFragments(List, ConstructArgs)
    * @param fragments the fragments of the plan
    */
-  private static void verifyAndPropagateLocalEdgeConstraints(
-      final List<PlanFragmentEncoding> fragments) {
+  private static void verifyAndPropagateLocalEdgeConstraints(final List<PlanFragmentEncoding> fragments) {
     // producers must be unique
     Map<Integer, PlanFragmentEncoding> producerMap = Maps.newHashMap();
     // consumers can be repeated, as long as the producer is a LocalMultiwayProducer
@@ -300,14 +277,10 @@ public class QueryConstruct {
 
     /* Verify and/or propagate these constraints. */
     Set<Integer> consumedNotProduced = Sets.difference(consumerMap.keySet(), producerMap.keySet());
-    Preconditions.checkArgument(
-        consumedNotProduced.isEmpty(),
-        "Missing LocalMultiwayProducer(s) for consumer(s): %s",
+    Preconditions.checkArgument(consumedNotProduced.isEmpty(), "Missing LocalMultiwayProducer(s) for consumer(s): %s",
         consumedNotProduced);
     Set<Integer> producedNotConsumed = Sets.difference(producerMap.keySet(), consumerMap.keySet());
-    Preconditions.checkArgument(
-        producedNotConsumed.isEmpty(),
-        "Missing LocalMultiwayConsumer(s) for producer(s): %s",
+    Preconditions.checkArgument(producedNotConsumed.isEmpty(), "Missing LocalMultiwayConsumer(s) for producer(s): %s",
         producedNotConsumed);
 
     boolean anyUpdates;
@@ -334,7 +307,7 @@ public class QueryConstruct {
 
         // Verify that all fragments match the workers we found (and propagate if null)
         for (PlanFragmentEncoding frag : allFrags) {
-          anyUpdates |= setOrVerifyFragmentWorkers(frag, workers, "propagating edge constraints");
+          anyUpdates |= setOrVerifyFragmentWorkers(frag, workers, false, "propagating edge constraints");
         }
       }
     } while (anyUpdates);
@@ -349,34 +322,25 @@ public class QueryConstruct {
    * @param args other arguments necessary for query construction
    * @throws CatalogException if there is an error getting information from the Catalog
    */
-  private static void setAndVerifySingletonConstraints(
-      final List<PlanFragmentEncoding> fragments, final ConstructArgs args) {
-    List<Integer> singletonWorkers =
-        ImmutableList.of(args.getServer().getAliveWorkers().iterator().next());
+  private static void setAndVerifySingletonConstraints(final List<PlanFragmentEncoding> fragments,
+      final ConstructArgs args) {
+    List<Integer> singletonWorkers = ImmutableList.of(args.getServer().getAliveWorkers().iterator().next());
 
     for (PlanFragmentEncoding fragment : fragments) {
       for (OperatorEncoding<?> operator : fragment.operators) {
-        if (operator instanceof CollectConsumerEncoding
-            || operator instanceof SingletonEncoding
-            || operator instanceof EOSControllerEncoding
-            || operator instanceof TupleSourceEncoding
-            || operator instanceof NChiladaFileScanEncoding
-            || operator instanceof SeaFlowFileScanEncoding
+        if (operator instanceof CollectConsumerEncoding || operator instanceof SingletonEncoding
+            || operator instanceof EOSControllerEncoding || operator instanceof TupleSourceEncoding
+            || operator instanceof NChiladaFileScanEncoding || operator instanceof SeaFlowFileScanEncoding
             || operator instanceof TipsyFileScanEncoding) {
           if (fragment.workers == null) {
             String encodingTypeName = operator.getClass().getSimpleName();
-            String operatorTypeName =
-                encodingTypeName.substring(0, encodingTypeName.indexOf("Encoding"));
-            LOGGER.warn(
-                "{} operator can only be instantiated on a single worker, assigning to random worker",
+            String operatorTypeName = encodingTypeName.substring(0, encodingTypeName.indexOf("Encoding"));
+            LOGGER.warn("{} operator can only be instantiated on a single worker, assigning to random worker",
                 operatorTypeName);
             fragment.workers = singletonWorkers;
           } else {
-            Preconditions.checkArgument(
-                fragment.workers.size() == 1,
-                "Fragment %s has a singleton operator %s, but workers %s",
-                fragment.fragmentIndex,
-                operator.opId,
+            Preconditions.checkArgument(fragment.workers.size() == 1,
+                "Fragment %s has a singleton operator %s, but workers %s", fragment.fragmentIndex, operator.opId,
                 fragment.workers);
           }
           /* We only need to verify singleton-ness once per fragment. */
@@ -407,8 +371,7 @@ public class QueryConstruct {
           consumerMap.put(consumer.argOperatorId, exchangeId);
           consumerWorkerMap.put(consumer.argOperatorId, fragment.workers);
           consumer.setRealOperatorIds(ImmutableList.of(exchangeId));
-        } else if (operator instanceof AbstractProducerEncoding<?>
-            || operator instanceof IDBControllerEncoding) {
+        } else if (operator instanceof AbstractProducerEncoding<?> || operator instanceof IDBControllerEncoding) {
           producerWorkerMap.put(operator.opId, fragment.workers);
         }
       }
@@ -419,18 +382,15 @@ public class QueryConstruct {
       for (OperatorEncoding<?> operator : fragment.operators) {
         if (operator instanceof AbstractConsumerEncoding<?>) {
           AbstractConsumerEncoding<?> consumer = (AbstractConsumerEncoding<?>) operator;
-          consumer.setRealWorkerIds(
-              ImmutableSet.copyOf(producerWorkerMap.get(consumer.argOperatorId)));
+          consumer.setRealWorkerIds(ImmutableSet.copyOf(producerWorkerMap.get(consumer.argOperatorId)));
         } else if (operator instanceof AbstractProducerEncoding<?>) {
           AbstractProducerEncoding<?> producer = (AbstractProducerEncoding<?>) operator;
           producer.setRealWorkerIds(ImmutableSet.copyOf(consumerWorkerMap.get(producer.opId)));
           producer.setRealOperatorIds(ImmutableList.copyOf(consumerMap.get(producer.opId)));
         } else if (operator instanceof IDBControllerEncoding) {
           IDBControllerEncoding idbController = (IDBControllerEncoding) operator;
-          idbController.realEosControllerWorkerId =
-              consumerWorkerMap.get(idbController.opId).get(0);
-          idbController.setRealEosControllerOperatorID(
-              consumerMap.get(idbController.opId).iterator().next());
+          idbController.realEosControllerWorkerId = consumerWorkerMap.get(idbController.opId).get(0);
+          idbController.setRealEosControllerOperatorID(consumerMap.get(idbController.opId).iterator().next());
         }
       }
     }
@@ -453,9 +413,8 @@ public class QueryConstruct {
    * @param args
    * @throws CatalogException if there is an error getting information about existing relations from the catalog
    */
-  private static void assignWorkersToFragments(
-      final List<PlanFragmentEncoding> fragments, final ConstructArgs args)
-      throws CatalogException {
+  private static void assignWorkersToFragments(final List<PlanFragmentEncoding> fragments, final ConstructArgs args)
+      throws CatalogException, DbException {
 
     /* 1. Honor user overrides. Note this is unchecked, but we may find constraint violations later. */
     for (PlanFragmentEncoding fragment : fragments) {
@@ -502,23 +461,16 @@ public class QueryConstruct {
    * @param args construct args containing the server and query ID.
    * @param allOperators a map to keep instantiated operators.
    */
-  private static void instantiateFragmentOperators(
-      final PlanFragmentEncoding planFragment,
-      final ConstructArgs args,
+  private static void instantiateFragmentOperators(final PlanFragmentEncoding planFragment, final ConstructArgs args,
       final Map<Integer, Operator> allOperators) {
     for (OperatorEncoding<?> encoding : planFragment.operators) {
       if (allOperators.get(encoding.opId) != null) {
-        throw new MyriaApiException(
-            Status.BAD_REQUEST,
-            "Multiple operators with opId = "
-                + encoding.opId
-                + " detected in the fragment: "
-                + planFragment.fragmentIndex);
+        throw new MyriaApiException(Status.BAD_REQUEST, "Multiple operators with opId = " + encoding.opId
+            + " detected in the fragment: " + planFragment.fragmentIndex);
       }
       Operator op = encoding.construct(args);
       /* helpful for debugging. */
-      op.setOpName(
-          MoreObjects.firstNonNull(encoding.opName, "Operator" + String.valueOf(encoding.opId)));
+      op.setOpName(MoreObjects.firstNonNull(encoding.opName, "Operator" + String.valueOf(encoding.opId)));
       op.setOpId(encoding.opId);
       op.setFragmentId(planFragment.fragmentIndex);
       allOperators.put(encoding.opId, op);
@@ -539,30 +491,21 @@ public class QueryConstruct {
    * @param allOperators a map to keep instantiated operators.
    * @return the actual plan fragment.
    */
-  private static RootOperator instantiateFragment(
-      final PlanFragmentEncoding planFragment,
-      final ConstructArgs args,
+  private static RootOperator instantiateFragment(final PlanFragmentEncoding planFragment, final ConstructArgs args,
       final Map<Integer, Operator> allOperators) {
     RootOperator fragmentRoot = null;
     for (OperatorEncoding<?> encoding : planFragment.operators) {
       Operator op = allOperators.get(encoding.opId);
       if (op instanceof RootOperator) {
         if (fragmentRoot != null) {
-          throw new MyriaApiException(
-              Status.BAD_REQUEST,
-              "Multiple "
-                  + RootOperator.class.getSimpleName()
-                  + " detected in the fragment: "
-                  + fragmentRoot.getOpName()
-                  + ", and "
-                  + encoding.opId);
+          throw new MyriaApiException(Status.BAD_REQUEST, "Multiple " + RootOperator.class.getSimpleName()
+              + " detected in the fragment: " + fragmentRoot.getOpName() + ", and " + encoding.opId);
         }
         fragmentRoot = (RootOperator) op;
       }
     }
     if (fragmentRoot == null) {
-      throw new MyriaApiException(
-          Status.BAD_REQUEST,
+      throw new MyriaApiException(Status.BAD_REQUEST,
           "No " + RootOperator.class.getSimpleName() + " detected in the fragment.");
     }
     return fragmentRoot;
@@ -573,8 +516,8 @@ public class QueryConstruct {
    * @param allOperators a map to keep instantiated operators.
    * @return if any more consumer has its schema to be set.
    */
-  private static boolean setConsumerSchema(
-      final List<PlanFragmentEncoding> fragments, final Map<Integer, Operator> allOperators) {
+  private static boolean setConsumerSchema(final List<PlanFragmentEncoding> fragments,
+      final Map<Integer, Operator> allOperators) {
     boolean changed = false;
     for (PlanFragmentEncoding fragment : fragments) {
       for (OperatorEncoding<?> encoding : fragment.operators) {
@@ -583,8 +526,7 @@ public class QueryConstruct {
           if (consumer.getSchema() != null) {
             continue;
           }
-          Operator producingOp =
-              allOperators.get(((AbstractConsumerEncoding<?>) encoding).argOperatorId);
+          Operator producingOp = allOperators.get(((AbstractConsumerEncoding<?>) encoding).argOperatorId);
           if (producingOp instanceof IDBController) {
             consumer.setSchema(IDBController.EOI_REPORT_SCHEMA);
           } else if (producingOp instanceof EOSController) {
@@ -610,23 +552,14 @@ public class QueryConstruct {
    * @param server the server on which the catalog will be updated
    * @return the query plan to update the master's catalog with the new number of tuples for all written relations.
    */
-  public static SubQuery getRelationTupleUpdateSubQuery(
-      final Map<RelationKey, RelationWriteMetadata> relationsWritten, final Server server) {
+  public static SubQuery getRelationTupleUpdateSubQuery(final Map<RelationKey, RelationWriteMetadata> relationsWritten,
+      final Server server) {
     ExchangePairID collectId = ExchangePairID.newID();
-    Schema schema =
-        Schema.ofFields(
-            "userName",
-            Type.STRING_TYPE,
-            "programName",
-            Type.STRING_TYPE,
-            "relationName",
-            Type.STRING_TYPE,
-            "tupleCount",
-            Type.LONG_TYPE);
+    Schema schema = Schema.ofFields("userName", Type.STRING_TYPE, "programName", Type.STRING_TYPE, "relationName",
+        Type.STRING_TYPE, "tupleCount", Type.LONG_TYPE);
 
     String dbms = server.getDBMS();
-    Preconditions.checkState(
-        dbms != null, "Server must have a configured DBMS environment variable");
+    Preconditions.checkState(dbms != null, "Server must have a configured DBMS environment variable");
 
     /* Worker plans: for each relation, create a {@link DbQueryScan} to get the count, an {@link Apply} to add the
      * {@link RelationKey}, then a {@link CollectProducer} to send the count to the master. */
@@ -635,22 +568,15 @@ public class QueryConstruct {
       Set<Integer> workers = meta.getWorkers();
       RelationKey relation = meta.getRelationKey();
       for (Integer worker : workers) {
-        DbQueryScan localCount =
-            new DbQueryScan(
-                "SELECT COUNT(*) FROM " + relation.toString(dbms),
-                Schema.ofFields("tupleCount", Type.LONG_TYPE));
-        List<Expression> expressions =
-            ImmutableList.of(
-                new Expression(
-                    schema.getColumnName(0), new ConstantExpression(relation.getUserName())),
-                new Expression(
-                    schema.getColumnName(1), new ConstantExpression(relation.getProgramName())),
-                new Expression(
-                    schema.getColumnName(2), new ConstantExpression(relation.getRelationName())),
-                new Expression(schema.getColumnName(3), new VariableExpression(0)));
+        DbQueryScan localCount = new DbQueryScan("SELECT COUNT(*) FROM " + relation.toString(dbms),
+            Schema.ofFields("tupleCount", Type.LONG_TYPE));
+        List<Expression> expressions = ImmutableList.of(
+            new Expression(schema.getColumnName(0), new ConstantExpression(relation.getUserName())),
+            new Expression(schema.getColumnName(1), new ConstantExpression(relation.getProgramName())),
+            new Expression(schema.getColumnName(2), new ConstantExpression(relation.getRelationName())),
+            new Expression(schema.getColumnName(3), new VariableExpression(0)));
         Apply addRelationName = new Apply(localCount, expressions);
-        CollectProducer producer =
-            new CollectProducer(addRelationName, collectId, MyriaConstants.MASTER_ID);
+        CollectProducer producer = new CollectProducer(addRelationName, collectId, MyriaConstants.MASTER_ID);
         if (!workerPlans.containsKey(worker)) {
           workerPlans.put(worker, new SubQueryPlan(producer));
         } else {
@@ -661,9 +587,8 @@ public class QueryConstruct {
 
     /* Master plan: collect, sum, insert the updates. */
     Consumer consumer = new Consumer(schema, collectId, workerPlans.keySet());
-    MultiGroupByAggregate aggCounts =
-        new MultiGroupByAggregate(
-            consumer, new int[] {0, 1, 2}, new SingleColumnAggregatorFactory(3, AggregationOp.SUM));
+    MultiGroupByAggregate aggCounts = new MultiGroupByAggregate(consumer, new int[] { 0, 1, 2 },
+        new SingleColumnAggregatorFactory(3, AggregationOp.SUM));
     UpdateCatalog catalog = new UpdateCatalog(aggCounts, server);
     SubQueryPlan masterPlan = new SubQueryPlan(catalog);
 
