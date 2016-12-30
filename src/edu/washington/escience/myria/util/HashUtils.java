@@ -103,7 +103,7 @@ public final class HashUtils {
    * @param table the table containing the values to be hashed
    * @param hashColumns the columns to be hashed. Order matters
    * @param row the row containing the values to be hashed
-   * @param seedIndex the index of the chosen hashcode
+   * @param seedIndex the index of the chosen hash function
    * @return the hash code of the specified columns in the specified row of the given table
    */
   public static int hashSubRow(
