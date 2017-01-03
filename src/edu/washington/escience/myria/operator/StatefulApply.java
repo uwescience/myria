@@ -1,5 +1,6 @@
 package edu.washington.escience.myria.operator;
 
+import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.List;
@@ -94,7 +95,7 @@ public class StatefulApply extends Apply {
   }
 
   @Override
-  protected TupleBatch fetchNextReady() throws DbException, InvocationTargetException {
+  protected TupleBatch fetchNextReady() throws DbException, InvocationTargetException, IOException {
     Operator child = getChild();
 
     if (child.eoi() || getChild().eos()) {

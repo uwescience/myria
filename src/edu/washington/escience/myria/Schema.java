@@ -99,6 +99,9 @@ public final class Schema implements Serializable {
         case java.sql.Types.TIMESTAMP:
           columnTypes.add(Type.DATETIME_TYPE);
           break;
+        case java.sql.Types.BLOB:
+          columnTypes.add(Type.BYTES_TYPE);
+          break;
         default:
           throw new UnsupportedOperationException(
               "JDBC type (java.SQL.Types) of " + type + " is not supported");

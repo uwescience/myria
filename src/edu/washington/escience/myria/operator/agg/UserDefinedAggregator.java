@@ -1,5 +1,6 @@
 package edu.washington.escience.myria.operator.agg;
 
+import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.util.List;
 
@@ -76,7 +77,7 @@ public class UserDefinedAggregator implements Aggregator {
 
   @Override
   public void getResult(final AppendableTable dest, final int destColumn, final Object state)
-      throws DbException {
+      throws DbException, IOException {
     Tuple stateTuple = (Tuple) state;
     for (int index = 0; index < emitEvaluators.size(); index++) {
       final GenericEvaluator evaluator = emitEvaluators.get(index);

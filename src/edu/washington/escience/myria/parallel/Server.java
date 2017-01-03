@@ -739,6 +739,8 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
           MyriaConstants.RESOURCE_PROFILING_SCHEMA,
           workerIds,
           false);
+      addRelationToCatalog(
+          MyriaConstants.PYUDF_RELATION, MyriaConstants.PYUDF_SCHEMA, workerIds, false);
     }
   }
 

@@ -1,5 +1,6 @@
 package edu.washington.escience.myria.operator.agg;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -226,9 +227,10 @@ public class SingleGroupByAggregate extends UnaryOperator {
    * @param resultBuffer where the tuples will be appended.
    * @param aggState the states corresponding to all aggregators.
    * @throws DbException if there is an error.
+   * @throws IOException
    */
   private void concatResults(final TupleBatchBuffer resultBuffer, final Object[] aggState)
-      throws DbException {
+      throws DbException, IOException {
     int index = 1;
     for (int agg = 0; agg < aggregators.length; ++agg) {
       aggregators[agg].getResult(resultBuffer, index, aggState[agg]);
@@ -239,8 +241,9 @@ public class SingleGroupByAggregate extends UnaryOperator {
   /**
    * @param resultBuffer where the results are stored.
    * @throws DbException if there is an error.
+   * @throws IOException
    */
-  private void generateResult(final TupleBatchBuffer resultBuffer) throws DbException {
+  private void generateResult(final TupleBatchBuffer resultBuffer) throws DbException, IOException {
 
     switch (gColumnType) {
       case BOOLEAN_TYPE:
@@ -293,7 +296,7 @@ public class SingleGroupByAggregate extends UnaryOperator {
   }
 
   @Override
-  protected final TupleBatch fetchNextReady() throws DbException {
+  protected final TupleBatch fetchNextReady() throws DbException, IOException {
     TupleBatch tb = null;
     final Operator child = getChild();
 

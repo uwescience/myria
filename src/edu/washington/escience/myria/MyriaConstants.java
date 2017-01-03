@@ -325,15 +325,61 @@ public final class MyriaConstants {
     QUERY
   };
 
+  /**
+   * python executable name
+   */
+  public static final String PYTHONEXEC = "python";
+  /*
+   * Python worker module
+   */
+  public static final String PYTHONWORKER = "MyriaPythonWorker.worker";
+  /**
+   * python module discovery env variable
+   */
+  public static final String PYTHONPATH = "";
+  /**
+   *
+   * UDF language
+   *
+   */
   public static enum FunctionLanguage {
-    /** Postgres UDF */
+    /** Postgres UDF. */
     POSTGRES,
-    /** Python UDF */
+    /** Python UDF. */
     PYTHON
   };
+  /** python exception returned from python process.*/
+  public static final int PYTHON_EXCEPTION = -3;
+  /** python function return is null.*/
+  public static final int NULL_LENGTH = -5;
 
+  /**
+   * Python type enum.
+   */
+  public static enum PythonType {
+    INT(1),
+    LONG(2),
+    FLOAT(3),
+    DOUBLE(4),
+    BYTES(5);
+    private int val;
+
+    PythonType(final int val) {
+      this.val = val;
+    }
+
+    public int getVal() {
+      return val;
+    }
+  }
+  /**
+   * Python UDF relation
+   */
   public static final RelationKey PYUDF_RELATION = new RelationKey("public", "UDF", "Python");
 
+  /**
+   * Python UDF schema
+   */
   public static final Schema PYUDF_SCHEMA =
       Schema.ofFields(
           "function_name",
@@ -343,9 +389,9 @@ public final class MyriaConstants {
           "output_type",
           Type.STRING_TYPE);
 
-  /** Number of bytes per worker partition for parallel ingest - 100MB */
+  /** Number of bytes per worker partition for parallel ingest - 100MB. */
   public static final long PARALLEL_INGEST_WORKER_MINIMUM_PARTITION_SIZE = 100 * MB;
 
-  /** Byte overlap range for parallel ingest **/
+  /** Byte overlap range for parallel ingest. **/
   public static final long PARALLEL_INGEST_BYTE_OVERLAP = 16 * KB;
 }

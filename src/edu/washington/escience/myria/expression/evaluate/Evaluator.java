@@ -118,7 +118,7 @@ public abstract class Evaluator {
    * @return true if the expression does not have to be compiled.
    */
   public boolean needsCompiling() {
-    return !(isCopyFromInput() || isConstant());
+    return !(isCopyFromInput() || isConstant() || isRegisteredUDF());
   }
 
   /**
@@ -133,5 +133,11 @@ public abstract class Evaluator {
    */
   public boolean needsState() {
     return needsState;
+  }
+  /**
+   * @return true if the expression is a contains a python UDF expression.
+   */
+  public boolean isRegisteredUDF() {
+    return getExpression().isRegisteredUDF();
   }
 }

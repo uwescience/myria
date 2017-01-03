@@ -63,7 +63,8 @@ import edu.washington.escience.myria.expression.evaluate.ExpressionOperatorParam
   @Type(name = "TIMES", value = TimesExpression.class),
   /* Nary */
   @Type(name = "CONDITION", value = ConditionalExpression.class),
-  @Type(name = "SUBSTR", value = SubstrExpression.class)
+  @Type(name = "SUBSTR", value = SubstrExpression.class),
+  @Type(name = "PYUDF", value = PyUDFExpression.class)
 })
 public abstract class ExpressionOperator implements Serializable {
   /***/
@@ -97,6 +98,12 @@ public abstract class ExpressionOperator implements Serializable {
    * @return if this expression returns a primitive array
    */
   public boolean hasArrayOutputType() {
+    return false;
+  }
+  /**
+   * @return if an addditional counter column should be added.
+   */
+  public boolean addCounter() {
     return false;
   }
 

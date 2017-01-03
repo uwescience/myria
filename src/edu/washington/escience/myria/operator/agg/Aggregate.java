@@ -1,5 +1,7 @@
 package edu.washington.escience.myria.operator.agg;
 
+import java.io.IOException;
+
 import javax.annotation.Nullable;
 
 import com.google.common.base.Preconditions;
@@ -53,7 +55,7 @@ public final class Aggregate extends UnaryOperator {
   }
 
   @Override
-  protected TupleBatch fetchNextReady() throws DbException {
+  protected TupleBatch fetchNextReady() throws DbException, IOException {
     TupleBatch tb = null;
     final Operator child = getChild();
 

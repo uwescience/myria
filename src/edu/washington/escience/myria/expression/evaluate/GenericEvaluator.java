@@ -1,5 +1,6 @@
 package edu.washington.escience.myria.expression.evaluate;
 
+import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.util.List;
 
@@ -107,6 +108,8 @@ public class GenericEvaluator extends Evaluator {
    * @param result the table storing the result
    * @param state additional state that affects the computation
    * @throws InvocationTargetException exception thrown from janino
+   * @throws DbException
+   * @throws IOException
    */
   public void eval(
       @Nonnull final ReadableTable tb,
@@ -114,7 +117,7 @@ public class GenericEvaluator extends Evaluator {
       @Nullable final WritableColumn count,
       @Nonnull final WritableColumn result,
       @Nullable final ReadableTable state)
-      throws InvocationTargetException {
+      throws InvocationTargetException, DbException, IOException {
     Preconditions.checkArgument(
         evaluator != null, "Call compile first or copy the data if it is the same in the input.");
     Preconditions.checkArgument(
@@ -192,8 +195,11 @@ public class GenericEvaluator extends Evaluator {
    * @param tb the tuples to be input to this expression
    * @return an {@link EvaluatorResult} containing the results and result counts of evaluating this expression on the entire TupleBatch
    * @throws InvocationTargetException exception thrown from janino
+   * @throws DbException
+   * @throws IOException
    */
-  public EvaluatorResult evaluateColumn(final TupleBatch tb) throws InvocationTargetException {
+  public EvaluatorResult evaluateColumn(final TupleBatch tb)
+      throws InvocationTargetException, DbException, IOException {
     // Optimization for result counts of single-valued expressions.
     final Column<?> constCounts = new ConstantValueColumn(1, Type.INT_TYPE, tb.numTuples());
     final WritableColumn countsWriter;

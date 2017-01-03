@@ -80,7 +80,7 @@ public class PythonFunctionRegistrar {
    * @return binary function
    * @throws DbException if any error occurs
    */
-  public ByteBuffer getFunction(final String name) throws DbException {
+  public String getFunction(final String name) throws DbException {
 
     StringBuilder sb = new StringBuilder();
     sb.append("Select * from ");
@@ -89,8 +89,6 @@ public class PythonFunctionRegistrar {
     ;
     sb.append(name);
     sb.append("'");
-
-    //LOGGER.info(sb.toString());
     try {
       Iterator<TupleBatch> tuples =
           accessMethod.tupleBatchIteratorFromQuery(sb.toString(), MyriaConstants.PYUDF_SCHEMA);
@@ -100,11 +98,10 @@ public class PythonFunctionRegistrar {
         //LOGGER.info("Got {} tuples", tb.numTuples());
         if (tb.numTuples() > 0) {
           //LOGGER.info("number of tuples is greater than 1");
-          return tb.getByteBuffer(1, 0); // return second column of first row.
+          return tb.getString(1, 0); // return second column of first row.
         }
       }
     } catch (Exception e) {
-      //LOGGER.info(e.getMessage());
       throw new DbException(e);
     }
 

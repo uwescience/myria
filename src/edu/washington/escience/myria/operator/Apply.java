@@ -1,5 +1,6 @@
 package edu.washington.escience.myria.operator;
 
+import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -7,6 +8,7 @@ import java.util.List;
 import java.util.Objects;
 
 import javax.annotation.Nonnull;
+import com.google.common.collect.Lists;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
@@ -16,14 +18,18 @@ import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.Column;
+import edu.washington.escience.myria.column.builder.ColumnBuilder;
+import edu.washington.escience.myria.column.builder.ColumnFactory;
 import edu.washington.escience.myria.expression.Expression;
 import edu.washington.escience.myria.expression.evaluate.ConstantEvaluator;
 import edu.washington.escience.myria.expression.evaluate.ExpressionOperatorParameter;
 import edu.washington.escience.myria.expression.evaluate.GenericEvaluator;
 import edu.washington.escience.myria.expression.evaluate.GenericEvaluator.EvaluatorResult;
+import edu.washington.escience.myria.expression.evaluate.PythonUDFEvaluator;
 import edu.washington.escience.myria.storage.ReadableColumn;
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
+import edu.washington.escience.myria.storage.TupleBuffer;
 
 /**
  * Generic apply operator for single- or multivalued expressions.
@@ -80,6 +86,15 @@ public class Apply extends UnaryOperator {
     return true;
   }
 
+  private boolean addCounter() {
+    for (Expression expr : getEmitExpressions()) {
+      if (expr.addCounter()) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   /**
    * The logger for debug, trace, etc. messages in this class.
    */
@@ -104,7 +119,7 @@ public class Apply extends UnaryOperator {
   }
 
   @Override
-  protected TupleBatch fetchNextReady() throws DbException, InvocationTargetException {
+  protected TupleBatch fetchNextReady() throws DbException, InvocationTargetException, IOException {
     // If there's a batch already finished, return it, otherwise keep reading
     // batches from the child until we have a full batch or the child returns null.
     while (!outputBuffer.hasFilledTB()) {
@@ -135,6 +150,10 @@ public class Apply extends UnaryOperator {
           int[] cumResultCounts = new int[emitEvaluators.size()];
           int[] lastCumResultCounts = new int[emitEvaluators.size()];
           int[] iteratorIndexes = new int[emitEvaluators.size()];
+          List<Type> types = Lists.newLinkedList();
+          types.add(Type.INT_TYPE);
+          List<String> names = ImmutableList.of("flatmapid");
+          Schema countIdxSchema = new Schema(types, names);
 
           for (int rowIdx = 0; rowIdx < inputTuples.numTuples(); ++rowIdx) {
             // First, get all result counts for this row.
@@ -160,6 +179,16 @@ public class Apply extends UnaryOperator {
                       lastCumResultCounts[iteratorIdx] + iteratorIndexes[iteratorIdx];
                   outputBuffer.appendFromColumn(
                       iteratorIdx, resultColumns.get(iteratorIdx), resultRowIdx);
+                  if (addCounter()) {
+                    TupleBuffer countIdx = new TupleBuffer(countIdxSchema);
+
+                    for (int i = 0; i < resultCounts[iteratorIdx]; i++) {
+                      countIdx.putInt(0, i);
+                    }
+
+                    outputBuffer.appendFromColumn(
+                        iteratorIdx + 1, countIdx.asColumn(0), resultRowIdx);
+                  }
                 }
               } while (!computeNextCombination(resultCounts, iteratorIndexes));
             }
@@ -222,6 +251,9 @@ public class Apply extends UnaryOperator {
       GenericEvaluator evaluator;
       if (expr.isConstant()) {
         evaluator = new ConstantEvaluator(expr, parameters);
+      } else if (expr.isRegisteredUDF()) {
+
+        evaluator = new PythonUDFEvaluator(expr, parameters, getPythonFunctionRegistrar());
       } else {
         evaluator = new GenericEvaluator(expr, parameters);
       }
@@ -252,6 +284,10 @@ public class Apply extends UnaryOperator {
     for (Expression expr : emitExpressions) {
       typesBuilder.add(expr.getOutputType(new ExpressionOperatorParameter(inputSchema)));
       namesBuilder.add(expr.getOutputName());
+      if (expr.isMultivalued() && expr.addCounter()) {
+        typesBuilder.add(Type.INT_TYPE);
+        namesBuilder.add("flatmapid");
+      }
     }
     return new Schema(typesBuilder.build(), namesBuilder.build());
   }

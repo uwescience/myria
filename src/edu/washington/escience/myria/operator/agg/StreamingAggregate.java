@@ -1,5 +1,6 @@
 package edu.washington.escience.myria.operator.agg;
 
+import java.io.IOException;
 import java.util.Objects;
 
 import javax.annotation.Nonnull;
@@ -88,9 +89,10 @@ public class StreamingAggregate extends UnaryOperator {
    *
    * @throws DbException if any error occurs.
    * @return result tuple batch
+   * @throws IOException
    */
   @Override
-  protected TupleBatch fetchNextReady() throws DbException {
+  protected TupleBatch fetchNextReady() throws DbException, IOException {
     if (child.eos()) {
       return null;
     }
@@ -144,8 +146,9 @@ public class StreamingAggregate extends UnaryOperator {
    * Add aggregate results with previous grouping key to result buffer.
    *
    * @throws DbException if any error
+   * @throws IOException
    */
-  private void addToResult() throws DbException {
+  private void addToResult() throws DbException, IOException {
     int fromIndex = 0;
     for (; fromIndex < curGroupKey.numColumns(); ++fromIndex) {
       TupleUtils.copyValue(curGroupKey, fromIndex, 0, resultBuffer, fromIndex);

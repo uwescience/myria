@@ -1,5 +1,6 @@
 package edu.washington.escience.myria.operator.agg;
 
+import java.io.IOException;
 import java.io.Serializable;
 
 import edu.washington.escience.myria.DbException;
@@ -38,8 +39,10 @@ public interface Aggregator extends Serializable {
    * @param destColumn the starting index into which aggregates will be output.
    * @param state the initial state of the aggregate, which will be mutated.
    * @throws DbException if there is an error.
+   * @throws IOException
    */
-  void getResult(AppendableTable dest, int destColumn, Object state) throws DbException;
+  void getResult(AppendableTable dest, int destColumn, Object state)
+      throws DbException, IOException;
 
   /**
    * Compute and return the initial state tuple for instances of this {@link Aggregator}.

@@ -1,5 +1,6 @@
 package edu.washington.escience.myria.operator.agg;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -97,9 +98,10 @@ public final class MultiGroupByAggregate extends UnaryOperator {
    *
    * @throws DbException if any error occurs.
    * @return result TB.
+   * @throws IOException
    */
   @Override
-  protected TupleBatch fetchNextReady() throws DbException {
+  protected TupleBatch fetchNextReady() throws DbException, IOException {
     final Operator child = getChild();
 
     if (child.eos()) {
@@ -202,8 +204,9 @@ public final class MultiGroupByAggregate extends UnaryOperator {
   /**
    * @return A batch's worth of result tuples from this aggregate.
    * @throws DbException if there is an error.
+   * @throws IOException
    */
-  private TupleBatch getResultBatch() throws DbException {
+  private TupleBatch getResultBatch() throws DbException, IOException {
     Preconditions.checkState(
         getChild().eos(), "cannot extract results from an aggregate until child has reached EOS");
     if (groupKeyList == null) {

@@ -187,6 +187,14 @@ public class Expression implements Serializable {
         && !hasOperator(StateExpression.class)
         && !hasOperator(RandomExpression.class);
   }
+  /**
+   * An expression is a registeredUDF expression when it contains a python expression.
+   *
+   * @return if this expression contains a python UDF.
+   */
+  public boolean isRegisteredUDF() {
+    return hasOperator(PyUDFExpression.class);
+  }
 
   /**
    * An expression is "multivalued" when it has a primitive array return type.
@@ -195,5 +203,12 @@ public class Expression implements Serializable {
    */
   public boolean isMultivalued() {
     return rootExpressionOperator.hasArrayOutputType();
+  }
+  /**
+   *
+   * @return true, if counter column is to be added
+   */
+  public boolean addCounter() {
+    return false;
   }
 }
