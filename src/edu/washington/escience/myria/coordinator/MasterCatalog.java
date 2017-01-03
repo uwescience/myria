@@ -40,6 +40,7 @@ import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
 import com.google.common.primitives.Ints;
 
+import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.MyriaConstants.FTMode;
 import edu.washington.escience.myria.MyriaConstants.FunctionLanguage;
 import edu.washington.escience.myria.MyriaConstants.ProfilingMode;
@@ -50,6 +51,7 @@ import edu.washington.escience.myria.accessmethod.AccessMethod.IndexRef;
 import edu.washington.escience.myria.accessmethod.SQLiteTupleBatchIterator;
 import edu.washington.escience.myria.api.MyriaJsonMapperProvider;
 import edu.washington.escience.myria.api.encoding.DatasetStatus;
+import edu.washington.escience.myria.api.encoding.FunctionStatus;
 import edu.washington.escience.myria.api.encoding.QueryEncoding;
 import edu.washington.escience.myria.api.encoding.QueryStatusEncoding;
 import edu.washington.escience.myria.api.encoding.plan.SubPlanEncoding;
@@ -397,6 +399,63 @@ public final class MasterCatalog {
       throw new CatalogException(e);
     }
   }
+
+  /**
+   * Get the metadata about a relation.
+   *
+   * @param relationKey specified which relation to get the metadata about.
+   * @return the metadata of the specified relation.
+   * @throws CatalogException if there is an error in the catalog.
+   */
+  public FunctionStatus getFunctionStatus(final String name) throws CatalogException {
+    if (isClosed) {
+      throw new CatalogException("Catalog is closed.");
+    }
+
+    // LOGGER.info("ger function status for function with name: " + name);
+    try {
+      return queue
+          .execute(
+              new SQLiteJob<FunctionStatus>() {
+                @Override
+                protected FunctionStatus job(final SQLiteConnection sqliteConnection)
+                    throws CatalogException, SQLiteException {
+                  try {
+                    SQLiteStatement statement =
+                        sqliteConnection.prepare(
+                            "SELECT function_name, function_definition, function_language, function_outputSchema FROM registered_functions WHERE function_name=?");
+
+                    statement.bind(1, name);
+                    if (!statement.step()) {
+                      // LOGGER.info("returning null");
+                      return null;
+                    }
+
+                    String name = statement.columnString(0);
+                    String description = statement.columnString(1);
+                    int lang = statement.columnInt(2);
+                    String outputSchema = statement.columnString(3);
+                    String inputSchema = statement.columnString(4);
+
+                    statement.dispose();
+
+                    return new FunctionStatus(
+                        name,
+                        outputSchema,
+                        description,
+                        MyriaConstants.FunctionLanguage.values()[lang]);
+
+                  } catch (final SQLiteException e) {
+                    throw new CatalogException(e);
+                  }
+                }
+              })
+          .get();
+    } catch (InterruptedException | ExecutionException e) {
+      throw new CatalogException(e);
+    }
+  }
+
   /**
    * Private helper to add the metadata for a relation into the Catalog.
    *
