@@ -8,6 +8,7 @@ import java.util.Set;
 import javax.annotation.Nonnull;
 import javax.ws.rs.core.Response.Status;
 
+import com.google.common.base.Joiner;
 import com.google.common.base.MoreObjects;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ArrayListMultimap;
@@ -198,6 +199,21 @@ public class QueryConstruct {
                   .getQueryManager()
                   .getWorkersForTempRelation(
                       args.getQueryId(), RelationKey.ofTemp(args.getQueryId(), scan.table));
+        } else if (operator instanceof QueryScanEncoding) {
+          QueryScanEncoding scan = ((QueryScanEncoding) operator);
+          scanWorkers = server.getAliveWorkers();
+          scanRelation = "(source relations for query scan):";
+          for (RelationKey relationKey : scan.sourceRelationKeys) {
+            scanRelation += " " + relationKey.toString();
+            Set<Integer> workersForRelation = server.getWorkersForRelation(relationKey, null);
+            // REVIEW: This logic will work for broadcast relations stored on
+            // distinct but overlapping sets of workers, but where will it break?
+            scanWorkers = Sets.intersection(workersForRelation, scanWorkers);
+          }
+          LOGGER.info(
+              "DbQueryScan operator for relations {} assigned to workers {}",
+              scanRelation,
+              Joiner.on(',').join(scanWorkers));
         } else {
           continue;
         }
