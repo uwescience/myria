@@ -45,8 +45,8 @@ public final class TupleUtils {
       case STRING_TYPE:
         to.appendString(from.getString(fromRow));
         break;
-      case BYTES_TYPE:
-        to.appendByteBuffer(from.getByteBuffer(fromRow));
+      case BLOB_TYPE:
+        to.appendBlob(from.getBlob(fromRow));
         break;
     }
   }
@@ -84,8 +84,8 @@ public final class TupleUtils {
       case STRING_TYPE:
         to.putString(toColumn, from.getString(fromRow));
         break;
-      case BYTES_TYPE:
-        to.putByteBuffer(toColumn, from.getByteBuffer(fromRow));
+      case BLOB_TYPE:
+        to.putBlob(toColumn, from.getBlob(fromRow));
         break;
     }
   }
@@ -128,8 +128,8 @@ public final class TupleUtils {
       case STRING_TYPE:
         to.appendString(from.getString(fromColumn, fromRow));
         break;
-      case BYTES_TYPE:
-        to.appendByteBuffer(from.getByteBuffer(fromColumn, fromRow));
+      case BLOB_TYPE:
+        to.appendBlob(from.getBlob(fromColumn, fromRow));
         break;
     }
   }
@@ -172,8 +172,8 @@ public final class TupleUtils {
       case STRING_TYPE:
         to.putString(toColumn, from.getString(fromColumn, fromRow));
         break;
-      case BYTES_TYPE:
-        to.putByteBuffer(toColumn, from.getByteBuffer(fromColumn, fromRow));
+      case BLOB_TYPE:
+        to.putBlob(toColumn, from.getBlob(fromColumn, fromRow));
         break;
     }
   }
@@ -213,9 +213,8 @@ public final class TupleUtils {
       case DATETIME_TYPE:
         return Type.compareRaw(
             table1.getDateTime(column1, row1), table2.getDateTime(column2, row2));
-      case BYTES_TYPE:
-        return Type.compareRaw(
-            table1.getByteBuffer(column1, row1), table2.getByteBuffer(column2, row2));
+      case BLOB_TYPE:
+        return Type.compareRaw(table1.getBlob(column1, row1), table2.getBlob(column2, row2));
     }
 
     throw new IllegalStateException("Invalid type.");
@@ -347,10 +346,10 @@ public final class TupleUtils {
             return false;
           }
           break;
-        case BYTES_TYPE:
+        case BLOB_TYPE:
           if (!table1
-              .getByteBuffer(compareColumns1[i], row1)
-              .equals(table2.getByteBuffer(compareColumns2[i], row2))) {
+              .getBlob(compareColumns1[i], row1)
+              .equals(table2.getBlob(compareColumns2[i], row2))) {
             return false;
           }
       }
@@ -409,8 +408,8 @@ public final class TupleUtils {
             return false;
           }
           break;
-        case BYTES_TYPE:
-          if (!table1.getByteBuffer(i, row1).equals(table2.getByteBuffer(i, row2))) {
+        case BLOB_TYPE:
+          if (!table1.getBlob(i, row1).equals(table2.getBlob(i, row2))) {
             return false;
           }
           break;
@@ -476,10 +475,8 @@ public final class TupleUtils {
             return false;
           }
           break;
-        case BYTES_TYPE:
-          if (!table1
-              .getByteBuffer(compareColumns[i], row1)
-              .equals(table2.getByteBuffer(i, index))) {
+        case BLOB_TYPE:
+          if (!table1.getBlob(compareColumns[i], row1).equals(table2.getBlob(i, index))) {
             return false;
           }
           break;
@@ -492,7 +489,7 @@ public final class TupleUtils {
     int batchSize = 1000 * 10;
     for (int j = 0; j < schema.numColumns(); ++j) {
       Type type = schema.getColumnType(j);
-      if (type == Type.BYTES_TYPE) {
+      if (type == Type.BLOB_TYPE) {
         batchSize = 1;
       }
     }
@@ -501,7 +498,7 @@ public final class TupleUtils {
 
   public static int get_Batch_size(Type type) {
     int batchSize = 1000 * 10;
-    if (type == Type.BYTES_TYPE) {
+    if (type == Type.BLOB_TYPE) {
       batchSize = 1;
     }
 

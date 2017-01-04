@@ -496,7 +496,7 @@ public class NChiladaFileScan extends LeafOperator {
         throw new DbException("Invalide pType: " + pType);
     }
     // TODO(leelee): Put 0 for now to replace null values.
-    while (numRows > 0 && buffer.numTuples() < TupleUtils.get_Batch_size(generateSchema())) {
+    while (numRows > 0 && buffer.numTuples() < buffer.getBatchSize()) {
       lineNumber++;
       int column = 0;
       // -2 to exclude grp, and type.

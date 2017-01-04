@@ -284,21 +284,21 @@ public enum Type implements Serializable {
   /**
    * byteArray type.
    * */
-  BYTES_TYPE() {
+  BLOB_TYPE() {
     @Override
     public boolean filter(
         final SimplePredicate.Op op,
         final Column<?> bytesColumn,
         final int tupleIndex,
         final Object operand) {
-      final ByteBuffer v = bytesColumn.getByteBuffer(tupleIndex);
+      final ByteBuffer v = bytesColumn.getBlob(tupleIndex);
       return compare(op, v, (ByteBuffer) operand);
     }
 
     @Override
     public String toString(final Column<?> column, final int tupleIndex) {
 
-      return "" + column.getByteBuffer(tupleIndex);
+      return "" + column.getBlob(tupleIndex);
     }
 
     @Override

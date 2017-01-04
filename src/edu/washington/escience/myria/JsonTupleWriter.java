@@ -184,7 +184,7 @@ public class JsonTupleWriter implements TupleWriter {
             print(StringEscapeUtils.escapeJson(tuples.getString(j, i)));
             print('"');
             break;
-          case BYTES_TYPE:
+          case BLOB_TYPE:
             // TODO: fix this later
             print('"');
             print("Byte buffer, cannot be written to json yet!");

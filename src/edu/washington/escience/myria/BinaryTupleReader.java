@@ -73,8 +73,7 @@ public class BinaryTupleReader implements TupleReader {
     boolean building = false;
     try {
 
-      int batchSize = TupleUtils.get_Batch_size(schema);
-      while (buffer.numTuples() < batchSize) {
+      while (buffer.numTuples() < buffer.getBatchSize()) {
         for (int count = 0; count < schema.numColumns(); ++count) {
           switch (schema.getColumnType(count)) {
             case BOOLEAN_TYPE:

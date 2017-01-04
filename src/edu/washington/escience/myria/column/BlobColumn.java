@@ -1,6 +1,3 @@
-/**
- *
- */
 package edu.washington.escience.myria.column;
 
 import java.nio.ByteBuffer;
@@ -11,10 +8,7 @@ import com.google.common.base.Preconditions;
 
 import edu.washington.escience.myria.Type;
 
-/**
- *
- */
-public class BytesColumn extends Column<ByteBuffer> {
+public class BlobColumn extends Column<ByteBuffer> {
   /**
    * @param bs
    * @param i
@@ -26,13 +20,13 @@ public class BytesColumn extends Column<ByteBuffer> {
   /** The number of existing rows in this column. */
   private final int position;
 
-  public BytesColumn(final ByteBuffer[] data, final int numData) {
+  public BlobColumn(final ByteBuffer[] data, final int numData) {
     this.data = data;
     position = numData;
   }
 
   @Override
-  public ByteBuffer getByteBuffer(final int row) {
+  public ByteBuffer getBlob(final int row) {
     Preconditions.checkElementIndex(row, position);
     return data[row];
   }
@@ -44,7 +38,7 @@ public class BytesColumn extends Column<ByteBuffer> {
 
   @Override
   public Type getType() {
-    return Type.BYTES_TYPE;
+    return Type.BLOB_TYPE;
   }
 
   @Override

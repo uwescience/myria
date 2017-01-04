@@ -80,7 +80,7 @@ public final class ReadableSubColumn implements ReadableColumn {
   }
 
   @Override
-  public ByteBuffer getByteBuffer(final int row) {
-    return inner.getByteBuffer(column, row);
+  public ByteBuffer getBlob(final int row) {
+    return inner.getBlob(column, row);
   }
 }

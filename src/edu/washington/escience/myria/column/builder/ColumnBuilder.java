@@ -69,12 +69,12 @@ public abstract class ColumnBuilder<T extends Comparable<?>>
   }
 
   @Override
-  public ByteBuffer getByteBuffer(final int row) {
+  public ByteBuffer getBlob(final int row) {
     throw new UnsupportedOperationException(getClass().getName());
   }
 
   @Override
-  public ColumnBuilder<T> appendByteBuffer(final ByteBuffer value) throws BufferOverflowException {
+  public ColumnBuilder<T> appendBlob(final ByteBuffer value) throws BufferOverflowException {
     throw new UnsupportedOperationException(getClass().getName());
   }
 
@@ -194,7 +194,7 @@ public abstract class ColumnBuilder<T extends Comparable<?>>
   }
 
   @Override
-  public void replaceByteBuffer(@Nonnull final ByteBuffer value, final int row) {
+  public void replaceBlob(@Nonnull final ByteBuffer value, final int row) {
     throw new UnsupportedOperationException(getClass().getName());
   }
 }

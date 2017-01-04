@@ -80,8 +80,8 @@ public final class WritableSubColumn implements WritableColumn {
   }
 
   @Override
-  public WritableColumn appendByteBuffer(final ByteBuffer value) throws BufferOverflowException {
-    inner.putByteBuffer(column, value);
+  public WritableColumn appendBlob(final ByteBuffer value) throws BufferOverflowException {
+    inner.putBlob(column, value);
     return this;
   }
 }

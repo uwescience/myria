@@ -96,8 +96,7 @@ public class SeaFlowFileScan extends LeafOperator {
 
   @Override
   protected final TupleBatch fetchNextReady() throws DbException {
-    while ((lineNumber < numRows)
-        && (buffer.numTuples() < TupleUtils.get_Batch_size(generateSchema()))) {
+    while ((lineNumber < numRows) && (buffer.numTuples() < buffer.getBatchSize())) {
       try {
         /*
          * Every line but the last, including the header, is terminated with a 32-bit unsigned int with the value 10. We

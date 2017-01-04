@@ -78,5 +78,5 @@ public interface ReplaceableColumn extends ReadableColumn {
    * @param row row of element to replace.
    * @throws UnsupportedOperationException if this column does not support this type.
    */
-  void replaceByteBuffer(final ByteBuffer value, final int row);
+  void replaceBlob(final ByteBuffer value, final int row);
 }

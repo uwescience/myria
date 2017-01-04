@@ -89,5 +89,5 @@ public interface ReadableColumn extends ColumnInterface {
    * @return the element at the specified row in this column.
    * @throws UnsupportedOperationException if this column does not support this type.
    */
-  ByteBuffer getByteBuffer(int row);
+  ByteBuffer getBlob(int row);
 }

@@ -151,8 +151,8 @@ public class PostgresBinaryTupleWriter implements TupleWriter {
             buffer.writeInt(utf8Bytes.length);
             buffer.write(utf8Bytes);
             break;
-          case BYTES_TYPE:
-            ByteBuffer bb = tuples.getByteBuffer(j, i);
+          case BLOB_TYPE:
+            ByteBuffer bb = tuples.getBlob(j, i);
             buffer.writeInt(bb.array().length);
             buffer.write(bb.array());
             break;

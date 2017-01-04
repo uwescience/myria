@@ -71,7 +71,7 @@ public class Field<T extends Comparable<?>> implements WritableColumn, Serializa
   }
 
   @Override
-  public WritableColumn appendByteBuffer(final ByteBuffer value) throws BufferOverflowException {
+  public WritableColumn appendBlob(final ByteBuffer value) throws BufferOverflowException {
     this.value = value;
     return this;
   }

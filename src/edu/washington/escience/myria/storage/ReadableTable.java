@@ -72,7 +72,7 @@ public interface ReadableTable extends TupleTable {
    * @param row the row of the desired value.
    * @return the value in the specified column and row.
    */
-  ByteBuffer getByteBuffer(final int column, final int row);
+  ByteBuffer getBlob(final int column, final int row);
 
   /**
    * @param column the index of the column to be returned.

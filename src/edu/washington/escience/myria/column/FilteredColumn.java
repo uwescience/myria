@@ -98,8 +98,8 @@ class FilteredColumn<T extends Comparable<?>> extends Column<T> {
   }
 
   @Override
-  public ByteBuffer getByteBuffer(final int row) {
-    return inner.getByteBuffer(convertRow(row));
+  public ByteBuffer getBlob(final int row) {
+    return inner.getBlob(convertRow(row));
   }
 
   @Override

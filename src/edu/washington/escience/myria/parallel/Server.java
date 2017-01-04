@@ -1582,7 +1582,7 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
 
     Random r = new Random();
     final TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
-    for (int i = 0; i < TupleUtils.get_Batch_size(schema); i++) {
+    for (int i = 0; i < tbb.getBatchSize(); i++) {
       tbb.putLong(0, r.nextLong());
       tbb.putString(1, new java.util.Date().toString());
     }

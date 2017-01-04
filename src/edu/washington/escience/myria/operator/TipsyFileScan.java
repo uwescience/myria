@@ -197,7 +197,7 @@ public class TipsyFileScan extends LeafOperator {
    * @throws DbException if error reading from file.
    */
   private void processGasRecords() throws DbException {
-    while (ngas > 0 && (buffer.numTuples() < TupleUtils.get_Batch_size(generateSchema()))) {
+    while (ngas > 0 && (buffer.numTuples() < buffer.getBatchSize())) {
       lineNumber++;
       try {
         int count = 0;
@@ -247,7 +247,7 @@ public class TipsyFileScan extends LeafOperator {
    * @throws DbException if error reading from file.
    */
   private void processDarkRecords() throws DbException {
-    while (ndark > 0 && (buffer.numTuples() < TupleUtils.get_Batch_size(generateSchema()))) {
+    while (ndark > 0 && (buffer.numTuples() < buffer.getBatchSize())) {
       lineNumber++;
       try {
         int count = 0;
@@ -297,7 +297,7 @@ public class TipsyFileScan extends LeafOperator {
    * @throws DbException if error reading from file.
    */
   private void processStarRecords() throws DbException {
-    while (nstar > 0 && (buffer.numTuples() < TupleUtils.get_Batch_size(generateSchema()))) {
+    while (nstar > 0 && (buffer.numTuples() < buffer.getBatchSize())) {
       lineNumber++;
       try {
         int count = 0;

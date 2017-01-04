@@ -122,9 +122,9 @@ public class ConcatColumn<T extends Comparable<?>> extends Column<T> {
   }
 
   @Override
-  public ByteBuffer getByteBuffer(final int row) {
+  public ByteBuffer getBlob(final int row) {
     Map.Entry<Integer, Column<?>> entry = getColumnEntry(row);
-    return entry.getValue().getByteBuffer(row - entry.getKey());
+    return entry.getValue().getBlob(row - entry.getKey());
   }
 
   @SuppressWarnings("unchecked")

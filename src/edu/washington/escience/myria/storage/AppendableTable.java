@@ -72,7 +72,7 @@ public interface AppendableTable extends TupleTable {
    * @param column index of the column.
    * @param value value to be appended.
    */
-  void putByteBuffer(final int column, final @Nonnull ByteBuffer value);
+  void putBlob(final int column, final @Nonnull ByteBuffer value);
   /**
    * Append the specified value to the specified column.
    *

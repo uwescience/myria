@@ -155,8 +155,8 @@ public class PythonUDFEvaluator extends GenericEvaluator {
         case DOUBLE_TYPE:
           result.appendDouble((Double) obj);
           break;
-        case BYTES_TYPE:
-          result.appendByteBuffer(ByteBuffer.wrap((byte[]) obj));
+        case BLOB_TYPE:
+          result.appendBlob(ByteBuffer.wrap((byte[]) obj));
           break;
         case FLOAT_TYPE:
           result.appendFloat((float) obj);
@@ -326,10 +326,10 @@ public class PythonUDFEvaluator extends GenericEvaluator {
         case DATETIME_TYPE:
           LOGGER.info("date time not yet supported for python function ");
           break;
-        case BYTES_TYPE:
+        case BLOB_TYPE:
           dOut.writeInt(MyriaConstants.PythonType.BYTES.getVal());
           // LOGGER.info("writing Bytebuffer to py process");
-          ByteBuffer input = tb.getByteBuffer(columnIdx, row);
+          ByteBuffer input = tb.getBlob(columnIdx, row);
           if (input != null && input.hasArray()) {
             // LOGGER.info("input array buffer length" + input.array().length);
             dOut.writeInt(input.array().length);

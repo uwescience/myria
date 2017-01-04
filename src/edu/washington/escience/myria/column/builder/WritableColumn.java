@@ -71,7 +71,7 @@ public interface WritableColumn {
    * @return this column builder.
    * @throws BufferOverflowException if the column is already full
    */
-  WritableColumn appendByteBuffer(final ByteBuffer value) throws BufferOverflowException;
+  WritableColumn appendBlob(final ByteBuffer value) throws BufferOverflowException;
 
   /**
    * Inserts the specified element at end of this column.

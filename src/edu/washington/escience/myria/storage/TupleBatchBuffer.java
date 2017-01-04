@@ -44,6 +44,8 @@ public class TupleBatchBuffer implements AppendableTable {
   private long lastPoppedTime;
   /** the total number of tuples in readyTuples. */
   private int readyTuplesNum;
+  /** BatchSize*/
+  private int batchSize;
 
   /**
    * Constructs an empty TupleBatchBuffer to hold tuples matching the specified Schema.
@@ -60,6 +62,11 @@ public class TupleBatchBuffer implements AppendableTable {
     currentInProgressTuples = 0;
     lastPoppedTime = System.nanoTime();
     readyTuplesNum = 0;
+    batchSize = TupleUtils.get_Batch_size(schema);
+  }
+
+  public int getBatchSize() {
+    return batchSize;
   }
 
   /**
@@ -117,7 +124,7 @@ public class TupleBatchBuffer implements AppendableTable {
       numColumnsReady = 0;
       columnsReady.clear();
       /* See if the current batch is full and finish it if so. */
-      if (currentInProgressTuples == TupleUtils.get_Batch_size(schema)) {
+      if (currentInProgressTuples == batchSize) {
         finishBatch();
       }
     }
@@ -346,7 +353,7 @@ public class TupleBatchBuffer implements AppendableTable {
           currentBuildingColumns.get(i + leftAnswerColumns.length));
     }
     currentInProgressTuples++;
-    if (currentInProgressTuples == TupleUtils.get_Batch_size(schema)) {
+    if (currentInProgressTuples == batchSize) {
       finishBatch();
     }
   }
@@ -394,10 +401,7 @@ public class TupleBatchBuffer implements AppendableTable {
    * @param row the row index.
    */
   public final void append(final MutableTupleBuffer tuples, final int col, final int row) {
-    appendFromColumn(
-        columnsReady.nextClearBit(0),
-        tuples.getColumn(col, row),
-        row % TupleUtils.get_Batch_size(schema));
+    appendFromColumn(columnsReady.nextClearBit(0), tuples.getColumn(col, row), row % batchSize);
   }
 
   /**
@@ -470,9 +474,9 @@ public class TupleBatchBuffer implements AppendableTable {
   }
 
   @Override
-  public final void putByteBuffer(final int column, final ByteBuffer value) {
+  public final void putBlob(final int column, final ByteBuffer value) {
     checkPutIndex(column);
-    currentBuildingColumns.get(column).appendByteBuffer(value);
+    currentBuildingColumns.get(column).appendBlob(value);
     columnPut(column);
   }
 

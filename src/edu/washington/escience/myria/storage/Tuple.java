@@ -107,8 +107,8 @@ public class Tuple implements Cloneable, AppendableTable, ReadableTable, Seriali
   }
 
   @Override
-  public ByteBuffer getByteBuffer(final int column, final int row) {
-    Preconditions.checkArgument(getSchema().getColumnType(column) == Type.BYTES_TYPE);
+  public ByteBuffer getBlob(final int column, final int row) {
+    Preconditions.checkArgument(getSchema().getColumnType(column) == Type.BLOB_TYPE);
     return (ByteBuffer) getValue(column, row);
   }
 
@@ -201,7 +201,7 @@ public class Tuple implements Cloneable, AppendableTable, ReadableTable, Seriali
   }
 
   @Override
-  public void putByteBuffer(final int column, @Nonnull final ByteBuffer value) {
+  public void putBlob(final int column, @Nonnull final ByteBuffer value) {
     set(column, value);
   }
 

@@ -187,7 +187,7 @@ public class CSVFileScanFragment extends LeafOperator {
     long lineNumberBegin = lineNumber;
     boolean nextRecordTruncated = false;
 
-    while ((buffer.numTuples() < TupleUtils.get_Batch_size(schema)) && !flagAsIncomplete) {
+    while ((buffer.numTuples() < buffer.getBatchSize()) && !flagAsIncomplete) {
       lineNumber++;
       if (parser.isClosed()) {
         break;
@@ -334,8 +334,8 @@ public class CSVFileScanFragment extends LeafOperator {
               case DATETIME_TYPE:
                 buffer.putDateTime(column, DateTimeUtils.parse(cell));
                 break;
-              case BYTES_TYPE:
-                buffer.putByteBuffer(column, getByteBuffer(cell));
+              case BLOB_TYPE:
+                buffer.putBlob(column, getBlob(cell));
                 break;
             }
           } catch (final IllegalArgumentException e) {
@@ -464,7 +464,7 @@ public class CSVFileScanFragment extends LeafOperator {
     }
   }
 
-  protected ByteBuffer getByteBuffer(final String filename) throws DbException, IOException {
+  protected ByteBuffer getBlob(final String filename) throws DbException, IOException {
     Preconditions.checkNotNull(filename, "s3 uri was null");
     AmazonS3Source file = new AmazonS3Source(filename, null, null); // ??
     InputStream is = file.getInputStream();

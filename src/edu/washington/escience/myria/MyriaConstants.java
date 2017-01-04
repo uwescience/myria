@@ -385,7 +385,7 @@ public final class MyriaConstants {
           "function_name",
           Type.STRING_TYPE,
           "binary",
-          Type.BYTES_TYPE,
+          Type.BLOB_TYPE,
           "output_type",
           Type.STRING_TYPE);
 

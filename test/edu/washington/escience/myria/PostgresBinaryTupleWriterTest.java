@@ -37,7 +37,7 @@ public class PostgresBinaryTupleWriterTest {
                     Type.DOUBLE_TYPE,
                     Type.STRING_TYPE,
                     Type.DATETIME_TYPE,
-                    Type.BYTES_TYPE)));
+                    Type.BLOB_TYPE)));
 
     tuples.putBoolean(0, true);
     tuples.putInt(1, 1);
@@ -46,7 +46,7 @@ public class PostgresBinaryTupleWriterTest {
     tuples.putDouble(4, 3.14);
     tuples.putString(5, "one");
     tuples.putDateTime(6, new DateTime(1990, 7, 18, 2, 3, 10));
-    tuples.putByteBuffer(7, ByteBuffer.wrap("test1".getBytes()));
+    tuples.putBlob(7, ByteBuffer.wrap("test1".getBytes()));
 
     tuples.putBoolean(0, false);
     tuples.putInt(1, 2);
@@ -55,7 +55,7 @@ public class PostgresBinaryTupleWriterTest {
     tuples.putDouble(4, -3.14);
     tuples.putString(5, "two");
     tuples.putDateTime(6, new DateTime(2013, 9, 30, 3, 1, 10));
-    tuples.putByteBuffer(7, ByteBuffer.wrap("test2".getBytes()));
+    tuples.putBlob(7, ByteBuffer.wrap("test2".getBytes()));
 
     tuples.putBoolean(0, true);
     tuples.putInt(1, 3);
@@ -64,7 +64,7 @@ public class PostgresBinaryTupleWriterTest {
     tuples.putDouble(4, 123.456);
     tuples.putString(5, "three");
     tuples.putDateTime(6, new DateTime(2000, 1, 1, 0, 0, 0));
-    tuples.putByteBuffer(7, ByteBuffer.wrap("test3".getBytes()));
+    tuples.putBlob(7, ByteBuffer.wrap("test3".getBytes()));
 
     writer.writeTuples(tuples);
     writer.done();

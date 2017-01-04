@@ -1239,17 +1239,17 @@ public final class DataProto {
     edu.washington.escience.myria.proto.DataProto.DateTimeColumnMessageOrBuilder getDateColumnOrBuilder();
 
     /**
-     * <code>optional .BytesColumnMessage bytes_column = 10;</code>
+     * <code>optional .BlobColumnMessage blob_column = 10;</code>
      */
-    boolean hasBytesColumn();
+    boolean hasBlobColumn();
     /**
-     * <code>optional .BytesColumnMessage bytes_column = 10;</code>
+     * <code>optional .BlobColumnMessage blob_column = 10;</code>
      */
-    edu.washington.escience.myria.proto.DataProto.BytesColumnMessage getBytesColumn();
+    edu.washington.escience.myria.proto.DataProto.BlobColumnMessage getBlobColumn();
     /**
-     * <code>optional .BytesColumnMessage bytes_column = 10;</code>
+     * <code>optional .BlobColumnMessage blob_column = 10;</code>
      */
-    edu.washington.escience.myria.proto.DataProto.BytesColumnMessageOrBuilder getBytesColumnOrBuilder();
+    edu.washington.escience.myria.proto.DataProto.BlobColumnMessageOrBuilder getBlobColumnOrBuilder();
   }
   /**
    * Protobuf type {@code ColumnMessage}
@@ -1406,14 +1406,14 @@ public final class DataProto {
               break;
             }
             case 82: {
-              edu.washington.escience.myria.proto.DataProto.BytesColumnMessage.Builder subBuilder = null;
+              edu.washington.escience.myria.proto.DataProto.BlobColumnMessage.Builder subBuilder = null;
               if (((bitField0_ & 0x00000100) == 0x00000100)) {
-                subBuilder = bytesColumn_.toBuilder();
+                subBuilder = blobColumn_.toBuilder();
               }
-              bytesColumn_ = input.readMessage(edu.washington.escience.myria.proto.DataProto.BytesColumnMessage.PARSER, extensionRegistry);
+              blobColumn_ = input.readMessage(edu.washington.escience.myria.proto.DataProto.BlobColumnMessage.PARSER, extensionRegistry);
               if (subBuilder != null) {
-                subBuilder.mergeFrom(bytesColumn_);
-                bytesColumn_ = subBuilder.buildPartial();
+                subBuilder.mergeFrom(blobColumn_);
+                blobColumn_ = subBuilder.buildPartial();
               }
               bitField0_ |= 0x00000100;
               break;
@@ -1491,9 +1491,9 @@ public final class DataProto {
        */
       DATETIME(6, 6),
       /**
-       * <code>BYTES = 7;</code>
+       * <code>BLOB = 7;</code>
        */
-      BYTES(7, 7),
+      BLOB(7, 7),
       ;
 
       /**
@@ -1525,9 +1525,9 @@ public final class DataProto {
        */
       public static final int DATETIME_VALUE = 6;
       /**
-       * <code>BYTES = 7;</code>
+       * <code>BLOB = 7;</code>
        */
-      public static final int BYTES_VALUE = 7;
+      public static final int BLOB_VALUE = 7;
 
 
       public final int getNumber() { return value; }
@@ -1541,7 +1541,7 @@ public final class DataProto {
           case 4: return STRING;
           case 5: return BOOLEAN;
           case 6: return DATETIME;
-          case 7: return BYTES;
+          case 7: return BLOB;
           default: return null;
         }
       }
@@ -1764,25 +1764,25 @@ public final class DataProto {
       return dateColumn_;
     }
 
-    public static final int BYTES_COLUMN_FIELD_NUMBER = 10;
-    private edu.washington.escience.myria.proto.DataProto.BytesColumnMessage bytesColumn_;
+    public static final int BLOB_COLUMN_FIELD_NUMBER = 10;
+    private edu.washington.escience.myria.proto.DataProto.BlobColumnMessage blobColumn_;
     /**
-     * <code>optional .BytesColumnMessage bytes_column = 10;</code>
+     * <code>optional .BlobColumnMessage blob_column = 10;</code>
      */
-    public boolean hasBytesColumn() {
+    public boolean hasBlobColumn() {
       return ((bitField0_ & 0x00000100) == 0x00000100);
     }
     /**
-     * <code>optional .BytesColumnMessage bytes_column = 10;</code>
+     * <code>optional .BlobColumnMessage blob_column = 10;</code>
      */
-    public edu.washington.escience.myria.proto.DataProto.BytesColumnMessage getBytesColumn() {
-      return bytesColumn_;
+    public edu.washington.escience.myria.proto.DataProto.BlobColumnMessage getBlobColumn() {
+      return blobColumn_;
     }
     /**
-     * <code>optional .BytesColumnMessage bytes_column = 10;</code>
+     * <code>optional .BlobColumnMessage blob_column = 10;</code>
      */
-    public edu.washington.escience.myria.proto.DataProto.BytesColumnMessageOrBuilder getBytesColumnOrBuilder() {
-      return bytesColumn_;
+    public edu.washington.escience.myria.proto.DataProto.BlobColumnMessageOrBuilder getBlobColumnOrBuilder() {
+      return blobColumn_;
     }
 
     private void initFields() {
@@ -1794,7 +1794,7 @@ public final class DataProto {
       stringColumn_ = edu.washington.escience.myria.proto.DataProto.StringColumnMessage.getDefaultInstance();
       booleanColumn_ = edu.washington.escience.myria.proto.DataProto.BooleanColumnMessage.getDefaultInstance();
       dateColumn_ = edu.washington.escience.myria.proto.DataProto.DateTimeColumnMessage.getDefaultInstance();
-      bytesColumn_ = edu.washington.escience.myria.proto.DataProto.BytesColumnMessage.getDefaultInstance();
+      blobColumn_ = edu.washington.escience.myria.proto.DataProto.BlobColumnMessage.getDefaultInstance();
     }
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
@@ -1848,8 +1848,8 @@ public final class DataProto {
           return false;
         }
       }
-      if (hasBytesColumn()) {
-        if (!getBytesColumn().isInitialized()) {
+      if (hasBlobColumn()) {
+        if (!getBlobColumn().isInitialized()) {
           memoizedIsInitialized = 0;
           return false;
         }
@@ -1886,7 +1886,7 @@ public final class DataProto {
         output.writeMessage(9, dateColumn_);
       }
       if (((bitField0_ & 0x00000100) == 0x00000100)) {
-        output.writeMessage(10, bytesColumn_);
+        output.writeMessage(10, blobColumn_);
       }
       getUnknownFields().writeTo(output);
     }
@@ -1931,7 +1931,7 @@ public final class DataProto {
       }
       if (((bitField0_ & 0x00000100) == 0x00000100)) {
         size += com.google.protobuf.CodedOutputStream
-          .computeMessageSize(10, bytesColumn_);
+          .computeMessageSize(10, blobColumn_);
       }
       size += getUnknownFields().getSerializedSize();
       memoizedSerializedSize = size;
@@ -2049,7 +2049,7 @@ public final class DataProto {
           getStringColumnFieldBuilder();
           getBooleanColumnFieldBuilder();
           getDateColumnFieldBuilder();
-          getBytesColumnFieldBuilder();
+          getBlobColumnFieldBuilder();
         }
       }
       private static Builder create() {
@@ -2102,10 +2102,10 @@ public final class DataProto {
           dateColumnBuilder_.clear();
         }
         bitField0_ = (bitField0_ & ~0x00000080);
-        if (bytesColumnBuilder_ == null) {
-          bytesColumn_ = edu.washington.escience.myria.proto.DataProto.BytesColumnMessage.getDefaultInstance();
+        if (blobColumnBuilder_ == null) {
+          blobColumn_ = edu.washington.escience.myria.proto.DataProto.BlobColumnMessage.getDefaultInstance();
         } else {
-          bytesColumnBuilder_.clear();
+          blobColumnBuilder_.clear();
         }
         bitField0_ = (bitField0_ & ~0x00000100);
         return this;
@@ -2199,10 +2199,10 @@ public final class DataProto {
         if (((from_bitField0_ & 0x00000100) == 0x00000100)) {
           to_bitField0_ |= 0x00000100;
         }
-        if (bytesColumnBuilder_ == null) {
-          result.bytesColumn_ = bytesColumn_;
+        if (blobColumnBuilder_ == null) {
+          result.blobColumn_ = blobColumn_;
         } else {
-          result.bytesColumn_ = bytesColumnBuilder_.build();
+          result.blobColumn_ = blobColumnBuilder_.build();
         }
         result.bitField0_ = to_bitField0_;
         onBuilt();
@@ -2244,8 +2244,8 @@ public final class DataProto {
         if (other.hasDateColumn()) {
           mergeDateColumn(other.getDateColumn());
         }
-        if (other.hasBytesColumn()) {
-          mergeBytesColumn(other.getBytesColumn());
+        if (other.hasBlobColumn()) {
+          mergeBlobColumn(other.getBlobColumn());
         }
         this.mergeUnknownFields(other.getUnknownFields());
         return this;
@@ -2298,8 +2298,8 @@ public final class DataProto {
             return false;
           }
         }
-        if (hasBytesColumn()) {
-          if (!getBytesColumn().isInitialized()) {
+        if (hasBlobColumn()) {
+          if (!getBlobColumn().isInitialized()) {
             
             return false;
           }
@@ -3189,120 +3189,120 @@ public final class DataProto {
         return dateColumnBuilder_;
       }
 
-      private edu.washington.escience.myria.proto.DataProto.BytesColumnMessage bytesColumn_ = edu.washington.escience.myria.proto.DataProto.BytesColumnMessage.getDefaultInstance();
+      private edu.washington.escience.myria.proto.DataProto.BlobColumnMessage blobColumn_ = edu.washington.escience.myria.proto.DataProto.BlobColumnMessage.getDefaultInstance();
       private com.google.protobuf.SingleFieldBuilder<
-          edu.washington.escience.myria.proto.DataProto.BytesColumnMessage, edu.washington.escience.myria.proto.DataProto.BytesColumnMessage.Builder, edu.washington.escience.myria.proto.DataProto.BytesColumnMessageOrBuilder> bytesColumnBuilder_;
+          edu.washington.escience.myria.proto.DataProto.BlobColumnMessage, edu.washington.escience.myria.proto.DataProto.BlobColumnMessage.Builder, edu.washington.escience.myria.proto.DataProto.BlobColumnMessageOrBuilder> blobColumnBuilder_;
       /**
-       * <code>optional .BytesColumnMessage bytes_column = 10;</code>
+       * <code>optional .BlobColumnMessage blob_column = 10;</code>
        */
-      public boolean hasBytesColumn() {
+      public boolean hasBlobColumn() {
         return ((bitField0_ & 0x00000100) == 0x00000100);
       }
       /**
-       * <code>optional .BytesColumnMessage bytes_column = 10;</code>
+       * <code>optional .BlobColumnMessage blob_column = 10;</code>
        */
-      public edu.washington.escience.myria.proto.DataProto.BytesColumnMessage getBytesColumn() {
-        if (bytesColumnBuilder_ == null) {
-          return bytesColumn_;
+      public edu.washington.escience.myria.proto.DataProto.BlobColumnMessage getBlobColumn() {
+        if (blobColumnBuilder_ == null) {
+          return blobColumn_;
         } else {
-          return bytesColumnBuilder_.getMessage();
+          return blobColumnBuilder_.getMessage();
         }
       }
       /**
-       * <code>optional .BytesColumnMessage bytes_column = 10;</code>
+       * <code>optional .BlobColumnMessage blob_column = 10;</code>
        */
-      public Builder setBytesColumn(edu.washington.escience.myria.proto.DataProto.BytesColumnMessage value) {
-        if (bytesColumnBuilder_ == null) {
+      public Builder setBlobColumn(edu.washington.escience.myria.proto.DataProto.BlobColumnMessage value) {
+        if (blobColumnBuilder_ == null) {
           if (value == null) {
             throw new NullPointerException();
           }
-          bytesColumn_ = value;
+          blobColumn_ = value;
           onChanged();
         } else {
-          bytesColumnBuilder_.setMessage(value);
+          blobColumnBuilder_.setMessage(value);
         }
         bitField0_ |= 0x00000100;
         return this;
       }
       /**
-       * <code>optional .BytesColumnMessage bytes_column = 10;</code>
+       * <code>optional .BlobColumnMessage blob_column = 10;</code>
        */
-      public Builder setBytesColumn(
-          edu.washington.escience.myria.proto.DataProto.BytesColumnMessage.Builder builderForValue) {
-        if (bytesColumnBuilder_ == null) {
-          bytesColumn_ = builderForValue.build();
+      public Builder setBlobColumn(
+          edu.washington.escience.myria.proto.DataProto.BlobColumnMessage.Builder builderForValue) {
+        if (blobColumnBuilder_ == null) {
+          blobColumn_ = builderForValue.build();
           onChanged();
         } else {
-          bytesColumnBuilder_.setMessage(builderForValue.build());
+          blobColumnBuilder_.setMessage(builderForValue.build());
         }
         bitField0_ |= 0x00000100;
         return this;
       }
       /**
-       * <code>optional .BytesColumnMessage bytes_column = 10;</code>
+       * <code>optional .BlobColumnMessage blob_column = 10;</code>
        */
-      public Builder mergeBytesColumn(edu.washington.escience.myria.proto.DataProto.BytesColumnMessage value) {
-        if (bytesColumnBuilder_ == null) {
+      public Builder mergeBlobColumn(edu.washington.escience.myria.proto.DataProto.BlobColumnMessage value) {
+        if (blobColumnBuilder_ == null) {
           if (((bitField0_ & 0x00000100) == 0x00000100) &&
-              bytesColumn_ != edu.washington.escience.myria.proto.DataProto.BytesColumnMessage.getDefaultInstance()) {
-            bytesColumn_ =
-              edu.washington.escience.myria.proto.DataProto.BytesColumnMessage.newBuilder(bytesColumn_).mergeFrom(value).buildPartial();
+              blobColumn_ != edu.washington.escience.myria.proto.DataProto.BlobColumnMessage.getDefaultInstance()) {
+            blobColumn_ =
+              edu.washington.escience.myria.proto.DataProto.BlobColumnMessage.newBuilder(blobColumn_).mergeFrom(value).buildPartial();
           } else {
-            bytesColumn_ = value;
+            blobColumn_ = value;
           }
           onChanged();
         } else {
-          bytesColumnBuilder_.mergeFrom(value);
+          blobColumnBuilder_.mergeFrom(value);
         }
         bitField0_ |= 0x00000100;
         return this;
       }
       /**
-       * <code>optional .BytesColumnMessage bytes_column = 10;</code>
+       * <code>optional .BlobColumnMessage blob_column = 10;</code>
        */
-      public Builder clearBytesColumn() {
-        if (bytesColumnBuilder_ == null) {
-          bytesColumn_ = edu.washington.escience.myria.proto.DataProto.BytesColumnMessage.getDefaultInstance();
+      public Builder clearBlobColumn() {
+        if (blobColumnBuilder_ == null) {
+          blobColumn_ = edu.washington.escience.myria.proto.DataProto.BlobColumnMessage.getDefaultInstance();
           onChanged();
         } else {
-          bytesColumnBuilder_.clear();
+          blobColumnBuilder_.clear();
         }
         bitField0_ = (bitField0_ & ~0x00000100);
         return this;
       }
       /**
-       * <code>optional .BytesColumnMessage bytes_column = 10;</code>
+       * <code>optional .BlobColumnMessage blob_column = 10;</code>
        */
-      public edu.washington.escience.myria.proto.DataProto.BytesColumnMessage.Builder getBytesColumnBuilder() {
+      public edu.washington.escience.myria.proto.DataProto.BlobColumnMessage.Builder getBlobColumnBuilder() {
         bitField0_ |= 0x00000100;
         onChanged();
-        return getBytesColumnFieldBuilder().getBuilder();
+        return getBlobColumnFieldBuilder().getBuilder();
       }
       /**
-       * <code>optional .BytesColumnMessage bytes_column = 10;</code>
+       * <code>optional .BlobColumnMessage blob_column = 10;</code>
        */
-      public edu.washington.escience.myria.proto.DataProto.BytesColumnMessageOrBuilder getBytesColumnOrBuilder() {
-        if (bytesColumnBuilder_ != null) {
-          return bytesColumnBuilder_.getMessageOrBuilder();
+      public edu.washington.escience.myria.proto.DataProto.BlobColumnMessageOrBuilder getBlobColumnOrBuilder() {
+        if (blobColumnBuilder_ != null) {
+          return blobColumnBuilder_.getMessageOrBuilder();
         } else {
-          return bytesColumn_;
+          return blobColumn_;
         }
       }
       /**
-       * <code>optional .BytesColumnMessage bytes_column = 10;</code>
+       * <code>optional .BlobColumnMessage blob_column = 10;</code>
        */
       private com.google.protobuf.SingleFieldBuilder<
-          edu.washington.escience.myria.proto.DataProto.BytesColumnMessage, edu.washington.escience.myria.proto.DataProto.BytesColumnMessage.Builder, edu.washington.escience.myria.proto.DataProto.BytesColumnMessageOrBuilder> 
-          getBytesColumnFieldBuilder() {
-        if (bytesColumnBuilder_ == null) {
-          bytesColumnBuilder_ = new com.google.protobuf.SingleFieldBuilder<
-              edu.washington.escience.myria.proto.DataProto.BytesColumnMessage, edu.washington.escience.myria.proto.DataProto.BytesColumnMessage.Builder, edu.washington.escience.myria.proto.DataProto.BytesColumnMessageOrBuilder>(
-                  getBytesColumn(),
+          edu.washington.escience.myria.proto.DataProto.BlobColumnMessage, edu.washington.escience.myria.proto.DataProto.BlobColumnMessage.Builder, edu.washington.escience.myria.proto.DataProto.BlobColumnMessageOrBuilder> 
+          getBlobColumnFieldBuilder() {
+        if (blobColumnBuilder_ == null) {
+          blobColumnBuilder_ = new com.google.protobuf.SingleFieldBuilder<
+              edu.washington.escience.myria.proto.DataProto.BlobColumnMessage, edu.washington.escience.myria.proto.DataProto.BlobColumnMessage.Builder, edu.washington.escience.myria.proto.DataProto.BlobColumnMessageOrBuilder>(
+                  getBlobColumn(),
                   getParentForChildren(),
                   isClean());
-          bytesColumn_ = null;
+          blobColumn_ = null;
         }
-        return bytesColumnBuilder_;
+        return blobColumnBuilder_;
       }
 
       // @@protoc_insertion_point(builder_scope:ColumnMessage)
@@ -6482,8 +6482,8 @@ public final class DataProto {
     // @@protoc_insertion_point(class_scope:DateTimeColumnMessage)
   }
 
-  public interface BytesColumnMessageOrBuilder extends
-      // @@protoc_insertion_point(interface_extends:BytesColumnMessage)
+  public interface BlobColumnMessageOrBuilder extends
+      // @@protoc_insertion_point(interface_extends:BlobColumnMessage)
       com.google.protobuf.MessageOrBuilder {
 
     /**
@@ -6522,25 +6522,25 @@ public final class DataProto {
     int getEndIndices(int index);
   }
   /**
-   * Protobuf type {@code BytesColumnMessage}
+   * Protobuf type {@code BlobColumnMessage}
    */
-  public static final class BytesColumnMessage extends
+  public static final class BlobColumnMessage extends
       com.google.protobuf.GeneratedMessage implements
-      // @@protoc_insertion_point(message_implements:BytesColumnMessage)
-      BytesColumnMessageOrBuilder {
-    // Use BytesColumnMessage.newBuilder() to construct.
-    private BytesColumnMessage(com.google.protobuf.GeneratedMessage.Builder<?> builder) {
+      // @@protoc_insertion_point(message_implements:BlobColumnMessage)
+      BlobColumnMessageOrBuilder {
+    // Use BlobColumnMessage.newBuilder() to construct.
+    private BlobColumnMessage(com.google.protobuf.GeneratedMessage.Builder<?> builder) {
       super(builder);
       this.unknownFields = builder.getUnknownFields();
     }
-    private BytesColumnMessage(boolean noInit) { this.unknownFields = com.google.protobuf.UnknownFieldSet.getDefaultInstance(); }
+    private BlobColumnMessage(boolean noInit) { this.unknownFields = com.google.protobuf.UnknownFieldSet.getDefaultInstance(); }
 
-    private static final BytesColumnMessage defaultInstance;
-    public static BytesColumnMessage getDefaultInstance() {
+    private static final BlobColumnMessage defaultInstance;
+    public static BlobColumnMessage getDefaultInstance() {
       return defaultInstance;
     }
 
-    public BytesColumnMessage getDefaultInstanceForType() {
+    public BlobColumnMessage getDefaultInstanceForType() {
       return defaultInstance;
     }
 
@@ -6550,7 +6550,7 @@ public final class DataProto {
         getUnknownFields() {
       return this.unknownFields;
     }
-    private BytesColumnMessage(
+    private BlobColumnMessage(
         com.google.protobuf.CodedInputStream input,
         com.google.protobuf.ExtensionRegistryLite extensionRegistry)
         throws com.google.protobuf.InvalidProtocolBufferException {
@@ -6640,28 +6640,28 @@ public final class DataProto {
     }
     public static final com.google.protobuf.Descriptors.Descriptor
         getDescriptor() {
-      return edu.washington.escience.myria.proto.DataProto.internal_static_BytesColumnMessage_descriptor;
+      return edu.washington.escience.myria.proto.DataProto.internal_static_BlobColumnMessage_descriptor;
     }
 
     protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
         internalGetFieldAccessorTable() {
-      return edu.washington.escience.myria.proto.DataProto.internal_static_BytesColumnMessage_fieldAccessorTable
+      return edu.washington.escience.myria.proto.DataProto.internal_static_BlobColumnMessage_fieldAccessorTable
           .ensureFieldAccessorsInitialized(
-              edu.washington.escience.myria.proto.DataProto.BytesColumnMessage.class, edu.washington.escience.myria.proto.DataProto.BytesColumnMessage.Builder.class);
+              edu.washington.escience.myria.proto.DataProto.BlobColumnMessage.class, edu.washington.escience.myria.proto.DataProto.BlobColumnMessage.Builder.class);
     }
 
-    public static com.google.protobuf.Parser<BytesColumnMessage> PARSER =
-        new com.google.protobuf.AbstractParser<BytesColumnMessage>() {
-      public BytesColumnMessage parsePartialFrom(
+    public static com.google.protobuf.Parser<BlobColumnMessage> PARSER =
+        new com.google.protobuf.AbstractParser<BlobColumnMessage>() {
+      public BlobColumnMessage parsePartialFrom(
           com.google.protobuf.CodedInputStream input,
           com.google.protobuf.ExtensionRegistryLite extensionRegistry)
           throws com.google.protobuf.InvalidProtocolBufferException {
-        return new BytesColumnMessage(input, extensionRegistry);
+        return new BlobColumnMessage(input, extensionRegistry);
       }
     };
 
     @java.lang.Override
-    public com.google.protobuf.Parser<BytesColumnMessage> getParserForType() {
+    public com.google.protobuf.Parser<BlobColumnMessage> getParserForType() {
       return PARSER;
     }
 
@@ -6799,53 +6799,53 @@ public final class DataProto {
       return super.writeReplace();
     }
 
-    public static edu.washington.escience.myria.proto.DataProto.BytesColumnMessage parseFrom(
+    public static edu.washington.escience.myria.proto.DataProto.BlobColumnMessage parseFrom(
         com.google.protobuf.ByteString data)
         throws com.google.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
-    public static edu.washington.escience.myria.proto.DataProto.BytesColumnMessage parseFrom(
+    public static edu.washington.escience.myria.proto.DataProto.BlobColumnMessage parseFrom(
         com.google.protobuf.ByteString data,
         com.google.protobuf.ExtensionRegistryLite extensionRegistry)
         throws com.google.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
-    public static edu.washington.escience.myria.proto.DataProto.BytesColumnMessage parseFrom(byte[] data)
+    public static edu.washington.escience.myria.proto.DataProto.BlobColumnMessage parseFrom(byte[] data)
         throws com.google.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
-    public static edu.washington.escience.myria.proto.DataProto.BytesColumnMessage parseFrom(
+    public static edu.washington.escience.myria.proto.DataProto.BlobColumnMessage parseFrom(
         byte[] data,
         com.google.protobuf.ExtensionRegistryLite extensionRegistry)
         throws com.google.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
-    public static edu.washington.escience.myria.proto.DataProto.BytesColumnMessage parseFrom(java.io.InputStream input)
+    public static edu.washington.escience.myria.proto.DataProto.BlobColumnMessage parseFrom(java.io.InputStream input)
         throws java.io.IOException {
       return PARSER.parseFrom(input);
     }
-    public static edu.washington.escience.myria.proto.DataProto.BytesColumnMessage parseFrom(
+    public static edu.washington.escience.myria.proto.DataProto.BlobColumnMessage parseFrom(
         java.io.InputStream input,
         com.google.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseFrom(input, extensionRegistry);
     }
-    public static edu.washington.escience.myria.proto.DataProto.BytesColumnMessage parseDelimitedFrom(java.io.InputStream input)
+    public static edu.washington.escience.myria.proto.DataProto.BlobColumnMessage parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
       return PARSER.parseDelimitedFrom(input);
     }
-    public static edu.washington.escience.myria.proto.DataProto.BytesColumnMessage parseDelimitedFrom(
+    public static edu.washington.escience.myria.proto.DataProto.BlobColumnMessage parseDelimitedFrom(
         java.io.InputStream input,
         com.google.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseDelimitedFrom(input, extensionRegistry);
     }
-    public static edu.washington.escience.myria.proto.DataProto.BytesColumnMessage parseFrom(
+    public static edu.washington.escience.myria.proto.DataProto.BlobColumnMessage parseFrom(
         com.google.protobuf.CodedInputStream input)
         throws java.io.IOException {
       return PARSER.parseFrom(input);
     }
-    public static edu.washington.escience.myria.proto.DataProto.BytesColumnMessage parseFrom(
+    public static edu.washington.escience.myria.proto.DataProto.BlobColumnMessage parseFrom(
         com.google.protobuf.CodedInputStream input,
         com.google.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
@@ -6854,7 +6854,7 @@ public final class DataProto {
 
     public static Builder newBuilder() { return Builder.create(); }
     public Builder newBuilderForType() { return newBuilder(); }
-    public static Builder newBuilder(edu.washington.escience.myria.proto.DataProto.BytesColumnMessage prototype) {
+    public static Builder newBuilder(edu.washington.escience.myria.proto.DataProto.BlobColumnMessage prototype) {
       return newBuilder().mergeFrom(prototype);
     }
     public Builder toBuilder() { return newBuilder(this); }
@@ -6866,25 +6866,25 @@ public final class DataProto {
       return builder;
     }
     /**
-     * Protobuf type {@code BytesColumnMessage}
+     * Protobuf type {@code BlobColumnMessage}
      */
     public static final class Builder extends
         com.google.protobuf.GeneratedMessage.Builder<Builder> implements
-        // @@protoc_insertion_point(builder_implements:BytesColumnMessage)
-        edu.washington.escience.myria.proto.DataProto.BytesColumnMessageOrBuilder {
+        // @@protoc_insertion_point(builder_implements:BlobColumnMessage)
+        edu.washington.escience.myria.proto.DataProto.BlobColumnMessageOrBuilder {
       public static final com.google.protobuf.Descriptors.Descriptor
           getDescriptor() {
-        return edu.washington.escience.myria.proto.DataProto.internal_static_BytesColumnMessage_descriptor;
+        return edu.washington.escience.myria.proto.DataProto.internal_static_BlobColumnMessage_descriptor;
       }
 
       protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
           internalGetFieldAccessorTable() {
-        return edu.washington.escience.myria.proto.DataProto.internal_static_BytesColumnMessage_fieldAccessorTable
+        return edu.washington.escience.myria.proto.DataProto.internal_static_BlobColumnMessage_fieldAccessorTable
             .ensureFieldAccessorsInitialized(
-                edu.washington.escience.myria.proto.DataProto.BytesColumnMessage.class, edu.washington.escience.myria.proto.DataProto.BytesColumnMessage.Builder.class);
+                edu.washington.escience.myria.proto.DataProto.BlobColumnMessage.class, edu.washington.escience.myria.proto.DataProto.BlobColumnMessage.Builder.class);
       }
 
-      // Construct using edu.washington.escience.myria.proto.DataProto.BytesColumnMessage.newBuilder()
+      // Construct using edu.washington.escience.myria.proto.DataProto.BlobColumnMessage.newBuilder()
       private Builder() {
         maybeForceBuilderInitialization();
       }
@@ -6919,23 +6919,23 @@ public final class DataProto {
 
       public com.google.protobuf.Descriptors.Descriptor
           getDescriptorForType() {
-        return edu.washington.escience.myria.proto.DataProto.internal_static_BytesColumnMessage_descriptor;
+        return edu.washington.escience.myria.proto.DataProto.internal_static_BlobColumnMessage_descriptor;
       }
 
-      public edu.washington.escience.myria.proto.DataProto.BytesColumnMessage getDefaultInstanceForType() {
-        return edu.washington.escience.myria.proto.DataProto.BytesColumnMessage.getDefaultInstance();
+      public edu.washington.escience.myria.proto.DataProto.BlobColumnMessage getDefaultInstanceForType() {
+        return edu.washington.escience.myria.proto.DataProto.BlobColumnMessage.getDefaultInstance();
       }
 
-      public edu.washington.escience.myria.proto.DataProto.BytesColumnMessage build() {
-        edu.washington.escience.myria.proto.DataProto.BytesColumnMessage result = buildPartial();
+      public edu.washington.escience.myria.proto.DataProto.BlobColumnMessage build() {
+        edu.washington.escience.myria.proto.DataProto.BlobColumnMessage result = buildPartial();
         if (!result.isInitialized()) {
           throw newUninitializedMessageException(result);
         }
         return result;
       }
 
-      public edu.washington.escience.myria.proto.DataProto.BytesColumnMessage buildPartial() {
-        edu.washington.escience.myria.proto.DataProto.BytesColumnMessage result = new edu.washington.escience.myria.proto.DataProto.BytesColumnMessage(this);
+      public edu.washington.escience.myria.proto.DataProto.BlobColumnMessage buildPartial() {
+        edu.washington.escience.myria.proto.DataProto.BlobColumnMessage result = new edu.washington.escience.myria.proto.DataProto.BlobColumnMessage(this);
         int from_bitField0_ = bitField0_;
         int to_bitField0_ = 0;
         if (((from_bitField0_ & 0x00000001) == 0x00000001)) {
@@ -6958,16 +6958,16 @@ public final class DataProto {
       }
 
       public Builder mergeFrom(com.google.protobuf.Message other) {
-        if (other instanceof edu.washington.escience.myria.proto.DataProto.BytesColumnMessage) {
-          return mergeFrom((edu.washington.escience.myria.proto.DataProto.BytesColumnMessage)other);
+        if (other instanceof edu.washington.escience.myria.proto.DataProto.BlobColumnMessage) {
+          return mergeFrom((edu.washington.escience.myria.proto.DataProto.BlobColumnMessage)other);
         } else {
           super.mergeFrom(other);
           return this;
         }
       }
 
-      public Builder mergeFrom(edu.washington.escience.myria.proto.DataProto.BytesColumnMessage other) {
-        if (other == edu.washington.escience.myria.proto.DataProto.BytesColumnMessage.getDefaultInstance()) return this;
+      public Builder mergeFrom(edu.washington.escience.myria.proto.DataProto.BlobColumnMessage other) {
+        if (other == edu.washington.escience.myria.proto.DataProto.BlobColumnMessage.getDefaultInstance()) return this;
         if (other.hasData()) {
           setData(other.getData());
         }
@@ -7007,11 +7007,11 @@ public final class DataProto {
           com.google.protobuf.CodedInputStream input,
           com.google.protobuf.ExtensionRegistryLite extensionRegistry)
           throws java.io.IOException {
-        edu.washington.escience.myria.proto.DataProto.BytesColumnMessage parsedMessage = null;
+        edu.washington.escience.myria.proto.DataProto.BlobColumnMessage parsedMessage = null;
         try {
           parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
         } catch (com.google.protobuf.InvalidProtocolBufferException e) {
-          parsedMessage = (edu.washington.escience.myria.proto.DataProto.BytesColumnMessage) e.getUnfinishedMessage();
+          parsedMessage = (edu.washington.escience.myria.proto.DataProto.BlobColumnMessage) e.getUnfinishedMessage();
           throw e;
         } finally {
           if (parsedMessage != null) {
@@ -7189,15 +7189,15 @@ public final class DataProto {
         return this;
       }
 
-      // @@protoc_insertion_point(builder_scope:BytesColumnMessage)
+      // @@protoc_insertion_point(builder_scope:BlobColumnMessage)
     }
 
     static {
-      defaultInstance = new BytesColumnMessage(true);
+      defaultInstance = new BlobColumnMessage(true);
       defaultInstance.initFields();
     }
 
-    // @@protoc_insertion_point(class_scope:BytesColumnMessage)
+    // @@protoc_insertion_point(class_scope:BlobColumnMessage)
   }
 
   private static final com.google.protobuf.Descriptors.Descriptor
@@ -7246,10 +7246,10 @@ public final class DataProto {
     com.google.protobuf.GeneratedMessage.FieldAccessorTable
       internal_static_DateTimeColumnMessage_fieldAccessorTable;
   private static final com.google.protobuf.Descriptors.Descriptor
-    internal_static_BytesColumnMessage_descriptor;
+    internal_static_BlobColumnMessage_descriptor;
   private static
     com.google.protobuf.GeneratedMessage.FieldAccessorTable
-      internal_static_BytesColumnMessage_fieldAccessorTable;
+      internal_static_BlobColumnMessage_fieldAccessorTable;
 
   public static com.google.protobuf.Descriptors.FileDescriptor
       getDescriptor() {
@@ -7263,7 +7263,7 @@ public final class DataProto {
       " \002(\0162\021.DataMessage.Type\022\022\n\noperatorID\030\002 " +
       "\001(\004\022\037\n\007columns\030\003 \003(\0132\016.ColumnMessage\022\022\n\n" +
       "num_tuples\030\004 \001(\r\022\013\n\003seq\030\005 \001(\004\"\033\n\004Type\022\n\n" +
-      "\006NORMAL\020\001\022\007\n\003EOI\020\002\"\362\003\n\rColumnMessage\022!\n\004" +
+      "\006NORMAL\020\001\022\007\n\003EOI\020\002\"\357\003\n\rColumnMessage\022!\n\004" +
       "type\030\001 \002(\0162\023.ColumnMessage.Type\022%\n\nint_c" +
       "olumn\030\003 \001(\0132\021.IntColumnMessage\022\'\n\013long_c" +
       "olumn\030\004 \001(\0132\022.LongColumnMessage\022)\n\014float" +
@@ -7272,21 +7272,21 @@ public final class DataProto {
       "+\n\rstring_column\030\007 \001(\0132\024.StringColumnMes" +
       "sage\022-\n\016boolean_column\030\010 \001(\0132\025.BooleanCo" +
       "lumnMessage\022+\n\013date_column\030\t \001(\0132\026.DateT" +
-      "imeColumnMessage\022)\n\014bytes_column\030\n \001(\0132\023" +
-      ".BytesColumnMessage\"b\n\004Type\022\007\n\003INT\020\000\022\010\n\004" +
-      "LONG\020\001\022\t\n\005FLOAT\020\002\022\n\n\006DOUBLE\020\003\022\n\n\006STRING\020" +
-      "\004\022\013\n\007BOOLEAN\020\005\022\014\n\010DATETIME\020\006\022\t\n\005BYTES\020\007\"" +
-      " \n\020IntColumnMessage\022\014\n\004data\030\001 \002(\014\"!\n\021Lon" +
-      "gColumnMessage\022\014\n\004data\030\001 \002(\014\"\"\n\022FloatCol" +
-      "umnMessage\022\014\n\004data\030\001 \002(\014\"#\n\023DoubleColumn",
-      "Message\022\014\n\004data\030\001 \002(\014\"O\n\023StringColumnMes" +
-      "sage\022\014\n\004data\030\001 \002(\014\022\025\n\rstart_indices\030\002 \003(" +
-      "\005\022\023\n\013end_indices\030\003 \003(\005\"$\n\024BooleanColumnM" +
-      "essage\022\014\n\004data\030\001 \002(\014\"%\n\025DateTimeColumnMe" +
-      "ssage\022\014\n\004data\030\001 \002(\014\"N\n\022BytesColumnMessag" +
+      "imeColumnMessage\022\'\n\013blob_column\030\n \001(\0132\022." +
+      "BlobColumnMessage\"a\n\004Type\022\007\n\003INT\020\000\022\010\n\004LO" +
+      "NG\020\001\022\t\n\005FLOAT\020\002\022\n\n\006DOUBLE\020\003\022\n\n\006STRING\020\004\022" +
+      "\013\n\007BOOLEAN\020\005\022\014\n\010DATETIME\020\006\022\010\n\004BLOB\020\007\" \n\020" +
+      "IntColumnMessage\022\014\n\004data\030\001 \002(\014\"!\n\021LongCo" +
+      "lumnMessage\022\014\n\004data\030\001 \002(\014\"\"\n\022FloatColumn" +
+      "Message\022\014\n\004data\030\001 \002(\014\"#\n\023DoubleColumnMes",
+      "sage\022\014\n\004data\030\001 \002(\014\"O\n\023StringColumnMessag" +
       "e\022\014\n\004data\030\001 \002(\014\022\025\n\rstart_indices\030\002 \003(\005\022\023" +
-      "\n\013end_indices\030\003 \003(\005B0\n#edu.washington.es" +
-      "cience.myria.protoB\tDataProto"
+      "\n\013end_indices\030\003 \003(\005\"$\n\024BooleanColumnMess" +
+      "age\022\014\n\004data\030\001 \002(\014\"%\n\025DateTimeColumnMessa" +
+      "ge\022\014\n\004data\030\001 \002(\014\"M\n\021BlobColumnMessage\022\014\n" +
+      "\004data\030\001 \002(\014\022\025\n\rstart_indices\030\002 \003(\005\022\023\n\013en" +
+      "d_indices\030\003 \003(\005B0\n#edu.washington.escien" +
+      "ce.myria.protoB\tDataProto"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
         new com.google.protobuf.Descriptors.FileDescriptor.    InternalDescriptorAssigner() {
@@ -7311,7 +7311,7 @@ public final class DataProto {
     internal_static_ColumnMessage_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessage.FieldAccessorTable(
         internal_static_ColumnMessage_descriptor,
-        new java.lang.String[] { "Type", "IntColumn", "LongColumn", "FloatColumn", "DoubleColumn", "StringColumn", "BooleanColumn", "DateColumn", "BytesColumn", });
+        new java.lang.String[] { "Type", "IntColumn", "LongColumn", "FloatColumn", "DoubleColumn", "StringColumn", "BooleanColumn", "DateColumn", "BlobColumn", });
     internal_static_IntColumnMessage_descriptor =
       getDescriptor().getMessageTypes().get(2);
     internal_static_IntColumnMessage_fieldAccessorTable = new
@@ -7354,11 +7354,11 @@ public final class DataProto {
       com.google.protobuf.GeneratedMessage.FieldAccessorTable(
         internal_static_DateTimeColumnMessage_descriptor,
         new java.lang.String[] { "Data", });
-    internal_static_BytesColumnMessage_descriptor =
+    internal_static_BlobColumnMessage_descriptor =
       getDescriptor().getMessageTypes().get(9);
-    internal_static_BytesColumnMessage_fieldAccessorTable = new
+    internal_static_BlobColumnMessage_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessage.FieldAccessorTable(
-        internal_static_BytesColumnMessage_descriptor,
+        internal_static_BlobColumnMessage_descriptor,
         new java.lang.String[] { "Data", "StartIndices", "EndIndices", });
   }
 

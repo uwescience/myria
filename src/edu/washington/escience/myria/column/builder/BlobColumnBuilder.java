@@ -11,19 +11,18 @@ import com.almworks.sqlite4java.SQLiteStatement;
 import com.google.common.base.Preconditions;
 
 import edu.washington.escience.myria.Type;
-import edu.washington.escience.myria.column.BytesColumn;
-import edu.washington.escience.myria.column.mutable.BytesMutableColumn;
-import edu.washington.escience.myria.proto.DataProto.BytesColumnMessage;
+import edu.washington.escience.myria.column.BlobColumn;
+import edu.washington.escience.myria.column.mutable.BlobMutableColumn;
+import edu.washington.escience.myria.proto.DataProto.BlobColumnMessage;
 import edu.washington.escience.myria.proto.DataProto.ColumnMessage;
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleUtils;
 import edu.washington.escience.myria.util.MyriaUtils;
-
 /**
- * A column of ByteBuffer values.
+ * A column of Blob values.
  *
  */
-public final class BytesColumnBuilder extends ColumnBuilder<ByteBuffer> {
+public final class BlobColumnBuilder extends ColumnBuilder<ByteBuffer> {
 
   /**
    * The internal representation of the data.
@@ -39,9 +38,9 @@ public final class BytesColumnBuilder extends ColumnBuilder<ByteBuffer> {
   private boolean built = false;
 
   /** Constructs an empty column that can hold up to TupleBatch.BATCH_SIZE elements. */
-  public BytesColumnBuilder() {
+  public BlobColumnBuilder() {
     numBB = 0;
-    data = new ByteBuffer[TupleUtils.get_Batch_size(Type.BYTES_TYPE)];
+    data = new ByteBuffer[TupleUtils.get_Batch_size(Type.BLOB_TYPE)];
   }
 
   /**
@@ -50,7 +49,7 @@ public final class BytesColumnBuilder extends ColumnBuilder<ByteBuffer> {
    * @param numDates the actual num strings in the data
    * @param data the underlying data
    * */
-  private BytesColumnBuilder(final ByteBuffer[] data, final int numBB) {
+  private BlobColumnBuilder(final ByteBuffer[] data, final int numBB) {
     this.numBB = numBB;
     this.data = data;
   }
@@ -64,31 +63,30 @@ public final class BytesColumnBuilder extends ColumnBuilder<ByteBuffer> {
    *
    * @return the built column
    */
-  public static BytesColumn buildFromProtobuf(final ColumnMessage message, final int numTuples) {
+  public static BlobColumn buildFromProtobuf(final ColumnMessage message, final int numTuples) {
     Preconditions.checkArgument(
-        message.getType().ordinal() == ColumnMessage.Type.BYTES_VALUE,
+        message.getType().ordinal() == ColumnMessage.Type.BLOB_VALUE,
         "Trying to construct Bytes from non-bytes ColumnMessage %s",
         message.getType());
 
-    Preconditions.checkArgument(message.hasBytesColumn(), "ColumnMessage is missing DateColumn");
-    final BytesColumnMessage BytesColumn = message.getBytesColumn();
+    Preconditions.checkArgument(message.hasBlobColumn(), "ColumnMessage is missing DateColumn");
+    final BlobColumnMessage BlobColumn = message.getBlobColumn();
     ByteBuffer[] newData = new ByteBuffer[numTuples];
-    ByteBuffer data = BytesColumn.getData().asReadOnlyByteBuffer();
+    ByteBuffer data = BlobColumn.getData().asReadOnlyByteBuffer();
     for (int i = 0; i < numTuples; i++) {
       // TODO: check: do I need to copy the data here?
       newData[i] = data;
     }
 
-    return new BytesColumnBuilder(newData, numTuples).build();
+    return new BlobColumnBuilder(newData, numTuples).build();
   }
 
   @Override
-  public BytesColumnBuilder appendByteBuffer(final ByteBuffer value)
-      throws BufferOverflowException {
+  public BlobColumnBuilder appendBlob(final ByteBuffer value) throws BufferOverflowException {
     Preconditions.checkState(
         !built, "No further changes are allowed after the builder has built the column.");
     Objects.requireNonNull(value, "value");
-    if (numBB >= TupleUtils.get_Batch_size(Type.BYTES_TYPE)) {
+    if (numBB >= TupleUtils.get_Batch_size(Type.BLOB_TYPE)) {
       throw new BufferOverflowException();
     }
     data[numBB++] = value;
@@ -97,25 +95,25 @@ public final class BytesColumnBuilder extends ColumnBuilder<ByteBuffer> {
 
   @Override
   public Type getType() {
-    return Type.DATETIME_TYPE;
+    return Type.BLOB_TYPE;
   }
 
   @Override
-  public BytesColumnBuilder appendFromJdbc(final ResultSet resultSet, final int jdbcIndex)
+  public BlobColumnBuilder appendFromJdbc(final ResultSet resultSet, final int jdbcIndex)
       throws SQLException, BufferOverflowException {
     Preconditions.checkState(
         !built, "No further changes are allowed after the builder has built the column.");
     // TODO: fix
-    return appendByteBuffer(ByteBuffer.wrap(resultSet.getBytes(jdbcIndex)));
+    return appendBlob(ByteBuffer.wrap(resultSet.getBytes(jdbcIndex)));
   }
 
   @Override
-  public BytesColumnBuilder appendFromSQLite(final SQLiteStatement statement, final int index)
+  public BlobColumnBuilder appendFromSQLite(final SQLiteStatement statement, final int index)
       throws SQLiteException, BufferOverflowException {
     Preconditions.checkState(
         !built, "No further changes are allowed after the builder has built the column.");
 
-    return appendByteBuffer(ByteBuffer.wrap(statement.columnBlob(index)));
+    return appendBlob(ByteBuffer.wrap(statement.columnBlob(index)));
   }
 
   @Override
@@ -124,20 +122,19 @@ public final class BytesColumnBuilder extends ColumnBuilder<ByteBuffer> {
   }
 
   @Override
-  public BytesColumn build() {
+  public BlobColumn build() {
     built = true;
-    return new BytesColumn(data, numBB);
+    return new BlobColumn(data, numBB);
   }
 
   @Override
-  public BytesMutableColumn buildMutable() {
+  public BlobMutableColumn buildMutable() {
     built = true;
-    return new BytesMutableColumn(data, numBB);
+    return new BlobMutableColumn(data, numBB);
   }
 
   @Override
-  public void replaceByteBuffer(final ByteBuffer value, final int row)
-      throws IndexOutOfBoundsException {
+  public void replaceBlob(final ByteBuffer value, final int row) throws IndexOutOfBoundsException {
     Preconditions.checkState(
         !built, "No further changes are allowed after the builder has built the column.");
     Preconditions.checkElementIndex(row, numBB);
@@ -146,7 +143,7 @@ public final class BytesColumnBuilder extends ColumnBuilder<ByteBuffer> {
   }
 
   @Override
-  public BytesColumnBuilder expand(final int size) throws BufferOverflowException {
+  public BlobColumnBuilder expand(final int size) throws BufferOverflowException {
     Preconditions.checkState(
         !built, "No further changes are allowed after the builder has built the column.");
     Preconditions.checkArgument(size >= 0);
@@ -158,7 +155,7 @@ public final class BytesColumnBuilder extends ColumnBuilder<ByteBuffer> {
   }
 
   @Override
-  public BytesColumnBuilder expandAll() {
+  public BlobColumnBuilder expandAll() {
     Preconditions.checkState(
         !built, "No further changes are allowed after the builder has built the column.");
     numBB = data.length;
@@ -166,14 +163,14 @@ public final class BytesColumnBuilder extends ColumnBuilder<ByteBuffer> {
   }
 
   @Override
-  public ByteBuffer getByteBuffer(final int row) {
+  public ByteBuffer getBlob(final int row) {
     Preconditions.checkElementIndex(row, numBB);
     return data[row];
   }
 
   @Override
   public ByteBuffer getObject(final int row) {
-    return getByteBuffer(row);
+    return getBlob(row);
   }
 
   @Deprecated
@@ -181,13 +178,13 @@ public final class BytesColumnBuilder extends ColumnBuilder<ByteBuffer> {
   public ColumnBuilder<ByteBuffer> appendObject(final Object value) throws BufferOverflowException {
     Preconditions.checkState(
         !built, "No further changes are allowed after the builder has built the column.");
-    return appendByteBuffer((ByteBuffer) MyriaUtils.ensureObjectIsValidType(value));
+    return appendBlob((ByteBuffer) MyriaUtils.ensureObjectIsValidType(value));
   }
 
   @Override
-  public BytesColumnBuilder forkNewBuilder() {
+  public BlobColumnBuilder forkNewBuilder() {
     ByteBuffer[] newData = new ByteBuffer[data.length];
     System.arraycopy(data, 0, newData, 0, numBB);
-    return new BytesColumnBuilder(newData, numBB);
+    return new BlobColumnBuilder(newData, numBB);
   }
 }

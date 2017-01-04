@@ -1,6 +1,3 @@
-/**
- *
- */
 package edu.washington.escience.myria.column.mutable;
 
 import java.nio.ByteBuffer;
@@ -8,13 +5,12 @@ import java.nio.ByteBuffer;
 import com.google.common.base.Preconditions;
 
 import edu.washington.escience.myria.Type;
-import edu.washington.escience.myria.column.BytesColumn;
-
+import edu.washington.escience.myria.column.BlobColumn;
 /**
- * A mutable column of byteBuffer values.
+ * A mutable column of Blob values.
  *
  */
-public final class BytesMutableColumn extends MutableColumn<ByteBuffer> {
+public final class BlobMutableColumn extends MutableColumn<ByteBuffer> {
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
   /** Internal representation of the column data. */
@@ -28,7 +24,7 @@ public final class BytesMutableColumn extends MutableColumn<ByteBuffer> {
    * @param data the data
    * @param numData number of tuples.
    * */
-  public BytesMutableColumn(final ByteBuffer[] data, final int numData) {
+  public BlobMutableColumn(final ByteBuffer[] data, final int numData) {
     this.data = data;
     position = numData;
   }
@@ -36,18 +32,18 @@ public final class BytesMutableColumn extends MutableColumn<ByteBuffer> {
   @Override
   @Deprecated
   public ByteBuffer getObject(final int row) {
-    return getByteBuffer(row);
+    return getBlob(row);
   }
 
   @Override
-  public ByteBuffer getByteBuffer(final int row) {
+  public ByteBuffer getBlob(final int row) {
     Preconditions.checkElementIndex(row, position);
     return data[row];
   }
 
   @Override
   public Type getType() {
-    return Type.BYTES_TYPE;
+    return Type.BLOB_TYPE;
   }
 
   @Override
@@ -61,18 +57,18 @@ public final class BytesMutableColumn extends MutableColumn<ByteBuffer> {
   }
 
   @Override
-  public void replaceByteBuffer(final ByteBuffer value, final int row) {
+  public void replaceBlob(final ByteBuffer value, final int row) {
     Preconditions.checkElementIndex(row, size());
     data[row] = value;
   }
 
   @Override
-  public BytesColumn toColumn() {
-    return new BytesColumn(data.clone(), position);
+  public BlobColumn toColumn() {
+    return new BlobColumn(data.clone(), position);
   }
 
   @Override
-  public BytesMutableColumn clone() {
-    return new BytesMutableColumn(data.clone(), position);
+  public BlobMutableColumn clone() {
+    return new BlobMutableColumn(data.clone(), position);
   }
 }

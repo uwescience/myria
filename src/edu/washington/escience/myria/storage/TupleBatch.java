@@ -29,7 +29,7 @@ public class TupleBatch implements ReadableTable, Serializable {
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
   /** The hard-coded number of tuples in a batch. */
-  //private  int BATCH_SIZE; //= 10 * 1000;
+  private int batchSize;
   /** Schema of tuples in this batch. */
   private final Schema schema;
   /** Tuple data stored as columns in this batch. */
@@ -54,8 +54,7 @@ public class TupleBatch implements ReadableTable, Serializable {
     }
     columns = b.build();
     isEOI = isEoi;
-    //BATCH_SIZE = batch_size;
-
+    batchSize = TupleUtils.get_Batch_size(schema);
   }
 
   /*
@@ -119,6 +118,7 @@ public class TupleBatch implements ReadableTable, Serializable {
     }
     this.numTuples = numTuples;
     this.isEOI = isEOI;
+    batchSize = TupleUtils.get_Batch_size(schema);
   }
 
   /**
@@ -232,8 +232,8 @@ public class TupleBatch implements ReadableTable, Serializable {
   }
 
   @Override
-  public ByteBuffer getByteBuffer(final int column, final int row) {
-    return columns.get(column).getByteBuffer(row);
+  public ByteBuffer getBlob(final int column, final int row) {
+    return columns.get(column).getBlob(row);
   }
 
   @Override
@@ -380,5 +380,9 @@ public class TupleBatch implements ReadableTable, Serializable {
   @Override
   public ReadableColumn asColumn(final int column) {
     return columns.get(column);
+  }
+
+  public int getBatchSize() {
+    return batchSize;
   }
 }

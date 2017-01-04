@@ -205,8 +205,8 @@ public final class JdbcAccessMethod extends AccessMethod {
               case STRING_TYPE:
                 statement.setString(col + 1, tupleBatch.getString(col, row));
                 break;
-              case BYTES_TYPE:
-                statement.setBytes(col + 1, tupleBatch.getByteBuffer(col, row).array());
+              case BLOB_TYPE:
+                statement.setBytes(col + 1, tupleBatch.getBlob(col, row).array());
                 break;
             }
           }
@@ -430,7 +430,7 @@ public final class JdbcAccessMethod extends AccessMethod {
         return "BIGINT";
       case STRING_TYPE:
         return "TEXT";
-      case BYTES_TYPE:
+      case BLOB_TYPE:
         return "BYTEA";
       case DATETIME_TYPE:
         return "TIMESTAMP";

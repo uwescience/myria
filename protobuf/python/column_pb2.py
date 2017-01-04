@@ -18,7 +18,7 @@ _sym_db = _symbol_database.Default()
 DESCRIPTOR = _descriptor.FileDescriptor(
   name='column.proto',
   package='',
-  serialized_pb=_b('\n\x0c\x63olumn.proto\"\xa1\x01\n\x0b\x44\x61taMessage\x12\x1f\n\x04type\x18\x01 \x02(\x0e\x32\x11.DataMessage.Type\x12\x12\n\noperatorID\x18\x02 \x01(\x04\x12\x1f\n\x07\x63olumns\x18\x03 \x03(\x0b\x32\x0e.ColumnMessage\x12\x12\n\nnum_tuples\x18\x04 \x01(\r\x12\x0b\n\x03seq\x18\x05 \x01(\x04\"\x1b\n\x04Type\x12\n\n\x06NORMAL\x10\x01\x12\x07\n\x03\x45OI\x10\x02\"\xf2\x03\n\rColumnMessage\x12!\n\x04type\x18\x01 \x02(\x0e\x32\x13.ColumnMessage.Type\x12%\n\nint_column\x18\x03 \x01(\x0b\x32\x11.IntColumnMessage\x12\'\n\x0blong_column\x18\x04 \x01(\x0b\x32\x12.LongColumnMessage\x12)\n\x0c\x66loat_column\x18\x05 \x01(\x0b\x32\x13.FloatColumnMessage\x12+\n\rdouble_column\x18\x06 \x01(\x0b\x32\x14.DoubleColumnMessage\x12+\n\rstring_column\x18\x07 \x01(\x0b\x32\x14.StringColumnMessage\x12-\n\x0e\x62oolean_column\x18\x08 \x01(\x0b\x32\x15.BooleanColumnMessage\x12+\n\x0b\x64\x61te_column\x18\t \x01(\x0b\x32\x16.DateTimeColumnMessage\x12)\n\x0c\x62ytes_column\x18\n \x01(\x0b\x32\x13.BytesColumnMessage\"b\n\x04Type\x12\x07\n\x03INT\x10\x00\x12\x08\n\x04LONG\x10\x01\x12\t\n\x05\x46LOAT\x10\x02\x12\n\n\x06\x44OUBLE\x10\x03\x12\n\n\x06STRING\x10\x04\x12\x0b\n\x07\x42OOLEAN\x10\x05\x12\x0c\n\x08\x44\x41TETIME\x10\x06\x12\t\n\x05\x42YTES\x10\x07\" \n\x10IntColumnMessage\x12\x0c\n\x04\x64\x61ta\x18\x01 \x02(\x0c\"!\n\x11LongColumnMessage\x12\x0c\n\x04\x64\x61ta\x18\x01 \x02(\x0c\"\"\n\x12\x46loatColumnMessage\x12\x0c\n\x04\x64\x61ta\x18\x01 \x02(\x0c\"#\n\x13\x44oubleColumnMessage\x12\x0c\n\x04\x64\x61ta\x18\x01 \x02(\x0c\"O\n\x13StringColumnMessage\x12\x0c\n\x04\x64\x61ta\x18\x01 \x02(\x0c\x12\x15\n\rstart_indices\x18\x02 \x03(\x05\x12\x13\n\x0b\x65nd_indices\x18\x03 \x03(\x05\"$\n\x14\x42ooleanColumnMessage\x12\x0c\n\x04\x64\x61ta\x18\x01 \x02(\x0c\"%\n\x15\x44\x61teTimeColumnMessage\x12\x0c\n\x04\x64\x61ta\x18\x01 \x02(\x0c\"N\n\x12\x42ytesColumnMessage\x12\x0c\n\x04\x64\x61ta\x18\x01 \x02(\x0c\x12\x15\n\rstart_indices\x18\x02 \x03(\x05\x12\x13\n\x0b\x65nd_indices\x18\x03 \x03(\x05\x42\x30\n#edu.washington.escience.myria.protoB\tDataProto')
+  serialized_pb=_b('\n\x0c\x63olumn.proto\"\xa1\x01\n\x0b\x44\x61taMessage\x12\x1f\n\x04type\x18\x01 \x02(\x0e\x32\x11.DataMessage.Type\x12\x12\n\noperatorID\x18\x02 \x01(\x04\x12\x1f\n\x07\x63olumns\x18\x03 \x03(\x0b\x32\x0e.ColumnMessage\x12\x12\n\nnum_tuples\x18\x04 \x01(\r\x12\x0b\n\x03seq\x18\x05 \x01(\x04\"\x1b\n\x04Type\x12\n\n\x06NORMAL\x10\x01\x12\x07\n\x03\x45OI\x10\x02\"\xef\x03\n\rColumnMessage\x12!\n\x04type\x18\x01 \x02(\x0e\x32\x13.ColumnMessage.Type\x12%\n\nint_column\x18\x03 \x01(\x0b\x32\x11.IntColumnMessage\x12\'\n\x0blong_column\x18\x04 \x01(\x0b\x32\x12.LongColumnMessage\x12)\n\x0c\x66loat_column\x18\x05 \x01(\x0b\x32\x13.FloatColumnMessage\x12+\n\rdouble_column\x18\x06 \x01(\x0b\x32\x14.DoubleColumnMessage\x12+\n\rstring_column\x18\x07 \x01(\x0b\x32\x14.StringColumnMessage\x12-\n\x0e\x62oolean_column\x18\x08 \x01(\x0b\x32\x15.BooleanColumnMessage\x12+\n\x0b\x64\x61te_column\x18\t \x01(\x0b\x32\x16.DateTimeColumnMessage\x12\'\n\x0b\x62lob_column\x18\n \x01(\x0b\x32\x12.BlobColumnMessage\"a\n\x04Type\x12\x07\n\x03INT\x10\x00\x12\x08\n\x04LONG\x10\x01\x12\t\n\x05\x46LOAT\x10\x02\x12\n\n\x06\x44OUBLE\x10\x03\x12\n\n\x06STRING\x10\x04\x12\x0b\n\x07\x42OOLEAN\x10\x05\x12\x0c\n\x08\x44\x41TETIME\x10\x06\x12\x08\n\x04\x42LOB\x10\x07\" \n\x10IntColumnMessage\x12\x0c\n\x04\x64\x61ta\x18\x01 \x02(\x0c\"!\n\x11LongColumnMessage\x12\x0c\n\x04\x64\x61ta\x18\x01 \x02(\x0c\"\"\n\x12\x46loatColumnMessage\x12\x0c\n\x04\x64\x61ta\x18\x01 \x02(\x0c\"#\n\x13\x44oubleColumnMessage\x12\x0c\n\x04\x64\x61ta\x18\x01 \x02(\x0c\"O\n\x13StringColumnMessage\x12\x0c\n\x04\x64\x61ta\x18\x01 \x02(\x0c\x12\x15\n\rstart_indices\x18\x02 \x03(\x05\x12\x13\n\x0b\x65nd_indices\x18\x03 \x03(\x05\"$\n\x14\x42ooleanColumnMessage\x12\x0c\n\x04\x64\x61ta\x18\x01 \x02(\x0c\"%\n\x15\x44\x61teTimeColumnMessage\x12\x0c\n\x04\x64\x61ta\x18\x01 \x02(\x0c\"M\n\x11\x42lobColumnMessage\x12\x0c\n\x04\x64\x61ta\x18\x01 \x02(\x0c\x12\x15\n\rstart_indices\x18\x02 \x03(\x05\x12\x13\n\x0b\x65nd_indices\x18\x03 \x03(\x05\x42\x30\n#edu.washington.escience.myria.protoB\tDataProto')
 )
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
@@ -81,14 +81,14 @@ _COLUMNMESSAGE_TYPE = _descriptor.EnumDescriptor(
       options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
-      name='BYTES', index=7, number=7,
+      name='BLOB', index=7, number=7,
       options=None,
       type=None),
   ],
   containing_type=None,
   options=None,
-  serialized_start=581,
-  serialized_end=679,
+  serialized_start=579,
+  serialized_end=676,
 )
 _sym_db.RegisterEnumDescriptor(_COLUMNMESSAGE_TYPE)
 
@@ -216,7 +216,7 @@ _COLUMNMESSAGE = _descriptor.Descriptor(
       is_extension=False, extension_scope=None,
       options=None),
     _descriptor.FieldDescriptor(
-      name='bytes_column', full_name='ColumnMessage.bytes_column', index=8,
+      name='blob_column', full_name='ColumnMessage.blob_column', index=8,
       number=10, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
@@ -235,7 +235,7 @@ _COLUMNMESSAGE = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=181,
-  serialized_end=679,
+  serialized_end=676,
 )
 
 
@@ -264,8 +264,8 @@ _INTCOLUMNMESSAGE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=681,
-  serialized_end=713,
+  serialized_start=678,
+  serialized_end=710,
 )
 
 
@@ -294,8 +294,8 @@ _LONGCOLUMNMESSAGE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=715,
-  serialized_end=748,
+  serialized_start=712,
+  serialized_end=745,
 )
 
 
@@ -324,8 +324,8 @@ _FLOATCOLUMNMESSAGE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=750,
-  serialized_end=784,
+  serialized_start=747,
+  serialized_end=781,
 )
 
 
@@ -354,8 +354,8 @@ _DOUBLECOLUMNMESSAGE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=786,
-  serialized_end=821,
+  serialized_start=783,
+  serialized_end=818,
 )
 
 
@@ -398,8 +398,8 @@ _STRINGCOLUMNMESSAGE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=823,
-  serialized_end=902,
+  serialized_start=820,
+  serialized_end=899,
 )
 
 
@@ -428,8 +428,8 @@ _BOOLEANCOLUMNMESSAGE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=904,
-  serialized_end=940,
+  serialized_start=901,
+  serialized_end=937,
 )
 
 
@@ -458,34 +458,34 @@ _DATETIMECOLUMNMESSAGE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=942,
-  serialized_end=979,
+  serialized_start=939,
+  serialized_end=976,
 )
 
 
-_BYTESCOLUMNMESSAGE = _descriptor.Descriptor(
-  name='BytesColumnMessage',
-  full_name='BytesColumnMessage',
+_BLOBCOLUMNMESSAGE = _descriptor.Descriptor(
+  name='BlobColumnMessage',
+  full_name='BlobColumnMessage',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='data', full_name='BytesColumnMessage.data', index=0,
+      name='data', full_name='BlobColumnMessage.data', index=0,
       number=1, type=12, cpp_type=9, label=2,
       has_default_value=False, default_value=_b(""),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     _descriptor.FieldDescriptor(
-      name='start_indices', full_name='BytesColumnMessage.start_indices', index=1,
+      name='start_indices', full_name='BlobColumnMessage.start_indices', index=1,
       number=2, type=5, cpp_type=1, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     _descriptor.FieldDescriptor(
-      name='end_indices', full_name='BytesColumnMessage.end_indices', index=2,
+      name='end_indices', full_name='BlobColumnMessage.end_indices', index=2,
       number=3, type=5, cpp_type=1, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
@@ -502,8 +502,8 @@ _BYTESCOLUMNMESSAGE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=981,
-  serialized_end=1059,
+  serialized_start=978,
+  serialized_end=1055,
 )
 
 _DATAMESSAGE.fields_by_name['type'].enum_type = _DATAMESSAGE_TYPE
@@ -517,7 +517,7 @@ _COLUMNMESSAGE.fields_by_name['double_column'].message_type = _DOUBLECOLUMNMESSA
 _COLUMNMESSAGE.fields_by_name['string_column'].message_type = _STRINGCOLUMNMESSAGE
 _COLUMNMESSAGE.fields_by_name['boolean_column'].message_type = _BOOLEANCOLUMNMESSAGE
 _COLUMNMESSAGE.fields_by_name['date_column'].message_type = _DATETIMECOLUMNMESSAGE
-_COLUMNMESSAGE.fields_by_name['bytes_column'].message_type = _BYTESCOLUMNMESSAGE
+_COLUMNMESSAGE.fields_by_name['blob_column'].message_type = _BLOBCOLUMNMESSAGE
 _COLUMNMESSAGE_TYPE.containing_type = _COLUMNMESSAGE
 DESCRIPTOR.message_types_by_name['DataMessage'] = _DATAMESSAGE
 DESCRIPTOR.message_types_by_name['ColumnMessage'] = _COLUMNMESSAGE
@@ -528,7 +528,7 @@ DESCRIPTOR.message_types_by_name['DoubleColumnMessage'] = _DOUBLECOLUMNMESSAGE
 DESCRIPTOR.message_types_by_name['StringColumnMessage'] = _STRINGCOLUMNMESSAGE
 DESCRIPTOR.message_types_by_name['BooleanColumnMessage'] = _BOOLEANCOLUMNMESSAGE
 DESCRIPTOR.message_types_by_name['DateTimeColumnMessage'] = _DATETIMECOLUMNMESSAGE
-DESCRIPTOR.message_types_by_name['BytesColumnMessage'] = _BYTESCOLUMNMESSAGE
+DESCRIPTOR.message_types_by_name['BlobColumnMessage'] = _BLOBCOLUMNMESSAGE
 
 DataMessage = _reflection.GeneratedProtocolMessageType('DataMessage', (_message.Message,), dict(
   DESCRIPTOR = _DATAMESSAGE,
@@ -593,12 +593,12 @@ DateTimeColumnMessage = _reflection.GeneratedProtocolMessageType('DateTimeColumn
   ))
 _sym_db.RegisterMessage(DateTimeColumnMessage)
 
-BytesColumnMessage = _reflection.GeneratedProtocolMessageType('BytesColumnMessage', (_message.Message,), dict(
-  DESCRIPTOR = _BYTESCOLUMNMESSAGE,
+BlobColumnMessage = _reflection.GeneratedProtocolMessageType('BlobColumnMessage', (_message.Message,), dict(
+  DESCRIPTOR = _BLOBCOLUMNMESSAGE,
   __module__ = 'column_pb2'
-  # @@protoc_insertion_point(class_scope:BytesColumnMessage)
+  # @@protoc_insertion_point(class_scope:BlobColumnMessage)
   ))
-_sym_db.RegisterMessage(BytesColumnMessage)
+_sym_db.RegisterMessage(BlobColumnMessage)
 
 
 DESCRIPTOR.has_options = True

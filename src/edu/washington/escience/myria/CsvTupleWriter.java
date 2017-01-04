@@ -66,11 +66,11 @@ public class CsvTupleWriter implements TupleWriter {
     for (int i = 0; i < tuples.numTuples(); ++i) {
       for (int j = 0; j < tuples.numColumns(); ++j) {
         Type type = tbsc.getColumnType(j);
-        if (type.equals(Type.BYTES_TYPE)) {
+        if (type.equals(Type.BLOB_TYPE)) {
           // write the file out
           // add filename to the csv file
           String filename = UUID.randomUUID().toString();
-          ByteBuffer bb = tuples.getByteBuffer(j, i);
+          ByteBuffer bb = tuples.getBlob(j, i);
           writeBBtoFile(bb, filename);
           row[j] = filename;
         } else {

@@ -37,8 +37,8 @@ public final class ColumnFactory {
         return new StringColumnBuilder();
       case DATETIME_TYPE:
         return new DateTimeColumnBuilder();
-      case BYTES_TYPE:
-        return new BytesColumnBuilder();
+      case BLOB_TYPE:
+        return new BlobColumnBuilder();
     }
     throw new IllegalArgumentException("Cannot allocate a ColumnBuilder for unknown type " + type);
   }
@@ -91,8 +91,8 @@ public final class ColumnFactory {
         return StringColumnBuilder.buildFromProtobuf(message, numTuples);
       case DATETIME:
         return DateTimeColumnBuilder.buildFromProtobuf(message, numTuples);
-      case BYTES:
-        return BytesColumnBuilder.buildFromProtobuf(message, numTuples);
+      case BLOB:
+        return BlobColumnBuilder.buildFromProtobuf(message, numTuples);
     }
     return null;
   }

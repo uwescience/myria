@@ -183,7 +183,7 @@ public final class FileScan extends LeafOperator {
     /* Let's assume that the scanner always starts at the beginning of a line. */
     long lineNumberBegin = lineNumber;
 
-    while ((buffer.numTuples() < TupleUtils.get_Batch_size(schema))) {
+    while ((buffer.numTuples() < buffer.getBatchSize())) {
       lineNumber++;
       if (parser.isClosed()) {
         break;
@@ -238,8 +238,8 @@ public final class FileScan extends LeafOperator {
             case DATETIME_TYPE:
               buffer.putDateTime(column, DateTimeUtils.parse(cell));
               break;
-            case BYTES_TYPE:
-              buffer.putByteBuffer(column, getFile(cell)); // read filename
+            case BLOB_TYPE:
+              buffer.putBlob(column, getFile(cell)); // read filename
               break;
           }
         } catch (final IllegalArgumentException e) {

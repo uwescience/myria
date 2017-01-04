@@ -1070,7 +1070,7 @@ public class LeapFrogJoin extends NAryOperator {
     }
 
     /* break if a full tuple batch has been formed */
-    while (ansTBB.numTuples() < TupleUtils.get_Batch_size(generateSchema())) {
+    while (ansTBB.numTuples() < ansTBB.getBatchSize()) {
       for (JoinField jf : joinFieldMapping.get(currentDepth)) {
         Preconditions.checkState(
             jf.column == iterators[jf.table].currentField,

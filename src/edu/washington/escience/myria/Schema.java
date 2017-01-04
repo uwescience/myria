@@ -100,7 +100,7 @@ public final class Schema implements Serializable {
           columnTypes.add(Type.DATETIME_TYPE);
           break;
         case java.sql.Types.BLOB:
-          columnTypes.add(Type.BYTES_TYPE);
+          columnTypes.add(Type.BLOB_TYPE);
           break;
         default:
           throw new UnsupportedOperationException(

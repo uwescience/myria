@@ -11,22 +11,22 @@ import java.nio.file.Paths;
 
 import org.junit.Test;
 
-import edu.washington.escience.myria.column.BytesColumn;
-import edu.washington.escience.myria.column.builder.BytesColumnBuilder;
+import edu.washington.escience.myria.column.BlobColumn;
+import edu.washington.escience.myria.column.builder.BlobColumnBuilder;
 import edu.washington.escience.myria.proto.DataProto.ColumnMessage;
 
-public class BytesColumnTest {
+public class BlobColumnTest {
 
   @Test
   public void testProto() {
 
-    final BytesColumnBuilder original = new BytesColumnBuilder();
+    final BlobColumnBuilder original = new BlobColumnBuilder();
 
-    original.appendByteBuffer(ByteBuffer.wrap("Test1".getBytes()));
+    original.appendBlob(ByteBuffer.wrap("Test1".getBytes()));
 
     final ColumnMessage serialized = original.build().serializeToProto();
-    final BytesColumn deserialized =
-        BytesColumnBuilder.buildFromProtobuf(serialized, original.size());
+    final BlobColumn deserialized =
+        BlobColumnBuilder.buildFromProtobuf(serialized, original.size());
     //System.out.print(original.build().toString());
     //System.out.print(deserialized.toString());
 
@@ -36,9 +36,9 @@ public class BytesColumnTest {
   @Test
   public void testFull() {
 
-    final BytesColumnBuilder builder = new BytesColumnBuilder();
+    final BlobColumnBuilder builder = new BlobColumnBuilder();
     for (int i = 0; i < 1; i++) {
-      builder.appendByteBuffer(ByteBuffer.wrap(readbb()));
+      builder.appendBlob(ByteBuffer.wrap(readbb()));
     }
     builder.build();
   }

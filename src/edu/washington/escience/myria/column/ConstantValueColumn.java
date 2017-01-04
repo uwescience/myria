@@ -70,7 +70,7 @@ public class ConstantValueColumn extends Column<Comparable<?>> {
       case STRING_TYPE:
         stringValue = (String) value;
         break;
-      case BYTES_TYPE:
+      case BLOB_TYPE:
         byteValue = (ByteBuffer) value;
         break;
     }
@@ -138,8 +138,8 @@ public class ConstantValueColumn extends Column<Comparable<?>> {
   }
 
   @Override
-  public ByteBuffer getByteBuffer(final int row) {
-    if (type == Type.BYTES_TYPE) {
+  public ByteBuffer getBlob(final int row) {
+    if (type == Type.BLOB_TYPE) {
 
       return byteValue;
     }

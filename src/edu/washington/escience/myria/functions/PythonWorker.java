@@ -210,7 +210,7 @@ public class PythonWorker {
       case LONG_TYPE:
         dOut.writeInt(MyriaConstants.PythonType.LONG.getVal());
         break;
-      case BYTES_TYPE:
+      case BLOB_TYPE:
         dOut.writeInt(MyriaConstants.PythonType.BYTES.getVal());
         break;
       default:

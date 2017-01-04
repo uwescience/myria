@@ -65,7 +65,7 @@ public class PythonFunctionRegistrar {
 
     // add UDF
     udfs.putString(0, name);
-    udfs.putByteBuffer(1, binary);
+    udfs.putBlob(1, binary);
     udfs.putString(2, outputSchema);
 
     accessMethod.tupleBatchInsert(MyriaConstants.PYUDF_RELATION, udfs.popAny());
