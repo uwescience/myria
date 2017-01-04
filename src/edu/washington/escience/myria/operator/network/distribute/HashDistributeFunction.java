@@ -25,10 +25,9 @@ public final class HashDistributeFunction extends DistributeFunction {
   }
 
   @Override
-  public void setNumDestinations(final int numWorker, final int numOperatorId) {
-    partitionFunction.setNumPartitions(numWorker);
+  public void setDestinations(final int numWorker, final int numOperatorId) {
     partitionToDestination = MyriaArrayUtils.create2DVerticalIndexList(numWorker);
-    numDestinations = numWorker;
+    partitionFunction.setNumPartitions(numWorker);
   }
 
   /**

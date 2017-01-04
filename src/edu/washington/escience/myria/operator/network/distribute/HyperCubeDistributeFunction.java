@@ -38,7 +38,8 @@ public final class HyperCubeDistributeFunction extends DistributeFunction {
   }
 
   @Override
-  public void setNumDestinations(final int numWorker, final int numOperatorId) {
-    numDestinations = getAllDestinations().size();
+  public void setDestinations(int numWorker, int numOperatorId) {
+    partitionFunction.setNumPartitions(partitionToDestination.size());
+    /* TODO: should this be the same as the product of the sizes of all dimensions? */
   }
 }

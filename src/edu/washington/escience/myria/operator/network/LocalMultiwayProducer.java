@@ -20,6 +20,7 @@ public final class LocalMultiwayProducer extends GenericShuffleProducer {
         child,
         operatorIDs,
         new int[] {IPCConnectionPool.SELF_IPC_ID},
-        new BroadcastDistributeFunction(operatorIDs.length));
+        new BroadcastDistributeFunction());
+    this.distributeFunction.setDestinations(1, operatorIDs.length);
   }
 }

@@ -2,7 +2,9 @@ package edu.washington.escience.myria.operator.network.distribute;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import javax.annotation.Nonnull;
 
@@ -37,9 +39,6 @@ public abstract class DistributeFunction implements Serializable {
   /** The mapping from partitions to destinations. */
   protected List<List<Integer>> partitionToDestination;
 
-  /** number of destinations. */
-  protected int numDestinations;
-
   /**
    * @param partitionFunction partition function.
    */
@@ -54,11 +53,11 @@ public abstract class DistributeFunction implements Serializable {
   public List<List<TupleBatch>> distribute(@Nonnull final TupleBatch data) {
     List<List<TupleBatch>> result = new ArrayList<List<TupleBatch>>();
     if (data.isEOI()) {
-      for (int i = 0; i < numDestinations; ++i) {
+      for (int i = 0; i < getNumDestinations(); ++i) {
         result.add(Lists.newArrayList(data));
       }
     } else {
-      for (int i = 0; i < numDestinations; ++i) {
+      for (int i = 0; i < getNumDestinations(); ++i) {
         result.add(new ArrayList<TupleBatch>());
       }
       TupleBatch[] tbs = partitionFunction.partition(data);
@@ -72,8 +71,19 @@ public abstract class DistributeFunction implements Serializable {
   }
 
   /**
+   * @return number of destinations
+   */
+  public int getNumDestinations() {
+    Set<Integer> d = new HashSet<Integer>();
+    for (List<Integer> t : partitionToDestination) {
+      d.addAll(t);
+    }
+    return d.size();
+  }
+
+  /**
    * @param numWorker the number of workers to distribute on
    * @param numOperatorId the number of involved operator IDs
    */
-  public abstract void setNumDestinations(final int numWorker, final int numOperatorId);
+  public abstract void setDestinations(final int numWorker, final int numOperatorId);
 }

@@ -818,7 +818,7 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
 
     /* The master plan: send the tuples out. */
     ExchangePairID scatterId = ExchangePairID.newID();
-    df.setNumDestinations(workersArray.length, 1);
+    df.setDestinations(workersArray.length, 1);
     GenericShuffleProducer scatter =
         new GenericShuffleProducer(source, new ExchangePairID[] {scatterId}, workersArray, df);
 

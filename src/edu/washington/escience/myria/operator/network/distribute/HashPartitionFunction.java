@@ -19,18 +19,14 @@ public final class HashPartitionFunction extends PartitionFunction {
   private static final long serialVersionUID = 1L;
 
   /** The indices used for partitioning. */
-  // @JsonProperty
   private final int[] indexes;
 
   /** The index of the chosen hashcode in <code>HashUtils</code>. */
-  // @JsonProperty
   private final int seedIndex;
 
   /**
    * @param indexes the indices used for partitioning.
    */
-  // @JsonCreator
-  // public HashPartitionFunction(@JsonProperty("indexes") final int[] indexes) {
   public HashPartitionFunction(final int[] indexes) {
     this(indexes, 0);
   }

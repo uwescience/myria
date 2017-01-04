@@ -19,7 +19,7 @@ public class GenericShuffleProducer extends Producer {
   private static final long serialVersionUID = 1L;
 
   /** the distribute function. */
-  private final DistributeFunction distributeFunction;
+  protected final DistributeFunction distributeFunction;
 
   /**
    * Shuffle to multiple operator IDs on multiple workers. The most generic constructor.
@@ -68,5 +68,12 @@ public class GenericShuffleProducer extends Producer {
   protected final void childEOI() throws DbException {
     writePartitionsIntoChannels(
         distributeFunction.distribute(TupleBatch.eoiTupleBatch(getSchema())));
+  }
+
+  /**
+   * @return the distribute function
+   */
+  public final DistributeFunction getDistributeFunction() {
+    return distributeFunction;
   }
 }

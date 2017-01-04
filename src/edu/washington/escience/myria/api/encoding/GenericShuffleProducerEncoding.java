@@ -24,7 +24,7 @@ public class GenericShuffleProducerEncoding
   public GenericShuffleProducer construct(final ConstructArgs args) {
     Set<Integer> workerIds = getRealWorkerIds();
     List<ExchangePairID> operatorIds = getRealOperatorIds();
-    distributeFunction.setNumDestinations(workerIds.size(), operatorIds.size());
+    distributeFunction.setDestinations(workerIds.size(), operatorIds.size());
     GenericShuffleProducer producer =
         new GenericShuffleProducer(
             null,

@@ -19,18 +19,8 @@ public final class BroadcastDistributeFunction extends DistributeFunction {
     super(new SinglePartitionFunction());
   }
 
-  /**
-   * @param numDestinations number of destination
-   */
-  public BroadcastDistributeFunction(final int numDestinations) {
-    this();
-    partitionToDestination = MyriaArrayUtils.create2DHorizontalIndexList(numDestinations);
-    this.numDestinations = numDestinations;
-  }
-
   @Override
-  public void setNumDestinations(final int numWorker, final int numOperatorId) {
+  public void setDestinations(final int numWorker, final int numOperatorId) {
     partitionToDestination = MyriaArrayUtils.create2DHorizontalIndexList(numWorker * numOperatorId);
-    numDestinations = numWorker * numOperatorId;
   }
 }

@@ -22,9 +22,8 @@ public final class IdentityDistributeFunction extends DistributeFunction {
   }
 
   @Override
-  public void setNumDestinations(final int numWorker, final int numOperatorId) {
-    partitionFunction.setNumPartitions(numWorker);
+  public void setDestinations(int numWorker, int numOperatorId) {
     partitionToDestination = MyriaArrayUtils.create2DVerticalIndexList(numWorker);
-    numDestinations = numWorker;
+    partitionFunction.setNumPartitions(numWorker);
   }
 }

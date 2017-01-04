@@ -14,10 +14,13 @@ public class BroadcastProducerEncoding extends AbstractProducerEncoding<GenericS
 
   @Override
   public GenericShuffleProducer construct(ConstructArgs args) {
-    return new GenericShuffleProducer(
-        null,
-        getRealOperatorIds().toArray(new ExchangePairID[] {}),
-        Ints.toArray(getRealWorkerIds()),
-        new BroadcastDistributeFunction(getRealWorkerIds().size()));
+    GenericShuffleProducer ret =
+        new GenericShuffleProducer(
+            null,
+            getRealOperatorIds().toArray(new ExchangePairID[] {}),
+            Ints.toArray(getRealWorkerIds()),
+            new BroadcastDistributeFunction());
+    ret.getDistributeFunction().setDestinations(getRealWorkerIds().size(), 1);
+    return ret;
   }
 }

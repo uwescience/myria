@@ -24,6 +24,7 @@ public class CollectProducer extends GenericShuffleProducer {
         child,
         new ExchangePairID[] {operatorID},
         new int[] {consumerWorkerID},
-        new BroadcastDistributeFunction(1));
+        new BroadcastDistributeFunction());
+    this.distributeFunction.setDestinations(1, 1);
   }
 }
