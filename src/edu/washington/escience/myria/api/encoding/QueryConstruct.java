@@ -8,6 +8,7 @@ import java.util.Set;
 import javax.annotation.Nonnull;
 import javax.ws.rs.core.Response.Status;
 
+import com.google.common.base.Joiner;
 import com.google.common.base.MoreObjects;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ArrayListMultimap;
@@ -183,7 +184,7 @@ public class QueryConstruct {
 
     for (PlanFragmentEncoding fragment : fragments) {
       for (OperatorEncoding<?> operator : fragment.operators) {
-        Set<Integer> scanWorkers;
+        Set<Integer> scanWorkers = ImmutableSet.of();
         String scanRelation;
 
         if (operator instanceof TableScanEncoding) {
@@ -198,11 +199,37 @@ public class QueryConstruct {
                   .getQueryManager()
                   .getWorkersForTempRelation(
                       args.getQueryId(), RelationKey.ofTemp(args.getQueryId(), scan.table));
+        } else if (operator instanceof QueryScanEncoding) {
+          QueryScanEncoding scan = ((QueryScanEncoding) operator);
+          scanRelation = "(source relations for query scan):";
+          int relationIdx = 0;
+          for (RelationKey relationKey : scan.sourceRelationKeys) {
+            scanRelation += " " + relationKey.toString();
+            Set<Integer> workersForRelation = server.getWorkersForRelation(relationKey, null);
+            // Guava's set operations don't accept null
+            if (workersForRelation == null) {
+              workersForRelation = ImmutableSet.of();
+            }
+            // REVIEW: This logic will work for broadcast relations stored on
+            // distinct but overlapping sets of workers, but where will it break?
+            if (relationIdx == 0) {
+              scanWorkers = workersForRelation;
+            } else {
+              scanWorkers = Sets.intersection(workersForRelation, scanWorkers);
+            }
+            ++relationIdx;
+          }
+          LOGGER.info(
+              "DbQueryScan operator for relations {} assigned to workers {}",
+              scanRelation,
+              Joiner.on(',').join(scanWorkers));
         } else {
           continue;
         }
         Preconditions.checkArgument(
-            scanWorkers != null, "Unable to find workers that store %s", scanRelation);
+            scanWorkers != null && !scanWorkers.isEmpty(),
+            "Unable to find workers that store %s",
+            scanRelation);
         /*
          * Note: the current assumption is that all the partitions need to be scanned. This will not be true if we have
          * data replication, or allow to scan only a subset of the partitions. Revise if needed.
