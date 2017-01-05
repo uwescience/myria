@@ -11,6 +11,7 @@ public class QueryScanEncoding extends LeafOperatorEncoding<DbQueryScan> {
   @Required public Schema schema;
   @Required public String sql;
   @Required public List<RelationKey> sourceRelationKeys;
+  public boolean debroadcast;
 
   @Override
   public DbQueryScan construct(ConstructArgs args) {

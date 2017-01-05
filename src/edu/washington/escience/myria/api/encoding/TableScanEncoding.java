@@ -16,6 +16,7 @@ public class TableScanEncoding extends LeafOperatorEncoding<DbQueryScan> {
   /** The name of the relation to be scanned. */
   @Required public RelationKey relationKey;
   public Integer storedRelationId;
+  public boolean debroadcast;
 
   @Override
   public DbQueryScan construct(ConstructArgs args) {

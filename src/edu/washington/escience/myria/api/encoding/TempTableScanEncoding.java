@@ -11,6 +11,7 @@ import edu.washington.escience.myria.parallel.Server;
 public class TempTableScanEncoding extends LeafOperatorEncoding<DbQueryScan> {
   /** The name of the relation to be scanned. */
   @Required public String table;
+  public boolean debroadcast;
 
   @Override
   public DbQueryScan construct(ConstructArgs args) {

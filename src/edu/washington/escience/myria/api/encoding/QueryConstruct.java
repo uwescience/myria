@@ -186,19 +186,23 @@ public class QueryConstruct {
       for (OperatorEncoding<?> operator : fragment.operators) {
         Set<Integer> scanWorkers = ImmutableSet.of();
         String scanRelation;
+        boolean debroadcast = false;
 
         if (operator instanceof TableScanEncoding) {
           TableScanEncoding scan = ((TableScanEncoding) operator);
+          debroadcast = scan.debroadcast;
           scanRelation = scan.relationKey.toString();
           scanWorkers = server.getWorkersForRelation(scan.relationKey, scan.storedRelationId);
         } else if (operator instanceof TempTableScanEncoding) {
           TempTableScanEncoding scan = ((TempTableScanEncoding) operator);
+          debroadcast = scan.debroadcast;
           RelationKey relationKey = RelationKey.ofTemp(args.getQueryId(), scan.table);
           scanRelation = "temporary relation " + scan.table;
           scanWorkers =
               server.getQueryManager().getWorkersForTempRelation(args.getQueryId(), relationKey);
         } else if (operator instanceof QueryScanEncoding) {
           QueryScanEncoding scan = ((QueryScanEncoding) operator);
+          debroadcast = scan.debroadcast;
           scanRelation = "(source relations for query scan):";
           int relationIdx = 0;
           for (RelationKey relationKey : scan.sourceRelationKeys) {
@@ -228,6 +232,11 @@ public class QueryConstruct {
             scanWorkers != null && !scanWorkers.isEmpty(),
             "Unable to find workers that store %s",
             scanRelation);
+        if (debroadcast) {
+          // we need to pick a single worker that is alive
+          Set<Integer> aliveScanWorkers = Sets.intersection(scanWorkers, server.getAliveWorkers());
+          scanWorkers = ImmutableSet.of(aliveScanWorkers.iterator().next());
+        }
         /*
          * Note: the current assumption is that all the partitions need to be scanned. This will not be true if we have
          * data replication, or allow to scan only a subset of the partitions. Revise if needed.
