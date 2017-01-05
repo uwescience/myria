@@ -8,6 +8,7 @@ import java.util.Set;
 import javax.annotation.Nonnull;
 import javax.ws.rs.core.Response.Status;
 
+import com.google.common.base.Joiner;
 import com.google.common.base.MoreObjects;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ArrayListMultimap;
@@ -148,7 +149,6 @@ public class QueryConstruct {
   private static boolean setOrVerifyFragmentWorkers(
       @Nonnull final PlanFragmentEncoding fragment,
       @Nonnull final Collection<Integer> workers,
-      final boolean isBroadcastScan,
       @Nonnull final String currentTask) {
     Preconditions.checkNotNull(fragment, "fragment");
     Preconditions.checkNotNull(workers, "workers");
@@ -156,7 +156,7 @@ public class QueryConstruct {
     if (fragment.workers == null) {
       fragment.workers = ImmutableList.copyOf(workers);
       return true;
-    } else if (!isBroadcastScan) {
+    } else {
       Preconditions.checkArgument(
           HashMultiset.create(fragment.workers).equals(HashMultiset.create(workers)),
           "During %s, cannot change workers for fragment %s from %s to %s",
@@ -184,30 +184,55 @@ public class QueryConstruct {
 
     for (PlanFragmentEncoding fragment : fragments) {
       for (OperatorEncoding<?> operator : fragment.operators) {
-        Set<Integer> scanWorkers;
+        Set<Integer> scanWorkers = ImmutableSet.of();
         String scanRelation;
 
-        RelationKey relationKey = null;
         if (operator instanceof TableScanEncoding) {
           TableScanEncoding scan = ((TableScanEncoding) operator);
-          relationKey = scan.relationKey;
-          scanRelation = relationKey.toString();
+          scanRelation = scan.relationKey.toString();
           scanWorkers = server.getWorkersForRelation(scan.relationKey, scan.storedRelationId);
         } else if (operator instanceof TempTableScanEncoding) {
           TempTableScanEncoding scan = ((TempTableScanEncoding) operator);
-          relationKey = RelationKey.ofTemp(args.getQueryId(), scan.table);
+          RelationKey relationKey = RelationKey.ofTemp(args.getQueryId(), scan.table);
           scanRelation = "temporary relation " + scan.table;
           scanWorkers =
               server.getQueryManager().getWorkersForTempRelation(args.getQueryId(), relationKey);
+        } else if (operator instanceof QueryScanEncoding) {
+          QueryScanEncoding scan = ((QueryScanEncoding) operator);
+          scanRelation = "(source relations for query scan):";
+          int relationIdx = 0;
+          for (RelationKey relationKey : scan.sourceRelationKeys) {
+            scanRelation += " " + relationKey.toString();
+            Set<Integer> workersForRelation = server.getWorkersForRelation(relationKey, null);
+            // Guava's set operations don't accept null
+            if (workersForRelation == null) {
+              workersForRelation = ImmutableSet.of();
+            }
+            // REVIEW: This logic will work for broadcast relations stored on
+            // distinct but overlapping sets of workers, but where will it break?
+            if (relationIdx == 0) {
+              scanWorkers = workersForRelation;
+            } else {
+              scanWorkers = Sets.intersection(workersForRelation, scanWorkers);
+            }
+            ++relationIdx;
+          }
+          LOGGER.info(
+              "DbQueryScan operator for relations {} assigned to workers {}",
+              scanRelation,
+              Joiner.on(',').join(scanWorkers));
         } else {
           continue;
         }
         Preconditions.checkArgument(
-            scanWorkers != null, "Unable to find workers that store %s", scanRelation);
-        DistributeFunction df = server.getDatasetStatus(relationKey).getHowDistributed().getDf();
-        boolean isBroadcastScan = (df instanceof BroadcastDistributeFunction);
-        setOrVerifyFragmentWorkers(
-            fragment, scanWorkers, isBroadcastScan, "Setting workers for " + scanRelation);
+            scanWorkers != null && !scanWorkers.isEmpty(),
+            "Unable to find workers that store %s",
+            scanRelation);
+        /*
+         * Note: the current assumption is that all the partitions need to be scanned. This will not be true if we have
+         * data replication, or allow to scan only a subset of the partitions. Revise if needed.
+         */
+        setOrVerifyFragmentWorkers(fragment, scanWorkers, "Setting workers for " + scanRelation);
       }
     }
   }
@@ -339,8 +364,7 @@ public class QueryConstruct {
 
         // Verify that all fragments match the workers we found (and propagate if null)
         for (PlanFragmentEncoding frag : allFrags) {
-          anyUpdates |=
-              setOrVerifyFragmentWorkers(frag, workers, false, "propagating edge constraints");
+          anyUpdates |= setOrVerifyFragmentWorkers(frag, workers, "propagating edge constraints");
         }
       }
     } while (anyUpdates);
