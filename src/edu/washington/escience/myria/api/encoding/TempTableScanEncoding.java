@@ -1,10 +1,11 @@
 package edu.washington.escience.myria.api.encoding;
 
-import java.util.List;
+import java.util.Set;
 
 import javax.ws.rs.core.Response.Status;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableSet;
 
 import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.Schema;
@@ -12,14 +13,13 @@ import edu.washington.escience.myria.api.MyriaApiException;
 import edu.washington.escience.myria.api.encoding.QueryConstruct.ConstructArgs;
 import edu.washington.escience.myria.coordinator.CatalogException;
 import edu.washington.escience.myria.operator.DbQueryScan;
-import jersey.repackaged.com.google.common.collect.ImmutableList;
 
 public class TempTableScanEncoding extends AbstractQueryScanEncoding {
   /** The name of the relation to be scanned. */
   @Required public String table;
 
-  public List<RelationKey> sourceRelationKeys(ConstructArgs args) {
-    return ImmutableList.of(RelationKey.ofTemp(args.getQueryId(), table));
+  public Set<RelationKey> sourceRelationKeys(ConstructArgs args) {
+    return ImmutableSet.of(RelationKey.ofTemp(args.getQueryId(), table));
   }
 
   @Override

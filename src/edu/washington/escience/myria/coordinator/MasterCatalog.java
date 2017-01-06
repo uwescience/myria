@@ -1205,9 +1205,6 @@ public final class MasterCatalog {
                     while (statement.step()) {
                       ret.add(statement.columnInt(0));
                     }
-                    if (ret.size() == 0) {
-                      return ImmutableSet.of();
-                    }
                     return ret;
                   } finally {
                     statement.dispose();

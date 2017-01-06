@@ -1,6 +1,6 @@
 package edu.washington.escience.myria.api.encoding;
 
-import java.util.List;
+import java.util.Set;
 
 import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.api.encoding.QueryConstruct.ConstructArgs;
@@ -14,5 +14,5 @@ public abstract class AbstractQueryScanEncoding extends LeafOperatorEncoding<DbQ
    * @param args
    * @return the list of relation keys being touched.
    */
-  public abstract List<RelationKey> sourceRelationKeys(ConstructArgs args);
+  public abstract Set<RelationKey> sourceRelationKeys(ConstructArgs args);
 }

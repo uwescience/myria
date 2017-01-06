@@ -187,7 +187,7 @@ public class QueryConstruct {
         Set<Integer> scanWorkers = server.getWorkers().keySet();
         AbstractQueryScanEncoding scan = ((AbstractQueryScanEncoding) operator);
         for (RelationKey relationKey : scan.sourceRelationKeys(args)) {
-          /* Assuming only workers storing all touched tables will be assigned the scan to. */
+          /* Assign fragment only to workers which store all relations referenced by scans in the fragment. */
           scanWorkers = Sets.intersection(server.getWorkersForRelation(relationKey), scanWorkers);
         }
         Set<Integer> aliveScanWorkers = Sets.intersection(scanWorkers, server.getAliveWorkers());

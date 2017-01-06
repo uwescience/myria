@@ -1,10 +1,11 @@
 package edu.washington.escience.myria.api.encoding;
 
-import java.util.List;
+import java.util.Set;
 
 import javax.ws.rs.core.Response.Status;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableSet;
 
 import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.Schema;
@@ -13,7 +14,6 @@ import edu.washington.escience.myria.api.encoding.QueryConstruct.ConstructArgs;
 import edu.washington.escience.myria.coordinator.CatalogException;
 import edu.washington.escience.myria.operator.DbQueryScan;
 import edu.washington.escience.myria.parallel.Server;
-import jersey.repackaged.com.google.common.collect.ImmutableList;
 
 public class TableScanEncoding extends AbstractQueryScanEncoding {
   /** The name of the relation to be scanned. */
@@ -24,8 +24,8 @@ public class TableScanEncoding extends AbstractQueryScanEncoding {
    */
   public Integer storedRelationId;
 
-  public List<RelationKey> sourceRelationKeys(ConstructArgs args) {
-    return ImmutableList.of(relationKey);
+  public Set<RelationKey> sourceRelationKeys(ConstructArgs args) {
+    return ImmutableSet.of(relationKey);
   }
 
   @Override
