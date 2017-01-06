@@ -45,8 +45,6 @@ import edu.washington.escience.myria.operator.agg.SingleColumnAggregatorFactory;
 import edu.washington.escience.myria.operator.network.CollectProducer;
 import edu.washington.escience.myria.operator.network.Consumer;
 import edu.washington.escience.myria.operator.network.EOSController;
-import edu.washington.escience.myria.operator.network.distribute.BroadcastDistributeFunction;
-import edu.washington.escience.myria.operator.network.distribute.DistributeFunction;
 import edu.washington.escience.myria.parallel.ExchangePairID;
 import edu.washington.escience.myria.parallel.JsonSubQuery;
 import edu.washington.escience.myria.parallel.RelationWriteMetadata;
@@ -181,66 +179,31 @@ public class QueryConstruct {
       final List<PlanFragmentEncoding> fragments, final ConstructArgs args)
       throws CatalogException, DbException {
     Server server = args.getServer();
-
     for (PlanFragmentEncoding fragment : fragments) {
       for (OperatorEncoding<?> operator : fragment.operators) {
-        Set<Integer> scanWorkers = ImmutableSet.of();
-        String scanRelation;
-        boolean debroadcast = false;
-
-        if (operator instanceof TableScanEncoding) {
-          TableScanEncoding scan = ((TableScanEncoding) operator);
-          debroadcast = scan.debroadcast;
-          scanRelation = scan.relationKey.toString();
-          scanWorkers = server.getWorkersForRelation(scan.relationKey, scan.storedRelationId);
-        } else if (operator instanceof TempTableScanEncoding) {
-          TempTableScanEncoding scan = ((TempTableScanEncoding) operator);
-          debroadcast = scan.debroadcast;
-          RelationKey relationKey = RelationKey.ofTemp(args.getQueryId(), scan.table);
-          scanRelation = "temporary relation " + scan.table;
-          scanWorkers =
-              server.getQueryManager().getWorkersForTempRelation(args.getQueryId(), relationKey);
-        } else if (operator instanceof QueryScanEncoding) {
-          QueryScanEncoding scan = ((QueryScanEncoding) operator);
-          debroadcast = scan.debroadcast;
-          scanRelation = "(source relations for query scan):";
-          int relationIdx = 0;
-          for (RelationKey relationKey : scan.sourceRelationKeys) {
-            scanRelation += " " + relationKey.toString();
-            Set<Integer> workersForRelation = server.getWorkersForRelation(relationKey, null);
-            // Guava's set operations don't accept null
-            if (workersForRelation == null) {
-              workersForRelation = ImmutableSet.of();
-            }
-            // REVIEW: This logic will work for broadcast relations stored on
-            // distinct but overlapping sets of workers, but where will it break?
-            if (relationIdx == 0) {
-              scanWorkers = workersForRelation;
-            } else {
-              scanWorkers = Sets.intersection(workersForRelation, scanWorkers);
-            }
-            ++relationIdx;
-          }
-          LOGGER.info(
-              "DbQueryScan operator for relations {} assigned to workers {}",
-              scanRelation,
-              Joiner.on(',').join(scanWorkers));
-        } else {
+        if (!(operator instanceof AbstractQueryScanEncoding)) {
           continue;
         }
-        Preconditions.checkArgument(
-            scanWorkers != null && !scanWorkers.isEmpty(),
-            "Unable to find workers that store %s",
-            scanRelation);
-        if (debroadcast) {
-          // we need to pick a single worker that is alive
-          Set<Integer> aliveScanWorkers = Sets.intersection(scanWorkers, server.getAliveWorkers());
-          scanWorkers = ImmutableSet.of(aliveScanWorkers.iterator().next());
+        Set<Integer> scanWorkers = server.getWorkers().keySet();
+        AbstractQueryScanEncoding scan = ((AbstractQueryScanEncoding) operator);
+        for (RelationKey relationKey : scan.sourceRelationKeys(args)) {
+          /* Assuming only workers storing all touched tables will be assigned the scan to. */
+          scanWorkers = Sets.intersection(server.getWorkersForRelation(relationKey), scanWorkers);
         }
-        /*
-         * Note: the current assumption is that all the partitions need to be scanned. This will not be true if we have
-         * data replication, or allow to scan only a subset of the partitions. Revise if needed.
-         */
+        Set<Integer> aliveScanWorkers = Sets.intersection(scanWorkers, server.getAliveWorkers());
+        if (scan.debroadcast && aliveScanWorkers.size() > 0) {
+          // we need to pick a single worker that is alive
+          aliveScanWorkers = scanWorkers = ImmutableSet.of(aliveScanWorkers.iterator().next());
+        }
+        String scanRelation = Joiner.on(',').join(scan.sourceRelationKeys(args));
+        Preconditions.checkArgument(
+            aliveScanWorkers.size() == scanWorkers.size(),
+            "Not all the workers needed for retrieving %s are alive",
+            scanRelation);
+        LOGGER.info(
+            "DbQueryScan operator for relations {} assigned to workers {}",
+            scanRelation,
+            Joiner.on(',').join(scanWorkers));
         setOrVerifyFragmentWorkers(fragment, scanWorkers, "Setting workers for " + scanRelation);
       }
     }

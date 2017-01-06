@@ -1,5 +1,7 @@
 package edu.washington.escience.myria.api.encoding;
 
+import java.util.List;
+
 import javax.ws.rs.core.Response.Status;
 
 import com.google.common.base.Preconditions;
@@ -11,12 +13,20 @@ import edu.washington.escience.myria.api.encoding.QueryConstruct.ConstructArgs;
 import edu.washington.escience.myria.coordinator.CatalogException;
 import edu.washington.escience.myria.operator.DbQueryScan;
 import edu.washington.escience.myria.parallel.Server;
+import jersey.repackaged.com.google.common.collect.ImmutableList;
 
-public class TableScanEncoding extends LeafOperatorEncoding<DbQueryScan> {
+public class TableScanEncoding extends AbstractQueryScanEncoding {
   /** The name of the relation to be scanned. */
   @Required public RelationKey relationKey;
+  /**
+   * This field is not used by RACO yet but reserved for specifying physical representations of the same logical
+   * relation key.
+   */
   public Integer storedRelationId;
-  public boolean debroadcast;
+
+  public List<RelationKey> sourceRelationKeys(ConstructArgs args) {
+    return ImmutableList.of(relationKey);
+  }
 
   @Override
   public DbQueryScan construct(ConstructArgs args) {

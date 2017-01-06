@@ -7,11 +7,14 @@ import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.api.encoding.QueryConstruct.ConstructArgs;
 import edu.washington.escience.myria.operator.DbQueryScan;
 
-public class QueryScanEncoding extends LeafOperatorEncoding<DbQueryScan> {
+public class QueryScanEncoding extends AbstractQueryScanEncoding {
   @Required public Schema schema;
   @Required public String sql;
   @Required public List<RelationKey> sourceRelationKeys;
-  public boolean debroadcast;
+
+  public List<RelationKey> sourceRelationKeys(ConstructArgs args) {
+    return sourceRelationKeys;
+  }
 
   @Override
   public DbQueryScan construct(ConstructArgs args) {

@@ -1010,7 +1010,7 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
     /* Delete from postgres at each worker by calling the DbDelete operator */
     try {
       Map<Integer, SubQueryPlan> workerPlans = new HashMap<>();
-      for (Integer workerId : getWorkersForRelation(relationKey, null)) {
+      for (Integer workerId : getWorkersForRelation(relationKey)) {
         workerPlans.put(
             workerId,
             new SubQueryPlan(
@@ -1048,7 +1048,7 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
     /* Add indexes to relations */
     try {
       Map<Integer, SubQueryPlan> workerPlans = new HashMap<>();
-      for (Integer workerId : getWorkersForRelation(relationKey, null)) {
+      for (Integer workerId : getWorkersForRelation(relationKey)) {
         workerPlans.put(
             workerId,
             new SubQueryPlan(
@@ -1212,7 +1212,7 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
     try {
       ImmutableMap.Builder<Integer, SubQueryPlan> workerPlans =
           new ImmutableMap.Builder<Integer, SubQueryPlan>();
-      for (Integer workerId : getWorkersForRelation(relationKey, null)) {
+      for (Integer workerId : getWorkersForRelation(relationKey)) {
         String partitionName =
             String.format(
                 persistURI + "/myria-system/partition-%s/%s/%s/%s",
@@ -1253,6 +1253,9 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
    * @throws CatalogException if there is an error getting the Schema out of the catalog.
    */
   public Schema getSchema(final RelationKey relationKey) throws CatalogException {
+    if (relationKey.isTemp()) {
+      return queryManager.getQuery(relationKey.tempRelationQueryId()).getTempSchema(relationKey);
+    }
     return catalog.getSchema(relationKey);
   }
 
@@ -1270,24 +1273,19 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
   }
 
   /**
-   * @param relationKey the key of the desired relation.
-   * @param storedRelationId indicates which copy of the desired relation we want to scan.
-   * @return the list of workers that store the specified relation.
-   * @throws CatalogException if there is an error accessing the catalog.
-   */
-  public Set<Integer> getWorkersForRelation(
-      final RelationKey relationKey, final Integer storedRelationId) throws CatalogException {
-    return catalog.getWorkersForRelation(relationKey, storedRelationId);
-  }
-
-  /**
-   * @param queryId the query that owns the desired temp relation.
    * @param relationKey the key of the desired temp relation.
-   * @return the list of workers that store the specified relation.
+   * @throws CatalogException if there is an error accessing the catalog.
+   * @return the set of workers that store the specified relation.
    */
-  public Set<Integer> getWorkersForTempRelation(
-      @Nonnull final Long queryId, @Nonnull final RelationKey relationKey) {
-    return queryManager.getQuery(queryId).getWorkersForTempRelation(relationKey);
+  public @Nonnull Set<Integer> getWorkersForRelation(@Nonnull final RelationKey relationKey)
+      throws CatalogException {
+    if (relationKey.isTemp()) {
+      return queryManager
+          .getQuery(relationKey.tempRelationQueryId())
+          .getWorkersForTempRelation(relationKey);
+    } else {
+      return catalog.getWorkersForRelationKey(relationKey);
+    }
   }
 
   /** @return the socket info for the master. */
@@ -1418,7 +1416,7 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
     /* Get the workers that store it. */
     Set<Integer> scanWorkers;
     try {
-      scanWorkers = getWorkersForRelation(relationKey, null);
+      scanWorkers = getWorkersForRelation(relationKey);
     } catch (CatalogException e) {
       throw new DbException(e);
     }
@@ -2200,17 +2198,6 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
   public Object getQueryGlobal(final long queryId, @Nonnull final String key) {
     Preconditions.checkNotNull(key, "key");
     return queryManager.getQuery(queryId).getGlobal(key);
-  }
-
-  /**
-   * Return the schema of the specified temp relation in the specified query.
-   *
-   * @param queryId the query that owns the temp relation
-   * @param name the name of the temporary relation
-   * @return the schema of the specified temp relation in the specified query
-   */
-  public Schema getTempSchema(@Nonnull final Long queryId, @Nonnull final String name) {
-    return queryManager.getQuery(queryId).getTempSchema(RelationKey.ofTemp(queryId, name));
   }
 
   /**

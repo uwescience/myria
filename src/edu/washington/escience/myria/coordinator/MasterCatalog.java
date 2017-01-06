@@ -34,6 +34,7 @@ import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
 import com.google.common.primitives.Ints;
@@ -58,8 +59,6 @@ import edu.washington.escience.myria.storage.TupleBatch;
 
 /**
  * This class is intended to store the configuration information for a Myria installation.
- *
- *
  */
 public final class MasterCatalog {
   /** The logger for this class. */
@@ -162,11 +161,9 @@ public final class MasterCatalog {
   /** CREATE TABLE statements @formatter:on */
 
   /**
-   * @param filename the path to the SQLite database storing the catalog.
+   * @param filename the path to the SQLite database storing the catalog. TODO add some sanity checks?
    * @return a fresh Catalog fitting the specified description.
    * @throws CatalogException if there is an error opening the database.
-   *
-   *           TODO add some sanity checks to the filename?
    */
   public static MasterCatalog create(@Nonnull final String catalogRoot) throws CatalogException {
     final Path catalogRootPath = Paths.get(catalogRoot);
@@ -184,13 +181,10 @@ public final class MasterCatalog {
   }
 
   /**
-   *
    * @param catalogFile a File object pointing to the SQLite database that will store the Catalog. If catalogFile is
-   *          null, this creates an in-memory SQLite database.
+   *        null, this creates an in-memory SQLite database.
    * @return a fresh Catalog fitting the specified description.
    * @throws CatalogException if there is an error opening the database.
-   *
-   *           TODO add some sanity checks to the filename?
    */
   private static MasterCatalog createFromFile(final File catalogFile) throws CatalogException {
     /* Connect to the database. */
@@ -247,12 +241,10 @@ public final class MasterCatalog {
   /**
    * Opens the Myria catalog stored as a SQLite database in the specified file.
    *
-   * @param filename the path to the SQLite database storing the catalog.
+   * @param filename the path to the SQLite database storing the catalog. TODO add some sanity checks?
    * @return an initialized Catalog object ready to be used for experiments.
    * @throws FileNotFoundException if the given file does not exist.
    * @throws CatalogException if there is an error connecting to the database.
-   *
-   *           TODO add some sanity checks to the filename?
    */
   public static MasterCatalog open(final String catalogRoot)
       throws FileNotFoundException, CatalogException {
@@ -1032,7 +1024,7 @@ public final class MasterCatalog {
    * @param limit the maximum number of results to return. Any value <= 0 is interpreted as all results.
    * @param maxId return only queries with queryId <= maxId. Any value <= 0 is interpreted as no maximum.
    * @param minId return only queries with queryId >= minId. Any value <= 0 is interpreted as no minimum. Ignored if
-   *          maxId is present.
+   *        maxId is present.
    * @param searchTerm a token to match against the raw queries. If null, all queries will be returned.
    * @return a list of the status of all queries.
    * @throws CatalogException if there is an error in the MasterCatalog.
@@ -1138,57 +1130,87 @@ public final class MasterCatalog {
 
   /**
    * @param relationKey the name of the relation.
-   * @param storedRelationId the id of the stored relation (copy of the relation we want to read).
    * @return the list of workers that are involved in storing this relation.
    * @throws CatalogException if there is an error in the database.
    */
-  public Set<Integer> getWorkersForRelation(
-      final RelationKey relationKey, final Integer storedRelationId) throws CatalogException {
+  public @Nonnull Set<Integer> getWorkersForRelationKey(@Nonnull final RelationKey relationKey)
+      throws CatalogException {
     Objects.requireNonNull(relationKey);
     if (isClosed) {
       throw new CatalogException("Catalog is closed.");
     }
+    try {
+      Integer relationId =
+          queue
+              .execute(
+                  new SQLiteJob<Integer>() {
+                    @Override
+                    protected Integer job(final SQLiteConnection sqliteConnection)
+                        throws SQLiteException {
+                      /* Using the latest stored relation. */
+                      SQLiteStatement statement =
+                          sqliteConnection.prepare(
+                              "SELECT MAX(stored_relation_id) FROM stored_relations WHERE user_name = ? AND program_name = ? AND relation_name = ?;");
+                      try {
+                        statement.bind(1, relationKey.getUserName());
+                        statement.bind(2, relationKey.getProgramName());
+                        statement.bind(3, relationKey.getRelationName());
+                        if (statement.step()) {
+                          return statement.columnInt(0);
+                        } else {
+                          return null;
+                        }
+                      } finally {
+                        statement.dispose();
+                      }
+                    }
+                  })
+              .get();
+      if (relationId != null) {
+        return getWorkersForRelationId(relationId);
+      } else {
+        return ImmutableSet.of();
+      }
+    } catch (InterruptedException | ExecutionException e) {
+      throw new CatalogException(e);
+    }
+  }
 
+  /**
+   * @param relationKey the name of the relation.
+   * @param storedRelationId the id of the stored relation (copy of the relation we want to read).
+   * @return the list of workers that are involved in storing this relation.
+   * @throws CatalogException if there is an error in the database.
+   */
+  public @Nonnull Set<Integer> getWorkersForRelationId(@Nonnull Integer storedRelationId)
+      throws CatalogException {
+    Objects.requireNonNull(storedRelationId);
+    if (isClosed) {
+      throw new CatalogException("Catalog is closed.");
+    }
     try {
       return queue
           .execute(
               new SQLiteJob<Set<Integer>>() {
                 @Override
                 protected Set<Integer> job(final SQLiteConnection sqliteConnection)
-                    throws CatalogException, SQLiteException {
+                    throws SQLiteException {
+                  /* Get the list of associated workers. */
+                  SQLiteStatement statement =
+                      sqliteConnection.prepare(
+                          "SELECT worker_id FROM shards WHERE stored_relation_id = ?;");
                   try {
-                    Integer relationId = storedRelationId;
-                    /* First, if the storedRelationId is null we pick the first copy of this relation. */
-                    if (storedRelationId == null) {
-                      SQLiteStatement statement =
-                          sqliteConnection.prepare(
-                              "SELECT MIN(stored_relation_id) FROM stored_relations WHERE user_name = ? AND program_name = ? AND relation_name = ?;");
-                      statement.bind(1, relationKey.getUserName());
-                      statement.bind(2, relationKey.getProgramName());
-                      statement.bind(3, relationKey.getRelationName());
-                      if (!statement.step()) {
-                        statement.dispose();
-                        return null;
-                      }
-                      relationId = statement.columnInt(0);
-                      statement.dispose();
-                    }
-                    /* Get the list of associated workers. */
-                    SQLiteStatement statement =
-                        sqliteConnection.prepare(
-                            "SELECT worker_id FROM shards WHERE stored_relation_id = ?;");
-                    statement.bind(1, relationId);
+                    statement.bind(1, storedRelationId);
                     Set<Integer> ret = new HashSet<Integer>();
                     while (statement.step()) {
                       ret.add(statement.columnInt(0));
                     }
-                    statement.dispose();
                     if (ret.size() == 0) {
-                      return null;
+                      return ImmutableSet.of();
                     }
                     return ret;
-                  } catch (final SQLiteException e) {
-                    throw new CatalogException(e);
+                  } finally {
+                    statement.dispose();
                   }
                 }
               })
@@ -1659,9 +1681,7 @@ public final class MasterCatalog {
     }
   }
 
-  /*
-   * Mark indexes in the catalog
-   */
+  /* Mark indexes in the catalog */
 
   public void markIndexesInCatalog(
       @Nonnull final RelationKey relation, @Nonnull final List<IndexRef> indexes)
@@ -1708,9 +1728,7 @@ public final class MasterCatalog {
     }
   }
 
-  /*
-   * Register a function in the catalog
-   */
+  /* Register a function in the catalog */
 
   public void registerFunction(
       @Nonnull final String name,
