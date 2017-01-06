@@ -22,6 +22,7 @@ public final class RoundRobinPartitionFunction extends PartitionFunction {
 
   @Override
   public TupleBatch[] partition(@Nonnull final TupleBatch tb) {
+    LOGGER.info("Number of partitions: " + numPartitions());
     BitSet[] partitions = new BitSet[numPartitions()];
     for (int i = 0; i < tb.numTuples(); i++) {
       LOGGER.info("Current partition: " + curPartition);
