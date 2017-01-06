@@ -22,7 +22,7 @@ public class LimitTest {
 
   @Test
   public void testWithinBatchSizeLimit() throws DbException {
-    final int total = TupleUtils.get_Batch_size(Type.DOUBLE_TYPE);
+    final int total = TupleUtils.getBatchSize(Type.DOUBLE_TYPE);
     final long limit = 100;
     assertTrue(limit < total);
     BatchTupleSource source = new BatchTupleSource(TestUtils.range(total));
@@ -39,7 +39,7 @@ public class LimitTest {
 
   @Test
   public void testLimitZero() throws DbException {
-    final int total = 2 * TupleUtils.get_Batch_size(Type.DOUBLE_TYPE) + 2;
+    final int total = 2 * TupleUtils.getBatchSize(Type.DOUBLE_TYPE) + 2;
     final long limit = 0;
     assertTrue(limit < total);
     BatchTupleSource source = new BatchTupleSource(TestUtils.range(total));
@@ -72,8 +72,8 @@ public class LimitTest {
 
   @Test
   public void testSimplePrefix() throws DbException {
-    final int total = 2 * TupleUtils.get_Batch_size(Type.DOUBLE_TYPE) + 2;
-    final long limit = TupleUtils.get_Batch_size(Type.DOUBLE_TYPE) + 3;
+    final int total = 2 * TupleUtils.getBatchSize(Type.DOUBLE_TYPE) + 2;
+    final long limit = TupleUtils.getBatchSize(Type.DOUBLE_TYPE) + 3;
     assertTrue(limit < total);
     BatchTupleSource source = new BatchTupleSource(TestUtils.range(total));
     Limit limiter = new Limit(limit, source);

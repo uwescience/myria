@@ -1068,7 +1068,7 @@ public class StreamingAggTest {
   public void testSingleGroupAllAggLargeInput() throws DbException {
 
     final Schema schema = Schema.ofFields(Type.LONG_TYPE, "gkey", Type.LONG_TYPE, "value");
-    final int numTuples = 2 * TupleUtils.get_Batch_size(schema);
+    final int numTuples = 2 * TupleUtils.getBatchSize(schema);
 
     final TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
     // {0, i}
@@ -1125,7 +1125,7 @@ public class StreamingAggTest {
     final Schema schema =
         Schema.ofFields(Type.LONG_TYPE, "g0", Type.LONG_TYPE, "g1", Type.LONG_TYPE, "value");
     final TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
-    final int numTuples = 3 * TupleUtils.get_Batch_size(schema);
+    final int numTuples = 3 * TupleUtils.getBatchSize(schema);
     // split into 4 groups, each group may spread across different batches
     // {0, 0, i} in first group, {0, 1, i} in second, {0, 2, i} in third, {0, 3, i} in fourth
     int sumFirst = 0;
@@ -1233,8 +1233,8 @@ public class StreamingAggTest {
 
     final Schema schema = Schema.ofFields(Type.LONG_TYPE, "gkey", Type.LONG_TYPE, "value");
     final TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
-    final int numTuples = 3 * TupleUtils.get_Batch_size(schema) + 3;
-    final int batchSize = TupleUtils.get_Batch_size(schema);
+    final int numTuples = 3 * TupleUtils.getBatchSize(schema) + 3;
+    final int batchSize = TupleUtils.getBatchSize(schema);
     // gkey: 0, 1, 2, ..., numTuples-1; value: 1, 1, 1, ...
     for (long i = 0; i < numTuples; i++) {
       tbb.putLong(0, i);

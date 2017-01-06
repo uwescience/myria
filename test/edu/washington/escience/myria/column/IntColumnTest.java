@@ -38,7 +38,7 @@ public class IntColumnTest {
   @Test
   public void testFull() {
     final IntColumnBuilder builder = new IntColumnBuilder();
-    for (int i = 0; i < TupleUtils.get_Batch_size(Type.INT_TYPE); i++) {
+    for (int i = 0; i < TupleUtils.getBatchSize(Type.INT_TYPE); i++) {
       builder.appendInt(i);
     }
     builder.build();
@@ -47,10 +47,10 @@ public class IntColumnTest {
   @Test(expected = BufferOverflowException.class)
   public void testOverflow() {
     final IntColumnBuilder builder = new IntColumnBuilder();
-    for (int i = 0; i < TupleUtils.get_Batch_size(Type.INT_TYPE); i++) {
+    for (int i = 0; i < TupleUtils.getBatchSize(Type.INT_TYPE); i++) {
       builder.appendInt(i);
     }
-    builder.appendInt(TupleUtils.get_Batch_size(Type.INT_TYPE));
+    builder.appendInt(TupleUtils.getBatchSize(Type.INT_TYPE));
     builder.build();
   }
 }

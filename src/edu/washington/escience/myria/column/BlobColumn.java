@@ -19,7 +19,11 @@ public class BlobColumn extends Column<ByteBuffer> {
   private final ByteBuffer[] data;
   /** The number of existing rows in this column. */
   private final int position;
-
+  /**
+   * Blob column  for binary data.
+   * @param data in form of byteBuffer
+   * @param numData
+   */
   public BlobColumn(final ByteBuffer[] data, final int numData) {
     this.data = data;
     position = numData;

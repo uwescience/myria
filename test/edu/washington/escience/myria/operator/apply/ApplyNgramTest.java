@@ -23,7 +23,7 @@ import edu.washington.escience.myria.util.TestEnvVars;
 
 public class ApplyNgramTest {
 
-  private static final long EXPECTED_RESULTS = 2 * TupleUtils.get_Batch_size(Type.STRING_TYPE) + 1;
+  private static final long EXPECTED_RESULTS = 2 * TupleUtils.getBatchSize(Type.STRING_TYPE) + 1;
   private static final long NGRAM_LEN = 3;
   private static final long CHAR_SEQ_LEN = EXPECTED_RESULTS + NGRAM_LEN - 1;
 

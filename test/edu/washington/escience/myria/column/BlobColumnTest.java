@@ -27,8 +27,6 @@ public class BlobColumnTest {
     final ColumnMessage serialized = original.build().serializeToProto();
     final BlobColumn deserialized =
         BlobColumnBuilder.buildFromProtobuf(serialized, original.size());
-    //System.out.print(original.build().toString());
-    //System.out.print(deserialized.toString());
 
     assertTrue(original.size() == deserialized.size());
   }

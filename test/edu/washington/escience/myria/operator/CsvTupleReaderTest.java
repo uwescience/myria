@@ -228,7 +228,7 @@ public class CsvTupleReaderTest {
     ByteArrayOutputStream bytes = new ByteArrayOutputStream();
     PrintStream printedBytes = new PrintStream(bytes);
     /* Print 2*TupleBatch.BATCH_SIZE lines */
-    for (int i = 0; i < TupleUtils.get_Batch_size(Type.INT_TYPE) * 2; ++i) {
+    for (int i = 0; i < TupleUtils.getBatchSize(Type.INT_TYPE) * 2; ++i) {
       printedBytes.print(i);
       printedBytes.print('\n');
     }
@@ -238,7 +238,7 @@ public class CsvTupleReaderTest {
             new CsvTupleReader(
                 Schema.of(ImmutableList.of(Type.INT_TYPE), ImmutableList.of("col1"))),
             new ByteArraySource(bytes.toByteArray()));
-    assertEquals(2 * TupleUtils.get_Batch_size(Type.INT_TYPE), getRowCount(scanBytes));
+    assertEquals(2 * TupleUtils.getBatchSize(Type.INT_TYPE), getRowCount(scanBytes));
   }
 
   @Test

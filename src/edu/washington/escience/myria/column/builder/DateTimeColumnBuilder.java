@@ -43,7 +43,7 @@ public final class DateTimeColumnBuilder extends ColumnBuilder<DateTime> {
   /** Constructs an empty column that can hold up to TupleBatch.BATCH_SIZE elements. */
   public DateTimeColumnBuilder() {
     numDates = 0;
-    data = new DateTime[TupleUtils.get_Batch_size(Type.DATETIME_TYPE)];
+    data = new DateTime[TupleUtils.getBatchSize(Type.DATETIME_TYPE)];
   }
 
   /**
@@ -84,7 +84,7 @@ public final class DateTimeColumnBuilder extends ColumnBuilder<DateTime> {
     Preconditions.checkState(
         !built, "No further changes are allowed after the builder has built the column.");
     Objects.requireNonNull(value, "value");
-    if (numDates >= TupleUtils.get_Batch_size(Type.DATETIME_TYPE)) {
+    if (numDates >= TupleUtils.getBatchSize(Type.DATETIME_TYPE)) {
       throw new BufferOverflowException();
     }
     data[numDates++] = value;

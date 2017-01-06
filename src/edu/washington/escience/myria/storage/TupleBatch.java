@@ -54,7 +54,7 @@ public class TupleBatch implements ReadableTable, Serializable {
     }
     columns = b.build();
     isEOI = isEoi;
-    batchSize = TupleUtils.get_Batch_size(schema);
+    batchSize = TupleUtils.getBatchSize(schema);
   }
 
   /*
@@ -118,7 +118,7 @@ public class TupleBatch implements ReadableTable, Serializable {
     }
     this.numTuples = numTuples;
     this.isEOI = isEOI;
-    batchSize = TupleUtils.get_Batch_size(schema);
+    batchSize = TupleUtils.getBatchSize(schema);
   }
 
   /**

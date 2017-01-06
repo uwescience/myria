@@ -19,6 +19,6 @@ public abstract class AbstractDbInsert extends RootOperator implements DbWriter 
    * @param child the source of tuples.
    */
   public AbstractDbInsert(final Operator child) {
-    super(child, TupleUtils.get_Batch_size(child.generateSchema()));
+    super(child, TupleUtils.getBatchSize(child.generateSchema()));
   }
 }

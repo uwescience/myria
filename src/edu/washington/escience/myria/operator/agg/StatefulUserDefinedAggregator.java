@@ -29,11 +29,14 @@ public class StatefulUserDefinedAggregator extends UserDefinedAggregator {
   private static final org.slf4j.Logger LOGGER =
       org.slf4j.LoggerFactory.getLogger(StatefulUserDefinedAggregator.class);
 
+  /**
+   *   list for holding state.
+   */
   private List<TupleBatch> ltb;
-
   /**
    * @param state the initialized state of the tuple
    * @param updateEvaluator updates the state given an input row
+   * @param pyUDFEvaluators python expression evaluators.
    * @param emitEvaluators the evaluators that finalize the state
    * @param resultSchema the schema of the tuples produced by this aggregator
    */
@@ -52,26 +55,26 @@ public class StatefulUserDefinedAggregator extends UserDefinedAggregator {
       ltb = new ArrayList<>();
     }
     if (!ltb.contains(from)) {
-      // ths is not going to work if the tuplebatch has more than one tuple
+
       ltb.add((TupleBatch) from);
     }
     try {
       if (updateEvaluator != null) {
-        // this aggreagte has a script eval
+
         for (int row = 0; row < from.numTuples(); ++row) {
           addRow(from, row, state);
         }
       }
 
     } catch (Exception e) {
-      // LOGGER.error("Error updating UDA state", e);
+
       throw new DbException("Error updating UDA state", e);
     }
   }
 
   @Override
   public void add(final List<TupleBatch> from, final Object state) throws DbException {
-    // LOGGER.info("add tuple called");
+
     ltb = from;
   }
 
@@ -84,7 +87,7 @@ public class StatefulUserDefinedAggregator extends UserDefinedAggregator {
         updateEvaluator.evaluate(from, row, stateTuple, stateTuple);
       }
     } catch (Exception e) {
-      // LOGGER.error("Error updating UDA state", e);
+
       throw new DbException("Error updating UDA state", e);
     }
   }
@@ -98,7 +101,7 @@ public class StatefulUserDefinedAggregator extends UserDefinedAggregator {
     // compute results over the tuplebatch list
     if (pyUDFEvaluators.size() > 0) {
       for (int i = 0; i < pyUDFEvaluators.size(); i++) {
-        // LOGGER.info("trying to update state variable");
+
         if (ltb != null && ltb.size() != 0) {
           pyUDFEvaluators.get(i).evalBatch(ltb, stateTuple, stateTuple);
 

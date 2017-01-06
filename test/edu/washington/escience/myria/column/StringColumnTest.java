@@ -34,7 +34,7 @@ public class StringColumnTest {
   @Test
   public void testFull() {
     final StringColumnBuilder builder = new StringColumnBuilder();
-    for (int i = 0; i < TupleUtils.get_Batch_size(Type.STRING_TYPE); i++) {
+    for (int i = 0; i < TupleUtils.getBatchSize(Type.STRING_TYPE); i++) {
       builder.appendString("true");
     }
     builder.build();
@@ -43,7 +43,7 @@ public class StringColumnTest {
   @Test(expected = BufferOverflowException.class)
   public void testOverflow() {
     final StringColumnBuilder builder = new StringColumnBuilder();
-    for (int i = 0; i < TupleUtils.get_Batch_size(Type.STRING_TYPE); i++) {
+    for (int i = 0; i < TupleUtils.getBatchSize(Type.STRING_TYPE); i++) {
       builder.appendString("false");
     }
     builder.appendString("true");

@@ -82,7 +82,7 @@ public class SQLiteTupleBatchIterator implements Iterator<TupleBatch> {
      * Loop through resultSet, adding one row at a time. Stop when numTuples hits BATCH_SIZE or there are no more
      * results.
      */
-    int batch_size = TupleUtils.get_Batch_size(schema);
+    int batch_size = TupleUtils.getBatchSize(schema);
     int numTuples;
     try {
       for (numTuples = 0; numTuples < batch_size && statement.hasRow(); ++numTuples) {

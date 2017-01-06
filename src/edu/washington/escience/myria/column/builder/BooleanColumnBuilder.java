@@ -43,7 +43,7 @@ public final class BooleanColumnBuilder extends ColumnBuilder<Boolean> {
     data = new BitSet();
     numBits = 0;
     Schema schema = new Schema(Arrays.asList(Type.BOOLEAN_TYPE));
-    int batchSize = TupleUtils.get_Batch_size(schema);
+    int batchSize = TupleUtils.getBatchSize(schema);
     capacity = batchSize;
   }
 
@@ -93,7 +93,7 @@ public final class BooleanColumnBuilder extends ColumnBuilder<Boolean> {
     Preconditions.checkArgument(
         !built, "No further changes are allowed after the builder has built the column.");
 
-    if (numBits >= TupleUtils.get_Batch_size(Type.BOOLEAN_TYPE)) {
+    if (numBits >= TupleUtils.getBatchSize(Type.BOOLEAN_TYPE)) {
       throw new BufferOverflowException();
     }
     data.set(numBits++, value);

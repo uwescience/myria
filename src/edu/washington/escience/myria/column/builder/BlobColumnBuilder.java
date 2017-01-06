@@ -40,7 +40,7 @@ public final class BlobColumnBuilder extends ColumnBuilder<ByteBuffer> {
   /** Constructs an empty column that can hold up to TupleBatch.BATCH_SIZE elements. */
   public BlobColumnBuilder() {
     numBB = 0;
-    data = new ByteBuffer[TupleUtils.get_Batch_size(Type.BLOB_TYPE)];
+    data = new ByteBuffer[TupleUtils.getBatchSize(Type.BLOB_TYPE)];
   }
 
   /**
@@ -86,7 +86,7 @@ public final class BlobColumnBuilder extends ColumnBuilder<ByteBuffer> {
     Preconditions.checkState(
         !built, "No further changes are allowed after the builder has built the column.");
     Objects.requireNonNull(value, "value");
-    if (numBB >= TupleUtils.get_Batch_size(Type.BLOB_TYPE)) {
+    if (numBB >= TupleUtils.getBatchSize(Type.BLOB_TYPE)) {
       throw new BufferOverflowException();
     }
     data[numBB++] = value;

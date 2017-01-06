@@ -31,7 +31,7 @@ public class LeapFrogJoinTest {
       leftTbb.putString(1, "hello world");
     }
 
-    for (int i = 0; i < TupleUtils.get_Batch_size(Type.DOUBLE_TYPE) + 1; ++i) {
+    for (int i = 0; i < TupleUtils.getBatchSize(Type.DOUBLE_TYPE) + 1; ++i) {
       rightTbb.putLong(0, 0);
       rightTbb.putString(1, "hello world");
     }
@@ -60,7 +60,7 @@ public class LeapFrogJoinTest {
       }
     }
     join.close();
-    assertEquals(2 * (TupleUtils.get_Batch_size(Type.DOUBLE_TYPE) + 1), batches.numTuples());
+    assertEquals(2 * (TupleUtils.getBatchSize(Type.DOUBLE_TYPE) + 1), batches.numTuples());
   }
 
   @Test

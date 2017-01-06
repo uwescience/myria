@@ -33,7 +33,7 @@ public final class FloatColumnBuilder extends ColumnBuilder<Float> {
 
   /** Constructs an empty column that can hold up to TupleBatch.BATCH_SIZE elements. */
   public FloatColumnBuilder() {
-    data = FloatBuffer.allocate(TupleUtils.get_Batch_size(Type.FLOAT_TYPE));
+    data = FloatBuffer.allocate(TupleUtils.getBatchSize(Type.FLOAT_TYPE));
   }
 
   /**

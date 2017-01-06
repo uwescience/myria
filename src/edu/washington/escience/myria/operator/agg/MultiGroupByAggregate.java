@@ -40,9 +40,6 @@ public final class MultiGroupByAggregate extends UnaryOperator {
 
   /** Java requires this. **/
   private static final long serialVersionUID = 1L;
-  /** logger for this class. */
-  private static final org.slf4j.Logger LOGGER =
-      org.slf4j.LoggerFactory.getLogger(MultiGroupByAggregate.class);
 
   /** Holds the distinct grouping keys. */
   private transient TupleBuffer groupKeys;
@@ -53,7 +50,7 @@ public final class MultiGroupByAggregate extends UnaryOperator {
   /** Holds the corresponding TB for each group key in {@link #groupKeys}. */
   private transient List<List<TupleBatch>> tbgroupState;
   /** Holds the bitset for each group key in {@link #groupKeys}. */
-  HashMap<Integer, BitSet> bs = new HashMap<Integer, BitSet>();
+  private HashMap<Integer, BitSet> bs = new HashMap<Integer, BitSet>();
   /** Maps the hash of a grouping key to a list of indices in {@link #groupKeys}. */
   private transient IntObjectHashMap<IntArrayList> groupKeyMap;
   /** The schema of the columns indicated by the group keys. */

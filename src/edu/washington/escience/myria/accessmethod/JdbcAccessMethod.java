@@ -225,7 +225,7 @@ public final class JdbcAccessMethod extends AccessMethod {
   public Iterator<TupleBatch> tupleBatchIteratorFromQuery(
       final String queryString, final Schema schema) throws DbException {
     Objects.requireNonNull(jdbcConnection, "jdbcConnection");
-    int batch_size = TupleUtils.get_Batch_size(schema);
+    int batch_size = TupleUtils.getBatchSize(schema);
     try {
       PreparedStatement statement;
       if (jdbcInfo.getDbms().equals(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL)) {
@@ -743,7 +743,7 @@ class JdbcTupleBatchIterator implements Iterator<TupleBatch> {
     final int numFields = schema.numColumns();
     final List<ColumnBuilder<?>> columnBuilders = ColumnFactory.allocateColumns(schema);
     int numTuples = 0;
-    int batch_size = TupleUtils.get_Batch_size(schema);
+    int batch_size = TupleUtils.getBatchSize(schema);
     for (numTuples = 0; numTuples < batch_size; ++numTuples) {
       if (!resultSet.next()) {
         final Connection connection = resultSet.getStatement().getConnection();

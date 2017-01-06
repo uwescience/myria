@@ -34,7 +34,7 @@ public class DateTimeColumnTest {
   @Test
   public void testFull() {
     final DateTimeColumnBuilder builder = new DateTimeColumnBuilder();
-    for (int i = 0; i < TupleUtils.get_Batch_size(Type.DATETIME_TYPE); i++) {
+    for (int i = 0; i < TupleUtils.getBatchSize(Type.DATETIME_TYPE); i++) {
       builder.appendDateTime(new DateTime());
     }
     builder.build();
@@ -43,7 +43,7 @@ public class DateTimeColumnTest {
   @Test(expected = BufferOverflowException.class)
   public void testOverflow() {
     final DateTimeColumnBuilder builder = new DateTimeColumnBuilder();
-    for (int i = 0; i < TupleUtils.get_Batch_size(Type.DATETIME_TYPE); i++) {
+    for (int i = 0; i < TupleUtils.getBatchSize(Type.DATETIME_TYPE); i++) {
       builder.appendDateTime(new DateTime());
     }
     builder.appendDateTime(new DateTime());

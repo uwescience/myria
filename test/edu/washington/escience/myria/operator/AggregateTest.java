@@ -394,7 +394,7 @@ public class AggregateTest {
 
   @Test
   public void testSingleGroupAvg() throws DbException, InterruptedException {
-    final int numTuples = 2 * TupleUtils.get_Batch_size(Type.DOUBLE_TYPE) + 1;
+    final int numTuples = 2 * TupleUtils.getBatchSize(Type.DOUBLE_TYPE) + 1;
 
     final TupleBatchBuffer testBase = generateRandomTuples(numTuples);
     // group by name, aggregate on id
@@ -419,7 +419,7 @@ public class AggregateTest {
 
   @Test
   public void testSingleGroupMax() throws DbException, InterruptedException {
-    final int numTuples = 2 * TupleUtils.get_Batch_size(Type.LONG_TYPE) + 1;
+    final int numTuples = 2 * TupleUtils.getBatchSize(Type.LONG_TYPE) + 1;
 
     final TupleBatchBuffer testBase = generateRandomTuples(numTuples);
     // group by name, aggregate on id
@@ -462,7 +462,7 @@ public class AggregateTest {
 
   @Test
   public void testSingleGroupMin() throws DbException, InterruptedException {
-    final int numTuples = 2 * TupleUtils.get_Batch_size(Type.LONG_TYPE) + 1;
+    final int numTuples = 2 * TupleUtils.getBatchSize(Type.LONG_TYPE) + 1;
 
     final TupleBatchBuffer testBase = generateRandomTuples(numTuples);
     // group by name, aggregate on id
@@ -505,7 +505,7 @@ public class AggregateTest {
 
   @Test
   public void testSingleGroupSum() throws DbException, InterruptedException {
-    final int numTuples = 2 * TupleUtils.get_Batch_size(Type.DOUBLE_TYPE) + 1;
+    final int numTuples = 2 * TupleUtils.getBatchSize(Type.DOUBLE_TYPE) + 1;
 
     final TupleBatchBuffer testBase = generateRandomTuples(numTuples);
     // group by name, aggregate on id
@@ -577,7 +577,7 @@ public class AggregateTest {
 
   @Test
   public void testMultiGroupSum() throws DbException {
-    final int numTuples = 2 * TupleUtils.get_Batch_size(Type.DOUBLE_TYPE) + 2;
+    final int numTuples = 2 * TupleUtils.getBatchSize(Type.DOUBLE_TYPE) + 2;
     final Schema schema =
         new Schema(
             ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE, Type.LONG_TYPE, Type.LONG_TYPE),

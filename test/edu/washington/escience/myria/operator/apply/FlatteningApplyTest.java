@@ -26,7 +26,7 @@ public class FlatteningApplyTest {
 
   private final String SEPARATOR = ",";
   private final int SPLIT_MAX = 10;
-  private final long COUNTER_MAX = 2 * TupleUtils.get_Batch_size(Type.LONG_TYPE) + 1;
+  private final long COUNTER_MAX = 2 * TupleUtils.getBatchSize(Type.LONG_TYPE) + 1;
   private final long EXPECTED_RESULTS = SPLIT_MAX * COUNTER_MAX;
 
   @Test

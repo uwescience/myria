@@ -21,7 +21,7 @@ import edu.washington.escience.myria.util.TestEnvVars;
  * Tests that crossing with a singleton works and catches the major error cases.
  */
 public class CrossWithSingletonTest {
-  private final int NUM_TUPLES = TupleUtils.get_Batch_size(Type.DOUBLE_TYPE) * 3 + 3;
+  private final int NUM_TUPLES = TupleUtils.getBatchSize(Type.DOUBLE_TYPE) * 3 + 3;
 
   private BatchTupleSource dataSource = null;
   private TupleBatch singleton = null;

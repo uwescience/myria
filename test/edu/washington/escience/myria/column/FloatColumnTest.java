@@ -32,7 +32,7 @@ public class FloatColumnTest {
   @Test
   public void testFull() {
     final FloatColumnBuilder builder = new FloatColumnBuilder();
-    for (int i = 0; i < TupleUtils.get_Batch_size(Type.FLOAT_TYPE); i++) {
+    for (int i = 0; i < TupleUtils.getBatchSize(Type.FLOAT_TYPE); i++) {
       builder.appendFloat(i * 1.0f);
     }
     builder.build();
@@ -41,7 +41,7 @@ public class FloatColumnTest {
   @Test(expected = BufferOverflowException.class)
   public void testOverflow() {
     final FloatColumnBuilder builder = new FloatColumnBuilder();
-    for (int i = 0; i < TupleUtils.get_Batch_size(Type.FLOAT_TYPE); i++) {
+    for (int i = 0; i < TupleUtils.getBatchSize(Type.FLOAT_TYPE); i++) {
       builder.appendFloat(i * 1.0f);
     }
     builder.appendFloat(0.0f);

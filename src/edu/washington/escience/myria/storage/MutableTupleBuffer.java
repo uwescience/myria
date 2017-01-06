@@ -34,9 +34,12 @@ public class MutableTupleBuffer implements ReadableTable, AppendableTable, Clone
   private int numColumnsReady;
   /** Internal state representing the number of tuples in the in-progress TupleBatch. */
   private int currentInProgressTuples;
-  /** BatchSize*/
+  /** BatchSize.*/
   private int batchSize;
-
+  /**
+   *
+   * @return batchSize for the tuple batch.
+   */
   public int getBatchSize() {
     return batchSize;
   }
@@ -55,7 +58,7 @@ public class MutableTupleBuffer implements ReadableTable, AppendableTable, Clone
     columnsReady = new BitSet(numColumns);
     numColumnsReady = 0;
     currentInProgressTuples = 0;
-    batchSize = TupleUtils.get_Batch_size(schema);
+    batchSize = TupleUtils.getBatchSize(schema);
   }
 
   /**

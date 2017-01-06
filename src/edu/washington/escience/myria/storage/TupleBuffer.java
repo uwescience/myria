@@ -67,7 +67,7 @@ public class TupleBuffer implements ReadableTable, AppendableTable {
     currentBatchSize = 0;
     finalized = false;
     numTuples = 0;
-    batchSize = TupleUtils.get_Batch_size(schema);
+    batchSize = TupleUtils.getBatchSize(schema);
   }
 
   /**

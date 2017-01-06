@@ -34,7 +34,7 @@ public final class IntColumnBuilder extends ColumnBuilder<Integer> {
 
   /** Constructs an empty column that can hold up to TupleBatch.BATCH_SIZE elements. */
   public IntColumnBuilder() {
-    data = IntBuffer.allocate(TupleUtils.get_Batch_size(Type.INT_TYPE));
+    data = IntBuffer.allocate(TupleUtils.getBatchSize(Type.INT_TYPE));
   }
 
   /**

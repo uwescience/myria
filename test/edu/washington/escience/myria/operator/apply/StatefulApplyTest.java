@@ -25,7 +25,7 @@ import edu.washington.escience.myria.util.TestEnvVars;
 
 public class StatefulApplyTest {
 
-  private final int NUM_TUPLES = 2 * TupleUtils.get_Batch_size(Type.LONG_TYPE);
+  private final int NUM_TUPLES = 2 * TupleUtils.getBatchSize(Type.LONG_TYPE);
   private final int SMALL_NUM_TUPLES = 10;
 
   @Test

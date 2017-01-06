@@ -24,7 +24,7 @@ import edu.washington.escience.myria.util.TestEnvVars;
 public class ApplySplitTest {
 
   private final String SEPARATOR = ",";
-  private final long EXPECTED_RESULTS = 2 * TupleUtils.get_Batch_size(Type.STRING_TYPE) + 1;
+  private final long EXPECTED_RESULTS = 2 * TupleUtils.getBatchSize(Type.STRING_TYPE) + 1;
 
   @Test
   public void testApply() throws DbException {

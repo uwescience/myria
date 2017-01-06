@@ -62,7 +62,7 @@ public class TupleBatchBuffer implements AppendableTable {
     currentInProgressTuples = 0;
     lastPoppedTime = System.nanoTime();
     readyTuplesNum = 0;
-    batchSize = TupleUtils.get_Batch_size(schema);
+    batchSize = TupleUtils.getBatchSize(schema);
   }
 
   public int getBatchSize() {

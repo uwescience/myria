@@ -36,17 +36,20 @@ public class UserDefinedAggregator implements Aggregator {
    * One evaluator for each expression in {@link #emitExpressions}.
    */
   protected final List<GenericEvaluator> emitEvaluators;
+  /**
+   * One evaluator for each python expression.
+   */
   protected final List<PythonUDFEvaluator> pyUDFEvaluators;
 
   /**
    * The Schema of the tuples produced by this aggregator.
    */
   protected final Schema resultSchema;
-  // private final List<Integer> needsPyEvaluator;
 
   /**
    * @param state the initialized state of the tuple
    * @param updateEvaluator updates the state given an input row
+   * @param pyUDFEvaluators for python expression evaluation.
    * @param emitEvaluators the evaluators that finalize the state
    * @param resultSchema the schema of the tuples produced by this aggregator
    */

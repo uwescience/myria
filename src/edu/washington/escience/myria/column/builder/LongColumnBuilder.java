@@ -33,7 +33,7 @@ public final class LongColumnBuilder extends ColumnBuilder<Long> {
 
   /** Constructs an empty column that can hold up to TupleBatch.BATCH_SIZE elements. */
   public LongColumnBuilder() {
-    data = LongBuffer.allocate(TupleUtils.get_Batch_size(Type.LONG_TYPE));
+    data = LongBuffer.allocate(TupleUtils.getBatchSize(Type.LONG_TYPE));
   }
 
   /**

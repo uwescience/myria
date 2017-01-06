@@ -45,7 +45,7 @@ public class BooleanColumnTest {
   @Test
   public void testFull() {
     final BooleanColumnBuilder builder = new BooleanColumnBuilder();
-    for (int i = 0; i < TupleUtils.get_Batch_size(Type.BOOLEAN_TYPE); i++) {
+    for (int i = 0; i < TupleUtils.getBatchSize(Type.BOOLEAN_TYPE); i++) {
       builder.appendBoolean(true);
     }
     builder.build();
@@ -54,7 +54,7 @@ public class BooleanColumnTest {
   @Test(expected = BufferOverflowException.class)
   public void testOverflow() {
     final BooleanColumnBuilder builder = new BooleanColumnBuilder();
-    for (int i = 0; i < TupleUtils.get_Batch_size(Type.BOOLEAN_TYPE); i++) {
+    for (int i = 0; i < TupleUtils.getBatchSize(Type.BOOLEAN_TYPE); i++) {
       builder.appendBoolean(false);
     }
     builder.appendBoolean(true);

@@ -27,7 +27,7 @@ public class DoubleColumnTest {
   @Test
   public void testFull() {
     final DoubleColumnBuilder builder = new DoubleColumnBuilder();
-    for (int i = 0; i < TupleUtils.get_Batch_size(Type.DOUBLE_TYPE); i++) {
+    for (int i = 0; i < TupleUtils.getBatchSize(Type.DOUBLE_TYPE); i++) {
       builder.appendDouble(i * 1.0);
     }
     builder.build();
@@ -36,7 +36,7 @@ public class DoubleColumnTest {
   @Test(expected = BufferOverflowException.class)
   public void testOverflow() {
     final DoubleColumnBuilder builder = new DoubleColumnBuilder();
-    for (int i = 0; i < TupleUtils.get_Batch_size(Type.DOUBLE_TYPE); i++) {
+    for (int i = 0; i < TupleUtils.getBatchSize(Type.DOUBLE_TYPE); i++) {
       builder.appendDouble(i * 1.0);
     }
     builder.appendDouble(0.0);

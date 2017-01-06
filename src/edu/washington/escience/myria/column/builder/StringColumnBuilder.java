@@ -41,7 +41,7 @@ public final class StringColumnBuilder extends ColumnBuilder<String> {
   /** Constructs an empty column that can hold up to TupleBatch.BATCH_SIZE elements. */
   public StringColumnBuilder() {
     numStrings = 0;
-    data = new String[TupleUtils.get_Batch_size(Type.STRING_TYPE)];
+    data = new String[TupleUtils.getBatchSize(Type.STRING_TYPE)];
   }
 
   /**
@@ -85,7 +85,7 @@ public final class StringColumnBuilder extends ColumnBuilder<String> {
     Preconditions.checkState(
         !built, "No further changes are allowed after the builder has built the column.");
     Objects.requireNonNull(value, "value");
-    if (numStrings >= TupleUtils.get_Batch_size(Type.STRING_TYPE)) {
+    if (numStrings >= TupleUtils.getBatchSize(Type.STRING_TYPE)) {
       throw new BufferOverflowException();
     }
     data[numStrings++] = value;

@@ -29,7 +29,7 @@ public final class DoubleColumn extends Column<Double> {
    * */
   public DoubleColumn(final double[] data, final int numData) {
     Preconditions.checkNotNull(data);
-    Preconditions.checkArgument(numData <= TupleUtils.get_Batch_size(Type.DOUBLE_TYPE));
+    Preconditions.checkArgument(numData <= TupleUtils.getBatchSize(Type.DOUBLE_TYPE));
     this.data = data;
     position = numData;
   }

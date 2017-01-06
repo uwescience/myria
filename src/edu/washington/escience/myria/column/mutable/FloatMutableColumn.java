@@ -27,7 +27,7 @@ public final class FloatMutableColumn extends MutableColumn<Float> {
    * */
   public FloatMutableColumn(final float[] data, final int numData) {
     Preconditions.checkNotNull(data);
-    Preconditions.checkArgument(numData <= TupleUtils.get_Batch_size(Type.FLOAT_TYPE));
+    Preconditions.checkArgument(numData <= TupleUtils.getBatchSize(Type.FLOAT_TYPE));
     this.data = data;
     position = numData;
   }

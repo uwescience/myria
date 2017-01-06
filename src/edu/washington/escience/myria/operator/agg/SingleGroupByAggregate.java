@@ -92,10 +92,16 @@ public class SingleGroupByAggregate extends UnaryOperator {
    */
   private transient DoubleObjectHashMap<Object[]> doubleAggState;
   /**
-   * The aggregators that will initialize and update the state.
+   * HashMap containing the tuplebatches.
    */
   private transient HashMap<Object, List<TupleBatch>> ltb;
+  /**
+   * Hashmap containing the bitset.
+   */
   private transient HashMap<Object, BitSet> tbbs;
+  /**
+   * The aggregators that will initialize and update the state.
+   */
   private Aggregator[] aggregators;
 
   /**
@@ -225,7 +231,7 @@ public class SingleGroupByAggregate extends UnaryOperator {
             .getClass()
             .getName()
             .equals(StatefulUserDefinedAggregator.class.getName())) {
-          setBitset(tb, i, groupAgg);
+          setBitset(tb, i);
         } else {
           aggregators[agg].addRow(tb, i, groupAgg[agg]);
         }
@@ -238,7 +244,11 @@ public class SingleGroupByAggregate extends UnaryOperator {
       }
     }
   }
-
+  /**
+   * Update the list of tuple batch.
+   * @param table tb to be added.
+   * @throws DbException if there is an error.
+   */
   private void updateltbGroups(final TupleBatch table) throws DbException {
 
     switch (gColumnType) {
@@ -365,9 +375,13 @@ public class SingleGroupByAggregate extends UnaryOperator {
         throw new DbException("type not supported for SingleColumnGroupby");
     }
   }
-
-  private void setBitset(final ReadableTable table, final int row, final Object[] groupAgg)
-      throws DbException {
+  /**
+   * Private method to update bitset.
+   * @param table tb containing the tuple.
+   * @param row row to be update.
+   * @throws DbException in case of error
+   */
+  private void setBitset(final ReadableTable table, final int row) throws DbException {
 
     BitSet bs;
     switch (gColumnType) {
@@ -487,7 +501,7 @@ public class SingleGroupByAggregate extends UnaryOperator {
   /**
    * @param resultBuffer where the results are stored.
    * @throws DbException if there is an error.
-   * @throws IOException
+   * @throws IOException if there is an error.
    */
   private void generateResult(final TupleBatchBuffer resultBuffer) throws DbException, IOException {
 

@@ -32,7 +32,7 @@ public class UserDefinedAggregatorTest {
   private final ObjectReader reader =
       MyriaJsonMapperProvider.getReader().withType(AggregatorFactory.class);
   private final ObjectWriter writer = MyriaJsonMapperProvider.getWriter();
-  private final int NUM_TUPLES = 2 * TupleUtils.get_Batch_size(Type.LONG_TYPE);
+  private final int NUM_TUPLES = 2 * TupleUtils.getBatchSize(Type.LONG_TYPE);
   private final int NUM_TUPLES_20K = 2 * 10000;
 
   /**

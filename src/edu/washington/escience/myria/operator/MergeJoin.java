@@ -454,11 +454,11 @@ public final class MergeJoin extends BinaryOperator {
     // not exact but good approximation
     final int leftSizeOfGroupOfEqualTuples =
         leftRowIndex
-            + TupleUtils.get_Batch_size(generateSchema()) * (leftBatches.size() - 1)
+            + TupleUtils.getBatchSize(generateSchema()) * (leftBatches.size() - 1)
             - leftBeginIndex;
     final int rightSizeOfGroupOfEqualTuples =
         rightRowIndex
-            + TupleUtils.get_Batch_size(generateSchema()) * (rightBatches.size() - 1)
+            + TupleUtils.getBatchSize(generateSchema()) * (rightBatches.size() - 1)
             - rightBeginIndex;
     final boolean advanceLeftFirst = leftSizeOfGroupOfEqualTuples > rightSizeOfGroupOfEqualTuples;
 

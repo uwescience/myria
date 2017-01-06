@@ -33,7 +33,7 @@ public final class DoubleColumnBuilder extends ColumnBuilder<Double> {
 
   /** Constructs an empty column that can hold up to TupleBatch.BATCH_SIZE elements. */
   public DoubleColumnBuilder() {
-    data = DoubleBuffer.allocate(TupleUtils.get_Batch_size(Type.DOUBLE_TYPE));
+    data = DoubleBuffer.allocate(TupleUtils.getBatchSize(Type.DOUBLE_TYPE));
   }
 
   /**

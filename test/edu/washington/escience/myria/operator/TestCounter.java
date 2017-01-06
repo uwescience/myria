@@ -20,7 +20,7 @@ public class TestCounter {
 
   @Test
   public void test() throws DbException {
-    long numTuples = 5 * TupleUtils.get_Batch_size(Type.LONG_TYPE) + 3;
+    long numTuples = 5 * TupleUtils.getBatchSize(Type.LONG_TYPE) + 3;
     String columnName = "Count";
 
     /* Plan: numTuples tuples, followed by a Counter. */
