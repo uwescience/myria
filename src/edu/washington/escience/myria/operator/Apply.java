@@ -124,6 +124,12 @@ public class Apply extends UnaryOperator {
     // batches from the child until we have a full batch or the child returns null.
     while (!outputBuffer.hasFilledTB()) {
       TupleBatch inputTuples = getChild().nextReady();
+      if (child.eos()) {
+        for (GenericEvaluator evaluator : emitEvaluators) {
+          LOGGER.info("calling send EOS for evaluator");
+          evaluator.sendEos();
+        }
+      }
       if (inputTuples != null) {
         // Evaluate expressions on each column and store counts and results.
         List<ReadableColumn> resultCountColumns = new ArrayList<>();

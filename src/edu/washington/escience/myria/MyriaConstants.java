@@ -352,7 +352,8 @@ public final class MyriaConstants {
   public static final int PYTHON_EXCEPTION = -3;
   /** python function return is null.*/
   public static final int NULL_LENGTH = -5;
-
+  /** Send EOS tp python strea, is null.*/
+  public static final int EOS = -4;
   /**
    * Python type enum.
    */
@@ -361,7 +362,7 @@ public final class MyriaConstants {
     LONG(2),
     FLOAT(3),
     DOUBLE(4),
-    BYTES(5);
+    BLOB(5);
     private int val;
 
     PythonType(final int val) {

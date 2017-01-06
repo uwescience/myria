@@ -74,8 +74,8 @@ public final class BlobColumnBuilder extends ColumnBuilder<ByteBuffer> {
     ByteBuffer[] newData = new ByteBuffer[numTuples];
     ByteBuffer data = BlobColumn.getData().asReadOnlyByteBuffer();
     for (int i = 0; i < numTuples; i++) {
-      // TODO: check: do I need to copy the data here?
-      newData[i] = data;
+      newData[i] = ByteBuffer.allocate(data.capacity());
+      newData[i].put(data);
     }
 
     return new BlobColumnBuilder(newData, numTuples).build();

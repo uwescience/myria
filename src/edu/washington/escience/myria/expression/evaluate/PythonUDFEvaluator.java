@@ -36,6 +36,7 @@ import edu.washington.escience.myria.operator.Apply;
 import edu.washington.escience.myria.operator.StatefulApply;
 import edu.washington.escience.myria.storage.AppendableTable;
 import edu.washington.escience.myria.storage.ReadableTable;
+import edu.washington.escience.myria.storage.Tuple;
 import edu.washington.escience.myria.storage.TupleBatch;
 
 /**
@@ -51,14 +52,13 @@ public class PythonUDFEvaluator extends GenericEvaluator {
 
   /** python worker process. */
   private PythonWorker pyWorker;
-  /** Does python function need state?*/
-  private boolean needsState = false;
   /** index of state column. */
-  private int stateColumnIdx = -1;
+  private final boolean[] isStateColumn;
   /** tuple size to be sent to the python process, this is equal to the number of children of the expression. */
   private int tupleSize = -1;
 
   private int[] columnIdxs = null;
+
   /* Output Type of the expression. */
   private Type outputType = null;
 
@@ -82,26 +82,17 @@ public class PythonUDFEvaluator extends GenericEvaluator {
     } else {
       pyFunction = null;
     }
-    if (parameters.getStateSchema() != null) {
-      needsState = true;
-    }
+    if (parameters.getStateSchema() != null) {}
     PyUDFExpression op = (PyUDFExpression) expression.getRootExpressionOperator();
     outputType = op.getOutput();
     isFlatmap = op.hasArrayOutputType();
     List<ExpressionOperator> childops = op.getChildren();
     tupleSize = childops.size();
     columnIdxs = new int[tupleSize];
+    isStateColumn = new boolean[tupleSize];
 
+    Arrays.fill(isStateColumn, false);
     Arrays.fill(columnIdxs, -1);
-
-    for (int i = 0; i < childops.size(); i++) {
-      if (childops.get(i).getClass().equals(StateExpression.class)) {
-        stateColumnIdx = ((StateExpression) childops.get(i)).getColumnIdx();
-        columnIdxs[i] = ((StateExpression) childops.get(i)).getColumnIdx();
-      } else {
-        columnIdxs[i] = ((VariableExpression) childops.get(i)).getColumnIdx();
-      }
-    }
   }
 
   /**
@@ -112,16 +103,34 @@ public class PythonUDFEvaluator extends GenericEvaluator {
     ExpressionOperator op = getExpression().getRootExpressionOperator();
 
     String pyFunc = ((PyUDFExpression) op).getName();
+
     try {
+      if (pyFunction != null) {
+        String pyCodeString = pyFunction.getFunction(pyFunc);
+        if (pyCodeString == null) {
 
-      String pyCodeString = pyFunction.getFunction(pyFunc);
-      if (pyCodeString == null) {
-        LOGGER.info("no python UDF with name {} registered.", pyFunc);
-        throw new DbException("No Python UDf with given name registered.");
-      } else {
+          LOGGER.info("no python UDF with name {} registered.", pyFunc);
+          throw new DbException("No Python UDf with given name registered.");
+        } else {
 
-        LOGGER.info("tuple size is: " + tupleSize);
-        pyWorker.sendCodePickle(pyCodeString, tupleSize, outputType, isFlatmap);
+          if (pyWorker != null) {
+            pyWorker.sendCodePickle(pyCodeString, tupleSize, outputType, isFlatmap);
+          }
+        }
+      }
+      List<ExpressionOperator> childops = op.getChildren();
+      if (childops != null) {
+
+        for (int i = 0; i < childops.size(); i++) {
+
+          if (childops.get(i).getClass().equals(StateExpression.class)) {
+            isStateColumn[i] = true;
+            columnIdxs[i] = ((StateExpression) childops.get(i)).getColumnIdx();
+
+          } else {
+            columnIdxs[i] = ((VariableExpression) childops.get(i)).getColumnIdx();
+          }
+        }
       }
 
     } catch (Exception e) {
@@ -176,6 +185,68 @@ public class PythonUDFEvaluator extends GenericEvaluator {
     }
   }
 
+  public void evalBatch(
+      final List<TupleBatch> ltb, final AppendableTable result, final ReadableTable state)
+      throws DbException, IOException {
+    if (pyWorker == null) {
+      pyWorker = new PythonWorker();
+      initEvaluator();
+    }
+    int resultcol = -1;
+    for (int i = 0; i < tupleSize; i++) {
+      if (isStateColumn[i]) {
+        resultcol = columnIdxs[i];
+      }
+      break;
+    }
+    try {
+
+      DataOutputStream dOut = pyWorker.getDataOutputStream();
+      int numTuples = 0;
+      for (int j = 0; j < ltb.size(); j++) {
+        numTuples += ltb.get(j).numTuples();
+      }
+      pyWorker.sendNumTuples(numTuples);
+
+      for (int tbIdx = 0; tbIdx < ltb.size(); tbIdx++) {
+        TupleBatch tb = ltb.get(tbIdx);
+        for (int tup = 0; tup < tb.numTuples(); tup++) {
+          for (int col = 0; col < tupleSize; col++) {
+            writeToStream(tb, tup, columnIdxs[col], dOut);
+          }
+        }
+      }
+
+      // read result back
+      Object obj = readFromStream(null);
+      switch (outputType) {
+        case DOUBLE_TYPE:
+          result.putDouble(resultcol, (Double) obj);
+          break;
+        case BLOB_TYPE:
+          result.putBlob(resultcol, (ByteBuffer.wrap((byte[]) obj)));
+          break;
+        case FLOAT_TYPE:
+          result.putFloat(resultcol, (float) obj);
+          break;
+        case INT_TYPE:
+          result.putInt(resultcol, (int) obj);
+          break;
+        case LONG_TYPE:
+          result.putLong(resultcol, (long) obj);
+          break;
+
+        default:
+          LOGGER.info("type not supported as Python Output");
+          break;
+      }
+
+    } catch (Exception e) {
+
+      throw new DbException(e);
+    }
+  }
+
   /**
    * sendinput to be evaluated by python process.
    * @param tb -input tuples.
@@ -197,25 +268,19 @@ public class PythonUDFEvaluator extends GenericEvaluator {
     }
 
     try {
-      if (!needsState && (stateColumnIdx != -1)) {
-        throw new DbException("this evaluator should not need state!");
-
-      } else {
-        DataOutputStream dOut = pyWorker.getDataOutputStream();
-        // this is replaced with number of tuples for stateful agg in the next commit.
-        pyWorker.sendNumTuples(1);
-        for (int i = 0; i < tupleSize; i++) {
-          if (i == stateColumnIdx) {
-            writeToStream(state, rowIdx, stateColumnIdx, dOut);
-          } else {
-            writeToStream(tb, rowIdx, columnIdxs[i], dOut);
-          }
+      DataOutputStream dOut = pyWorker.getDataOutputStream();
+      pyWorker.sendNumTuples(1);
+      for (int i = 0; i < tupleSize; i++) {
+        if (isStateColumn[i]) {
+          writeToStream(state, rowIdx, columnIdxs[i], dOut);
+        } else {
+          writeToStream(tb, rowIdx, columnIdxs[i], dOut);
         }
-
-        // read response back
-        Object result = readFromStream(count);
-        return result;
       }
+
+      // read response back
+      Object result = readFromStream(count);
+      return result;
 
     } catch (DbException e) {
       LOGGER.info("Error writing to python stream" + e.getMessage());
@@ -249,17 +314,17 @@ public class PythonUDFEvaluator extends GenericEvaluator {
           dIn.readFully(excp);
           throw new DbException(new String(excp));
         } else {
-          // LOGGER.info("type read: " + type);
+
           if (type == MyriaConstants.PythonType.DOUBLE.getVal()) {
             obj = dIn.readDouble();
           } else if (type == MyriaConstants.PythonType.FLOAT.getVal()) {
             obj = dIn.readFloat();
           } else if (type == MyriaConstants.PythonType.INT.getVal()) {
-            // LOGGER.info("trying to read int ");
+
             obj = dIn.readInt();
           } else if (type == MyriaConstants.PythonType.LONG.getVal()) {
             obj = dIn.readLong();
-          } else if (type == MyriaConstants.PythonType.BYTES.getVal()) {
+          } else if (type == MyriaConstants.PythonType.BLOB.getVal()) {
             int l = dIn.readInt();
             if (l > 0) {
               obj = new byte[l];
@@ -292,10 +357,10 @@ public class PythonUDFEvaluator extends GenericEvaluator {
     Preconditions.checkNotNull(dOut, "Output stream for python process cannot be null");
 
     Schema tbsc = tb.getSchema();
-    // LOGGER.info("tuple batch schema " + tbsc.toString());
+
     try {
       Type type = tbsc.getColumnType(columnIdx);
-      // LOGGER.info("column index " + columnIdx + " columnType " + type.toString());
+
       switch (type) {
         case BOOLEAN_TYPE:
           LOGGER.info("BOOLEAN type not supported for python function ");
@@ -327,15 +392,16 @@ public class PythonUDFEvaluator extends GenericEvaluator {
           LOGGER.info("date time not yet supported for python function ");
           break;
         case BLOB_TYPE:
-          dOut.writeInt(MyriaConstants.PythonType.BYTES.getVal());
-          // LOGGER.info("writing Bytebuffer to py process");
+          dOut.writeInt(MyriaConstants.PythonType.BLOB.getVal());
+
           ByteBuffer input = tb.getBlob(columnIdx, row);
+
           if (input != null && input.hasArray()) {
-            // LOGGER.info("input array buffer length" + input.array().length);
+
             dOut.writeInt(input.array().length);
             dOut.write(input.array());
           } else {
-            // LOGGER.info("input arraybuffer length is null");
+
             dOut.writeInt(MyriaConstants.NULL_LENGTH);
           }
       }
@@ -343,6 +409,14 @@ public class PythonUDFEvaluator extends GenericEvaluator {
 
     } catch (Exception e) {
       throw new DbException(e);
+    }
+  }
+
+  @Override
+  public void sendEos() throws DbException {
+    LOGGER.info("sendEOS called");
+    if (pyWorker != null) {
+      pyWorker.sendEos(MyriaConstants.EOS);
     }
   }
 }

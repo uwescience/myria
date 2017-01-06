@@ -1,5 +1,7 @@
 package edu.washington.escience.myria.operator.agg;
 
+import java.util.List;
+
 import com.google.common.math.LongMath;
 
 import edu.washington.escience.myria.DbException;
@@ -7,6 +9,7 @@ import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.storage.AppendableTable;
 import edu.washington.escience.myria.storage.ReadableTable;
+import edu.washington.escience.myria.storage.TupleBatch;
 
 /**
  * An aggregator that counts the number of rows in its input.
@@ -52,5 +55,10 @@ public final class CountAllAggregator implements Aggregator {
   private final class CountAllState {
     /** The number of tuples seen so far. */
     private long count = 0;
+  }
+
+  @Override
+  public void add(final List<TupleBatch> from, final Object state) throws DbException {
+    throw new DbException(" method not implemented");
   }
 }

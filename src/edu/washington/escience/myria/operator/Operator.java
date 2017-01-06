@@ -75,7 +75,7 @@ public abstract class Operator implements Serializable {
   /**
    * End of iteration (EOI).
    */
-  private boolean eoi = false;
+  protected boolean eoi = false;
 
   /**
    * Environmental variables during execution.
@@ -106,11 +106,19 @@ public abstract class Operator implements Serializable {
     Preconditions.checkNotNull(profilingLogger);
     return profilingLogger;
   }
-
-  private PythonFunctionRegistrar pyFuncReg;
-
+  /**
+   * Python function registrar.
+   */
+  protected PythonFunctionRegistrar pyFuncReg;
+  /**
+   *
+   * @return PythonFunctionRegistrar for operator.
+   */
   public PythonFunctionRegistrar getPythonFunctionRegistrar() {
-    Preconditions.checkNotNull(pyFuncReg);
+    if (execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_TEST_MODE) != null
+        && execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_TEST_MODE).equals("false")) {
+      Preconditions.checkNotNull(pyFuncReg);
+    }
     return pyFuncReg;
   }
 

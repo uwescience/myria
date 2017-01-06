@@ -6,8 +6,10 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Preconditions;
 
+import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
+import edu.washington.escience.myria.functions.PythonFunctionRegistrar;
 import edu.washington.escience.myria.operator.agg.PrimitiveAggregator.AggregationOp;
 
 /**
@@ -63,5 +65,11 @@ public class SingleColumnAggregatorFactory implements AggregatorFactory {
         return new StringAggregator(inputName, aggOps, column);
     }
     throw new IllegalArgumentException("Unknown column type: " + type);
+  }
+
+  @Override
+  public Aggregator get(final Schema inputSchema, final PythonFunctionRegistrar pyFuncReg)
+      throws DbException {
+    return get(inputSchema);
   }
 }

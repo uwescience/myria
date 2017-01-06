@@ -3,14 +3,17 @@ package edu.washington.escience.myria.operator.agg;
 import java.io.Serializable;
 import java.util.Arrays;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
 
+import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
+import edu.washington.escience.myria.storage.TupleBatch;
 
 /**
  * Single column aggregator.
@@ -150,5 +153,10 @@ public abstract class PrimitiveAggregator implements Aggregator, Serializable {
   @Override
   public final Schema getResultSchema() {
     return resultSchema;
+  }
+
+  @Override
+  public void add(final List<TupleBatch> from, final Object state) throws DbException {
+    throw new DbException(" method not implemented");
   }
 }

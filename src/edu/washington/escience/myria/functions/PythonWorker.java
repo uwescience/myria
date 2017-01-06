@@ -211,7 +211,7 @@ public class PythonWorker {
         dOut.writeInt(MyriaConstants.PythonType.LONG.getVal());
         break;
       case BLOB_TYPE:
-        dOut.writeInt(MyriaConstants.PythonType.BYTES.getVal());
+        dOut.writeInt(MyriaConstants.PythonType.BLOB.getVal());
         break;
       default:
         throw new DbException("Type not supported for python UDF ");
@@ -226,6 +226,17 @@ public class PythonWorker {
     if (clientSock != null) {
       dOut = new DataOutputStream(clientSock.getOutputStream());
       dIn = new DataInputStream(clientSock.getInputStream());
+    }
+  }
+
+  public void sendEos(final int EOS) throws DbException {
+    try {
+      LOGGER.info("send EOS called");
+      dOut.writeInt(EOS);
+      close();
+    } catch (Exception e) {
+      LOGGER.info("failed to write number of tuples to python process!");
+      throw new DbException(e);
     }
   }
 }

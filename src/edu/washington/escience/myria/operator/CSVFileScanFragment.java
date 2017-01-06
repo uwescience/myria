@@ -466,7 +466,7 @@ public class CSVFileScanFragment extends LeafOperator {
 
   protected ByteBuffer getBlob(final String filename) throws DbException, IOException {
     Preconditions.checkNotNull(filename, "s3 uri was null");
-    AmazonS3Source file = new AmazonS3Source(filename, null, null); // ??
+    AmazonS3Source file = new AmazonS3Source(filename, null, null);
     InputStream is = file.getInputStream();
 
     byte[] data = null;

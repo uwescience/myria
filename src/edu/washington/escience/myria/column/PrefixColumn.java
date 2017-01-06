@@ -1,5 +1,7 @@
 package edu.washington.escience.myria.column;
 
+import java.nio.ByteBuffer;
+
 import javax.annotation.Nonnull;
 
 import org.joda.time.DateTime;
@@ -71,6 +73,11 @@ public class PrefixColumn<T extends Comparable<?>> extends Column<T> {
   @Override
   public String getString(final int row) {
     return inner.getString(Preconditions.checkElementIndex(row, numRows));
+  }
+
+  @Override
+  public ByteBuffer getBlob(final int row) {
+    return inner.getBlob(Preconditions.checkElementIndex(row, numRows));
   }
 
   @Override

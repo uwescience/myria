@@ -14,7 +14,7 @@ public abstract class UnaryOperator extends Operator {
   /**
    * The child.
    */
-  private Operator child;
+  protected Operator child;
 
   /**
    * @param child the single child of this operator.

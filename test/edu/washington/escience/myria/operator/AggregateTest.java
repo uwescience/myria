@@ -172,6 +172,7 @@ public class AggregateTest {
     /* Do it -- this should cause an error. */
     agg.open(TestEnvVars.get());
     TupleBatch tb = agg.nextReady();
+
     agg.close();
     /* Take the 1st through nth column, because the first column is the thing we grouped by. */
     int[] colsToKeep = new int[tb.numColumns() - 1];
