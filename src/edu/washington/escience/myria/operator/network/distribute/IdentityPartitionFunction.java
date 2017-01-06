@@ -29,6 +29,9 @@ public final class IdentityPartitionFunction extends PartitionFunction {
   @Override
   public TupleBatch[] partition(@Nonnull final TupleBatch tb) {
     BitSet[] partitions = new BitSet[numPartitions()];
+    for (int i = 0; i < partitions.length; ++i) {
+      partitions[i] = new BitSet();
+    }
     for (int i = 0; i < tb.numTuples(); i++) {
       partitions[tb.getInt(index, i) - 1].set(i);
     }
