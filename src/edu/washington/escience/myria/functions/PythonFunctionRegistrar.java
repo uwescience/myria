@@ -4,19 +4,22 @@ import java.nio.ByteBuffer;
 import java.sql.SQLException;
 import java.util.Iterator;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Preconditions;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
+import edu.washington.escience.myria.MyriaConstants.FunctionLanguage;
 import edu.washington.escience.myria.accessmethod.AccessMethod;
 import edu.washington.escience.myria.accessmethod.ConnectionInfo;
 import edu.washington.escience.myria.accessmethod.JdbcAccessMethod;
+import edu.washington.escience.myria.api.encoding.FunctionStatus;
 import edu.washington.escience.myria.profiling.ProfilingLogger;
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
 
 /**
- *
+ *This class sets and gets python functions on a postgres instance on a worker.
  */
 public class PythonFunctionRegistrar {
 
@@ -27,7 +30,7 @@ public class PythonFunctionRegistrar {
   /** The connection to the database database. */
   private final JdbcAccessMethod accessMethod;
   /** Buffer for UDFs registered. */
-  private final TupleBatchBuffer udfs;
+  private final TupleBatchBuffer pyFunctions;
 
   /**
    * Default constructor.
@@ -49,26 +52,48 @@ public class PythonFunctionRegistrar {
     // create table
     accessMethod.createUnloggedTableIfNotExists(
         MyriaConstants.PYUDF_RELATION, MyriaConstants.PYUDF_SCHEMA);
-    udfs = new TupleBatchBuffer(MyriaConstants.PYUDF_SCHEMA);
+    pyFunctions = new TupleBatchBuffer(MyriaConstants.PYUDF_SCHEMA);
   }
 
   /**
    * Add function to each worker.
    *
    * @param name function name
+   * @param description  of function
+   * @param outputType of function
+   * @param isMultivalued does function return multiple tuples.
    * @param binary binary function
-   * @param outputSchema outputSchema
    * @throws DbException if any error occurs
    */
-  public void addFunction(final String name, final ByteBuffer binary, final String outputSchema)
+  public void addFunction(
+      final String name,
+      final String description,
+      final String outputType,
+      final Boolean isMultivalued,
+      final ByteBuffer binary)
       throws DbException {
+    String tableName =
+        MyriaConstants.PYUDF_RELATION.toString(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL);
+
+    StringBuilder sb = new StringBuilder();
+    sb.append("DELETE FROM ");
+    sb.append(tableName);
+    sb.append(" where function_name='");
+    ;
+    sb.append(name);
+    sb.append("'");
+    String sql = sb.toString();
+
+    accessMethod.execute(sql);
 
     // add UDF
-    udfs.putString(0, name);
-    udfs.putBlob(1, binary);
-    udfs.putString(2, outputSchema);
+    pyFunctions.putString(0, name);
+    pyFunctions.putString(1, description);
+    pyFunctions.putString(2, outputType);
+    pyFunctions.putBoolean(3, isMultivalued);
+    pyFunctions.putBlob(4, binary);
 
-    accessMethod.tupleBatchInsert(MyriaConstants.PYUDF_RELATION, udfs.popAny());
+    accessMethod.tupleBatchInsert(MyriaConstants.PYUDF_RELATION, pyFunctions.popAny());
 
     return;
   }
@@ -80,14 +105,13 @@ public class PythonFunctionRegistrar {
    * @return binary function
    * @throws DbException if any error occurs
    */
-  public String getFunction(final String name) throws DbException {
+  public FunctionStatus getFunctionStatus(final String pyFunctionName) throws DbException {
 
     StringBuilder sb = new StringBuilder();
     sb.append("Select * from ");
     sb.append(MyriaConstants.PYUDF_RELATION.toString(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL));
-    sb.append("where function_name='");
-    ;
-    sb.append(name);
+    sb.append(" where function_name='");
+    sb.append(pyFunctionName);
     sb.append("'");
     try {
       Iterator<TupleBatch> tuples =
@@ -95,16 +119,21 @@ public class PythonFunctionRegistrar {
 
       if (tuples.hasNext()) {
         final TupleBatch tb = tuples.next();
-        //LOGGER.info("Got {} tuples", tb.numTuples());
         if (tb.numTuples() > 0) {
-          //LOGGER.info("number of tuples is greater than 1");
-          return tb.getString(1, 0); // return second column of first row.
+
+          FunctionStatus fs =
+              new FunctionStatus(
+                  pyFunctionName,
+                  tb.getString(1, 0),
+                  tb.getString(2, 0),
+                  tb.getBoolean(3, 0),
+                  FunctionLanguage.PYTHON);
+          return fs;
         }
       }
     } catch (Exception e) {
       throw new DbException(e);
     }
-
     return null;
   };
 
@@ -119,5 +148,39 @@ public class PythonFunctionRegistrar {
       LOGGER.warn("Error checking connection validity", e);
       return false;
     }
+  }
+  /**
+   * does the function return multiple tuples?
+   * @param pyFunctionName name pf the python function
+   * @return true if the function returns multiple tuples.
+   * @throws DbException in case of error.
+   */
+  public String getFunctionBinary(final String pyFunctionName) throws DbException {
+
+    StringBuilder sb = new StringBuilder();
+    sb.append("Select function_binary from ");
+    sb.append(MyriaConstants.PYUDF_RELATION.toString(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL));
+    sb.append(" where function_name='");
+    sb.append(pyFunctionName);
+    sb.append("'");
+
+    try {
+      Iterator<TupleBatch> tuples =
+          accessMethod.tupleBatchIteratorFromQuery(sb.toString(), MyriaConstants.PYUDF_SCHEMA);
+
+      if (tuples.hasNext()) {
+        final TupleBatch tb = tuples.next();
+        LOGGER.info("Got {} tuples", tb.numTuples());
+        if (tb.numTuples() > 0) {
+          String codename = tb.getString(0, 0);
+          LOGGER.info("codename: " + codename);
+          return codename;
+        }
+      }
+    } catch (Exception e) {
+      LOGGER.info(e.getMessage());
+      throw new DbException(e);
+    }
+    return null;
   }
 }

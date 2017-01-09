@@ -81,6 +81,7 @@ import edu.washington.escience.myria.accessmethod.ConnectionInfo;
 import edu.washington.escience.myria.accessmethod.AccessMethod.IndexRef;
 import edu.washington.escience.myria.api.MyriaJsonMapperProvider;
 import edu.washington.escience.myria.api.encoding.DatasetStatus;
+import edu.washington.escience.myria.api.encoding.FunctionStatus;
 import edu.washington.escience.myria.api.encoding.QueryEncoding;
 import edu.washington.escience.myria.coordinator.CatalogException;
 import edu.washington.escience.myria.coordinator.MasterCatalog;
@@ -1203,86 +1204,72 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
   }
 
   /**
-   * Create a function and register it in the catalog
+   * Create a function and register it in the catalog.
    *
    * @param name the name of the function
-   * @param definition the function definition (must be postgres specific)
+   * @param definition the function definition  - this is postgres specific for postgres and function text for python.
    * @param outputSchema the output schema of the function
+   * @param isMultivalued indicates if the function returns multiple tuples.
+   * @param lang this is the language of the function.
+   * @param binary this is an optional parameter for function for base64 encoded binary for function.
+   * @param workers list of workers on which the function is registered: default is all.
    * @return the status of the function
    */
   public String createFunction(
       final String name,
       final String definition,
-      final Schema outputSchema,
-      final MyriaConstants.FunctionLanguage lang,
+      final String outputSchema,
+      final Boolean isMultivalued,
+      final FunctionLanguage lang,
       final String binary,
       final Set<Integer> workers)
       throws DbException, InterruptedException {
+
     String response = "";
     Set<Integer> actualWorkers = workers;
     if (workers == null) {
       actualWorkers = getWorkers().keySet();
     }
-    String modifiedReplaceFunction;
+    try {
 
-    /* Postgres specific syntax - Validate the command */
-    Pattern pattern = Pattern.compile("(CREATE FUNCTION)([\\s\\S]*)(LANGUAGE SQL;)");
-    Matcher matcher = pattern.matcher(definition);
-
-    if (matcher.matches()) {
-      /* Add a replace statement */
-      modifiedReplaceFunction = definition.replace("CREATE FUNCTION", "CREATE OR REPLACE FUNCTION");
-
-      /* Create the function */
-      try {
-        Map<Integer, SubQueryPlan> workerPlans = new HashMap<>();
-        for (Integer workerId : actualWorkers) {
-          if (lang == FunctionLanguage.POSTGRES) {
-            workerPlans.put(
-                workerId,
-                new SubQueryPlan(
-                    new DbExecute(
-                        EmptyRelation.of(Schema.EMPTY_SCHEMA), modifiedReplaceFunction, null)));
-          } else {
-            if (lang == FunctionLanguage.PYTHON) {
-              workerPlans.put(
-                  workerId,
-                  new SubQueryPlan(
-                      new DbCreateFunction(
-                          EmptyRelation.of(Schema.EMPTY_SCHEMA),
-                          name,
-                          definition,
-                          lang,
-                          outputSchema,
-                          binary,
-                          null)));
-            }
-          }
-        }
-        ListenableFuture<Query> qf =
-            queryManager.submitQuery(
-                "create function",
-                "create function",
-                "create function",
-                new SubQueryPlan(new EmptySink(new EOSSource())),
-                workerPlans);
-
-        try {
-          qf.get().getQueryId();
-        } catch (ExecutionException e) {
-          throw new DbException("Error executing query", e.getCause());
-        }
-      } catch (CatalogException e) {
-        throw new DbException(e);
+      Map<Integer, SubQueryPlan> workerPlans = new HashMap<>();
+      for (Integer workerId : actualWorkers) {
+        workerPlans.put(
+            workerId,
+            new SubQueryPlan(
+                new DbCreateFunction(
+                    EmptyRelation.of(Schema.EMPTY_SCHEMA),
+                    name,
+                    definition,
+                    outputSchema,
+                    isMultivalued,
+                    lang,
+                    binary,
+                    null)));
       }
 
-    } else {
-      response = "Function is not valid";
+      ListenableFuture<Query> qf =
+          queryManager.submitQuery(
+              "create function",
+              "create function",
+              "create function",
+              new SubQueryPlan(new EmptySink(new EOSSource())),
+              workerPlans);
+
+      try {
+        qf.get().getQueryId();
+      } catch (ExecutionException e) {
+        throw new DbException("Error executing query", e.getCause());
+      }
+    } catch (CatalogException e) {
+      throw new DbException(e);
     }
+
     if (response == "") {
       /* Register the function to the catalog */
       try {
-        catalog.registerFunction(name, definition, outputSchema.toString(), lang, binary);
+        catalog.registerFunction(
+            name, definition, outputSchema.toString(), isMultivalued, lang, binary);
         response = "Created Function";
       } catch (CatalogException e) {
         throw new DbException(e);
@@ -1293,11 +1280,24 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
   /**
    *
    * @return list of functions from the catalog
-   * @throws DbException
+   * @throws DbException in case of error.
    */
   public List<String> getFunctions() throws DbException {
     try {
       return catalog.getFunctions();
+    } catch (CatalogException e) {
+      throw new DbException(e);
+    }
+  }
+  /**
+   *
+   * @param functionName : name of the function to retrieve.
+   * @return functiondetails for the function
+   * @throws DbException in case of error.
+   */
+  public FunctionStatus getFunctionDetails(final String functionName) throws DbException {
+    try {
+      return catalog.getFunctionStatus(functionName);
     } catch (CatalogException e) {
       throw new DbException(e);
     }

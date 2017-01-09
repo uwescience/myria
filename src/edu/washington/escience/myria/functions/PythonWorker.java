@@ -36,6 +36,7 @@ public class PythonWorker {
   private ServerSocket serverSocket = null;
   /** client sock for python worker.*/
   private Socket clientSock = null;
+  /** python worker process.*/
   private Process worker = null;
   /** output stream from python worker.*/
   private DataOutputStream dOut;
@@ -61,13 +62,14 @@ public class PythonWorker {
   /**
    *
    * @param pyCodeString - python function string
-   * @param tupleSize
-   * @param outputType
-   * @throws DbException
+   * @param numColumns number fo columns to be written to python process.
+   * @param outputType output type of the python function.
+   * @param isFlatMap does the python function return multiple tuples for a single input?
+   * @throws DbException in case of error.
    */
   public void sendCodePickle(
       final String pyCodeString,
-      final int tupleSize,
+      final int numColumns,
       final Type outputType,
       final Boolean isFlatMap)
       throws DbException {
@@ -75,12 +77,11 @@ public class PythonWorker {
 
     try {
       if (pyCodeString.length() > 0 && dOut != null) {
-        // LOGGER.info("length of the code String: " + pyCodeString.length());
         byte[] bytes = pyCodeString.getBytes(StandardCharsets.UTF_8);
         dOut.writeInt(bytes.length);
         dOut.write(bytes);
 
-        dOut.writeInt(tupleSize);
+        dOut.writeInt(numColumns);
         writeOutputType(outputType);
         if (isFlatMap) {
           dOut.writeInt(1);
@@ -90,8 +91,7 @@ public class PythonWorker {
         dOut.flush();
 
       } else {
-        LOGGER.info("something is very wrong, python code  or output stream are empty");
-        throw new DbException("Can't write pythonCode to worker!");
+        throw new DbException("Can't write Python Code to worker!");
       }
     } catch (Exception e) {
       LOGGER.info("failed to send python code pickle");
@@ -109,7 +109,6 @@ public class PythonWorker {
     try {
       dOut.writeInt(numTuples);
     } catch (Exception e) {
-      LOGGER.info("failed to write number of tuples to python process!");
       throw new DbException(e);
     }
   }
@@ -159,7 +158,6 @@ public class PythonWorker {
 
     serverSocket = new ServerSocket(0, 1, InetAddress.getByName("127.0.0.1"));
     int a = serverSocket.getLocalPort();
-    LOGGER.info("created socket " + a);
   }
 
   /**
@@ -185,7 +183,6 @@ public class PythonWorker {
     out.write(serverSocket.getLocalPort() + "\n");
     out.flush();
     clientSock = serverSocket.accept();
-    LOGGER.info("successfully launched worker");
     setupStreams();
     return;
   }
@@ -220,7 +217,7 @@ public class PythonWorker {
 
   /**
    *
-   * @throws IOException
+   * @throws IOException in case of error.
    */
   private void setupStreams() throws IOException {
     if (clientSock != null) {
@@ -228,14 +225,16 @@ public class PythonWorker {
       dIn = new DataInputStream(clientSock.getInputStream());
     }
   }
-
+  /**
+   *
+   * @param EOS Send end of stream to cleanly close the python process.
+   * @throws DbException in case of error.
+   */
   public void sendEos(final int EOS) throws DbException {
     try {
-      LOGGER.info("send EOS called");
       dOut.writeInt(EOS);
       close();
     } catch (Exception e) {
-      LOGGER.info("failed to write number of tuples to python process!");
       throw new DbException(e);
     }
   }

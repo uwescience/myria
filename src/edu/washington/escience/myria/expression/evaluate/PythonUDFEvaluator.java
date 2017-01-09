@@ -5,6 +5,7 @@ package edu.washington.escience.myria.expression.evaluate;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import javax.validation.constraints.NotNull;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -21,6 +22,7 @@ import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
+import edu.washington.escience.myria.api.encoding.FunctionStatus;
 import edu.washington.escience.myria.column.Column;
 import edu.washington.escience.myria.column.builder.ColumnBuilder;
 import edu.washington.escience.myria.column.builder.ColumnFactory;
@@ -48,18 +50,18 @@ public class PythonUDFEvaluator extends GenericEvaluator {
   private static final org.slf4j.Logger LOGGER =
       org.slf4j.LoggerFactory.getLogger(PythonUDFEvaluator.class);
   /** python function registrar from which to fetch function pickle.*/
-  private final PythonFunctionRegistrar pyFunction;
+  private final PythonFunctionRegistrar pyFuncRegistrar;
 
   /** python worker process. */
   private PythonWorker pyWorker;
   /** index of state column. */
   private final boolean[] isStateColumn;
   /** tuple size to be sent to the python process, this is equal to the number of children of the expression. */
-  private int tupleSize = -1;
+  private int numColumns = -1;
 
   private int[] columnIdxs = null;
 
-  /* Output Type of the expression. */
+  /** Output Type of the expression. */
   private Type outputType = null;
 
   /** is expression a flatmap? */
@@ -75,21 +77,17 @@ public class PythonUDFEvaluator extends GenericEvaluator {
   public PythonUDFEvaluator(
       final Expression expression,
       final ExpressionOperatorParameter parameters,
-      final PythonFunctionRegistrar pyFuncReg) {
+      @NotNull final PythonFunctionRegistrar pyFuncReg) {
     super(expression, parameters);
-    if (pyFuncReg != null) {
-      pyFunction = pyFuncReg;
-    } else {
-      pyFunction = null;
-    }
+    pyFuncRegistrar = pyFuncReg;
+
     if (parameters.getStateSchema() != null) {}
     PyUDFExpression op = (PyUDFExpression) expression.getRootExpressionOperator();
     outputType = op.getOutput();
-    isFlatmap = op.hasArrayOutputType();
     List<ExpressionOperator> childops = op.getChildren();
-    tupleSize = childops.size();
-    columnIdxs = new int[tupleSize];
-    isStateColumn = new boolean[tupleSize];
+    numColumns = childops.size();
+    columnIdxs = new int[numColumns];
+    isStateColumn = new boolean[numColumns];
 
     Arrays.fill(isStateColumn, false);
     Arrays.fill(columnIdxs, -1);
@@ -102,19 +100,22 @@ public class PythonUDFEvaluator extends GenericEvaluator {
   private void initEvaluator() throws DbException {
     ExpressionOperator op = getExpression().getRootExpressionOperator();
 
-    String pyFunc = ((PyUDFExpression) op).getName();
+    String pyFunctionName = ((PyUDFExpression) op).getName();
 
     try {
-      if (pyFunction != null) {
-        String pyCodeString = pyFunction.getFunction(pyFunc);
-        if (pyCodeString == null) {
+      if (pyFuncRegistrar != null) {
+        String pyCodeString = pyFuncRegistrar.getFunctionBinary(pyFunctionName);
+        FunctionStatus fs = pyFuncRegistrar.getFunctionStatus(pyFunctionName);
 
-          LOGGER.info("no python UDF with name {} registered.", pyFunc);
+        if (pyCodeString == null || fs == null) {
+
+          LOGGER.info("no python UDF with name {} registered.", pyFunctionName);
           throw new DbException("No Python UDf with given name registered.");
         } else {
+          // set output type
 
           if (pyWorker != null) {
-            pyWorker.sendCodePickle(pyCodeString, tupleSize, outputType, isFlatmap);
+            pyWorker.sendCodePickle(pyCodeString, numColumns, outputType, fs.getIsMultivalued());
           }
         }
       }
@@ -127,8 +128,11 @@ public class PythonUDFEvaluator extends GenericEvaluator {
             isStateColumn[i] = true;
             columnIdxs[i] = ((StateExpression) childops.get(i)).getColumnIdx();
 
-          } else {
+          } else if (childops.get(i).getClass().equals(VariableExpression.class)) {
             columnIdxs[i] = ((VariableExpression) childops.get(i)).getColumnIdx();
+          } else {
+            throw new DbException(
+                "Python expression can only have State or Variable expression as child expressions.");
           }
         }
       }
@@ -184,7 +188,14 @@ public class PythonUDFEvaluator extends GenericEvaluator {
       throw new DbException(e);
     }
   }
-
+  /**
+   *
+   * @param ltb list of tuple batch
+   * @param result result table.
+   * @param state state column.
+   * @throws DbException in case of error
+   * @throws IOException in case of error.
+   */
   public void evalBatch(
       final List<TupleBatch> ltb, final AppendableTable result, final ReadableTable state)
       throws DbException, IOException {
@@ -193,7 +204,7 @@ public class PythonUDFEvaluator extends GenericEvaluator {
       initEvaluator();
     }
     int resultcol = -1;
-    for (int i = 0; i < tupleSize; i++) {
+    for (int i = 0; i < numColumns; i++) {
       if (isStateColumn[i]) {
         resultcol = columnIdxs[i];
       }
@@ -211,7 +222,7 @@ public class PythonUDFEvaluator extends GenericEvaluator {
       for (int tbIdx = 0; tbIdx < ltb.size(); tbIdx++) {
         TupleBatch tb = ltb.get(tbIdx);
         for (int tup = 0; tup < tb.numTuples(); tup++) {
-          for (int col = 0; col < tupleSize; col++) {
+          for (int col = 0; col < numColumns; col++) {
             writeToStream(tb, tup, columnIdxs[col], dOut);
           }
         }
@@ -270,7 +281,7 @@ public class PythonUDFEvaluator extends GenericEvaluator {
     try {
       DataOutputStream dOut = pyWorker.getDataOutputStream();
       pyWorker.sendNumTuples(1);
-      for (int i = 0; i < tupleSize; i++) {
+      for (int i = 0; i < numColumns; i++) {
         if (isStateColumn[i]) {
           writeToStream(state, rowIdx, columnIdxs[i], dOut);
         } else {
@@ -297,24 +308,25 @@ public class PythonUDFEvaluator extends GenericEvaluator {
     int type = 0;
     Object obj = null;
     DataInputStream dIn = pyWorker.getDataInputStream();
-    int c = 1;
+    int c = 1; // single valued expressions only return 1 tuple.
     try {
-      // read length of incoming message
-      type = dIn.readInt();
+      // if it is a flat map operation, read number of tuples to be read.
       if (isFlatmap) {
         c = dIn.readInt();
         count.appendInt(c);
       }
 
       for (int i = 0; i < c; i++) {
-
-        if (type == MyriaConstants.PYTHON_EXCEPTION) {
+        //then read the type of tuple
+        type = dIn.readInt();
+        // if the 'type' is exception, throw exception
+        if (type == MyriaConstants.PythonSpecialLengths.PYTHON_EXCEPTION.getVal()) {
           int excepLength = dIn.readInt();
           byte[] excp = new byte[excepLength];
           dIn.readFully(excp);
           throw new DbException(new String(excp));
         } else {
-
+          // read the rest of the tuple
           if (type == MyriaConstants.PythonType.DOUBLE.getVal()) {
             obj = dIn.readDouble();
           } else if (type == MyriaConstants.PythonType.FLOAT.getVal()) {
@@ -402,7 +414,7 @@ public class PythonUDFEvaluator extends GenericEvaluator {
             dOut.write(input.array());
           } else {
 
-            dOut.writeInt(MyriaConstants.NULL_LENGTH);
+            dOut.writeInt(MyriaConstants.PythonSpecialLengths.NULL_LENGTH.getVal());
           }
       }
       dOut.flush();
@@ -416,7 +428,7 @@ public class PythonUDFEvaluator extends GenericEvaluator {
   public void sendEos() throws DbException {
     LOGGER.info("sendEOS called");
     if (pyWorker != null) {
-      pyWorker.sendEos(MyriaConstants.EOS);
+      pyWorker.sendEos(MyriaConstants.PythonSpecialLengths.EOS.getVal());
     }
   }
 }

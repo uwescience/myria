@@ -88,18 +88,19 @@ public final class AggUtils {
    *
    * @param factories The factories that will produce the aggregators.
    * @param inputSchema The schema of the input tuples.
+   * @param pyFuncRegistrar - python function registrar to get functions from workers.
    * @return the aggregators for this operator.
    * @throws DbException if there is an error.
    */
   public static Aggregator[] allocateAggs(
       final AggregatorFactory[] factories,
       final Schema inputSchema,
-      final PythonFunctionRegistrar pyFuncReg)
+      final PythonFunctionRegistrar pyFuncRegistrar)
       throws DbException {
     Aggregator[] aggregators = new Aggregator[factories.length];
     for (int j = 0; j < factories.length; ++j) {
 
-      aggregators[j] = factories[j].get(inputSchema, pyFuncReg);
+      aggregators[j] = factories[j].get(inputSchema, pyFuncRegistrar);
     }
     return aggregators;
   }

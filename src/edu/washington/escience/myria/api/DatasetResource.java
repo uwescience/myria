@@ -46,11 +46,12 @@ import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.TupleWriter;
 import edu.washington.escience.myria.accessmethod.AccessMethod.IndexRef;
-import edu.washington.escience.myria.api.encoding.CreateFunctionEncoding;
+
 import edu.washington.escience.myria.api.encoding.CreateIndexEncoding;
 import edu.washington.escience.myria.api.encoding.CreateViewEncoding;
 import edu.washington.escience.myria.api.encoding.DatasetEncoding;
 import edu.washington.escience.myria.api.encoding.DatasetStatus;
+import edu.washington.escience.myria.api.encoding.FunctionStatus;
 import edu.washington.escience.myria.api.encoding.ParallelDatasetEncoding;
 import edu.washington.escience.myria.api.encoding.TipsyDatasetEncoding;
 import edu.washington.escience.myria.coordinator.CatalogException;
@@ -446,41 +447,6 @@ public final class DatasetResource {
     /* Build the response to return the queryId */
     ResponseBuilder response = Response.ok();
     return response.entity(queryId).build();
-  }
-
-  /**
-   * Creates an function based on DbCreateFunctionEncoding
-   */
-  @POST
-  @Path("/function/")
-  @Consumes(MediaType.APPLICATION_JSON)
-  public Response createFunction(final CreateFunctionEncoding encoding) throws DbException {
-    String functionCreationResponse;
-    try {
-      functionCreationResponse =
-          server.createFunction(
-              encoding.name,
-              encoding.definition,
-              encoding.outputSchema,
-              encoding.lang,
-              encoding.binary,
-              encoding.workers);
-    } catch (Exception e) {
-      throw new DbException();
-    }
-    /* Build the response to return the queryId */
-    ResponseBuilder response = Response.ok();
-    return response.entity(functionCreationResponse).build();
-  }
-  /**
-   * @param queryId an optional query ID specifying which datasets to get.
-   * @return a list of datasets.
-   * @throws DbException if there is an error accessing the Catalog.
-   */
-  @GET
-  @Path("/function/")
-  public List<String> getFunctions() throws DbException {
-    return server.getFunctions();
   }
 
   /**

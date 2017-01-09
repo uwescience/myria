@@ -3,7 +3,6 @@ package edu.washington.escience.myria.coordinator;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -158,12 +157,14 @@ public final class MasterCatalog {
           + "WHERE status = '"
           + QueryStatusEncoding.Status.ACCEPTED.toString()
           + "';";
+  /** create registered functions table.*/
   private static final String CREATE_REGISTERED_FUNCTIONS =
       "CREATE TABLE registered_functions (\n"
           + "    function_name TEXT PRIMARY KEY, \n"
-          + "    function_definition TEXT NOT NULL,\n"
-          + "    function_binary BLOB,\n"
-          + "    function_outputSchema TEXT NOT NULL);";
+          + "    function_description TEXT NOT NULL,\n"
+          + "    function_outputType TEXT NOT NULL,\n"
+          + "    function_isMultivalued INTEGER NOT NULL, \n"
+          + "    function_lang INTEGER );";
 
   /** CREATE TABLE statements @formatter:on */
 
@@ -387,7 +388,6 @@ public final class MasterCatalog {
                     }
                     statement.dispose();
                   } catch (final SQLiteException e) {
-                    LOGGER.error(e.toString());
                     throw new CatalogException(e);
                   }
 
@@ -403,7 +403,7 @@ public final class MasterCatalog {
   /**
    * Get the metadata about a relation.
    *
-   * @param relationKey specified which relation to get the metadata about.
+   * @param name name of the function to be retrieved..
    * @return the metadata of the specified relation.
    * @throws CatalogException if there is an error in the catalog.
    */
@@ -412,7 +412,6 @@ public final class MasterCatalog {
       throw new CatalogException("Catalog is closed.");
     }
 
-    // LOGGER.info("ger function status for function with name: " + name);
     try {
       return queue
           .execute(
@@ -421,31 +420,33 @@ public final class MasterCatalog {
                 protected FunctionStatus job(final SQLiteConnection sqliteConnection)
                     throws CatalogException, SQLiteException {
                   try {
+
                     SQLiteStatement statement =
                         sqliteConnection.prepare(
-                            "SELECT function_name, function_definition, function_language, function_outputSchema FROM registered_functions WHERE function_name=?");
+                            "SELECT function_name, function_description, function_outputType,  function_isMultivalued, function_lang  FROM registered_functions WHERE function_name=?");
 
                     statement.bind(1, name);
                     if (!statement.step()) {
-                      // LOGGER.info("returning null");
                       return null;
                     }
 
                     String name = statement.columnString(0);
-                    String description = statement.columnString(1);
-                    int lang = statement.columnInt(2);
-                    String outputSchema = statement.columnString(3);
-                    String inputSchema = statement.columnString(4);
+                    String descrip = statement.columnString(1);
+                    String outputSchema = statement.columnString(2);
+                    Boolean isMultivalued = ((statement.columnInt(3) == 0) ? false : true);
+                    int lang = statement.columnInt(4);
 
                     statement.dispose();
 
                     return new FunctionStatus(
                         name,
+                        descrip,
                         outputSchema,
-                        description,
+                        isMultivalued,
                         MyriaConstants.FunctionLanguage.values()[lang]);
 
                   } catch (final SQLiteException e) {
+
                     throw new CatalogException(e);
                   }
                 }
@@ -1808,28 +1809,26 @@ public final class MasterCatalog {
     }
   }
 
-  /*
+  /**
    * Register a function in the catalog
    */
-
   public void registerFunction(
       @Nonnull final String name,
-      @Nonnull final String definition,
-      @Nonnull final String outputSchema,
+      @Nonnull final String description,
+      @Nonnull final String outputType,
+      @Nonnull final Boolean isMultivalued,
       @Nonnull final FunctionLanguage lang,
-      String binary)
+      final String binary)
       throws CatalogException {
     Objects.requireNonNull(name, "function name");
-    Objects.requireNonNull(definition, "function definition");
-    Objects.requireNonNull(outputSchema, "function output schema");
+    Objects.requireNonNull(description, "function definition");
+    Objects.requireNonNull(outputType, "function output schema");
+    Objects.requireNonNull(isMultivalued, "is function a flatmap");
     Objects.requireNonNull(lang, "function language");
-    if (lang == FunctionLanguage.PYTHON)
-      Objects.requireNonNull(binary, "function pickle for python");
 
     if (isClosed) {
       throw new CatalogException("Catalog is closed.");
     }
-
     /* Do the work */
     try {
       queue
@@ -1842,16 +1841,12 @@ public final class MasterCatalog {
                   try {
                     SQLiteStatement statement =
                         sqliteConnection.prepare(
-                            "INSERT OR REPLACE INTO registered_functions (function_name, function_definition, function_outputSchema, function_binary) VALUES (?,?,?,?);");
+                            "INSERT OR REPLACE INTO registered_functions (function_name, function_description, function_outputType, function_isMultivalued, function_lang) VALUES (?,?,?,?,?);");
                     statement.bind(1, name);
-                    statement.bind(2, definition);
-                    statement.bind(3, outputSchema);
-                    if (binary != null) {
-                      // unencode the blob
-                      BASE64Decoder decoder = new BASE64Decoder();
-                      byte[] decodedBytes = decoder.decodeBuffer(binary);
-                      statement.bind(5, decodedBytes);
-                    }
+                    statement.bind(2, description);
+                    statement.bind(3, outputType);
+                    statement.bind(4, ((isMultivalued == true) ? 1 : 0));
+                    statement.bind(5, lang.ordinal());
                     statement.stepThrough();
                     statement.dispose();
                     statement = null;
@@ -1863,6 +1858,7 @@ public final class MasterCatalog {
               })
           .get();
     } catch (InterruptedException | ExecutionException e) {
+
       throw new CatalogException(e);
     }
   }

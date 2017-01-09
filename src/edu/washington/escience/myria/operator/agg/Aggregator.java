@@ -41,7 +41,7 @@ public interface Aggregator extends Serializable {
    * @param destColumn the starting index into which aggregates will be output.
    * @param state the initial state of the aggregate, which will be mutated.
    * @throws DbException if there is an error.
-   * @throws IOException
+   * @throws IOException in case of error.
    */
   void getResult(AppendableTable dest, int destColumn, Object state)
       throws DbException, IOException;
@@ -60,9 +60,9 @@ public interface Aggregator extends Serializable {
    */
   Schema getResultSchema();
   /**
-   * @param lt
-   * @param state
-   * @throws DbException
+   * @param from list of tuple batch to aggregate.
+   * @param state object to which state is written.
+   * @throws DbException in case of error.
    */
   void add(List<TupleBatch> from, Object state) throws DbException;
 }

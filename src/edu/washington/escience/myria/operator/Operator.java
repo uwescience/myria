@@ -75,7 +75,7 @@ public abstract class Operator implements Serializable {
   /**
    * End of iteration (EOI).
    */
-  protected boolean eoi = false;
+  private boolean eoi = false;
 
   /**
    * Environmental variables during execution.
@@ -106,20 +106,20 @@ public abstract class Operator implements Serializable {
     Preconditions.checkNotNull(profilingLogger);
     return profilingLogger;
   }
-  /**
-   * Python function registrar.
-   */
-  protected PythonFunctionRegistrar pyFuncReg;
+
   /**
    *
    * @return PythonFunctionRegistrar for operator.
+   * @throws DbException  in case of error.
    */
-  public PythonFunctionRegistrar getPythonFunctionRegistrar() {
+  public PythonFunctionRegistrar getPythonFunctionRegistrar() throws DbException {
     if (execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_TEST_MODE) != null
-        && execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_TEST_MODE).equals("false")) {
-      Preconditions.checkNotNull(pyFuncReg);
+        && !execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_TEST_MODE).equals("true")) {
+      if (getLocalSubQuery() instanceof WorkerSubQuery) {
+        return ((WorkerSubQuery) getLocalSubQuery()).getWorker().getPythonFunctionRegistrar();
+      }
     }
-    return pyFuncReg;
+    return null;
   }
 
   /**
@@ -425,12 +425,6 @@ public abstract class Operator implements Serializable {
     numOutputTuples = 0;
 
     // do my initialization
-    if (execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_TEST_MODE) != null
-        && execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_TEST_MODE).equals("false")) {
-      if (getLocalSubQuery() instanceof WorkerSubQuery) {
-        pyFuncReg = ((WorkerSubQuery) getLocalSubQuery()).getWorker().getPythonFunctionRegistrar();
-      }
-    }
     try {
       init(this.execEnvVars);
     } catch (DbException | RuntimeException e) {

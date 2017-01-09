@@ -2,6 +2,10 @@ package edu.washington.escience.myria.operator;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import sun.misc.BASE64Decoder;
 
@@ -15,8 +19,13 @@ import edu.washington.escience.myria.accessmethod.AccessMethod;
 import edu.washington.escience.myria.accessmethod.ConnectionInfo;
 import edu.washington.escience.myria.expression.evaluate.GenericEvaluator;
 import edu.washington.escience.myria.functions.PythonFunctionRegistrar;
+import edu.washington.escience.myria.parallel.SubQueryPlan;
 import edu.washington.escience.myria.storage.TupleBatch;
-
+/**
+ *
+ *Class for creating user defined functions.
+ *
+ */
 public class DbCreateFunction extends RootOperator {
 
   /** Required for Java serialization. */
@@ -30,10 +39,14 @@ public class DbCreateFunction extends RootOperator {
   private final String name;
   /** function body.*/
   private final String binary;
+  /** function description or text.*/
+  private final String description;
+  /** does function return multiple tuples.*/
+  private final Boolean isMultivalued;
   /** function language.*/
   private final MyriaConstants.FunctionLanguage lang;
   /** function output schema.*/
-  private final Schema outputSchema;
+  private final String outputType;
 
   /** logger for this class. */
   private static final org.slf4j.Logger LOGGER =
@@ -43,7 +56,8 @@ public class DbCreateFunction extends RootOperator {
    * @param child the source of tuples to be inserted.
    * @param name function name.
    * @param connectionInfo the parameters of the database connection.
-   * @param outputSchema output schema for the function
+   * @param outputType output schema for the function
+   * @param isMultivalued does it return multiple tuples?
    * @param lang function type
    * @param binary function body (encoded binary string)
    * @param description function decription, this is kept in the catalog and not sent to workers.
@@ -52,16 +66,19 @@ public class DbCreateFunction extends RootOperator {
       final Operator child,
       final String name,
       final String description,
-      final MyriaConstants.FunctionLanguage lang,
-      final Schema outputSchema,
+      final String outputType,
+      final Boolean isMultivalued,
+      final FunctionLanguage lang,
       final String binary,
       final ConnectionInfo connectionInfo) {
     super(child);
     this.name = name;
+    this.description = description;
+    this.outputType = outputType;
+    this.isMultivalued = isMultivalued;
     this.connectionInfo = connectionInfo;
     this.lang = lang;
     this.binary = binary;
-    this.outputSchema = outputSchema;
   }
 
   @Override
@@ -72,20 +89,39 @@ public class DbCreateFunction extends RootOperator {
       connectionInfo =
           (ConnectionInfo) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_DATABASE_CONN_INFO);
     }
+    switch (lang) {
+      case POSTGRES:
+        Pattern pattern = Pattern.compile("(CREATE FUNCTION)([\\s\\S]*)(LANGUAGE SQL;)");
+        Matcher matcher = pattern.matcher(description);
 
-    if (lang == MyriaConstants.FunctionLanguage.PYTHON) {
-      //LOGGER.info("in python function register");
+        if (matcher.matches()) {
+          /* Add a replace statement */
+          String modifiedReplaceFunction =
+              description.replace("CREATE FUNCTION", "CREATE OR REPLACE FUNCTION");
 
-      BASE64Decoder decoder = new BASE64Decoder();
-      if (binary != null) {
-        byte[] decodedBytes = decoder.decodeBuffer(binary);
-        ByteBuffer binaryFunction = ByteBuffer.wrap(decodedBytes);
+          /* Run command */
+          accessMethod.runCommand(modifiedReplaceFunction);
+        } else {
+          throw new DbException("Postgres function is invalid.");
+        }
 
-        PythonFunctionRegistrar pyFunc = new PythonFunctionRegistrar(connectionInfo);
-        pyFunc.addFunction(name, binaryFunction, outputSchema.toString());
-      } else {
-        throw new DbException("Cannot register python UDF without binary");
-      }
+        break;
+      case PYTHON:
+        BASE64Decoder decoder = new BASE64Decoder();
+        if (binary != null) {
+          byte[] decodedBytes = decoder.decodeBuffer(binary);
+          ByteBuffer binaryFunction = ByteBuffer.wrap(decodedBytes);
+
+          PythonFunctionRegistrar pyFunc = new PythonFunctionRegistrar(connectionInfo);
+          pyFunc.addFunction(
+              name, description, outputType.toString(), isMultivalued, binaryFunction);
+        } else {
+          throw new DbException("Cannot register python UDF without binary.");
+        }
+
+        break;
+      default:
+        throw new DbException("Function language not supported!");
     }
   }
 

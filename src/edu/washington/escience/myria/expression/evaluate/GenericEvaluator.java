@@ -107,9 +107,9 @@ public class GenericEvaluator extends Evaluator {
    * @param count column storing number of results (null for single-valued expressions)
    * @param result the table storing the result
    * @param state additional state that affects the computation
-   * @throws InvocationTargetException exception thrown from janino
-   * @throws DbException
+   * @throws InvocationTargetException exception thrown from janino.
    * @throws IOException
+   * @throws DbException
    */
   public void eval(
       @Nonnull final ReadableTable tb,

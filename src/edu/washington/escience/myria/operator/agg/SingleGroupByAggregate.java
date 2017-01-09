@@ -227,19 +227,13 @@ public class SingleGroupByAggregate extends UnaryOperator {
 
       for (int i = 0; i < tb.numTuples(); ++i) {
         Object[] groupAgg = getAggState(tb, i);
-        if (aggregators[agg]
-            .getClass()
-            .getName()
-            .equals(StatefulUserDefinedAggregator.class.getName())) {
-          setBitset(tb, i);
+        if (aggregators[agg] instanceof StatefulUserDefinedAggregator) {
+          setBitSet(tb, i);
         } else {
           aggregators[agg].addRow(tb, i, groupAgg[agg]);
         }
       }
-      if (aggregators[agg]
-          .getClass()
-          .getName()
-          .equals(StatefulUserDefinedAggregator.class.getName())) {
+      if (aggregators[agg] instanceof StatefulUserDefinedAggregator) {
         updateltbGroups(tb);
       }
     }
@@ -375,13 +369,14 @@ public class SingleGroupByAggregate extends UnaryOperator {
         throw new DbException("type not supported for SingleColumnGroupby");
     }
   }
+
   /**
    * Private method to update bitset.
    * @param table tb containing the tuple.
    * @param row row to be update.
    * @throws DbException in case of error
    */
-  private void setBitset(final ReadableTable table, final int row) throws DbException {
+  private void setBitSet(final ReadableTable table, final int row) throws DbException {
 
     BitSet bs;
     switch (gColumnType) {
@@ -482,10 +477,7 @@ public class SingleGroupByAggregate extends UnaryOperator {
     int index = 1;
     for (int agg = 0; agg < aggregators.length; ++agg) {
 
-      if (aggregators[agg]
-          .getClass()
-          .getName()
-          .equals(StatefulUserDefinedAggregator.class.getName())) {
+      if (aggregators[agg] instanceof StatefulUserDefinedAggregator) {
 
         List<TupleBatch> listTb = ltb.get(key);
         if (listTb.size() > 0) {

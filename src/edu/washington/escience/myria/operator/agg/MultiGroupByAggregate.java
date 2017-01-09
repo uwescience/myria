@@ -243,10 +243,7 @@ public final class MultiGroupByAggregate extends UnaryOperator {
   private void updateGroup(final TupleBatch tb, final int row, final Object[] curAggStates)
       throws DbException {
     for (int agg = 0; agg < aggregators.length; ++agg) {
-      if (!(aggregators[agg]
-          .getClass()
-          .getName()
-          .equals(StatefulUserDefinedAggregator.class.getName()))) {
+      if (!(aggregators[agg] instanceof StatefulUserDefinedAggregator)) {
         aggregators[agg].addRow(tb, row, curAggStates[agg]);
       }
     }
@@ -279,17 +276,12 @@ public final class MultiGroupByAggregate extends UnaryOperator {
 
       int curCol = 0;
       for (int agg = 0; agg < aggregators.length; ++agg) {
-
-        if (aggregators[agg]
-            .getClass()
-            .getName()
-            .equals(StatefulUserDefinedAggregator.class.getName())) {
-
+        if (aggregators[agg] instanceof StatefulUserDefinedAggregator) {
           aggregators[agg].add(lt, rowAggs[agg]);
-          aggregators[agg].getResult(curGroupAggs, curCol, rowAggs[agg]);
-        } else {
-          aggregators[agg].getResult(curGroupAggs, curCol, rowAggs[agg]);
         }
+
+        aggregators[agg].getResult(curGroupAggs, curCol, rowAggs[agg]);
+
         curCol += aggregators[agg].getResultSchema().numColumns();
       }
     }
@@ -333,20 +325,12 @@ public final class MultiGroupByAggregate extends UnaryOperator {
     final ImmutableList.Builder<String> aggNames = ImmutableList.<String>builder();
 
     try {
-      if (pyFuncReg != null) {
-        for (Aggregator agg : AggUtils.allocateAggs(factories, getChild().getSchema(), pyFuncReg)) {
-          Schema curAggSchema = agg.getResultSchema();
-          aggTypes.addAll(curAggSchema.getColumnTypes());
-          aggNames.addAll(curAggSchema.getColumnNames());
-        }
 
-      } else {
-        for (Aggregator agg : AggUtils.allocateAggs(factories, inputSchema, null)) {
-
-          Schema curAggSchema = agg.getResultSchema();
-          aggTypes.addAll(curAggSchema.getColumnTypes());
-          aggNames.addAll(curAggSchema.getColumnNames());
-        }
+      for (Aggregator agg :
+          AggUtils.allocateAggs(factories, getChild().getSchema(), getPythonFunctionRegistrar())) {
+        Schema curAggSchema = agg.getResultSchema();
+        aggTypes.addAll(curAggSchema.getColumnTypes());
+        aggNames.addAll(curAggSchema.getColumnNames());
       }
 
     } catch (DbException e) {
@@ -361,11 +345,8 @@ public final class MultiGroupByAggregate extends UnaryOperator {
     Preconditions.checkState(getSchema() != null, "unable to determine schema in init");
     inputSchema = getChild().getSchema();
 
-    if (pyFuncReg != null) {
-      aggregators = AggUtils.allocateAggs(factories, getChild().getSchema(), pyFuncReg);
-    } else {
-      aggregators = AggUtils.allocateAggs(factories, getChild().getSchema(), null);
-    }
+    aggregators =
+        AggUtils.allocateAggs(factories, getChild().getSchema(), getPythonFunctionRegistrar());
 
     groupKeys = new TupleBuffer(groupSchema);
     aggStates = new ArrayList<>();

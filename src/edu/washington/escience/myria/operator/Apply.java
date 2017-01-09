@@ -21,6 +21,7 @@ import edu.washington.escience.myria.column.Column;
 import edu.washington.escience.myria.column.builder.ColumnBuilder;
 import edu.washington.escience.myria.column.builder.ColumnFactory;
 import edu.washington.escience.myria.expression.Expression;
+import edu.washington.escience.myria.expression.PyUDFExpression;
 import edu.washington.escience.myria.expression.evaluate.ConstantEvaluator;
 import edu.washington.escience.myria.expression.evaluate.ExpressionOperatorParameter;
 import edu.washington.escience.myria.expression.evaluate.GenericEvaluator;
@@ -124,9 +125,9 @@ public class Apply extends UnaryOperator {
     // batches from the child until we have a full batch or the child returns null.
     while (!outputBuffer.hasFilledTB()) {
       TupleBatch inputTuples = getChild().nextReady();
-      if (child.eos()) {
+      if (getChild().eos()) {
         for (GenericEvaluator evaluator : emitEvaluators) {
-          LOGGER.info("calling send EOS for evaluator");
+          LOGGER.debug("calling send EOS for evaluator");
           evaluator.sendEos();
         }
       }

@@ -224,13 +224,13 @@ public class UserDefinedAggregatorFactory implements AggregatorFactory {
     }
 
     String script = compute.append(output).toString();
-    LOGGER.info("Compiling UDA {}", script);
+    LOGGER.debug("Compiling UDA {}", script);
 
     IScriptEvaluator se;
     try {
       se = CompilerFactoryFactory.getDefaultCompilerFactory().newScriptEvaluator();
     } catch (Exception e) {
-      LOGGER.error("Could not create scriptevaluator", e);
+      LOGGER.debug("Could not create scriptevaluator", e);
       throw new DbException("Could not create scriptevaluator", e);
     }
     se.setDefaultImports(MyriaConstants.DEFAULT_JANINO_IMPORTS);
@@ -246,7 +246,7 @@ public class UserDefinedAggregatorFactory implements AggregatorFactory {
         return null;
       }
     } catch (CompileException e) {
-      LOGGER.error("Error when compiling expression {}: {}", script, e);
+      LOGGER.debug("Error when compiling expression {}: {}", script, e);
       throw new DbException("Error when compiling expression: " + script, e);
     }
   }

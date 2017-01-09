@@ -326,21 +326,16 @@ public final class MyriaConstants {
   };
 
   /**
-   * python executable name
+   * python executable name.
    */
   public static final String PYTHONEXEC = "python";
-  /*
-   * Python worker module
+  /**
+   * Python worker module.
    */
   public static final String PYTHONWORKER = "MyriaPythonWorker.worker";
+
   /**
-   * python module discovery env variable
-   */
-  public static final String PYTHONPATH = "";
-  /**
-   *
-   * UDF language
-   *
+   * UDF language.
    */
   public static enum FunctionLanguage {
     /** Postgres UDF. */
@@ -348,12 +343,28 @@ public final class MyriaConstants {
     /** Python UDF. */
     PYTHON
   };
-  /** python exception returned from python process.*/
-  public static final int PYTHON_EXCEPTION = -3;
-  /** python function return is null.*/
-  public static final int NULL_LENGTH = -5;
-  /** Send EOS tp python strea, is null.*/
-  public static final int EOS = -4;
+  /**
+   * Python UDF relation: relation for holding python functions on each worker.
+   */
+  public static final RelationKey PYUDF_RELATION = new RelationKey("public", "function", "Python");
+  /**
+   * Python SpecialLenghts: send/received to the python worker.
+   */
+  public static enum PythonSpecialLengths {
+    PYTHON_EXCEPTION(-3), /** python exception returned from python process.*/
+    NULL_LENGTH(-5), /** python function return is null.*/
+    EOS(-4); /** Send EOS to python worker.*/
+    private int val;
+
+    PythonSpecialLengths(final int val) {
+      this.val = val;
+    }
+
+    public int getVal() {
+      return val;
+    }
+  }
+
   /**
    * Python type enum.
    */
@@ -373,10 +384,6 @@ public final class MyriaConstants {
       return val;
     }
   }
-  /**
-   * Python UDF relation
-   */
-  public static final RelationKey PYUDF_RELATION = new RelationKey("public", "UDF", "Python");
 
   /**
    * Python UDF schema
@@ -385,10 +392,14 @@ public final class MyriaConstants {
       Schema.ofFields(
           "function_name",
           Type.STRING_TYPE,
-          "binary",
-          Type.BLOB_TYPE,
-          "output_type",
-          Type.STRING_TYPE);
+          "function_description",
+          Type.STRING_TYPE,
+          "function_output_type",
+          Type.STRING_TYPE,
+          "function_isMultivalued",
+          Type.BOOLEAN_TYPE,
+          "function_binary",
+          Type.BLOB_TYPE);
 
   /** Number of bytes per worker partition for parallel ingest - 100MB. */
   public static final long PARALLEL_INGEST_WORKER_MINIMUM_PARTITION_SIZE = 100 * MB;

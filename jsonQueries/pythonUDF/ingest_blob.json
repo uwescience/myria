@@ -1,0 +1,18 @@
+{
+  "relationKey" : {
+    "userName" : "public",
+    "programName" : "adhoc",
+    "relationName" : "raw"
+  },
+  "schema" : {
+    "columnTypes" : ["LONG_TYPE", "LONG_TYPE","LONG_TYPE","BLOB_TYPE"],
+    "columnNames" : ["id", "subjid","imgid" ,"image"]
+  },
+  "s3Source" : {
+    "dataType" : "S3",
+    "s3Uri" : "s3://imagedb-data/dmridatasample.csv"
+  },
+  "delimiter": ",",
+   "workers": [1,2]
+ }
+
