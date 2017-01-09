@@ -80,7 +80,6 @@ public class PythonUDFEvaluator extends GenericEvaluator {
       @NotNull final PythonFunctionRegistrar pyFuncReg) {
     super(expression, parameters);
     pyFuncRegistrar = pyFuncReg;
-
     PyUDFExpression op = (PyUDFExpression) expression.getRootExpressionOperator();
     outputType = op.getOutput();
     List<ExpressionOperator> childops = op.getChildren();
@@ -104,13 +103,16 @@ public class PythonUDFEvaluator extends GenericEvaluator {
     try {
       if (pyFuncRegistrar != null) {
         FunctionStatus fs = pyFuncRegistrar.getFunctionStatus(pyFunctionName);
-
         if (fs != null && fs.getName() == null) {
-          throw new DbException("No Python UDf with given name registered.");
-        } else {
-          if (pyWorker != null) {
-            isFlatmap = fs.getIsMultivalued(); //if the function is mutlivalued.
-            pyWorker.sendCodePickle(fs.getBinary(), numColumns, outputType, fs.getIsMultivalued());
+          String pyCodeString = fs.getBinary();
+
+          if (pyCodeString == null) {
+            throw new DbException("No Python UDf with given name registered.");
+          } else {
+            if (pyWorker != null) {
+              isFlatmap = fs.getIsMultivalued(); //if the function is mutlivalued.
+              pyWorker.sendCodePickle(fs.getBinary(), numColumns, outputType, isFlatmap);
+            }
           }
         }
       }
@@ -314,9 +316,11 @@ public class PythonUDFEvaluator extends GenericEvaluator {
       }
 
       for (int i = 0; i < c; i++) {
+
         //then read the type of tuple
         type = dIn.readInt();
         // if the 'type' is exception, throw exception
+
         if (type == MyriaConstants.PythonSpecialLengths.PYTHON_EXCEPTION.getVal()) {
           int excepLength = dIn.readInt();
           byte[] excp = new byte[excepLength];

@@ -6,7 +6,6 @@ package edu.washington.escience.myria.api.encoding;
 import java.util.Set;
 
 import edu.washington.escience.myria.MyriaConstants.FunctionLanguage;
-
 /**
  *
  */

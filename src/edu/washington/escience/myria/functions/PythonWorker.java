@@ -225,7 +225,6 @@ public class PythonWorker {
     }
   }
   /**
-   *
    * @param eos Send end of stream to cleanly close the python process.
    * @throws DbException in case of error.
    */

@@ -20,6 +20,10 @@ public class FunctionStatus {
    * @param name function name identifying the function.
    * @param description function description.
    * @param outputType The {@link Schema} of the input to the function.
+   * <<<<<<< HEAD
+   * =======
+   * @param arity number of inputs required for the function.
+   * >>>>>>> 05e3844...  addressing comments from code review
    * @param isMultiValued does function return multiple tuples?
    * @param lang language of the function.
    */
@@ -43,13 +47,10 @@ public class FunctionStatus {
   @JsonProperty private final String name;
   /** The text of the function */
   @JsonProperty private final String description;
-
   /** The {@link Schema} of the output tuples to the function. */
   @JsonProperty private final String outputType;
-
   /** Does the function return multiple tuples. */
   @JsonProperty private final Boolean isMultivalued;
-
   /** The language the function */
   @JsonProperty private final MyriaConstants.FunctionLanguage lang;
   /** base64 encoded sting of code binary. */
@@ -67,7 +68,6 @@ public class FunctionStatus {
   public String getDescription() {
     return description;
   }
-
   /**
    * @return get if function is multivalued.
    */
@@ -75,17 +75,16 @@ public class FunctionStatus {
     return isMultivalued;
   }
   /**
-   * @return The {@link Schema} of the output tuples in the function.
-   */
-  public String getOutputType() {
-    return outputType;
-  }
-
-  /**
    * @return the language of function
    */
   public FunctionLanguage getLanguage() {
     return lang;
+  }
+  /**
+   * @return The {@link Schema} of the output tuples in the function.
+   */
+  public String getOutputType() {
+    return outputType;
   }
   /**
    * @return get binary(base64 encoded) associated with the function.

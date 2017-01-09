@@ -1,25 +1,18 @@
 package edu.washington.escience.myria.operator;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import sun.misc.BASE64Decoder;
 
 import com.google.common.collect.ImmutableMap;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.MyriaConstants.FunctionLanguage;
-import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.accessmethod.AccessMethod;
 import edu.washington.escience.myria.accessmethod.ConnectionInfo;
 import edu.washington.escience.myria.expression.evaluate.GenericEvaluator;
 import edu.washington.escience.myria.functions.PythonFunctionRegistrar;
-import edu.washington.escience.myria.parallel.SubQueryPlan;
 import edu.washington.escience.myria.storage.TupleBatch;
 /**
  *
@@ -108,9 +101,8 @@ public class DbCreateFunction extends RootOperator {
         break;
       case PYTHON:
         if (binary != null) {
-
           PythonFunctionRegistrar pyFunc = new PythonFunctionRegistrar(connectionInfo);
-          pyFunc.addFunction(name, description, outputType.toString(), isMultivalued, binary);
+          pyFunc.addFunction(name, description, outputType, isMultivalued, binary);
         } else {
           throw new DbException("Cannot register python UDF without binary.");
         }

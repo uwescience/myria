@@ -59,6 +59,10 @@ public class PythonFunctionRegistrar {
    * @param name function name
    * @param description  of function
    * @param outputType of function
+   * <<<<<<< HEAD
+   * =======
+   * @param arity of function
+   * >>>>>>> 05e3844...  addressing comments from code review
    * @param isMultivalued does function return multiple tuples.
    * @param binary binary function
    * @throws DbException if any error occurs
@@ -106,7 +110,7 @@ public class PythonFunctionRegistrar {
   public FunctionStatus getFunctionStatus(final String pyFunctionName) throws DbException {
 
     StringBuilder sb = new StringBuilder();
-    sb.append("Select * from ");
+    sb.append("Select function_binary from ");
     sb.append(MyriaConstants.PYUDF_RELATION.toString(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL));
     sb.append(" where function_name='");
     sb.append(pyFunctionName);
@@ -174,7 +178,6 @@ public class PythonFunctionRegistrar {
           return codename;
         }
       }
-
     } catch (Exception e) {
       throw new DbException(e);
     }
