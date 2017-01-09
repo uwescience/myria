@@ -75,13 +75,13 @@ def write_with_length(obj, stream, outputType, serialiser):
         write_int(obj, stream)
     elif(outputType == DataType.LONG):
         write_int(DataType.LONG, stream)
-        write_long(stream.write(obj))
+        write_long(obj,stream)
     elif(outputType == DataType.FLOAT):
         write_int(DataType.FLOAT, stream)
-        write_float(stream.write(obj))
+        write_float(obj, stream)
     elif(outputType == DataType.DOUBLE):
         write_int(DataType.DOUBLE, stream)
-        write_double(stream.write(obj))
+        write_double(obj,stream)
     elif(outputType == DataType.BLOB):
         write_int(DataType.BLOB, stream)
         serialiser.write_with_length(obj, stream)

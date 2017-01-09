@@ -3,27 +3,29 @@
  */
 package edu.washington.escience.myria.api.encoding;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.MyriaConstants.FunctionLanguage;
+import edu.washington.escience.myria.accessmethod.SQLiteAccessMethod;
 import edu.washington.escience.myria.Schema;
 
 /**
  *
  */
 public class FunctionStatus {
+  /** The logger for this class. Uses SQLiteAccessMethod settings. */
+  private static final Logger LOGGER = LoggerFactory.getLogger(SQLiteAccessMethod.class);
   /**
    * Instantiate a FunctionStatus with the provided values.
    *
    * @param name function name identifying the function.
    * @param description function description.
    * @param outputType The {@link Schema} of the input to the function.
-   * <<<<<<< HEAD
-   * =======
-   * @param arity number of inputs required for the function.
-   * >>>>>>> 05e3844...  addressing comments from code review
    * @param isMultiValued does function return multiple tuples?
    * @param lang language of the function.
    */
@@ -68,6 +70,7 @@ public class FunctionStatus {
   public String getDescription() {
     return description;
   }
+
   /**
    * @return get if function is multivalued.
    */
@@ -86,6 +89,7 @@ public class FunctionStatus {
   public String getOutputType() {
     return outputType;
   }
+
   /**
    * @return get binary(base64 encoded) associated with the function.
    */

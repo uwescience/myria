@@ -117,7 +117,7 @@ public class GenericEvaluator extends Evaluator {
       @Nullable final WritableColumn count,
       @Nonnull final WritableColumn result,
       @Nullable final ReadableTable state)
-      throws InvocationTargetException, DbException, IOException {
+      throws InvocationTargetException, DbException {
     Preconditions.checkArgument(
         evaluator != null, "Call compile first or copy the data if it is the same in the input.");
     Preconditions.checkArgument(
@@ -196,10 +196,9 @@ public class GenericEvaluator extends Evaluator {
    * @return an {@link EvaluatorResult} containing the results and result counts of evaluating this expression on the entire TupleBatch
    * @throws InvocationTargetException exception thrown from janino
    * @throws DbException
-   * @throws IOException
    */
   public EvaluatorResult evaluateColumn(final TupleBatch tb)
-      throws InvocationTargetException, DbException, IOException {
+      throws InvocationTargetException, DbException {
     // Optimization for result counts of single-valued expressions.
     final Column<?> constCounts = new ConstantValueColumn(1, Type.INT_TYPE, tb.numTuples());
     final WritableColumn countsWriter;

@@ -6,38 +6,33 @@
               "opType": "TableScan",
               "opId": 0,
               "relationKey": {
-                "userName": "public",
-                "relationName": "raw",
-                "programName": "adhoc"
+                "userName": "jwang",
+                "relationName": "smallTable",
+                "programName": "global_join"
               }
             },
             {
 
                "opType": "Apply",
-               "opId": 1,
                "addCounter":"False",
+               "opId": 1,
                "emitExpressions": [
                  {
                    "outputName": "udfOutput",
                    "rootExpressionOperator": {
                      "type": "PYUDF",
-                     "name": "flatmapApplyTest",
-                     "outputType":"BLOB_TYPE",
+                     "name": "pyAggInt",
+                     "outputType":"LONG_TYPE",
                      "children": [
                        {
                          "type": "VARIABLE",
-                         "columnIdx": 3
+                         "columnIdx": 1
                        }
                      ]
                    }
                  },
-                   {
-                   "outputName":"subjectid",
-                   "rootExpressionOperator":{
-                      "type":"VARIABLE",
-                      "columnIdx":2}
-                 },
-                 {"outputName":"imageid",
+
+                 {"outputName":"col2",
                  "rootExpressionOperator":{
                     "type":"VARIABLE",
                     "columnIdx":1}
@@ -50,7 +45,7 @@
                   "opId": 2,
                   "relationKey": {
                     "userName": "public",
-                    "relationName": "results",
+                    "relationName": "smallTableResults",
                     "programName": "adhoc"
               },
               "argChild": 1,
@@ -62,7 +57,7 @@
        ],
 
    "language":"myrial",
-   "logicalRa":"Store(public:adhoc:result)[Apply(PyUDF(flatmapApplyTest))]]",
+   "logicalRa":"Store(public:adhoc:result)[Apply(PyUDF(simpleApplyTest,))]]",
 
-   "rawQuery":"Flatmap Apply test for PythonUDFs"
+   "rawQuery":"Simple Apply test with return type Long for PythonUDFs"
 }

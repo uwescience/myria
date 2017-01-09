@@ -481,7 +481,6 @@ public class SingleGroupByAggregate extends UnaryOperator {
 
         List<TupleBatch> listTb = ltb.get(key);
         if (listTb.size() > 0) {
-          LOGGER.info("size of tuples for key " + key.toString() + " is " + listTb.size());
           aggregators[agg].add(listTb, aggState[agg]);
         }
       }

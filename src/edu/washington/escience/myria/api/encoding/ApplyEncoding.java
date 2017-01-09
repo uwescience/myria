@@ -9,9 +9,10 @@ import edu.washington.escience.myria.operator.Apply;
 public class ApplyEncoding extends UnaryOperatorEncoding<Apply> {
 
   @Required public List<Expression> emitExpressions;
+  @Required public Boolean addCounter;
 
   @Override
   public Apply construct(final ConstructArgs args) {
-    return new Apply(null, emitExpressions);
+    return new Apply(null, emitExpressions, addCounter);
   }
 }

@@ -58,7 +58,7 @@ public class MyriaUtilsTest {
     assertInvalidObject(Calendar.getInstance());
   }
 
-  @Test(expected = NullPointerException.class)
+  @Test
   public void testEnsureObjectIsNullType() {
     MyriaUtils.ensureObjectIsValidType(null);
   }

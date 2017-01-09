@@ -1,5 +1,6 @@
 package edu.washington.escience.myria.util;
 
+import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -128,6 +129,13 @@ public final class MyriaUtils {
       return o;
     }
     if (o instanceof String) {
+      return o;
+    }
+    if (o instanceof ByteBuffer) {
+      return o;
+    }
+    if (o == null) {
+      // allow initialization with a null object -- needed for BlobType.
       return o;
     }
     throw new IllegalArgumentException(

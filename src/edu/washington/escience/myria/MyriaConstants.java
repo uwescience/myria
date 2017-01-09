@@ -406,4 +406,8 @@ public final class MyriaConstants {
 
   /** Byte overlap range for parallel ingest. **/
   public static final long PARALLEL_INGEST_BYTE_OVERLAP = 16 * KB;
+  /**
+   * Flatmapid column name
+   */
+  public static final String FLATMAP_COLUMN_NAME = "flatmapid";
 }

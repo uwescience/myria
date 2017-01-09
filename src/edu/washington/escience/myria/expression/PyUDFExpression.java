@@ -5,12 +5,8 @@ import java.util.List;
 import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.jcraft.jsch.Logger;
-
 import edu.washington.escience.myria.Type;
-import edu.washington.escience.myria.coordinator.MasterCatalog;
 import edu.washington.escience.myria.expression.evaluate.ExpressionOperatorParameter;
-import edu.washington.escience.myria.functions.PythonWorker;
 
 /**
  *
@@ -33,39 +29,36 @@ public class PyUDFExpression extends NAryExpression {
   @JsonProperty private final Type outputType;
 
   /**
-   * add a counter to flatmap?
+   * This is not really unused, it's used automagically by Jackson deserialization.
    */
-  @JsonProperty private final Boolean addCounter;
-
+  @SuppressWarnings("unused")
+  private PyUDFExpression() {
+    name = "";
+    //set default return type this is changed once pythonfunction is retrived.
+    outputType = Type.BLOB_TYPE;
+  }
   /**
    * Python function expression.
    *
    * @param children operand.
    * @param outputType - output Type of the python function
    * @param name - name of the python function in the catalog
-   * @param addCounter - add a column id for flatmap py expression.
    */
   public PyUDFExpression(
-      final List<ExpressionOperator> children,
-      final String name,
-      final Type outputType,
-      final Boolean addCounter) {
+      final List<ExpressionOperator> children, final String name, final Type outputType) {
     super(children);
     this.name = name;
     this.outputType = outputType;
-    this.addCounter = addCounter;
   }
 
   @Override
   public Type getOutputType(final ExpressionOperatorParameter parameters) {
     return outputType;
   }
-  /**
-   * Should add a counter column for flatmap.
-   */
+
   @Override
-  public boolean addCounter() {
-    return addCounter;
+  public boolean hasArrayOutputType() {
+    return true;
   }
 
   /**
@@ -74,15 +67,9 @@ public class PyUDFExpression extends NAryExpression {
   public String getName() {
     return name;
   }
-
   /**
-   * @return the output Type for this python expression.
+   * Java substring is empty for python expression.
    */
-  public Type getOutput() {
-    return outputType;
-  }
-
-  // don't need the getJavaSubstring
   @Override
   public String getJavaString(final ExpressionOperatorParameter parameters) {
     return "";

@@ -22,6 +22,7 @@ import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
+import edu.washington.escience.myria.accessmethod.ConnectionInfo;
 import edu.washington.escience.myria.api.encoding.FunctionStatus;
 import edu.washington.escience.myria.column.Column;
 import edu.washington.escience.myria.column.builder.ColumnBuilder;
@@ -36,6 +37,7 @@ import edu.washington.escience.myria.functions.PythonFunctionRegistrar;
 import edu.washington.escience.myria.functions.PythonWorker;
 import edu.washington.escience.myria.operator.Apply;
 import edu.washington.escience.myria.operator.StatefulApply;
+import edu.washington.escience.myria.profiling.ProfilingLogger;
 import edu.washington.escience.myria.storage.AppendableTable;
 import edu.washington.escience.myria.storage.ReadableTable;
 import edu.washington.escience.myria.storage.Tuple;
@@ -80,8 +82,9 @@ public class PythonUDFEvaluator extends GenericEvaluator {
       @NotNull final PythonFunctionRegistrar pyFuncReg) {
     super(expression, parameters);
     pyFuncRegistrar = pyFuncReg;
+
     PyUDFExpression op = (PyUDFExpression) expression.getRootExpressionOperator();
-    outputType = op.getOutput();
+    outputType = op.getOutputType(parameters);
     List<ExpressionOperator> childops = op.getChildren();
     numColumns = childops.size();
     columnIdxs = new int[numColumns];
@@ -97,22 +100,17 @@ public class PythonUDFEvaluator extends GenericEvaluator {
    */
   private void initEvaluator() throws DbException {
     ExpressionOperator op = getExpression().getRootExpressionOperator();
-
     String pyFunctionName = ((PyUDFExpression) op).getName();
 
     try {
       if (pyFuncRegistrar != null) {
         FunctionStatus fs = pyFuncRegistrar.getFunctionStatus(pyFunctionName);
         if (fs != null && fs.getName() == null) {
-          String pyCodeString = fs.getBinary();
-
-          if (pyCodeString == null) {
-            throw new DbException("No Python UDf with given name registered.");
-          } else {
-            if (pyWorker != null) {
-              isFlatmap = fs.getIsMultivalued(); //if the function is mutlivalued.
-              pyWorker.sendCodePickle(fs.getBinary(), numColumns, outputType, isFlatmap);
-            }
+          throw new DbException("No Python UDf with given name registered.");
+        } else {
+          if (pyWorker != null) {
+            isFlatmap = fs.getIsMultivalued(); //if the function is multivalued.
+            pyWorker.sendCodePickle(fs.getBinary(), numColumns, outputType, fs.getIsMultivalued());
           }
         }
       }
@@ -155,32 +153,28 @@ public class PythonUDFEvaluator extends GenericEvaluator {
       @Nullable final WritableColumn count,
       @Nonnull final WritableColumn result,
       @Nullable final ReadableTable state)
-      throws DbException, IOException {
-    Object obj = evaluatePython(tb, rowIdx, state, count);
-    if (obj == null) {
-      throw new DbException("Python process returned null!");
+      throws DbException {
+
+    if (pyWorker == null) {
+      pyWorker = new PythonWorker();
+      initEvaluator();
     }
+    int resultColIdx = -1;
+
     try {
-      switch (outputType) {
-        case DOUBLE_TYPE:
-          result.appendDouble((Double) obj);
-          break;
-        case BLOB_TYPE:
-          result.appendBlob(ByteBuffer.wrap((byte[]) obj));
-          break;
-        case FLOAT_TYPE:
-          result.appendFloat((float) obj);
-          break;
-        case INT_TYPE:
-          result.appendInt((int) obj);
-          break;
-        case LONG_TYPE:
-          result.appendLong((long) obj);
-          break;
-        default:
-          LOGGER.info("Type{} not supported as python Output.", outputType.toString());
-          break;
+      DataOutputStream dOut = pyWorker.getDataOutputStream();
+      pyWorker.sendNumTuples(1);
+      for (int i = 0; i < numColumns; i++) {
+        if (isStateColumn[i]) {
+          writeToStream(state, rowIdx, columnIdxs[i], dOut);
+        } else {
+          writeToStream(tb, rowIdx, columnIdxs[i], dOut);
+        }
       }
+
+      // read response back
+      readFromStream(count, result, null, resultColIdx);
+
     } catch (Exception e) {
       throw new DbException(e);
     }
@@ -207,6 +201,7 @@ public class PythonUDFEvaluator extends GenericEvaluator {
       }
       break;
     }
+
     try {
 
       DataOutputStream dOut = pyWorker.getDataOutputStream();
@@ -225,102 +220,47 @@ public class PythonUDFEvaluator extends GenericEvaluator {
       }
 
       // read result back
-      Object obj = readFromStream(null);
-      switch (outputType) {
-        case DOUBLE_TYPE:
-          result.putDouble(resultcol, (Double) obj);
-          break;
-        case BLOB_TYPE:
-          result.putBlob(resultcol, (ByteBuffer.wrap((byte[]) obj)));
-          break;
-        case FLOAT_TYPE:
-          result.putFloat(resultcol, (float) obj);
-          break;
-        case INT_TYPE:
-          result.putInt(resultcol, (int) obj);
-          break;
-        case LONG_TYPE:
-          result.putLong(resultcol, (long) obj);
-          break;
-
-        default:
-          LOGGER.info("type not supported as Python Output");
-          break;
-      }
+      readFromStream(null, null, result, resultcol);
 
     } catch (Exception e) {
-
       throw new DbException(e);
     }
   }
 
   /**
-   * sendinput to be evaluated by python process.
-   * @param tb -input tuples.
-   * @param rowIdx -row to be evaluated.
-   * @param state - state column to be updated.
-   * @return Object - returned object.
-   * @throws IOException
-   * @throws DbException.
-   */
-  private Object evaluatePython(
-      final ReadableTable tb,
-      final int rowIdx,
-      final ReadableTable state,
-      final WritableColumn count)
-      throws DbException, IOException {
-    if (pyWorker == null) {
-      pyWorker = new PythonWorker();
-      initEvaluator();
-    }
-
-    try {
-      DataOutputStream dOut = pyWorker.getDataOutputStream();
-      LOGGER.info("send number of tuples");
-      pyWorker.sendNumTuples(1);
-      for (int i = 0; i < numColumns; i++) {
-        if (isStateColumn[i]) {
-          LOGGER.info("one of the columns was state column!");
-          writeToStream(state, rowIdx, columnIdxs[i], dOut);
-        } else {
-          writeToStream(tb, rowIdx, columnIdxs[i], dOut);
-        }
-      }
-
-      // read response back
-      Object result = readFromStream(count);
-      return result;
-
-    } catch (DbException e) {
-      LOGGER.info("Error writing to python stream" + e.getMessage());
-      throw new DbException(e);
-    }
-  }
-
-  /**
-   *
+   *@param count number of tuples returned.
+   *@param result writable column
+   *@param result2 appendable table
+   *@param resultColIdx id of the result column.
    * @return Object output from python process.
-   * @throws DbException
+   * @throws DbException in case of error.
    */
-  private Object readFromStream(final WritableColumn count) throws DbException {
+  private Object readFromStream(
+      final WritableColumn count,
+      final WritableColumn result,
+      final AppendableTable result2,
+      final int resultColIdx)
+      throws DbException {
     int type = 0;
     Object obj = null;
     DataInputStream dIn = pyWorker.getDataInputStream();
+
     int c = 1; // single valued expressions only return 1 tuple.
     try {
       // if it is a flat map operation, read number of tuples to be read.
       if (isFlatmap) {
         c = dIn.readInt();
         count.appendInt(c);
-        LOGGER.info("this is a flatmap number of returned tuples is:" + c);
+      } else { // not flatmap
+        if (count != null) { // count column is not null
+          count.appendInt(1);
+        }
       }
 
       for (int i = 0; i < c; i++) {
-
         //then read the type of tuple
         type = dIn.readInt();
         // if the 'type' is exception, throw exception
-
         if (type == MyriaConstants.PythonSpecialLengths.PYTHON_EXCEPTION.getVal()) {
           int excepLength = dIn.readInt();
           byte[] excp = new byte[excepLength];
@@ -330,19 +270,46 @@ public class PythonUDFEvaluator extends GenericEvaluator {
           // read the rest of the tuple
           if (type == MyriaConstants.PythonType.DOUBLE.getVal()) {
             obj = dIn.readDouble();
+            if (resultColIdx == -1) {
+              result.appendDouble((Double) obj);
+            } else {
+              result2.putDouble(resultColIdx, (Double) obj);
+            }
           } else if (type == MyriaConstants.PythonType.FLOAT.getVal()) {
             obj = dIn.readFloat();
-          } else if (type == MyriaConstants.PythonType.INT.getVal()) {
+            if (resultColIdx == -1) {
+              result.appendFloat((float) obj);
+            } else {
+              result2.putFloat(resultColIdx, (float) obj);
+            }
 
+          } else if (type == MyriaConstants.PythonType.INT.getVal()) {
             obj = dIn.readInt();
+            if (resultColIdx == -1) {
+              result.appendInt((int) obj);
+            } else {
+              result2.putInt(resultColIdx, (int) obj);
+            }
+
           } else if (type == MyriaConstants.PythonType.LONG.getVal()) {
             obj = dIn.readLong();
+            if (resultColIdx == -1) {
+              result.appendLong((long) obj);
+            } else {
+              result2.putLong(resultColIdx, (long) obj);
+            }
+
           } else if (type == MyriaConstants.PythonType.BLOB.getVal()) {
 
             int l = dIn.readInt();
             if (l > 0) {
               obj = new byte[l];
               dIn.readFully((byte[]) obj);
+              if (resultColIdx == -1) {
+                result.appendBlob(ByteBuffer.wrap((byte[]) obj));
+              } else {
+                result2.putBlob(resultColIdx, ByteBuffer.wrap((byte[]) obj));
+              }
             }
 
           } else {
@@ -352,7 +319,6 @@ public class PythonUDFEvaluator extends GenericEvaluator {
       }
 
     } catch (Exception e) {
-      LOGGER.info("Error reading from stream");
       throw new DbException(e);
     }
     return obj;
@@ -373,14 +339,12 @@ public class PythonUDFEvaluator extends GenericEvaluator {
     Preconditions.checkNotNull(dOut, "Output stream for python process cannot be null");
 
     Schema tbsc = tb.getSchema();
-    LOGGER.info("tuple schema: " + tbsc.toString());
-    LOGGER.info("columnindex:" + columnIdx);
     try {
       Type type = tbsc.getColumnType(columnIdx);
 
       switch (type) {
         case BOOLEAN_TYPE:
-          LOGGER.info("BOOLEAN type not supported for python function ");
+          LOGGER.debug("BOOLEAN type not supported for python function ");
           break;
         case DOUBLE_TYPE:
           dOut.writeInt(MyriaConstants.PythonType.DOUBLE.getVal());
@@ -403,10 +367,10 @@ public class PythonUDFEvaluator extends GenericEvaluator {
           dOut.writeLong(tb.getLong(columnIdx, row));
           break;
         case STRING_TYPE:
-          LOGGER.info("STRING type is not yet supported for python function ");
+          LOGGER.debug("STRING type is not yet supported for python function ");
           break;
         case DATETIME_TYPE:
-          LOGGER.info("date time not yet supported for python function ");
+          LOGGER.debug("date time not yet supported for python function ");
           break;
         case BLOB_TYPE:
           dOut.writeInt(MyriaConstants.PythonType.BLOB.getVal());
@@ -431,7 +395,6 @@ public class PythonUDFEvaluator extends GenericEvaluator {
 
   @Override
   public void sendEos() throws DbException {
-    LOGGER.info("sendEOS called");
     if (pyWorker != null) {
       pyWorker.sendEos(MyriaConstants.PythonSpecialLengths.EOS.getVal());
     }

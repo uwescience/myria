@@ -15,7 +15,7 @@
 
                "opType": "Apply",
                "opId": 1,
-               "addCounter":"False",
+               "addCounter":"True",
                "emitExpressions": [
                  {
                    "outputName": "udfOutput",
@@ -35,12 +35,12 @@
                    "outputName":"subjectid",
                    "rootExpressionOperator":{
                       "type":"VARIABLE",
-                      "columnIdx":2}
+                      "columnIdx":1}
                  },
                  {"outputName":"imageid",
                  "rootExpressionOperator":{
                     "type":"VARIABLE",
-                    "columnIdx":1}
+                    "columnIdx":2}
                }
                ],
                "argChild": 0

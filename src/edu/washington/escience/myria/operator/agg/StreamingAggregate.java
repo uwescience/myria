@@ -92,7 +92,7 @@ public class StreamingAggregate extends UnaryOperator {
    * @throws IOException
    */
   @Override
-  protected TupleBatch fetchNextReady() throws DbException, IOException {
+  protected TupleBatch fetchNextReady() throws DbException {
     if (child.eos()) {
       return null;
     }
@@ -146,15 +146,18 @@ public class StreamingAggregate extends UnaryOperator {
    * Add aggregate results with previous grouping key to result buffer.
    *
    * @throws DbException if any error
-   * @throws IOException
    */
-  private void addToResult() throws DbException, IOException {
+  private void addToResult() throws DbException {
     int fromIndex = 0;
     for (; fromIndex < curGroupKey.numColumns(); ++fromIndex) {
       TupleUtils.copyValue(curGroupKey, fromIndex, 0, resultBuffer, fromIndex);
     }
     for (int agg = 0; agg < aggregators.length; ++agg) {
-      aggregators[agg].getResult(resultBuffer, fromIndex, aggregatorStates[agg]);
+      try {
+        aggregators[agg].getResult(resultBuffer, fromIndex, aggregatorStates[agg]);
+      } catch (Exception e) {
+        throw new DbException(e);
+      }
       fromIndex += aggregators[agg].getResultSchema().numColumns();
     }
   }

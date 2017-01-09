@@ -8,20 +8,18 @@ import java.util.List;
 import java.util.Objects;
 
 import javax.annotation.Nonnull;
-import com.google.common.collect.Lists;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Lists;
 
 import edu.washington.escience.myria.DbException;
+import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.Column;
-import edu.washington.escience.myria.column.builder.ColumnBuilder;
-import edu.washington.escience.myria.column.builder.ColumnFactory;
 import edu.washington.escience.myria.expression.Expression;
-import edu.washington.escience.myria.expression.PyUDFExpression;
 import edu.washington.escience.myria.expression.evaluate.ConstantEvaluator;
 import edu.washington.escience.myria.expression.evaluate.ExpressionOperatorParameter;
 import edu.washington.escience.myria.expression.evaluate.GenericEvaluator;
@@ -55,6 +53,10 @@ public class Apply extends UnaryOperator {
   private TupleBatchBuffer outputBuffer;
 
   /**
+   * AddCounter?
+   */
+  private Boolean addCounter;
+  /**
    * @return the {@link #emitExpressions}
    */
   protected ImmutableList<Expression> getEmitExpressions() {
@@ -87,13 +89,12 @@ public class Apply extends UnaryOperator {
     return true;
   }
 
-  private boolean addCounter() {
-    for (Expression expr : getEmitExpressions()) {
-      if (expr.addCounter()) {
-        return true;
-      }
-    }
-    return false;
+  private boolean getAddCounter() {
+    return addCounter;
+  }
+
+  private void setAddCounter(Boolean addCounter) {
+    this.addCounter = addCounter;
   }
 
   /**
@@ -110,6 +111,12 @@ public class Apply extends UnaryOperator {
     super(child);
     Preconditions.checkNotNull(emitExpressions);
     setEmitExpressions(emitExpressions);
+    setAddCounter(false);
+  }
+
+  public Apply(final Operator child, List<Expression> emitExpressions, Boolean addCounter) {
+    this(child, emitExpressions);
+    setAddCounter(addCounter);
   }
 
   /**
@@ -125,12 +132,6 @@ public class Apply extends UnaryOperator {
     // batches from the child until we have a full batch or the child returns null.
     while (!outputBuffer.hasFilledTB()) {
       TupleBatch inputTuples = getChild().nextReady();
-      if (getChild().eos()) {
-        for (GenericEvaluator evaluator : emitEvaluators) {
-          LOGGER.debug("calling send EOS for evaluator");
-          evaluator.sendEos();
-        }
-      }
       if (inputTuples != null) {
         // Evaluate expressions on each column and store counts and results.
         List<ReadableColumn> resultCountColumns = new ArrayList<>();
@@ -140,6 +141,7 @@ public class Apply extends UnaryOperator {
           EvaluatorResult evalResult = eval.evaluateColumn(inputTuples);
           resultCountColumns.add(evalResult.getResultCounts());
           resultColumns.add(evalResult.getResults());
+
           Preconditions.checkArgument(
               eval.getExpression().isMultivalued() || (evalResult.getResultColumns().size() == 1),
               "A single-valued expression cannot have more than one result column.");
@@ -159,12 +161,13 @@ public class Apply extends UnaryOperator {
           int[] iteratorIndexes = new int[emitEvaluators.size()];
           List<Type> types = Lists.newLinkedList();
           types.add(Type.INT_TYPE);
-          List<String> names = ImmutableList.of("flatmapid");
+          List<String> names = ImmutableList.of(MyriaConstants.FLATMAP_COLUMN_NAME);
           Schema countIdxSchema = new Schema(types, names);
 
           for (int rowIdx = 0; rowIdx < inputTuples.numTuples(); ++rowIdx) {
             // First, get all result counts for this row.
             boolean emptyProduct = false;
+
             for (int i = 0; i < resultCountColumns.size(); ++i) {
               int resultCount = resultCountColumns.get(i).getInt(rowIdx);
               resultCounts[i] = resultCount;
@@ -179,23 +182,28 @@ public class Apply extends UnaryOperator {
             if (!emptyProduct) {
               // Initialize each iterator to its starting index.
               Arrays.fill(iteratorIndexes, 0);
-              // Iterate over each element of the Cartesian product and append to output.
+              // Iterate over each element of the Cartesian product and append to output
+              TupleBuffer countIdx = null;
+              int iteratorIdx = 0;
+              int resultRowIdx = 0;
+              int flatmapid = -1;
               do {
-                for (int iteratorIdx = 0; iteratorIdx < iteratorIndexes.length; ++iteratorIdx) {
-                  int resultRowIdx =
-                      lastCumResultCounts[iteratorIdx] + iteratorIndexes[iteratorIdx];
+                for (iteratorIdx = 0; iteratorIdx < iteratorIndexes.length; ++iteratorIdx) {
+                  resultRowIdx = lastCumResultCounts[iteratorIdx] + iteratorIndexes[iteratorIdx];
+                  if (flatmapid < iteratorIndexes[iteratorIdx]) {
+                    flatmapid = iteratorIndexes[iteratorIdx];
+                  }
                   outputBuffer.appendFromColumn(
                       iteratorIdx, resultColumns.get(iteratorIdx), resultRowIdx);
-                  if (addCounter()) {
-                    TupleBuffer countIdx = new TupleBuffer(countIdxSchema);
+                }
 
-                    for (int i = 0; i < resultCounts[iteratorIdx]; i++) {
-                      countIdx.putInt(0, i);
-                    }
-
-                    outputBuffer.appendFromColumn(
-                        iteratorIdx + 1, countIdx.asColumn(0), resultRowIdx);
-                  }
+                if (getAddCounter()) {
+                  countIdx = new TupleBuffer(countIdxSchema, 1);
+                  countIdx.putInt(0, flatmapid);
+                  flatmapid = 0;
+                }
+                if (getAddCounter() && countIdx != null) {
+                  outputBuffer.appendFromColumn(iteratorIdx, countIdx.asColumn(0), 0);
                 }
               } while (!computeNextCombination(resultCounts, iteratorIndexes));
             }
@@ -290,10 +298,10 @@ public class Apply extends UnaryOperator {
     for (Expression expr : emitExpressions) {
       typesBuilder.add(expr.getOutputType(new ExpressionOperatorParameter(inputSchema)));
       namesBuilder.add(expr.getOutputName());
-      if (expr.isMultivalued() && expr.addCounter()) {
-        typesBuilder.add(Type.INT_TYPE);
-        namesBuilder.add("flatmapid");
-      }
+    }
+    if (getAddCounter()) {
+      typesBuilder.add(Type.INT_TYPE);
+      namesBuilder.add(MyriaConstants.FLATMAP_COLUMN_NAME);
     }
     return new Schema(typesBuilder.build(), namesBuilder.build());
   }

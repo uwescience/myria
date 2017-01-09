@@ -54,7 +54,6 @@ public class PythonWorker {
       startPythonWorker();
 
     } catch (Exception e) {
-      LOGGER.info(e.getMessage());
       throw new DbException("Failed to create Python Worker");
     }
   }
@@ -80,7 +79,6 @@ public class PythonWorker {
         byte[] bytes = pyCodeString.getBytes(StandardCharsets.UTF_8);
         dOut.writeInt(bytes.length);
         dOut.write(bytes);
-
         dOut.writeInt(numColumns);
         writeOutputType(outputType);
         if (isFlatMap) {
@@ -94,7 +92,7 @@ public class PythonWorker {
         throw new DbException("Can't write Python Code to worker!");
       }
     } catch (Exception e) {
-      LOGGER.info("failed to send python code pickle");
+      LOGGER.debug("failed to send python code pickle");
       throw new DbException(e);
     }
   }

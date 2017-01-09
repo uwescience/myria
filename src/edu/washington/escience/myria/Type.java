@@ -303,7 +303,7 @@ public enum Type implements Serializable {
 
     @Override
     public String getName() {
-      return "ByteBuffer";
+      return "Blob";
     }
 
     @Override

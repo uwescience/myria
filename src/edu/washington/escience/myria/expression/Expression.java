@@ -204,11 +204,4 @@ public class Expression implements Serializable {
   public boolean isMultivalued() {
     return rootExpressionOperator.hasArrayOutputType();
   }
-  /**
-   *
-   * @return true, if counter column is to be added
-   */
-  public boolean addCounter() {
-    return false;
-  }
 }

@@ -5,7 +5,7 @@ from setuptools import setup, find_packages
 
 
 setup(name='MyriaPythonWorker',
-      version='0.2',
+      version='0.31',
       description='Myria Python worker.',
       author='Parmita Mehta',
       packages=find_packages(),

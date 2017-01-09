@@ -61,6 +61,10 @@ public class UserDefinedAggregatorFactory implements AggregatorFactory {
    * One evaluator for each expression in {@link #emitters}.
    */
   private transient ArrayList<GenericEvaluator> emitEvaluators;
+  /**
+   * Does the UDA have a pythonExpression?
+   */
+  private transient boolean bHasPyEval = false;
 
   /**
    * The schema of the result tuples.
@@ -100,7 +104,6 @@ public class UserDefinedAggregatorFactory implements AggregatorFactory {
   public Aggregator get(final Schema inputSchema, final PythonFunctionRegistrar pyFuncReg)
       throws DbException {
 
-    boolean bHasPyEval = false;
     if (state == null) {
       Objects.requireNonNull(inputSchema, "inputSchema");
       Preconditions.checkArgument(
@@ -142,7 +145,6 @@ public class UserDefinedAggregatorFactory implements AggregatorFactory {
               new PythonUDFEvaluator(
                   expr, new ExpressionOperatorParameter(inputSchema, stateSchema), pyFuncReg);
           bHasPyEval = true;
-
         } else {
 
           evaluator =
@@ -211,13 +213,14 @@ public class UserDefinedAggregatorFactory implements AggregatorFactory {
         output
             .append(Expression.RESULT)
             .append(".put")
-            .append(type.toJavaObjectType().getSimpleName())
+            .append((type != Type.BLOB_TYPE) ? type.toJavaObjectType().getSimpleName() : "Blob")
             .append("(")
             .append(varCount)
             .append(", val")
             .append(varCount)
             .append(");\n");
       } else {
+        bHasPyEval = true;
         PythonUDFEvaluator evaluator = new PythonUDFEvaluator(expr, param, pyFuncReg);
         pyUpdateEvaluators.add(evaluator);
       }

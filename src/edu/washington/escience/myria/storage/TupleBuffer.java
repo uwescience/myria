@@ -69,6 +69,15 @@ public class TupleBuffer implements ReadableTable, AppendableTable {
     numTuples = 0;
     batchSize = TupleUtils.getBatchSize(schema);
   }
+  /**
+   * Constructs an empty TupleBuffer to hold tuples matching the specified Schema.
+   *
+   * @param schema specified the columns of the emitted TupleBatch objects.
+   */
+  public TupleBuffer(final Schema schema, int batchSize) {
+    this(schema);
+    this.batchSize = batchSize;
+  }
 
   /**
    * Makes a batch of any tuples in the buffer and appends it to the internal list.

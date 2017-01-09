@@ -1140,10 +1140,6 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
    * @param name the name of the function
    * @param definition the function definition  - this is postgres specific for postgres and function text for python.
    * @param outputSchema the output schema of the function
-   * <<<<<<< HEAD
-   * =======
-   * @param arity is the number of inputs required by the function.
-   * >>>>>>> 05e3844...  addressing comments from code review
    * @param isMultivalued indicates if the function returns multiple tuples.
    * @param lang this is the language of the function.
    * @param binary this is an optional parameter for function for base64 encoded binary for function.
@@ -1205,10 +1201,11 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
       try {
         catalog.registerFunction(
             name, definition, outputSchema.toString(), isMultivalued, lang, binary);
-        response = "Created Function";
       } catch (CatalogException e) {
         throw new DbException(e);
       }
+    } else {
+      response = "Function is not valid";
     }
     return response;
   }

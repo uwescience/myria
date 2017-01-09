@@ -100,12 +100,6 @@ public abstract class ExpressionOperator implements Serializable {
   public boolean hasArrayOutputType() {
     return false;
   }
-  /**
-   * @return if an addditional counter column should be added.
-   */
-  public boolean addCounter() {
-    return false;
-  }
 
   /**
    * @return all children

@@ -415,7 +415,6 @@ public final class MasterCatalog {
                     SQLiteStatement statement =
                         sqliteConnection.prepare(
                             "SELECT function_name, function_description, function_outputType,  function_isMultivalued, function_lang  FROM registered_functions WHERE function_name=?");
-
                     statement.bind(1, name);
                     if (!statement.step()) {
                       return null;
@@ -426,7 +425,6 @@ public final class MasterCatalog {
                     String outputSchema = statement.columnString(2);
                     Boolean isMultivalued = ((statement.columnInt(3) == 0) ? false : true);
                     int lang = statement.columnInt(4);
-
                     statement.dispose();
 
                     return new FunctionStatus(

@@ -106,7 +106,6 @@ public class DbCreateFunction extends RootOperator {
         } else {
           throw new DbException("Cannot register python UDF without binary.");
         }
-
         break;
       default:
         throw new DbException("Function language not supported!");

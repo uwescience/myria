@@ -74,7 +74,6 @@ public class StatefulUserDefinedAggregator extends UserDefinedAggregator {
 
   @Override
   public void add(final List<TupleBatch> from, final Object state) throws DbException {
-
     ltb = from;
   }
 
@@ -94,7 +93,7 @@ public class StatefulUserDefinedAggregator extends UserDefinedAggregator {
 
   @Override
   public void getResult(final AppendableTable dest, final int destColumn, final Object state)
-      throws DbException, IOException {
+      throws DbException {
 
     Tuple stateTuple = (Tuple) state;
 
@@ -103,7 +102,11 @@ public class StatefulUserDefinedAggregator extends UserDefinedAggregator {
       for (int i = 0; i < pyUDFEvaluators.size(); i++) {
 
         if (ltb != null && ltb.size() != 0) {
-          pyUDFEvaluators.get(i).evalBatch(ltb, stateTuple, stateTuple);
+          try {
+            pyUDFEvaluators.get(i).evalBatch(ltb, stateTuple, stateTuple);
+          } catch (Exception e) {
+            throw new DbException(e);
+          }
 
         } else {
           throw new DbException("cannot get results!!");

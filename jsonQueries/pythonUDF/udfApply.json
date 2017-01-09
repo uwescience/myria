@@ -14,15 +14,15 @@
             {
 
                "opType": "Apply",
+               "addCounter":"False",
                "opId": 1,
                "emitExpressions": [
                  {
                    "outputName": "udfOutput",
                    "rootExpressionOperator": {
                      "type": "PYUDF",
-                     "name": "flatmapApplyTest",
+                     "name": "simpleApplyTest",
                      "outputType":"BLOB_TYPE",
-                     "addCounter":"False",
                      "children": [
                        {
                          "type": "VARIABLE",
