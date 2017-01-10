@@ -230,9 +230,9 @@ if args.run_filename:
       "argOperatorId": "0",
       "opId": "SP1",
       "opType": "ShuffleProducer",
-      "argPf": {
-        "index": 1,
-        "type": "SingleFieldHash"
+      "distributeFunction": {
+        "indexes": [1],
+        "type": "Hash"
       }
     }
 
@@ -253,9 +253,9 @@ if args.run_filename:
       "argOperatorId": "1",
       "opId": "SP2",
       "opType": "ShuffleProducer",
-      "argPf": {
-        "index": 1,
-        "type": "SingleFieldHash"
+      "distributeFunction": {
+        "indexes": [1],
+        "type": "Hash"
       }
     }
  

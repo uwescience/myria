@@ -9,12 +9,9 @@ import edu.washington.escience.myria.accessmethod.AccessMethod.IndexRef;
 import edu.washington.escience.myria.accessmethod.ConnectionInfo;
 import edu.washington.escience.myria.api.encoding.QueryConstruct.ConstructArgs;
 import edu.washington.escience.myria.operator.DbInsertTemp;
-import edu.washington.escience.myria.operator.network.partition.PartitionFunction;
+import edu.washington.escience.myria.operator.network.distribute.DistributeFunction;
 
-/**
- * A JSON-able wrapper for the expected wire message for a new dataset.
- *
- */
+/** A JSON-able wrapper for the expected wire message for a new dataset. */
 public class TempInsertEncoding extends UnaryOperatorEncoding<DbInsertTemp> {
   /** The name under which the dataset will be stored. */
   @Required public String table;
@@ -22,13 +19,11 @@ public class TempInsertEncoding extends UnaryOperatorEncoding<DbInsertTemp> {
   public Boolean argOverwriteTable;
   /** Indexes created. */
   public List<List<IndexRef>> indexes;
-  /** The PartitionFunction used to partition this relation. */
-  public PartitionFunction partitionFunction;
+  /** The DistributeFunction used to distribute this relation. */
+  public DistributeFunction distributeFunction;
 
-  /**
-   * The ConnectionInfo struct determines what database the data will be written to. If null, the worker's default
-   * database will be used.
-   */
+  /** The ConnectionInfo struct determines what database the data will be written to. If null, the worker's default
+   * database will be used. */
   public ConnectionInfo connectionInfo;
 
   @Override
@@ -41,6 +36,6 @@ public class TempInsertEncoding extends UnaryOperatorEncoding<DbInsertTemp> {
         connectionInfo,
         argOverwriteTable,
         indexes,
-        partitionFunction);
+        distributeFunction);
   }
 }

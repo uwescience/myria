@@ -263,7 +263,6 @@ public final class SubQuery extends QueryPlan {
    * {@link RelationWriteMetadata} about these relations.
    *
    * @param server the {@link Server} on which this query will be executed.
-   *
    * @return a mapping showing what relations are written and the corresponding {@link RelationWriteMetadata}.
    * @throws DbException if there is an error getting metadata about existing relations from the Server.
    */
@@ -303,49 +302,34 @@ public final class SubQuery extends QueryPlan {
       }
     }
 
-    /*
-     * Loop through all appending operators. Verify that the Schema does not change and ensure that the relation still
-     * contains all workers.
-     */
+    /* Loop through all appending operators. Verify that the Schema does not change and ensure that the relation still
+     * contains all workers. */
     for (Map.Entry<RelationKey, RelationWriteMetadata> metaEntry : ret.entrySet()) {
       RelationWriteMetadata metadata = metaEntry.getValue();
       if (metadata.isOverwrite()) {
         continue;
       }
-
       RelationKey relationKey = metaEntry.getKey();
-      final long queryId = getSubQueryId().getQueryId();
       Schema schema = metadata.getSchema();
-      Schema existingSchema;
-      Set<Integer> existingWorkers;
-      if (metadata.isTemporary()) {
-        existingSchema = server.getTempSchema(queryId, relationKey.getRelationName());
+      try {
+        Schema existingSchema = server.getSchema(relationKey);
         Preconditions.checkArgument(
             existingSchema != null,
             "Attempting to append to non-existent temporary relation %s",
             relationKey);
-        existingWorkers = server.getWorkersForTempRelation(queryId, relationKey);
-      } else {
-        try {
-          existingSchema = server.getSchema(relationKey);
-          Preconditions.checkArgument(
-              existingSchema != null,
-              "Attempting to append to non-existent relation %s that is not in the Catalog",
-              relationKey);
-          existingWorkers = server.getWorkersForRelation(relationKey, null);
-        } catch (CatalogException e) {
-          throw new DbException(
-              "Error verifying schema when appending to relation " + relationKey, e);
+        Set<Integer> existingWorkers = server.getWorkersForRelation(relationKey);
+        Preconditions.checkArgument(
+            schema.equals(existingSchema),
+            "Cannot append to %s with changed Schema %s (old Schema: %s)",
+            relationKey,
+            schema,
+            existingSchema);
+        for (int w : existingWorkers) {
+          metadata.addWorker(w);
         }
-      }
-      Preconditions.checkArgument(
-          schema.equals(existingSchema),
-          "Cannot append to %s with changed Schema %s (old Schema: %s)",
-          relationKey,
-          schema,
-          existingSchema);
-      for (int w : existingWorkers) {
-        metadata.addWorker(w);
+      } catch (CatalogException e) {
+        throw new DbException(
+            "Error verifying schema when appending to relation " + relationKey, e);
       }
     }
 

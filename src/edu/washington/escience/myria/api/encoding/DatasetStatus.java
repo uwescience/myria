@@ -7,23 +7,19 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.Schema;
-import edu.washington.escience.myria.operator.network.partition.HowPartitioned;
+import edu.washington.escience.myria.operator.network.distribute.HowDistributed;
 
-/**
- * Metadata about a dataset that has been loaded into the system.
- */
+/** Metadata about a dataset that has been loaded into the system. */
 public class DatasetStatus {
 
-  /**
-   * Instantiate a DatasetStatus with the provided values.
+  /** Instantiate a DatasetStatus with the provided values.
    *
    * @param relationKey The {@link RelationKey} identifying the dataset.
    * @param schema The {@link Schema} of the tuples in the dataset.
    * @param numTuples The number of tuples in the dataset.
    * @param queryId The query that created this dataset.
    * @param created When this dataset was created, in ISO8601 format.
-   * @param howPartitioned How this dataset was partitioned.
-   */
+   * @param howDistributed How this dataset was distributed. */
   @JsonCreator
   public DatasetStatus(
       @JsonProperty("relationKey") final RelationKey relationKey,
@@ -31,13 +27,13 @@ public class DatasetStatus {
       @JsonProperty("numTuples") final long numTuples,
       @JsonProperty("queryId") final long queryId,
       @JsonProperty("created") final String created,
-      @JsonProperty("howPartitioned") final HowPartitioned howPartitioned) {
+      @JsonProperty("howDistributed") final HowDistributed howDistributed) {
     this.relationKey = relationKey;
     this.schema = schema;
     this.numTuples = numTuples;
     this.queryId = queryId;
     this.created = created;
-    this.howPartitioned = howPartitioned;
+    this.howDistributed = howDistributed;
   }
 
   /** The {@link RelationKey} identifying the dataset. */
@@ -50,58 +46,44 @@ public class DatasetStatus {
   @JsonProperty private final Long queryId;
   /** When this dataset was created, in ISO8601 format. */
   @JsonProperty private final String created;
-  /** How this dataset was partitioned. */
-  @JsonProperty private final HowPartitioned howPartitioned;
+  /** How this dataset was distributed. */
+  @JsonProperty private final HowDistributed howDistributed;
   /** The URI of this resource. */
   @JsonProperty public URI uri;
 
-  /**
-   * @return The {@link RelationKey} identifying the dataset.
-   */
+  /** @return The {@link RelationKey} identifying the dataset. */
   public RelationKey getRelationKey() {
     return relationKey;
   }
 
-  /**
-   * @return The {@link Schema} of the tuples in the dataset.
-   */
+  /** @return The {@link Schema} of the tuples in the dataset. */
   public Schema getSchema() {
     return schema;
   }
 
-  /**
-   * @return The number of tuples in the dataset.
-   */
+  /** @return The number of tuples in the dataset. */
   public long getNumTuples() {
     return numTuples;
   }
 
-  /**
-   * @return the queryId
-   */
+  /** @return the queryId */
   public Long getQueryId() {
     return queryId;
   }
 
-  /**
-   * @return the created
-   */
+  /** @return the created */
   public String getCreated() {
     return created;
   }
 
-  /**
-   * @return how the dataset was partitioned.
-   */
-  public HowPartitioned getHowPartitioned() {
-    return howPartitioned;
+  /** @return how the dataset was partitioned. */
+  public HowDistributed getHowDistributed() {
+    return howDistributed;
   }
 
-  /**
-   * Set the URI of this dataset.
+  /** Set the URI of this dataset.
    *
-   * @param datasetUri
-   */
+   * @param datasetUri */
   public void setUri(final URI datasetUri) {
     uri = datasetUri;
   }

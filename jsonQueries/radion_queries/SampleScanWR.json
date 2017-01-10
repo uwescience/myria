@@ -73,9 +73,9 @@
                     },
                     {
                           "argChild":7,
-                          "argPf":{
-                             "index":0,
-                             "type":"IdentityHash"
+                          "distributeFunction":{
+                             "indexes":[0],
+                             "type":"Identity"
                           },
                           "opType":"ShuffleProducer",
                           "opId":8,

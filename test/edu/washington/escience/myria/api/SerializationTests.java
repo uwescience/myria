@@ -9,11 +9,9 @@ import org.junit.Test;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 
-import edu.washington.escience.myria.operator.network.partition.MultiFieldHashPartitionFunction;
-import edu.washington.escience.myria.operator.network.partition.PartitionFunction;
-import edu.washington.escience.myria.operator.network.partition.RoundRobinPartitionFunction;
-import edu.washington.escience.myria.operator.network.partition.SingleFieldHashPartitionFunction;
-import edu.washington.escience.myria.operator.network.partition.WholeTupleHashPartitionFunction;
+import edu.washington.escience.myria.operator.network.distribute.DistributeFunction;
+import edu.washington.escience.myria.operator.network.distribute.HashDistributeFunction;
+import edu.washington.escience.myria.operator.network.distribute.RoundRobinDistributeFunction;
 
 public class SerializationTests {
 
@@ -25,60 +23,36 @@ public class SerializationTests {
   }
 
   @Test
-  public void testPartitionFunction() throws Exception {
+  public void testDistributeFunction() throws Exception {
     /* Setup */
-    ObjectReader reader = mapper.reader(PartitionFunction.class);
-    PartitionFunction pf;
+    ObjectReader reader = mapper.reader(DistributeFunction.class);
     String serialized;
-    PartitionFunction deserialized;
-
-    /* Single field hash */
-    pf = new SingleFieldHashPartitionFunction(5, 3);
-    serialized = mapper.writeValueAsString(pf);
-    deserialized = reader.readValue(serialized);
-    assertEquals(pf.getClass(), deserialized.getClass());
-    assertEquals(5, deserialized.numPartition());
-    SingleFieldHashPartitionFunction pfSFH = (SingleFieldHashPartitionFunction) deserialized;
-    assertEquals(3, pfSFH.getIndex());
+    DistributeFunction deserialized;
 
     /* Multi-field hash */
     int multiFieldIndex[] = new int[] {3, 4, 2};
-    pf = new MultiFieldHashPartitionFunction(5, multiFieldIndex);
-    serialized = mapper.writeValueAsString(pf);
+    DistributeFunction df = new HashDistributeFunction(multiFieldIndex);
+    serialized = mapper.writeValueAsString(df);
     deserialized = reader.readValue(serialized);
-    assertEquals(pf.getClass(), deserialized.getClass());
-    assertEquals(5, deserialized.numPartition());
-    MultiFieldHashPartitionFunction pfMFH = (MultiFieldHashPartitionFunction) deserialized;
+    assertEquals(df.getClass(), deserialized.getClass());
+    HashDistributeFunction pfMFH = (HashDistributeFunction) deserialized;
     assertArrayEquals(multiFieldIndex, pfMFH.getIndexes());
 
-    /* Whole tuple hash */
-    pf = new WholeTupleHashPartitionFunction(5);
-    serialized = mapper.writeValueAsString(pf);
-    deserialized = reader.readValue(serialized);
-    assertEquals(pf.getClass(), deserialized.getClass());
-    assertEquals(5, deserialized.numPartition());
-
     /* RoundRobin */
-    pf = new RoundRobinPartitionFunction(5);
-    serialized = mapper.writeValueAsString(pf);
+    df = new RoundRobinDistributeFunction();
+    serialized = mapper.writeValueAsString(df);
     deserialized = reader.readValue(serialized);
-    assertEquals(pf.getClass(), deserialized.getClass());
-    assertEquals(5, deserialized.numPartition());
+    assertEquals(df.getClass(), deserialized.getClass());
   }
 
   @Test
-  public void testPartitionFunctionWithNullNumPartitions() throws Exception {
+  public void testDistributeFunctionWithNullNumPartitions() throws Exception {
     /* Setup */
-    ObjectReader reader = mapper.reader(PartitionFunction.class);
-    PartitionFunction pf;
-    String serialized;
-    PartitionFunction deserialized;
-
-    /* Single field hash, as one representative */
-    pf = new SingleFieldHashPartitionFunction(null, 3);
-    serialized = mapper.writeValueAsString(pf);
-    deserialized = reader.readValue(serialized);
-    assertEquals(pf.getClass(), deserialized.getClass());
-    assertEquals(3, ((SingleFieldHashPartitionFunction) deserialized).getIndex());
+    ObjectReader reader = mapper.reader(DistributeFunction.class);
+    HashDistributeFunction df = new HashDistributeFunction(new int[] {3});
+    String serialized = mapper.writeValueAsString(df);
+    DistributeFunction deserialized = reader.readValue(serialized);
+    assertEquals(df.getClass(), deserialized.getClass());
+    assertEquals(3, ((HashDistributeFunction) deserialized).getIndexes()[0]);
   }
 }

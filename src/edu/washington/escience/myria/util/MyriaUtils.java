@@ -4,8 +4,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.SortedSet;
-import java.util.TreeSet;
 
 import org.joda.time.DateTime;
 
@@ -13,7 +11,6 @@ import com.google.common.base.Preconditions;
 
 /**
  * Generic utilities for Myria.
- *
  */
 public final class MyriaUtils {
   /**
@@ -49,28 +46,6 @@ public final class MyriaUtils {
       return e;
     }
     return null;
-  }
-
-  /**
-   * Convert a collection of integers to a sorted int[].
-   *
-   * @param input the collection of integers.
-   * @return an int[] containing the given integers.
-   */
-  public static int[] integerSetToIntArray(final Set<Integer> input) {
-    SortedSet<Integer> set;
-    if (input instanceof SortedSet) {
-      set = (SortedSet<Integer>) input;
-    } else {
-      set = new TreeSet<>(input);
-    }
-    int[] output = new int[input.size()];
-    int i = 0;
-    for (int value : set) {
-      output[i] = value;
-      ++i;
-    }
-    return output;
   }
 
   /**

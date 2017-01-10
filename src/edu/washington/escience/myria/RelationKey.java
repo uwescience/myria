@@ -11,7 +11,6 @@ import com.google.common.base.Preconditions;
 
 /**
  * This class holds the key that identifies a relation. The notation is user.program.relation.
- *
  */
 public final class RelationKey implements Serializable {
 
@@ -181,5 +180,22 @@ public final class RelationKey implements Serializable {
    */
   public static RelationKey ofTemp(final long queryId, final String table) {
     return RelationKey.of("q_" + queryId, "temp", table);
+  }
+
+  /**
+   * @return the query ID if the relation is a temp relation, null otherwise
+   */
+  public Long tempRelationQueryId() {
+    if (isTemp()) {
+      return Long.parseLong(userName.substring(2));
+    }
+    return null;
+  }
+
+  /**
+   * @return if it is a temp relation.
+   */
+  public boolean isTemp() {
+    return programName.equals("temp");
   }
 }

@@ -22,7 +22,6 @@ import com.google.common.collect.Maps;
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.MyriaConstants.FTMode;
-import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.api.encoding.QueryEncoding;
 import edu.washington.escience.myria.api.encoding.QueryStatusEncoding;
 import edu.washington.escience.myria.api.encoding.QueryStatusEncoding.Status;
@@ -152,7 +151,7 @@ public class QueryManager {
    * @param limit the maximum number of results to return. Any value <= 0 is interpreted as all results.
    * @param maxId the largest query ID returned. If null or <= 0, all queries will be returned.
    * @param minId the smallest query ID returned. If null or <= 0, all queries will be returned. Ignored if maxId is
-   *          present.
+   *        present.
    * @param searchTerm a token to match against the raw queries. If null, all queries will be returned.
    * @throws CatalogException if there is an error in the catalog.
    * @return a list of the status of every query that has been submitted to Myria.
@@ -511,16 +510,6 @@ public class QueryManager {
     }
     final long queryID = catalog.newQuery(query);
     return submitQuery(queryID, query, plan);
-  }
-
-  /**
-   * @param queryId the query that owns the desired temp relation.
-   * @param relationKey the key of the desired temp relation.
-   * @return the list of workers that store the specified relation.
-   */
-  public Set<Integer> getWorkersForTempRelation(
-      @Nonnull final Long queryId, @Nonnull final RelationKey relationKey) {
-    return getQuery(queryId).getWorkersForTempRelation(relationKey);
   }
 
   /**
