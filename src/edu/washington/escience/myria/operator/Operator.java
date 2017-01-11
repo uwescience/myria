@@ -113,13 +113,14 @@ public abstract class Operator implements Serializable {
    * @throws DbException  in case of error.
    */
   public PythonFunctionRegistrar getPythonFunctionRegistrar() throws DbException {
-    if (execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_TEST_MODE) != null
-        && !execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_TEST_MODE).equals("true")) {
+    PythonFunctionRegistrar pyFuncRegistrar = null;
+    if (execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_TEST_MODE) == null) {
       if (getLocalSubQuery() instanceof WorkerSubQuery) {
-        return ((WorkerSubQuery) getLocalSubQuery()).getWorker().getPythonFunctionRegistrar();
+        pyFuncRegistrar =
+            ((WorkerSubQuery) getLocalSubQuery()).getWorker().getPythonFunctionRegistrar();
       }
     }
-    return null;
+    return pyFuncRegistrar;
   }
 
   /**

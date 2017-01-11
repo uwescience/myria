@@ -29,12 +29,14 @@ public class FunctionStatus {
       @JsonProperty("description") final String description,
       @JsonProperty("outputType") final String outputType,
       @JsonProperty("isMultivalued") final Boolean isMultivalued,
-      @JsonProperty("lang") final MyriaConstants.FunctionLanguage lang) {
+      @JsonProperty("lang") final MyriaConstants.FunctionLanguage lang,
+      @JsonProperty("binary") final String binary) {
     this.name = name;
     this.description = description;
     this.outputType = outputType;
     this.isMultivalued = isMultivalued;
     this.lang = lang;
+    this.binary = binary;
   }
 
   /** The name identifying the function. */
@@ -50,6 +52,9 @@ public class FunctionStatus {
 
   /** The language the function */
   @JsonProperty private final MyriaConstants.FunctionLanguage lang;
+  /** base64 encoded sting of code binary. */
+  @JsonProperty private final String binary;
+
   /**
    * @return The name identifying the function.
    */
@@ -81,5 +86,11 @@ public class FunctionStatus {
    */
   public FunctionLanguage getLanguage() {
     return lang;
+  }
+  /**
+   * @return get binary(base64 encoded) associated with the function.
+   */
+  public String getBinary() {
+    return binary;
   }
 }

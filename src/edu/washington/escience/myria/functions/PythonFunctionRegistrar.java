@@ -25,7 +25,7 @@ public class PythonFunctionRegistrar {
 
   /** The logger for this class. */
   private static final org.slf4j.Logger LOGGER =
-      org.slf4j.LoggerFactory.getLogger(ProfilingLogger.class);
+      org.slf4j.LoggerFactory.getLogger(PythonFunctionRegistrar.class);
 
   /** The connection to the database database. */
   private final JdbcAccessMethod accessMethod;
@@ -43,8 +43,6 @@ public class PythonFunctionRegistrar {
     Preconditions.checkArgument(
         connectionInfo.getDbms().equals(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL),
         "Profiling only supported with Postgres JDBC connection");
-
-    //LOGGER.info("trying to register python function");
 
     /* open the database connection */
     accessMethod =
@@ -70,7 +68,7 @@ public class PythonFunctionRegistrar {
       final String description,
       final String outputType,
       final Boolean isMultivalued,
-      final ByteBuffer binary)
+      final String binary)
       throws DbException {
     String tableName =
         MyriaConstants.PYUDF_RELATION.toString(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL);
@@ -91,7 +89,7 @@ public class PythonFunctionRegistrar {
     pyFunctions.putString(1, description);
     pyFunctions.putString(2, outputType);
     pyFunctions.putBoolean(3, isMultivalued);
-    pyFunctions.putBlob(4, binary);
+    pyFunctions.putString(4, binary);
 
     accessMethod.tupleBatchInsert(MyriaConstants.PYUDF_RELATION, pyFunctions.popAny());
 
@@ -118,6 +116,7 @@ public class PythonFunctionRegistrar {
           accessMethod.tupleBatchIteratorFromQuery(sb.toString(), MyriaConstants.PYUDF_SCHEMA);
 
       if (tuples.hasNext()) {
+
         final TupleBatch tb = tuples.next();
         if (tb.numTuples() > 0) {
 
@@ -127,7 +126,8 @@ public class PythonFunctionRegistrar {
                   tb.getString(1, 0),
                   tb.getString(2, 0),
                   tb.getBoolean(3, 0),
-                  FunctionLanguage.PYTHON);
+                  FunctionLanguage.PYTHON,
+                  tb.getString(4, 0));
           return fs;
         }
       }
@@ -145,7 +145,7 @@ public class PythonFunctionRegistrar {
     try {
       return accessMethod.getConnection().isValid(1);
     } catch (SQLException e) {
-      LOGGER.warn("Error checking connection validity", e);
+      LOGGER.info("Error checking connection validity", e);
       return false;
     }
   }
@@ -156,15 +156,18 @@ public class PythonFunctionRegistrar {
    * @throws DbException in case of error.
    */
   public String getFunctionBinary(final String pyFunctionName) throws DbException {
+    LOGGER.info("Trying to get function" + pyFunctionName);
 
     StringBuilder sb = new StringBuilder();
-    sb.append("Select function_binary from ");
+    sb.append("Select * from ");
     sb.append(MyriaConstants.PYUDF_RELATION.toString(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL));
     sb.append(" where function_name='");
     sb.append(pyFunctionName);
     sb.append("'");
+    LOGGER.info(sb.toString());
 
     try {
+
       Iterator<TupleBatch> tuples =
           accessMethod.tupleBatchIteratorFromQuery(sb.toString(), MyriaConstants.PYUDF_SCHEMA);
 
@@ -172,11 +175,12 @@ public class PythonFunctionRegistrar {
         final TupleBatch tb = tuples.next();
         LOGGER.info("Got {} tuples", tb.numTuples());
         if (tb.numTuples() > 0) {
-          String codename = tb.getString(0, 0);
+          String codename = tb.getString(4, 0);
           LOGGER.info("codename: " + codename);
           return codename;
         }
       }
+
     } catch (Exception e) {
       LOGGER.info(e.getMessage());
       throw new DbException(e);

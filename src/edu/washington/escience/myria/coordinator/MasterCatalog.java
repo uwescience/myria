@@ -435,7 +435,8 @@ public final class MasterCatalog {
                         descrip,
                         outputSchema,
                         isMultivalued,
-                        MyriaConstants.FunctionLanguage.values()[lang]);
+                        MyriaConstants.FunctionLanguage.values()[lang],
+                        null);
 
                   } catch (final SQLiteException e) {
 

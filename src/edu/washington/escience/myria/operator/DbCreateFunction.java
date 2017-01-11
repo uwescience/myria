@@ -107,14 +107,10 @@ public class DbCreateFunction extends RootOperator {
 
         break;
       case PYTHON:
-        BASE64Decoder decoder = new BASE64Decoder();
         if (binary != null) {
-          byte[] decodedBytes = decoder.decodeBuffer(binary);
-          ByteBuffer binaryFunction = ByteBuffer.wrap(decodedBytes);
 
           PythonFunctionRegistrar pyFunc = new PythonFunctionRegistrar(connectionInfo);
-          pyFunc.addFunction(
-              name, description, outputType.toString(), isMultivalued, binaryFunction);
+          pyFunc.addFunction(name, description, outputType.toString(), isMultivalued, binary);
         } else {
           throw new DbException("Cannot register python UDF without binary.");
         }

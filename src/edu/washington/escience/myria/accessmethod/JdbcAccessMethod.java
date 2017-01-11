@@ -48,7 +48,7 @@ import edu.washington.escience.myria.util.ErrorUtils;
 public final class JdbcAccessMethod extends AccessMethod {
 
   /** The logger for this class. */
-  private static final Logger LOGGER = LoggerFactory.getLogger(JdbcAccessMethod.class);
+  private final Logger LOGGER = LoggerFactory.getLogger(JdbcAccessMethod.class);
   /** The database connection information. */
   private JdbcInfo jdbcInfo;
   /** The database connection. */
@@ -700,6 +700,8 @@ public final class JdbcAccessMethod extends AccessMethod {
 class JdbcTupleBatchIterator implements Iterator<TupleBatch> {
   /** The results from a JDBC query that will be returned in TupleBatches by this Iterator. */
   private final ResultSet resultSet;
+  /** The logger for this class. */
+  private final Logger LOGGER = LoggerFactory.getLogger(JdbcTupleBatchIterator.class);
   /** The Schema of the TupleBatches returned by this Iterator. */
   private final Schema schema;
   /** Next TB. */
@@ -741,9 +743,12 @@ class JdbcTupleBatchIterator implements Iterator<TupleBatch> {
       return null;
     }
     final int numFields = schema.numColumns();
+    LOGGER.info("num columns " + numFields);
+
     final List<ColumnBuilder<?>> columnBuilders = ColumnFactory.allocateColumns(schema);
     int numTuples = 0;
     int batch_size = TupleUtils.getBatchSize(schema);
+    LOGGER.info("batch size " + batch_size);
     for (numTuples = 0; numTuples < batch_size; ++numTuples) {
       if (!resultSet.next()) {
         final Connection connection = resultSet.getStatement().getConnection();
@@ -754,6 +759,7 @@ class JdbcTupleBatchIterator implements Iterator<TupleBatch> {
       }
       for (int colIdx = 0; colIdx < numFields; ++colIdx) {
         /* Warning: JDBC is 1-indexed */
+        LOGGER.info("column index: " + colIdx);
         columnBuilders.get(colIdx).appendFromJdbc(resultSet, colIdx + 1);
       }
     }

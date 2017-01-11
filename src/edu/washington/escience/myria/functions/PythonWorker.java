@@ -78,11 +78,17 @@ public class PythonWorker {
     try {
       if (pyCodeString.length() > 0 && dOut != null) {
         byte[] bytes = pyCodeString.getBytes(StandardCharsets.UTF_8);
+        LOGGER.info("code string length is: " + pyCodeString.length());
         dOut.writeInt(bytes.length);
+        LOGGER.info("wrote length");
+
         dOut.write(bytes);
+        LOGGER.info("wrote bytes");
 
         dOut.writeInt(numColumns);
+        LOGGER.info("wrote num columns: " + numColumns);
         writeOutputType(outputType);
+        LOGGER.info("wrote output type: " + outputType.toString());
         if (isFlatMap) {
           dOut.writeInt(1);
         } else {
@@ -165,6 +171,7 @@ public class PythonWorker {
    * @throws IOException
    */
   private void startPythonWorker() throws IOException {
+    LOGGER.info("starting python worker");
 
     String pythonWorker = MyriaConstants.PYTHONWORKER;
     ProcessBuilder pb = new ProcessBuilder(MyriaConstants.PYTHONEXEC, "-m", pythonWorker);
@@ -184,6 +191,7 @@ public class PythonWorker {
     out.flush();
     clientSock = serverSocket.accept();
     setupStreams();
+    LOGGER.info("successfully started the python worker");
     return;
   }
 

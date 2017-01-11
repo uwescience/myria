@@ -81,7 +81,6 @@ public class PythonUDFEvaluator extends GenericEvaluator {
     super(expression, parameters);
     pyFuncRegistrar = pyFuncReg;
 
-    if (parameters.getStateSchema() != null) {}
     PyUDFExpression op = (PyUDFExpression) expression.getRootExpressionOperator();
     outputType = op.getOutput();
     List<ExpressionOperator> childops = op.getChildren();
@@ -101,21 +100,23 @@ public class PythonUDFEvaluator extends GenericEvaluator {
     ExpressionOperator op = getExpression().getRootExpressionOperator();
 
     String pyFunctionName = ((PyUDFExpression) op).getName();
+    LOGGER.info("trying to initialize evaluator");
 
     try {
       if (pyFuncRegistrar != null) {
-        String pyCodeString = pyFuncRegistrar.getFunctionBinary(pyFunctionName);
+        LOGGER.info("py func registrar is not null");
+        LOGGER.info("py function name: " + pyFunctionName);
         FunctionStatus fs = pyFuncRegistrar.getFunctionStatus(pyFunctionName);
 
-        if (pyCodeString == null || fs == null) {
+        if (fs != null && fs.getName() == null) {
 
           LOGGER.info("no python UDF with name {} registered.", pyFunctionName);
           throw new DbException("No Python UDf with given name registered.");
         } else {
           // set output type
-
+          LOGGER.info(fs.getOutputType() + fs.getName() + fs.getLanguage());
           if (pyWorker != null) {
-            pyWorker.sendCodePickle(pyCodeString, numColumns, outputType, fs.getIsMultivalued());
+            pyWorker.sendCodePickle(fs.getBinary(), numColumns, outputType, fs.getIsMultivalued());
           }
         }
       }

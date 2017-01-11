@@ -399,7 +399,7 @@ public final class MyriaConstants {
           "function_isMultivalued",
           Type.BOOLEAN_TYPE,
           "function_binary",
-          Type.BLOB_TYPE);
+          Type.STRING_TYPE);
 
   /** Number of bytes per worker partition for parallel ingest - 100MB. */
   public static final long PARALLEL_INGEST_WORKER_MINIMUM_PARTITION_SIZE = 100 * MB;
