@@ -78,17 +78,11 @@ public class PythonWorker {
     try {
       if (pyCodeString.length() > 0 && dOut != null) {
         byte[] bytes = pyCodeString.getBytes(StandardCharsets.UTF_8);
-        LOGGER.info("code string length is: " + pyCodeString.length());
         dOut.writeInt(bytes.length);
-        LOGGER.info("wrote length");
-
         dOut.write(bytes);
-        LOGGER.info("wrote bytes");
-
+        
         dOut.writeInt(numColumns);
-        LOGGER.info("wrote num columns: " + numColumns);
         writeOutputType(outputType);
-        LOGGER.info("wrote output type: " + outputType.toString());
         if (isFlatMap) {
           dOut.writeInt(1);
         } else {
@@ -168,17 +162,14 @@ public class PythonWorker {
 
   /**
    *
-   * @throws IOException
+   * @throws IOException in case of error.
    */
   private void startPythonWorker() throws IOException {
-    LOGGER.info("starting python worker");
-
     String pythonWorker = MyriaConstants.PYTHONWORKER;
     ProcessBuilder pb = new ProcessBuilder(MyriaConstants.PYTHONEXEC, "-m", pythonWorker);
     final Map<String, String> env = pb.environment();
 
     env.put("PYTHONUNBUFFERED", "YES");
-
     pb.redirectError(Redirect.INHERIT);
     pb.redirectOutput(Redirect.INHERIT);
 
@@ -191,15 +182,15 @@ public class PythonWorker {
     out.flush();
     clientSock = serverSocket.accept();
     setupStreams();
-    LOGGER.info("successfully started the python worker");
+    
     return;
   }
 
   /**
    *
    * @param outputType : output type for python function
-   * @throws IOException
-   * @throws DbException
+   * @throws IOException in case of error.
+   * @throws DbException in case of error.
    */
   private void writeOutputType(final Type outputType) throws IOException, DbException {
     switch (outputType) {
@@ -235,12 +226,12 @@ public class PythonWorker {
   }
   /**
    *
-   * @param EOS Send end of stream to cleanly close the python process.
+   * @param eos Send end of stream to cleanly close the python process.
    * @throws DbException in case of error.
    */
-  public void sendEos(final int EOS) throws DbException {
+  public void sendEos(final int eos) throws DbException {
     try {
-      dOut.writeInt(EOS);
+      dOut.writeInt(eos);
       close();
     } catch (Exception e) {
       throw new DbException(e);

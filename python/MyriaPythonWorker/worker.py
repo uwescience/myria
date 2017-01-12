@@ -28,9 +28,9 @@ def main(infile, outfile):
             tupleList = []
             for j in range(numTuples):
                 tupleList.append(pickleSer.read_tuple(infile, tupleSize))
-            tup = (0, tupleList)
 
-            retval = func(tup)
+
+            retval = func(tupleList)
             if(isFlatmap > 0):
                 count = len(retval)
                 write_int(count, outfile)

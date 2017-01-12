@@ -99,7 +99,7 @@ public class PythonFunctionRegistrar {
   /**
    * get function to operator.
    *
-   * @param name function name
+   * @param pyFunctionName function name
    * @return binary function
    * @throws DbException if any error occurs
    */
@@ -156,33 +156,26 @@ public class PythonFunctionRegistrar {
    * @throws DbException in case of error.
    */
   public String getFunctionBinary(final String pyFunctionName) throws DbException {
-    LOGGER.info("Trying to get function" + pyFunctionName);
-
+  
     StringBuilder sb = new StringBuilder();
     sb.append("Select * from ");
     sb.append(MyriaConstants.PYUDF_RELATION.toString(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL));
     sb.append(" where function_name='");
     sb.append(pyFunctionName);
     sb.append("'");
-    LOGGER.info(sb.toString());
-
     try {
-
       Iterator<TupleBatch> tuples =
           accessMethod.tupleBatchIteratorFromQuery(sb.toString(), MyriaConstants.PYUDF_SCHEMA);
 
       if (tuples.hasNext()) {
         final TupleBatch tb = tuples.next();
-        LOGGER.info("Got {} tuples", tb.numTuples());
         if (tb.numTuples() > 0) {
           String codename = tb.getString(4, 0);
-          LOGGER.info("codename: " + codename);
           return codename;
         }
       }
 
     } catch (Exception e) {
-      LOGGER.info(e.getMessage());
       throw new DbException(e);
     }
     return null;

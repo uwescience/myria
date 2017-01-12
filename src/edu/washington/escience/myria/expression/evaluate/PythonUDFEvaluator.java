@@ -94,28 +94,22 @@ public class PythonUDFEvaluator extends GenericEvaluator {
 
   /**
    * Initializes the python evaluator.
-   * @throws DbException
+   * @throws DbException in case of error.
    */
   private void initEvaluator() throws DbException {
     ExpressionOperator op = getExpression().getRootExpressionOperator();
 
     String pyFunctionName = ((PyUDFExpression) op).getName();
-    LOGGER.info("trying to initialize evaluator");
-
+  
     try {
       if (pyFuncRegistrar != null) {
-        LOGGER.info("py func registrar is not null");
-        LOGGER.info("py function name: " + pyFunctionName);
         FunctionStatus fs = pyFuncRegistrar.getFunctionStatus(pyFunctionName);
 
         if (fs != null && fs.getName() == null) {
-
-          LOGGER.info("no python UDF with name {} registered.", pyFunctionName);
-          throw new DbException("No Python UDf with given name registered.");
-        } else {
-          // set output type
-          LOGGER.info(fs.getOutputType() + fs.getName() + fs.getLanguage());
+             throw new DbException("No Python UDf with given name registered.");
+        } else {        
           if (pyWorker != null) {
+        	isFlatmap = fs.getIsMultivalued(); //if the function is mutlivalued.
             pyWorker.sendCodePickle(fs.getBinary(), numColumns, outputType, fs.getIsMultivalued());
           }
         }
@@ -153,6 +147,9 @@ public class PythonUDFEvaluator extends GenericEvaluator {
   }
 
   @Override
+  
+  
+
   public void eval(
       @Nonnull final ReadableTable tb,
       final int rowIdx,
@@ -219,7 +216,6 @@ public class PythonUDFEvaluator extends GenericEvaluator {
         numTuples += ltb.get(j).numTuples();
       }
       pyWorker.sendNumTuples(numTuples);
-
       for (int tbIdx = 0; tbIdx < ltb.size(); tbIdx++) {
         TupleBatch tb = ltb.get(tbIdx);
         for (int tup = 0; tup < tb.numTuples(); tup++) {
@@ -281,9 +277,11 @@ public class PythonUDFEvaluator extends GenericEvaluator {
 
     try {
       DataOutputStream dOut = pyWorker.getDataOutputStream();
+      LOGGER.info("send number of tuples");
       pyWorker.sendNumTuples(1);
       for (int i = 0; i < numColumns; i++) {
         if (isStateColumn[i]) {
+        	LOGGER.info("one of the columns was state column!");
           writeToStream(state, rowIdx, columnIdxs[i], dOut);
         } else {
           writeToStream(tb, rowIdx, columnIdxs[i], dOut);
@@ -312,9 +310,10 @@ public class PythonUDFEvaluator extends GenericEvaluator {
     int c = 1; // single valued expressions only return 1 tuple.
     try {
       // if it is a flat map operation, read number of tuples to be read.
-      if (isFlatmap) {
+      if (isFlatmap) {    	
         c = dIn.readInt();
         count.appendInt(c);
+        LOGGER.info("this is a flatmap number of returned tuples is:" + c);
       }
 
       for (int i = 0; i < c; i++) {
@@ -338,14 +337,19 @@ public class PythonUDFEvaluator extends GenericEvaluator {
           } else if (type == MyriaConstants.PythonType.LONG.getVal()) {
             obj = dIn.readLong();
           } else if (type == MyriaConstants.PythonType.BLOB.getVal()) {
+        	  
             int l = dIn.readInt();
             if (l > 0) {
               obj = new byte[l];
               dIn.readFully((byte[]) obj);
             }
+            
+           } else {
+           	throw new DbException("Type not supported by python");
+           }
           }
         }
-      }
+      
 
     } catch (Exception e) {
       LOGGER.info("Error reading from stream");
@@ -360,17 +364,17 @@ public class PythonUDFEvaluator extends GenericEvaluator {
    * @param row - row being evaluated.
    * @param columnIdx -columnto be written to the py process.
    * @param dOut -output stream
-   * @throws DbException.
+   * @throws DbException in case of error.
    */
   private void writeToStream(
       final ReadableTable tb, final int row, final int columnIdx, final DataOutputStream dOut)
       throws DbException {
-
     Preconditions.checkNotNull(tb, "input tuple cannot be null");
     Preconditions.checkNotNull(dOut, "Output stream for python process cannot be null");
 
     Schema tbsc = tb.getSchema();
-
+    LOGGER.info("tuple schema: " + tbsc.toString());
+    LOGGER.info("columnindex:" + columnIdx);
     try {
       Type type = tbsc.getColumnType(columnIdx);
 

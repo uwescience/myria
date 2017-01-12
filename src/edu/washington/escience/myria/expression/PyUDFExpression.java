@@ -38,18 +38,6 @@ public class PyUDFExpression extends NAryExpression {
   @JsonProperty private final Boolean addCounter;
 
   /**
-   * This is not really unused, it's used automagically by Jackson deserialization.
-   */
-  @SuppressWarnings("unused")
-  private PyUDFExpression() {
-    name = "";
-    //set default return type this is changed once pythonfunction is retrived.
-    outputType = Type.BLOB_TYPE;
-
-    addCounter = false;
-  }
-
-  /**
    * Python function expression.
    *
    * @param children operand.

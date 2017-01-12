@@ -743,13 +743,10 @@ class JdbcTupleBatchIterator implements Iterator<TupleBatch> {
       return null;
     }
     final int numFields = schema.numColumns();
-    LOGGER.info("num columns " + numFields);
-
     final List<ColumnBuilder<?>> columnBuilders = ColumnFactory.allocateColumns(schema);
     int numTuples = 0;
-    int batch_size = TupleUtils.getBatchSize(schema);
-    LOGGER.info("batch size " + batch_size);
-    for (numTuples = 0; numTuples < batch_size; ++numTuples) {
+    int batchSize = TupleUtils.getBatchSize(schema);
+    for (numTuples = 0; numTuples < batchSize; ++numTuples) {
       if (!resultSet.next()) {
         final Connection connection = resultSet.getStatement().getConnection();
         resultSet.getStatement().close();
@@ -759,7 +756,6 @@ class JdbcTupleBatchIterator implements Iterator<TupleBatch> {
       }
       for (int colIdx = 0; colIdx < numFields; ++colIdx) {
         /* Warning: JDBC is 1-indexed */
-        LOGGER.info("column index: " + colIdx);
         columnBuilders.get(colIdx).appendFromJdbc(resultSet, colIdx + 1);
       }
     }
