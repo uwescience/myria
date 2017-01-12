@@ -100,16 +100,16 @@ public class PythonUDFEvaluator extends GenericEvaluator {
     ExpressionOperator op = getExpression().getRootExpressionOperator();
 
     String pyFunctionName = ((PyUDFExpression) op).getName();
-  
+
     try {
       if (pyFuncRegistrar != null) {
         FunctionStatus fs = pyFuncRegistrar.getFunctionStatus(pyFunctionName);
 
         if (fs != null && fs.getName() == null) {
-             throw new DbException("No Python UDf with given name registered.");
-        } else {        
+          throw new DbException("No Python UDf with given name registered.");
+        } else {
           if (pyWorker != null) {
-        	isFlatmap = fs.getIsMultivalued(); //if the function is mutlivalued.
+            isFlatmap = fs.getIsMultivalued(); //if the function is mutlivalued.
             pyWorker.sendCodePickle(fs.getBinary(), numColumns, outputType, fs.getIsMultivalued());
           }
         }
@@ -147,9 +147,6 @@ public class PythonUDFEvaluator extends GenericEvaluator {
   }
 
   @Override
-  
-  
-
   public void eval(
       @Nonnull final ReadableTable tb,
       final int rowIdx,
@@ -281,7 +278,7 @@ public class PythonUDFEvaluator extends GenericEvaluator {
       pyWorker.sendNumTuples(1);
       for (int i = 0; i < numColumns; i++) {
         if (isStateColumn[i]) {
-        	LOGGER.info("one of the columns was state column!");
+          LOGGER.info("one of the columns was state column!");
           writeToStream(state, rowIdx, columnIdxs[i], dOut);
         } else {
           writeToStream(tb, rowIdx, columnIdxs[i], dOut);
@@ -310,7 +307,7 @@ public class PythonUDFEvaluator extends GenericEvaluator {
     int c = 1; // single valued expressions only return 1 tuple.
     try {
       // if it is a flat map operation, read number of tuples to be read.
-      if (isFlatmap) {    	
+      if (isFlatmap) {
         c = dIn.readInt();
         count.appendInt(c);
         LOGGER.info("this is a flatmap number of returned tuples is:" + c);
@@ -337,19 +334,18 @@ public class PythonUDFEvaluator extends GenericEvaluator {
           } else if (type == MyriaConstants.PythonType.LONG.getVal()) {
             obj = dIn.readLong();
           } else if (type == MyriaConstants.PythonType.BLOB.getVal()) {
-        	  
+
             int l = dIn.readInt();
             if (l > 0) {
               obj = new byte[l];
               dIn.readFully((byte[]) obj);
             }
-            
-           } else {
-           	throw new DbException("Type not supported by python");
-           }
+
+          } else {
+            throw new DbException("Type not supported by python");
           }
         }
-      
+      }
 
     } catch (Exception e) {
       LOGGER.info("Error reading from stream");

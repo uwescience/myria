@@ -156,7 +156,7 @@ public class PythonFunctionRegistrar {
    * @throws DbException in case of error.
    */
   public String getFunctionBinary(final String pyFunctionName) throws DbException {
-  
+
     StringBuilder sb = new StringBuilder();
     sb.append("Select * from ");
     sb.append(MyriaConstants.PYUDF_RELATION.toString(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL));

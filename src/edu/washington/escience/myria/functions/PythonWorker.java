@@ -80,7 +80,7 @@ public class PythonWorker {
         byte[] bytes = pyCodeString.getBytes(StandardCharsets.UTF_8);
         dOut.writeInt(bytes.length);
         dOut.write(bytes);
-        
+
         dOut.writeInt(numColumns);
         writeOutputType(outputType);
         if (isFlatMap) {
@@ -182,7 +182,7 @@ public class PythonWorker {
     out.flush();
     clientSock = serverSocket.accept();
     setupStreams();
-    
+
     return;
   }
 
