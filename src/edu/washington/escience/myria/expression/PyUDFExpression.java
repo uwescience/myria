@@ -52,7 +52,6 @@ public class PyUDFExpression extends NAryExpression {
       final Boolean addCounter) {
     super(children);
     this.name = name;
-    LOGGER.info("pyUDF called!!!");
     this.outputType = outputType;
     this.addCounter = addCounter;
   }
