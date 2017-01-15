@@ -13,7 +13,7 @@ import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.io.AmazonS3Source;
 
 /**
- * This class returns an encoding describing a table's schema. 
+ * This class returns an encoding describing a table's schema.
  */
 public class PerfEnforceTableEncoding {
   public RelationKey relationKey;

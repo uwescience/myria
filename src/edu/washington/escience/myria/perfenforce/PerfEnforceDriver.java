@@ -51,7 +51,7 @@ public final class PerfEnforceDriver {
 
   /**
    * Constructor for the PerfEnforceDriver
-   * 
+   *
    * @param server the instance of the server
    * @param instancePath the path for the Myria deployment
    */
@@ -86,7 +86,7 @@ public final class PerfEnforceDriver {
 
   /**
    * Prepares the PSLA given a list of tables
-   * 
+   *
    * @param tableList the tables from the user's dataset
    */
   public void preparePSLA(List<PerfEnforceTableEncoding> tableList) throws Exception {
@@ -168,7 +168,7 @@ public final class PerfEnforceDriver {
 
   /**
    * Sets the tier selected by the user
-   * 
+   *
    * @param tier the tier selected
    */
   public void setTier(final int tier) {
@@ -177,7 +177,7 @@ public final class PerfEnforceDriver {
 
   /**
    * Finds the SLA for a given query
-   * 
+   *
    * @param querySQL the given query
    */
   public void findSLA(String querySQL) throws PerfEnforceException {
@@ -187,7 +187,7 @@ public final class PerfEnforceDriver {
 
   /**
    * Records the runtime of a query
-   * 
+   *
    * @param queryRuntime the runtime of a query
    */
   public void recordRealRuntime(final Double queryRuntime) throws PerfEnforceException {

@@ -54,7 +54,7 @@ public final class PerfEnforceResource {
   }
 
   /**
-   * Returns true if the PSLA generation is finished. 
+   * Returns true if the PSLA generation is finished.
    */
   @GET
   @Path("/isDonePSLA")
@@ -73,7 +73,7 @@ public final class PerfEnforceResource {
 
   /**
    * Sets the tier the user decides to purchase.
-   * 
+   *
    * @param tier the tier selected by the user
    */
   @POST
@@ -86,7 +86,7 @@ public final class PerfEnforceResource {
 
   /**
    * Determines the SLA for a given query. The SLA returned is based on the tier purchased.
-   * 
+   *
    * @param querySQL the query from the user
    */
   @POST
@@ -98,8 +98,8 @@ public final class PerfEnforceResource {
   }
 
   /**
-   * Records the runtime of a query. This helps the learner adapt. 
-   * 
+   * Records the runtime of a query. This helps the learner adapt.
+   *
    * @param queryRuntime the runtime of the query (in seconds).
    */
   @POST

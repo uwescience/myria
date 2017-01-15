@@ -1,4 +1,4 @@
-       package edu.washington.escience.myria.parallel;
+package edu.washington.escience.myria.parallel;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -1325,7 +1325,7 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
 
   /**
    * Directly runs a command on the underlying database based on the selected workers
-   * 
+   *
    * @param sqlString command to run on the database
    * @param workers the workers that will run the command
    */
@@ -1359,9 +1359,9 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
   }
 
   /**
-   * Directly runs a command on the underlying database based on the selected workers 
+   * Directly runs a command on the underlying database based on the selected workers
    * and returns the tuple results through a string array
-   * 
+   *
    * @param sqlString command to run on the database
    * @param outputSchema the schema of the output result
    * @param workers the workers that will run the command

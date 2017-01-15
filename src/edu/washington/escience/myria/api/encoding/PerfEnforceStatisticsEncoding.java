@@ -6,7 +6,7 @@ package edu.washington.escience.myria.api.encoding;
 import java.util.List;
 
 /**
- * This class encodes statistical information about a table from the user's schema. 
+ * This class encodes statistical information about a table from the user's schema.
  */
 public class PerfEnforceStatisticsEncoding {
   @Required public String table_name;
