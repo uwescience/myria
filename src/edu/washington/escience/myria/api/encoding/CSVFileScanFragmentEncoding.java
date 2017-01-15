@@ -23,7 +23,7 @@ public class CSVFileScanFragmentEncoding extends LeafOperatorEncoding<CSVFileSca
   public CSVFileScanFragment construct(ConstructArgs args) {
     /* Attempt to use all the workers if not specified */
     if (workers == null) {
-    	workers = args.getServer().getAliveWorkers();
+      workers = args.getServer().getAliveWorkers();
     }
 
     /* Find workers */
