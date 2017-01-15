@@ -1,4 +1,4 @@
-package edu.washington.escience.myria.parallel;
+       package edu.washington.escience.myria.parallel;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -1152,7 +1152,7 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
             workerId,
             new SubQueryPlan(
                 new DbCreateView(
-                    EmptyRelation.of(Schema.EMPTY_SCHEMA), viewName, viewDefinition, true, null)));
+                    EmptyRelation.of(Schema.EMPTY_SCHEMA), viewName, viewDefinition, false, null)));
       }
       ListenableFuture<Query> qf =
           queryManager.submitQuery(
@@ -1323,6 +1323,12 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
     return queryID;
   }
 
+  /**
+   * Directly runs a command on the underlying database based on the selected workers
+   * 
+   * @param sqlString command to run on the database
+   * @param workers the workers that will run the command
+   */
   public void executeSQLStatement(final String sqlString, final Set<Integer> workers)
       throws DbException, InterruptedException {
 
@@ -1352,6 +1358,14 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
     }
   }
 
+  /**
+   * Directly runs a command on the underlying database based on the selected workers 
+   * and returns the tuple results through a string array
+   * 
+   * @param sqlString command to run on the database
+   * @param outputSchema the schema of the output result
+   * @param workers the workers that will run the command
+   */
   public String[] executeSQLStatement(
       final String sqlString, final Schema outputSchema, final Set<Integer> workers)
       throws DbException {
@@ -1388,10 +1402,7 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
     }
     String response = new String(responseBytes, Charset.forName("UTF-8"));
     String[] tuples = response.split("\r\n");
-    // LOGGING
-    for (String t : tuples) {
-      LOGGER.warn("ROW OUTPUT " + t);
-    }
+
     return tuples;
   }
 

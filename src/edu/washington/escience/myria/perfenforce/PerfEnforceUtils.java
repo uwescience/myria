@@ -18,12 +18,17 @@ import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.parallel.Server;
 
 /**
- * Helper Methods
+ * Helper Methods for PerfEnforce
  */
 public class PerfEnforceUtils {
 
   protected static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(PerfEnforceUtils.class);
 
+  /**
+   * Returns a subset of workers
+   * 
+   * @param limit the upper bound for the range of workers
+   */
   public static Set<Integer> getWorkerRangeSet(final int limit) {
     Set<Integer> seq = new HashSet<Integer>();
     for (int i = 1; i <= limit; i++) {
@@ -32,6 +37,12 @@ public class PerfEnforceUtils {
     return seq;
   }
 
+  /**
+   * Returns an array of worker ids
+   * 
+   * @param min the min worker id (inclusive)
+   * @param max the max worker id (inclusive)
+   */
   public static int[] getRangeInclusiveArray(final int min, final int max) {
     int numberElements = (max - min) + 1;
     int[] intArray = new int[numberElements];
@@ -41,9 +52,11 @@ public class PerfEnforceUtils {
     return intArray;
   }
 
-  /*
-   * Construct UNION view
-   */
+ /**
+  * Creates a UNION sql statement based on a set of relationKeys
+  * 
+  * @param keysToUnion the relationKeys to union
+  */
   public static String createUnionQuery(final List<RelationKey> keysToUnion) {
     String sql = "";
     for (RelationKey table : keysToUnion) {
@@ -60,9 +73,12 @@ public class PerfEnforceUtils {
     return sql;
   }
 
-  /*
-   * Get list of attributes in a string
-   */
+ /**
+  * Concatenates an array of attributes in a string
+  * 
+  * @param keys the set of columns to concatenate
+  * @param schema the schema of the relation
+  */
   public static String getAttributeKeyString(final Set<Integer> keys, final Schema schema) {
     String keyString = "";
     int counter = 1;
@@ -76,8 +92,11 @@ public class PerfEnforceUtils {
     return keyString;
   }
 
-  /*
-   * Get list of attributes in a schema
+  /**
+   * Creates a new schema based on the given column ids
+   * 
+   * @param keys the set of columns to concatenate
+   * @param schema the schema to create
    */
   public static Schema getAttributeKeySchema(final Set<Integer> keys, final Schema schema) {
     Schema keySchema = Schema.EMPTY_SCHEMA;
@@ -88,6 +107,14 @@ public class PerfEnforceUtils {
     return keySchema;
   }
 
+  /**
+   * This method runs a SQL worker on a subset of workers. It will return the features with the highest cost to account for skew (if any)
+   * 
+   * @param server an instance of the server
+   * @param sqlQuery the SQL statement to run
+   * @param configuration the configuration
+   * @throws PerfEnforceException
+   */
   public static String getMaxFeature(final Server server, String sqlQuery, final int configuration)
       throws PerfEnforceException {
 

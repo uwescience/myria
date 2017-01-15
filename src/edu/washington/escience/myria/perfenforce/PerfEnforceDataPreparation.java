@@ -60,8 +60,10 @@ public class PerfEnforceDataPreparation {
     this.server = server;
   }
 
-  /*
+  /**
    * Ingesting the fact table in a parallel sequence
+   * 
+   * @param factTableDesc contains information about the fact table to ingest
    */
   public HashMap<Integer, RelationKey> ingestFact(final PerfEnforceTableEncoding factTableDesc)
       throws PerfEnforceException {
@@ -71,7 +73,7 @@ public class PerfEnforceDataPreparation {
     ArrayList<RelationKey> relationKeysToUnion = new ArrayList<RelationKey>();
     Collections.sort(PerfEnforceDriver.configurations, Collections.reverseOrder());
 
-    // Create a sequence for the largest cluster size
+    // Create a sequence for the largest configuration size
     int maxConfig = PerfEnforceDriver.configurations.get(0);
     Set<Integer> maxWorkerRange = PerfEnforceUtils.getWorkerRangeSet(maxConfig);
 
@@ -179,8 +181,10 @@ public class PerfEnforceDataPreparation {
     }
   }
 
-  /*
+  /**
    * Ingesting dimension tables for broadcasting
+   * 
+   * @param dimTableDesc holds information about the dimension table to ingest
    */
   public void ingestDimension(final PerfEnforceTableEncoding dimTableDesc)
       throws PerfEnforceException {
@@ -234,26 +238,27 @@ public class PerfEnforceDataPreparation {
     }
   }
 
-  /*
-   * Run Statistics on the table by extending statistics space for each column and running analyze on the table for all
-   * workers
+  /**
+   * This method analyzes the given table
+   * 
+   * @param tableToAnalyze the table to analyze
    */
-  public void analyzeTable(final PerfEnforceTableEncoding t)
+  public void analyzeTable(final PerfEnforceTableEncoding tableToAnalyze)
       throws DbException, InterruptedException {
     /*
      * If this table is Fact, we need to make sure we run "analyze" on all versions of the table
      */
-    if (t.type.equalsIgnoreCase("fact")) {
+    if (tableToAnalyze.type.equalsIgnoreCase("fact")) {
       for (Entry<Integer, RelationKey> entry : factTableRelationMapper.entrySet()) {
         PerfEnforceTableEncoding temp =
             new PerfEnforceTableEncoding(
-                t.relationKey,
-                t.type,
-                t.source,
-                t.schema,
-                t.delimiter,
-                t.keys,
-                t.corresponding_fact_key);
+            		tableToAnalyze.relationKey,
+            		tableToAnalyze.type,
+            		tableToAnalyze.source,
+            		tableToAnalyze.schema,
+            		tableToAnalyze.delimiter,
+            		tableToAnalyze.keys,
+            		tableToAnalyze.corresponding_fact_key);
         temp.relationKey =
             new RelationKey(
                 entry.getValue().getUserName(),
@@ -263,26 +268,35 @@ public class PerfEnforceDataPreparation {
       }
     } else {
       postgresStatsAnalyzeTable(
-          t, PerfEnforceUtils.getWorkerRangeSet(Collections.max(PerfEnforceDriver.configurations)));
+    		  tableToAnalyze, PerfEnforceUtils.getWorkerRangeSet(Collections.max(PerfEnforceDriver.configurations)));
     }
   }
 
-  public void postgresStatsAnalyzeTable(final PerfEnforceTableEncoding t, Set<Integer> workers)
+  /**
+   * Helper method that runs the ANALYZE command for a set of workers
+   * 
+   * @param tableToAnalyze the table to analyze
+   * @param workers the set of workers to run the ANALYZE command
+   */
+  public void postgresStatsAnalyzeTable(final PerfEnforceTableEncoding tableToAnalyze, Set<Integer> workers)
       throws DbException, InterruptedException {
-    for (int i = 0; i < t.schema.getColumnNames().size(); i++) {
+    for (int i = 0; i < tableToAnalyze.schema.getColumnNames().size(); i++) {
       server.executeSQLStatement(
           String.format(
               "ALTER TABLE %s ALTER COLUMN %s SET STATISTICS 500;",
-              t.relationKey.toString(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL),
-              t.schema.getColumnName(i)),
+              tableToAnalyze.relationKey.toString(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL),
+              tableToAnalyze.schema.getColumnName(i)),
           workers);
     }
     server.executeSQLStatement(
         String.format(
-            "ANALYZE %s;", t.relationKey.toString(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL)),
+            "ANALYZE %s;", tableToAnalyze.relationKey.toString(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL)),
         workers);
   }
 
+  /**
+   * Collects statistical information about each table
+   */
   public void collectSelectivities() throws PerfEnforceException {
     try {
       /* record the stats for each configuration */
@@ -334,8 +348,15 @@ public class PerfEnforceDataPreparation {
     }
   }
 
-  /*
-   * For each primary key, determine the rank based on the selectivity and return the result
+  /**
+   * Given the primary key, this method determines which key values will return either .001%, .01% or 10% of the data.
+   * 
+   * @param relationKey the relationkey of the table
+   * @param tableSize the size of the table
+   * @param config the cluster configuration 
+   * @param type the type of the table -- can be either "fact" or "dimension"
+   * @param keys the primary keys of the relation
+   * @param schema the schema of the relation
    */
   public PerfEnforceStatisticsEncoding runTableRanking(
       final RelationKey relationKey,
@@ -371,7 +392,7 @@ public class PerfEnforceDataPreparation {
         selectivityKeys.add(sqlResult[0]);
       }
 
-      // HACK: we can't properly "count" tuples for tables that are broadcast
+      /* This is only done because we cannot yet properly count the broadcast tables */
       long modifiedSize = tableSize;
       if (type.equalsIgnoreCase("dimension")) {
         modifiedSize = tableSize / Collections.max(PerfEnforceDriver.configurations);
@@ -383,6 +404,9 @@ public class PerfEnforceDataPreparation {
     }
   }
 
+  /**
+   * This method collects features from each query generated by PSLAManager
+   */
   public void collectFeaturesFromGeneratedQueries() throws Exception {
     for (Integer config : PerfEnforceDriver.configurations) {
       Path workerPath =

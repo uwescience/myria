@@ -49,6 +49,12 @@ public final class PerfEnforceDriver {
 
   private PerfEnforceOnlineLearning perfenforceOnlineLearning;
 
+  /**
+   * Constructor for the PerfEnforceDriver
+   * 
+   * @param server the instance of the server
+   * @param instancePath the path for the Myria deployment
+   */
   public PerfEnforceDriver(final Server server, final String instancePath) {
     configurationPath = (Paths.get(instancePath, "perfenforce_files"));
     this.server = server;
@@ -56,10 +62,10 @@ public final class PerfEnforceDriver {
     isDonePSLA = false;
   }
 
-  /*
+  /**
    * Fetch necessary files from S3
    */
-  public void fetchS3Files() throws PerfEnforceException, Exception {
+  public void fetchS3Files() throws PerfEnforceException {
     AmazonS3 s3Client = new AmazonS3Client(new AnonymousAWSCredentials());
     String currentFile = "";
     BufferedReader bufferedReader;
@@ -78,6 +84,11 @@ public final class PerfEnforceDriver {
     }
   }
 
+  /**
+   * Prepares the PSLA given a list of tables
+   * 
+   * @param tableList the tables from the user's dataset
+   */
   public void preparePSLA(List<PerfEnforceTableEncoding> tableList) throws Exception {
     isDonePSLA = false;
     PerfEnforceDriver.tableList = tableList;
@@ -121,14 +132,23 @@ public final class PerfEnforceDriver {
     isDonePSLA = true;
   }
 
+  /**
+   * Returns the status of the PSLA generation process
+   */
   public String getDataPreparationStatus() {
     return dataPreparationStatus;
   }
 
+  /**
+   * Return a boolean to determine whether the PSLA is finished generating
+   */
   public boolean isDonePSLA() {
     return isDonePSLA;
   }
 
+  /**
+   * Returns the final PSLA
+   */
   public String getPSLA() throws PerfEnforceException {
     StringWriter output = new StringWriter();
     try {
@@ -146,23 +166,44 @@ public final class PerfEnforceDriver {
     return output.toString();
   }
 
+  /**
+   * Sets the tier selected by the user
+   * 
+   * @param tier the tier selected
+   */
   public void setTier(final int tier) {
     perfenforceOnlineLearning = new PerfEnforceOnlineLearning(server, tier);
   }
 
+  /**
+   * Finds the SLA for a given query
+   * 
+   * @param querySQL the given query
+   */
   public void findSLA(String querySQL) throws PerfEnforceException {
     perfenforceOnlineLearning.findSLA(querySQL);
-    perfenforceOnlineLearning.findBestClusterSize();
+    perfenforceOnlineLearning.findBestConfigurationSize();
   }
 
+  /**
+   * Records the runtime of a query
+   * 
+   * @param queryRuntime the runtime of a query
+   */
   public void recordRealRuntime(final Double queryRuntime) throws PerfEnforceException {
     perfenforceOnlineLearning.recordRealRuntime(queryRuntime);
   }
 
+  /**
+   * Returns information about the current query, assuming the user recently requested the SLA
+   */
   public PerfEnforceQueryMetadataEncoding getCurrentQuery() {
     return perfenforceOnlineLearning.getCurrentQuery();
   }
 
+  /**
+   * Returns the current cluster size
+   */
   public int getClusterSize() {
     return perfenforceOnlineLearning.getClusterSize();
   }

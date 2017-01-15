@@ -3,6 +3,12 @@ package edu.washington.escience.myria.api.encoding;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+/**
+ * This class is used to encode information about a 
+ * query provided by the user. It returns a query identifier, 
+ * the SLA for the query, and the query SQL statement. 
+ *
+ */
 public class PerfEnforceQueryMetadataEncoding {
   public int id;
   public double slaRuntime;

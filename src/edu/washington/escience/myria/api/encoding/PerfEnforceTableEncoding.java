@@ -13,7 +13,7 @@ import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.io.AmazonS3Source;
 
 /**
- * Table Description Encoding
+ * This class returns an encoding describing a table's schema. 
  */
 public class PerfEnforceTableEncoding {
   public RelationKey relationKey;
@@ -26,13 +26,13 @@ public class PerfEnforceTableEncoding {
   public Set<Integer> corresponding_fact_key;
 
   /**
-   * @param relationKey
-   * @param type
-   * @param source
-   * @param schema
-   * @param delimiter
-   * @param keys
-   * @param corresponding_fact_key
+   * @param relationKey the name of the table
+   * @param type can be either a "fact" or "dimension" type
+   * @param source the location of the table's data in S3
+   * @param schema the schema of the table
+   * @param delimiter the delimiter used on the table's data in S3
+   * @param keys the column id of the primary key
+   * @param corresponding_fact_key the column id of the corresponding foreign key, primarily only used for dimension tables
    */
   @JsonCreator
   public PerfEnforceTableEncoding(
