@@ -8,7 +8,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.Iterator;
-import java.util.Set;
 
 import javax.annotation.Nullable;
 
@@ -28,7 +27,6 @@ import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.io.AmazonS3Source;
 import edu.washington.escience.myria.io.DataSource;
 import edu.washington.escience.myria.io.FileSource;
-import edu.washington.escience.myria.parallel.WorkerSubQuery;
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
 import edu.washington.escience.myria.util.DateTimeUtils;
@@ -75,7 +73,7 @@ public class CSVFileScanFragment extends LeafOperator {
   private boolean finishedReadingLastRow;
   private boolean flagAsIncomplete;
   private boolean flagAsRangeSelected;
-  private int liveWorkersCount;
+  private int[] workerIds;
 
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
@@ -187,22 +185,22 @@ public class CSVFileScanFragment extends LeafOperator {
   public CSVFileScanFragment(
       final AmazonS3Source source,
       final Schema schema,
-      final Set<Integer> liveWorkers,
+      final int[] workerIds,
       @Nullable final Character delimiter,
       @Nullable final Character quote,
       @Nullable final Character escape,
       @Nullable final Integer numberOfSkippedLines) {
 
-    this.source = (AmazonS3Source) Preconditions.checkNotNull(source, "source");
+    this.source = Preconditions.checkNotNull(source, "source");
     this.schema = Preconditions.checkNotNull(schema, "schema");
-    this.liveWorkersCount = liveWorkers.size();
+    this.workerIds = workerIds;
 
     this.delimiter = MoreObjects.firstNonNull(delimiter, CSVFormat.DEFAULT.getDelimiter());
     this.quote = MoreObjects.firstNonNull(quote, CSVFormat.DEFAULT.getQuoteCharacter());
     this.escape = escape;
     this.numberOfSkippedLines = MoreObjects.firstNonNull(numberOfSkippedLines, 0);
 
-    maxByteRange = ((AmazonS3Source) source).getFileSize();
+    maxByteRange = source.getFileSize();
     onLastRow = false;
     finishedReadingLastRow = false;
     flagAsIncomplete = false;
@@ -405,39 +403,29 @@ public class CSVFileScanFragment extends LeafOperator {
     buffer = new TupleBatchBuffer(getSchema());
 
     if (!flagAsRangeSelected) {
-      int workerID = ((WorkerSubQuery) getLocalSubQuery()).getWorker().getID();
-      long fileSize = source.getFileSize();
-      long currentPartitionSize = 0;
-      int totalNumberOfWorkersToIngest = 0;
-      for (int i = liveWorkersCount; i >= 1; i--) {
-        totalNumberOfWorkersToIngest = i;
-        currentPartitionSize = fileSize / i;
-        if (currentPartitionSize > MyriaConstants.PARALLEL_INGEST_WORKER_MINIMUM_PARTITION_SIZE
-            || totalNumberOfWorkersToIngest == 1) {
-          break;
-        }
-      }
-
-      if (workerID <= totalNumberOfWorkersToIngest) {
-        boolean isLastWorker = workerID == liveWorkersCount;
-        long startByteRange = currentPartitionSize * (workerID - 1);
-        long endByteRange;
-        if (isLastWorker) {
-          endByteRange = fileSize - 1;
-        } else {
-          endByteRange = (currentPartitionSize * workerID) - 1;
-        }
-
-        this.partitionStartByteRange = startByteRange;
-        this.partitionEndByteRange = endByteRange;
-        this.isLastWorker = isLastWorker;
-      } else {
-        /* do not read bytes for this worker */
-        flagAsIncomplete = true;
-      }
+	  int workerID = getNodeID();
+	  long fileSize = source.getFileSize();
+	  long currentPartitionSize = fileSize/workerIds.length;
+	  int workerIndex = 0;
+	  for(int i = 0; i< workerIds.length; i++) {
+		  if(workerID == workerIds[i]) {
+			  workerIndex = i;
+		  }
+	  }
+		boolean isLastWorker = workerIndex == workerIds.length-1;
+		long startByteRange = currentPartitionSize * workerIndex;
+		long endByteRange;
+		
+		if (isLastWorker) {
+		  endByteRange = fileSize - 1;
+		} else {
+		  endByteRange = (currentPartitionSize * (workerIndex+1))-1;
+		}
+		this.partitionStartByteRange = startByteRange;
+		this.partitionEndByteRange = endByteRange;
+		this.isLastWorker = isLastWorker;
     }
 
-    if (!flagAsIncomplete) {
       try {
 
         adjustedStartByteRange = partitionStartByteRange;
@@ -522,6 +510,5 @@ public class CSVFileScanFragment extends LeafOperator {
       } catch (IOException e) {
         throw new DbException(e);
       }
-    }
   }
 }

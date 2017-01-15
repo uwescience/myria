@@ -17,14 +17,20 @@ public class CSVFileScanFragmentEncoding extends LeafOperatorEncoding<CSVFileSca
   public Character escape;
   public Integer skip;
 
-  private Set<Integer> liveWorkers;
+  public Set<Integer> workers;
 
   @Override
   public CSVFileScanFragment construct(ConstructArgs args) {
-    /* Attempt to use all the workers */
-    liveWorkers = args.getServer().getAliveWorkers();
+    /* Attempt to use all the workers if not specified */
+    if (workers == null) {
+    	workers = args.getServer().getAliveWorkers();
+    }
+
+    /* Find workers */
+    int[] workersArray =
+        args.getServer().parallelIngestComputeNumWorkers(source.getFileSize(), workers);
 
     return new CSVFileScanFragment(
-        source, reader.getSchema(), liveWorkers, delimiter, quote, escape, skip);
+        source, reader.getSchema(), workersArray, delimiter, quote, escape, skip);
   }
 }

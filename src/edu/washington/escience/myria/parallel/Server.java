@@ -59,6 +59,7 @@ import org.slf4j.LoggerFactory;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Joiner;
+import com.google.common.base.MoreObjects;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -941,54 +942,18 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
       final Set<Integer> workersToIngest,
       final PartitionFunction partitionFunction)
       throws URIException, DbException, InterruptedException {
-    /* Figure out the workers we will use */
-    Set<Integer> actualWorkers = workersToIngest;
     long fileSize = s3Source.getFileSize();
 
-    /* Determine the number of workers to ingest and the partition size */
-    long partitionSize = 0;
-    int[] workersArray;
+    Set<Integer> potentialWorkers = MoreObjects.firstNonNull(workersToIngest, getAliveWorkers());
 
-    if (workersToIngest == null) {
-      int[] allWorkers = MyriaUtils.integerSetToIntArray(getAliveWorkers());
-      int totalNumberOfWorkersToIngest = 0;
-      for (int i = allWorkers.length; i >= 1; i--) {
-        totalNumberOfWorkersToIngest = i;
-        long currentPartitionSize = fileSize / i;
-        if (currentPartitionSize > MyriaConstants.PARALLEL_INGEST_WORKER_MINIMUM_PARTITION_SIZE
-            || totalNumberOfWorkersToIngest == 1) {
-          partitionSize = currentPartitionSize;
-          break;
-        }
-      }
-      workersArray = Arrays.copyOfRange(allWorkers, 0, totalNumberOfWorkersToIngest);
-    } else {
-      Preconditions.checkArgument(actualWorkers.size() > 0, "Must use > 0 workers");
-      workersArray = MyriaUtils.integerSetToIntArray(actualWorkers);
-      partitionSize = fileSize / workersArray.length;
-    }
+    /* Select a subset of workers */
+    int[] workersArray = parallelIngestComputeNumWorkers(fileSize, potentialWorkers);
+
     Map<Integer, SubQueryPlan> workerPlans = new HashMap<>();
     for (int workerID = 1; workerID <= workersArray.length; workerID++) {
-      boolean isLastWorker = workerID == workersArray.length;
-      long startRange = partitionSize * (workerID - 1);
-      long endRange;
-      if (isLastWorker) {
-        endRange = fileSize - 1;
-      } else {
-        endRange = (partitionSize * workerID) - 1;
-      }
-
       CSVFileScanFragment scanFragment =
           new CSVFileScanFragment(
-              s3Source,
-              schema,
-              startRange,
-              endRange,
-              isLastWorker,
-              delimiter,
-              quote,
-              escape,
-              numberOfSkippedLines);
+              s3Source, schema, workersArray, delimiter, quote, escape, numberOfSkippedLines);
       workerPlans.put(
           workersArray[workerID - 1],
           new SubQueryPlan(new DbInsert(scanFragment, relationKey, true)));
@@ -1015,6 +980,28 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
 
     updateHowPartitioned(relationKey, new HowPartitioned(partitionFunction, workersArray));
     return getDatasetStatus(relationKey);
+  }
+
+  /**
+   *  Helper method for parallel ingest.
+   *
+   * @param fileSize the size of the file to ingest
+   * @param allWorkers all workers considered for ingest
+   */
+  public int[] parallelIngestComputeNumWorkers(long fileSize, Set<Integer> allWorkers) {
+    /* Determine the number of workers to ingest based on partition size */
+    int totalNumberOfWorkersToIngest = 0;
+    for (int i = allWorkers.size(); i >= 1; i--) {
+      totalNumberOfWorkersToIngest = i;
+      long currentPartitionSize = fileSize / i;
+      if (currentPartitionSize > MyriaConstants.PARALLEL_INGEST_WORKER_MINIMUM_PARTITION_SIZE) {
+        break;
+      }
+    }
+    int[] workersArray = MyriaUtils.integerSetToIntArray(allWorkers);
+    Arrays.sort(workersArray);
+    workersArray = Arrays.copyOfRange(workersArray, 0, totalNumberOfWorkersToIngest);
+    return workersArray;
   }
 
   /**
