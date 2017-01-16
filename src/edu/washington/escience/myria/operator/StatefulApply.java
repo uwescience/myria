@@ -174,7 +174,10 @@ public class StatefulApply extends Apply {
     // these can only be generic or python expressions.
     for (Expression expr : getEmitExpressions()) {
       GenericEvaluator evaluator;
-      if (expr.isRegisteredPythonUDF()) {
+      if (expr.isConstant()) {
+        evaluator =
+            new ConstantEvaluator(expr, new ExpressionOperatorParameter(inputSchema, getNodeID()));
+      } else if (expr.isRegisteredPythonUDF()) {
         evaluator =
             new PythonUDFEvaluator(
                 expr,
