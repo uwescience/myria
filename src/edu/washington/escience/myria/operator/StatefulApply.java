@@ -166,9 +166,15 @@ public class StatefulApply extends Apply {
     ArrayList<GenericEvaluator> evaluators = new ArrayList<>();
     evaluators.ensureCapacity(getEmitExpressions().size());
     for (Expression expr : getEmitExpressions()) {
-      GenericEvaluator evaluator =
-          new GenericEvaluator(
-              expr, new ExpressionOperatorParameter(inputSchema, getStateSchema(), getNodeID()));
+      GenericEvaluator evaluator;
+      if (expr.isConstant()) {
+        evaluator =
+            new ConstantEvaluator(expr, new ExpressionOperatorParameter(inputSchema, getNodeID()));
+      } else {
+        evaluator =
+            new GenericEvaluator(
+                expr, new ExpressionOperatorParameter(inputSchema, getStateSchema(), getNodeID()));
+      }
       if (evaluator.needsCompiling()) {
         evaluator.compile();
       }
