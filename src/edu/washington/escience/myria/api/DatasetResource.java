@@ -104,11 +104,11 @@ public final class DatasetResource {
       @PathParam("programName") final String programName,
       @PathParam("relationName") final String relationName)
       throws DbException {
-    DatasetStatus status =
-        server.getDatasetStatus(RelationKey.of(userName, programName, relationName));
+    RelationKey relationKey = RelationKey.of(userName, programName, relationName);
+    DatasetStatus status = server.getDatasetStatus(relationKey);
     if (status == null) {
       /* Not found, throw a 404 (Not Found) */
-      throw new MyriaApiException(Status.NOT_FOUND, "That dataset was not found");
+      throw new MyriaApiException(Status.NOT_FOUND, "Dataset " + relationKey + " was not found");
     }
     status.setUri(getCanonicalResourcePath(uriInfo, status.getRelationKey()));
     /* Yay, worked! */
@@ -356,13 +356,12 @@ public final class DatasetResource {
       @PathParam("programName") final String programName,
       @PathParam("relationName") final String relationName)
       throws DbException {
-    DatasetStatus status =
-        server.getDatasetStatus(RelationKey.of(userName, programName, relationName));
+    RelationKey relationKey = RelationKey.of(userName, programName, relationName);
+    DatasetStatus status = server.getDatasetStatus(relationKey);
     if (status == null) {
       /* Dataset not found, throw a 404 (Not Found) */
-      throw new MyriaApiException(Status.NOT_FOUND, "That dataset was not found");
+      throw new MyriaApiException(Status.NOT_FOUND, "Dataset " + relationKey + " was not found");
     }
-    RelationKey relationKey = status.getRelationKey();
     // delete command
     try {
       server.deleteDataset(relationKey);
@@ -566,7 +565,7 @@ public final class DatasetResource {
     /* Check overwriting existing dataset. */
     try {
       if (!MoreObjects.firstNonNull(overwrite, false) && server.getSchema(relationKey) != null) {
-        throw new MyriaApiException(Status.CONFLICT, "That dataset already exists.");
+        throw new MyriaApiException(Status.CONFLICT, "Dataset " + relationKey + " already exists.");
       }
     } catch (CatalogException e) {
       throw new DbException(e);
@@ -642,7 +641,8 @@ public final class DatasetResource {
       if (!MoreObjects.firstNonNull(dataset.overwrite, Boolean.FALSE)
           && server.getSchema(dataset.relationKey) != null) {
         /* Found, throw a 409 (Conflict) */
-        throw new MyriaApiException(Status.CONFLICT, "That dataset already exists.");
+        throw new MyriaApiException(
+            Status.CONFLICT, "Dataset " + dataset.relationKey + " already exists.");
       }
     } catch (CatalogException e) {
       throw new DbException(e);
