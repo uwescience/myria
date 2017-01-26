@@ -1,112 +1,78 @@
 package edu.washington.escience.myria.operator.agg;
 
+import java.util.List;
 import java.util.Objects;
-import java.util.Set;
 
-import com.google.common.collect.ImmutableSet;
-import com.google.common.math.LongMath;
+import com.google.common.collect.ImmutableList;
 
-import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.Type;
+import edu.washington.escience.myria.column.Column;
 import edu.washington.escience.myria.storage.AppendableTable;
-import edu.washington.escience.myria.storage.ReadableTable;
+import edu.washington.escience.myria.storage.MutableTupleBuffer;
+import edu.washington.escience.myria.storage.ReplaceableColumn;
+import edu.washington.escience.myria.storage.TupleBatch;
 
 /**
  * Knows how to compute some aggregates over a BooleanColumn.
  */
 public final class BooleanAggregator extends PrimitiveAggregator {
 
+  protected BooleanAggregator(
+      final String inputName, final int column, final AggregationOp aggOp, final int[] stateCols) {
+    super(inputName, column, aggOp, stateCols);
+  }
+
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
-  /** Which column of the input this aggregator operates over. */
-  private final int fromColumn;
-
-  /**
-   * Aggregate operations applicable for boolean columns.
-   */
-  public static final Set<AggregationOp> AVAILABLE_AGG = ImmutableSet.of(AggregationOp.COUNT);
-
-  /**
-   * @param aFieldName aggregate field name for use in output schema.
-   * @param aggOps the aggregate operation to simultaneously compute.
-   * @param column the column being aggregated over.
-   */
-  public BooleanAggregator(
-      final String aFieldName, final AggregationOp[] aggOps, final int column) {
-    super(aFieldName, aggOps);
-    fromColumn = column;
-  }
 
   @Override
-  public void add(final ReadableTable from, final Object state) {
+  public void addRow(
+      final TupleBatch from, final int fromRow, final MutableTupleBuffer to, final int toRow) {
     Objects.requireNonNull(from, "from");
-    BooleanAggState b = (BooleanAggState) state;
-    b.count += from.numTuples();
-  }
-
-  /**
-   * Add the specified value to this aggregator.
-   *
-   * @param value the value to be added.
-   * @param state the current state of the aggregate.
-   */
-  public void addBoolean(final boolean value, final Object state) {
-    BooleanAggState b = (BooleanAggState) state;
-    if (needsCount) {
-      b.count = LongMath.checkedAdd(b.count, 1);
+    ReplaceableColumn toCol = to.getColumn(stateCols[0], toRow);
+    final int inColumRow = to.getInColumnIndex(toRow);
+    switch (aggOp) {
+      case COUNT:
+        toCol.replaceLong(toCol.getLong(inColumRow) + 1, inColumRow);
+        break;
+      default:
+        throw new IllegalArgumentException(aggOp + " is invalid");
     }
   }
 
   @Override
-  public void getResult(final AppendableTable dest, final int destColumn, final Object state) {
-    BooleanAggState b = (BooleanAggState) state;
-    Objects.requireNonNull(dest, "dest");
-    int idx = destColumn;
-    for (AggregationOp op : aggOps) {
-      switch (op) {
-        case COUNT:
-          dest.putLong(idx, b.count);
-          break;
-        case AVG:
-        case MAX:
-        case MIN:
-        case STDEV:
-        case SUM:
-          throw new UnsupportedOperationException("Aggregate " + op + " on type Boolean");
-      }
-      idx++;
+  public List<Column<?>> emitOutput(final TupleBatch tb) {
+    switch (aggOp) {
+      case COUNT:
+        return ImmutableList.of(tb.getDataColumns().get(stateCols[0]));
+      default:
+        throw new IllegalArgumentException(aggOp + " is invalid");
     }
   }
 
   @Override
-  public Type getType() {
-    return Type.BOOLEAN_TYPE;
+  protected boolean isSupported(final AggregationOp aggOp) {
+    return aggOp.equals(AggregationOp.COUNT);
   }
 
   @Override
-  protected Set<AggregationOp> getAvailableAgg() {
-    return AVAILABLE_AGG;
-  }
+  protected Type getOutputType() {
+    switch (aggOp) {
+      case COUNT:
+        return Type.LONG_TYPE;
+      default:
+        throw new IllegalArgumentException("Type " + aggOp + " is invalid");
+    }
+  };
 
   @Override
-  protected Type getSumType() {
-    throw new UnsupportedOperationException("SUM of Boolean values");
-  }
-
-  @Override
-  public void addRow(final ReadableTable from, final int row, final Object state)
-      throws DbException {
-    addBoolean(from.getBoolean(fromColumn, row), state);
-  }
-
-  @Override
-  public Object getInitialState() {
-    return new BooleanAggState();
-  }
-
-  /** Private internal class that wraps the state required by this Aggregator as an object. */
-  private final class BooleanAggState {
-    /** The number of tuples seen so far. */
-    private long count = 0;
+  public void appendInitValue(AppendableTable data, final int column) {
+    switch (aggOp) {
+      case COUNT:
+        data.putLong(column, 0);
+        break;
+      default:
+        throw new IllegalArgumentException("Type " + aggOp + " is invalid");
+    }
   }
 }

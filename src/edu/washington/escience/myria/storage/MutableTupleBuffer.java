@@ -64,7 +64,6 @@ public class MutableTupleBuffer implements ReadableTable, AppendableTable, Clone
 
   /**
    * Makes a batch of any tuples in the buffer and appends it to the internal list.
-   *
    */
   private void finishBatch() {
     Preconditions.checkArgument(numColumnsReady == 0);
@@ -93,42 +92,42 @@ public class MutableTupleBuffer implements ReadableTable, AppendableTable, Clone
   @Override
   @Deprecated
   public final Object getObject(final int col, final int row) {
-    return getColumn(col, row).getObject(row % TupleBatch.BATCH_SIZE);
+    return getColumn(col, row).getObject(getInColumnIndex(row));
   }
 
   @Override
   public final boolean getBoolean(final int col, final int row) {
-    return getColumn(col, row).getBoolean(row % TupleBatch.BATCH_SIZE);
+    return getColumn(col, row).getBoolean(getInColumnIndex(row));
   }
 
   @Override
   public final double getDouble(final int col, final int row) {
-    return getColumn(col, row).getDouble(row % TupleBatch.BATCH_SIZE);
+    return getColumn(col, row).getDouble(getInColumnIndex(row));
   }
 
   @Override
   public final float getFloat(final int col, final int row) {
-    return getColumn(col, row).getFloat(row % TupleBatch.BATCH_SIZE);
+    return getColumn(col, row).getFloat(getInColumnIndex(row));
   }
 
   @Override
   public final long getLong(final int col, final int row) {
-    return getColumn(col, row).getLong(row % TupleBatch.BATCH_SIZE);
+    return getColumn(col, row).getLong(getInColumnIndex(row));
   }
 
   @Override
   public final int getInt(final int col, final int row) {
-    return getColumn(col, row).getInt(row % TupleBatch.BATCH_SIZE);
+    return getColumn(col, row).getInt(getInColumnIndex(row));
   }
 
   @Override
   public final String getString(final int col, final int row) {
-    return getColumn(col, row).getString(row % TupleBatch.BATCH_SIZE);
+    return getColumn(col, row).getString(getInColumnIndex(row));
   }
 
   @Override
   public final DateTime getDateTime(final int col, final int row) {
-    return getColumn(col, row).getDateTime(row % TupleBatch.BATCH_SIZE);
+    return getColumn(col, row).getDateTime(getInColumnIndex(row));
   }
 
   @Override
@@ -231,7 +230,8 @@ public class MutableTupleBuffer implements ReadableTable, AppendableTable, Clone
    * @param sourceColumn the column from which data will be retrieved.
    * @param sourceRow the row in the source column from which data will be retrieved.
    */
-  public final void put(final int destColumn, final Column<?> sourceColumn, final int sourceRow) {
+  public final void put(
+      final int destColumn, final ReadableColumn sourceColumn, final int sourceRow) {
     TupleUtils.copyValue(sourceColumn, sourceRow, this, destColumn);
   }
 
@@ -343,7 +343,7 @@ public class MutableTupleBuffer implements ReadableTable, AppendableTable, Clone
    * @param value the replacement.
    */
   public final void replaceInt(final int destColumn, final int destRow, final int value) {
-    getColumn(destColumn, destRow).replaceInt(value, destRow % TupleBatch.BATCH_SIZE);
+    getColumn(destColumn, destRow).replaceInt(value, getInColumnIndex(destRow));
   }
 
   /**
@@ -352,7 +352,7 @@ public class MutableTupleBuffer implements ReadableTable, AppendableTable, Clone
    * @param value the replacement.
    */
   public final void replaceLong(final int destColumn, final int destRow, final long value) {
-    getColumn(destColumn, destRow).replaceLong(value, destRow % TupleBatch.BATCH_SIZE);
+    getColumn(destColumn, destRow).replaceLong(value, getInColumnIndex(destRow));
   }
 
   /**
@@ -361,7 +361,7 @@ public class MutableTupleBuffer implements ReadableTable, AppendableTable, Clone
    * @param value the replacement.
    */
   public final void replaceFloat(final int destColumn, final int destRow, final float value) {
-    getColumn(destColumn, destRow).replaceFloat(value, destRow % TupleBatch.BATCH_SIZE);
+    getColumn(destColumn, destRow).replaceFloat(value, getInColumnIndex(destRow));
   }
 
   /**
@@ -370,7 +370,7 @@ public class MutableTupleBuffer implements ReadableTable, AppendableTable, Clone
    * @param value the replacement.
    */
   public final void replaceDouble(final int destColumn, final int destRow, final double value) {
-    getColumn(destColumn, destRow).replaceDouble(value, destRow % TupleBatch.BATCH_SIZE);
+    getColumn(destColumn, destRow).replaceDouble(value, getInColumnIndex(destRow));
   }
 
   /**
@@ -379,7 +379,7 @@ public class MutableTupleBuffer implements ReadableTable, AppendableTable, Clone
    * @param value the replacement.
    */
   public final void replaceString(final int destColumn, final int destRow, final String value) {
-    getColumn(destColumn, destRow).replaceString(value, destRow % TupleBatch.BATCH_SIZE);
+    getColumn(destColumn, destRow).replaceString(value, getInColumnIndex(destRow));
   }
 
   /**
@@ -388,7 +388,7 @@ public class MutableTupleBuffer implements ReadableTable, AppendableTable, Clone
    * @param value the replacement.
    */
   public final void replaceDateTime(final int destColumn, final int destRow, final DateTime value) {
-    getColumn(destColumn, destRow).replaceDateTime(value, destRow % TupleBatch.BATCH_SIZE);
+    getColumn(destColumn, destRow).replaceDateTime(value, getInColumnIndex(destRow));
   }
 
   /**
@@ -400,9 +400,12 @@ public class MutableTupleBuffer implements ReadableTable, AppendableTable, Clone
    * @param sourceRow the row in the source column from which data will be retrieved.
    */
   public final void replace(
-      final int destColumn, final int destRow, final Column<?> sourceColumn, final int sourceRow) {
+      final int destColumn,
+      final int destRow,
+      final ReadableColumn sourceColumn,
+      final int sourceRow) {
     checkRowIndex(destRow);
-    int tupleIndex = destRow % TupleBatch.BATCH_SIZE;
+    int tupleIndex = getInColumnIndex(destRow);
     ReplaceableColumn dest = getColumn(destColumn, destRow);
     switch (dest.getType()) {
       case BOOLEAN_TYPE:
@@ -489,5 +492,15 @@ public class MutableTupleBuffer implements ReadableTable, AppendableTable, Clone
   @Override
   public WritableColumn asWritableColumn(final int column) {
     return new WritableSubColumn(this, column);
+  }
+
+  /**
+   * Get the in-column row index of the given row index of the whole tuple buffer.
+   *
+   * @param row
+   * @return the in-column row index
+   */
+  public int getInColumnIndex(final int row) {
+    return row % TupleBatch.BATCH_SIZE;
   }
 }

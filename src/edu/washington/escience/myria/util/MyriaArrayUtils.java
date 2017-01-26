@@ -153,4 +153,19 @@ public final class MyriaArrayUtils extends org.apache.commons.lang3.ArrayUtils {
     }
     return arrayOfIndices;
   }
+
+  /**
+   * Helper function that generates an array of the numbers in [start, start+length).
+   *
+   * @param start the size of the array.
+   * @param length the length of the array.
+   * @return an array of the numbers [start, start+length).
+   */
+  public static int[] range(final int start, final int length) {
+    int[] ret = new int[length];
+    for (int i = 0; i < length; ++i) {
+      ret[i] = start + i;
+    }
+    return ret;
+  }
 }

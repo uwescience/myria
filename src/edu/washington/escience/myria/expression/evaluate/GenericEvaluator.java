@@ -106,15 +106,13 @@ public class GenericEvaluator extends Evaluator {
    * @param count column storing number of results (null for single-valued expressions)
    * @param result the table storing the result
    * @param state additional state that affects the computation
-   * @throws InvocationTargetException exception thrown from janino
    */
   public void eval(
       @Nonnull final ReadableTable tb,
       final int rowIdx,
       @Nullable final WritableColumn count,
       @Nonnull final WritableColumn result,
-      @Nullable final ReadableTable state)
-      throws InvocationTargetException {
+      @Nullable final ReadableTable state) {
     Preconditions.checkArgument(
         evaluator != null, "Call compile first or copy the data if it is the same in the input.");
     Preconditions.checkArgument(
@@ -186,11 +184,12 @@ public class GenericEvaluator extends Evaluator {
   }
 
   /**
-   * Evaluate an expression over an entire TupleBatch and return the column(s) of results, along with a column of result counts from each tuple. This method cannot take state
-   * into consideration.
+   * Evaluate an expression over an entire TupleBatch and return the column(s) of results, along with a column of result
+   * counts from each tuple. This method cannot take state into consideration.
    *
    * @param tb the tuples to be input to this expression
-   * @return an {@link EvaluatorResult} containing the results and result counts of evaluating this expression on the entire TupleBatch
+   * @return an {@link EvaluatorResult} containing the results and result counts of evaluating this expression on the
+   *         entire TupleBatch
    * @throws InvocationTargetException exception thrown from janino
    */
   public EvaluatorResult evaluateColumn(final TupleBatch tb) throws InvocationTargetException {

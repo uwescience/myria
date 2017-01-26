@@ -14,12 +14,11 @@ import edu.washington.escience.myria.operator.Operator;
 
 /**
  * A JSON-able wrapper for the expected wire message for an operator. To add a new operator, two things need to be done.
- * 1. Create an Encoding class that extends OperatorEncoding.
- * 2. Add the operator to the list of (alphabetically sorted) JsonSubTypes below.
+ * 1. Create an Encoding class that extends OperatorEncoding. 2. Add the operator to the list of (alphabetically sorted)
+ * JsonSubTypes below.
  */
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "opType")
 @JsonSubTypes({
-  @Type(name = "Aggregate", value = AggregateEncoding.class),
   @Type(name = "Apply", value = ApplyEncoding.class),
   @Type(name = "BroadcastConsumer", value = BroadcastConsumerEncoding.class),
   @Type(name = "BroadcastProducer", value = BroadcastProducerEncoding.class),
@@ -50,7 +49,7 @@ import edu.washington.escience.myria.operator.Operator;
   @Type(name = "LocalMultiwayProducer", value = LocalMultiwayProducerEncoding.class),
   @Type(name = "Merge", value = MergeEncoding.class),
   @Type(name = "MergeJoin", value = MergeJoinEncoding.class),
-  @Type(name = "MultiGroupByAggregate", value = MultiGroupByAggregateEncoding.class),
+  @Type(name = "Aggregate", value = AggregateEncoding.class),
   @Type(name = "NChiladaFileScan", value = NChiladaFileScanEncoding.class),
   @Type(name = "RightHashCountingJoin", value = RightHashCountingJoinEncoding.class),
   @Type(name = "RightHashJoin", value = RightHashJoinEncoding.class),
@@ -61,7 +60,6 @@ import edu.washington.escience.myria.operator.Operator;
   @Type(name = "SetGlobal", value = SetGlobalEncoding.class),
   @Type(name = "ShuffleConsumer", value = GenericShuffleConsumerEncoding.class),
   @Type(name = "ShuffleProducer", value = GenericShuffleProducerEncoding.class),
-  @Type(name = "SingleGroupByAggregate", value = SingleGroupByAggregateEncoding.class),
   @Type(name = "Singleton", value = SingletonEncoding.class),
   @Type(name = "StatefulApply", value = StatefulApplyEncoding.class),
   @Type(name = "SymmetricHashJoin", value = SymmetricHashJoinEncoding.class),

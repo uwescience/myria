@@ -21,7 +21,6 @@ public class SymmetricHashJoinEncoding extends BinaryOperatorEncoding<SymmetricH
   public SymmetricHashJoin construct(final ConstructArgs args) {
     SymmetricHashJoin join =
         new SymmetricHashJoin(
-            argColumnNames,
             null,
             null,
             argColumns1,
@@ -29,7 +28,8 @@ public class SymmetricHashJoinEncoding extends BinaryOperatorEncoding<SymmetricH
             argSelect1,
             argSelect2,
             argSetSemanticsLeft,
-            argSetSemanticsRight);
+            argSetSemanticsRight,
+            argColumnNames);
     join.setPullOrder(argOrder);
     return join;
   }

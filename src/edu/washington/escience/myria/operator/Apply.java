@@ -86,7 +86,6 @@ public class Apply extends UnaryOperator {
   private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(Apply.class);
 
   /**
-   *
    * @param child child operator that data is fetched from
    * @param emitExpressions expression that created the output
    */
@@ -128,7 +127,7 @@ public class Apply extends UnaryOperator {
         // we elide 2 copies: one in `GenericEvaluator.evaluateColumn()` and one generating the Cartesian product.)
         if (onlySingleValuedExpressions()) {
           outputBuffer.absorb(
-              new TupleBatch(getSchema(), resultColumnsForTB, inputTuples.numTuples()));
+              new TupleBatch(getSchema(), resultColumnsForTB, inputTuples.numTuples()), true);
         } else {
           // Generate the Cartesian product and append to output buffer.
           int[] resultCounts = new int[emitEvaluators.size()];
@@ -180,7 +179,7 @@ public class Apply extends UnaryOperator {
    * returns false.
    *
    * @param upperBounds an immutable array of elements representing the sets we are forming the Cartesian product of,
-   *          where each set is of the form [0, i), where i is an element of {@link upperBounds}
+   *        where each set is of the form [0, i), where i is an element of {@link upperBounds}
    * @param iteratorIndexes a mutable array of elements representing the current element of the Cartesian product
    * @return if we have exhausted all elements of the Cartesian product
    */
