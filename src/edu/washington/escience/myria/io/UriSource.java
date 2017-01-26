@@ -71,6 +71,11 @@ public class UriSource implements DataSource, Serializable {
         : getHadoopFileSystemInputStream(parsedUri);
   }
 
+  @JsonProperty("uri")
+  private String getUriString() {
+    return parsedUri.toString();
+  }
+
   /**
    * Get an input stream using the configured Hadoop file system for the given URI scheme
    */
