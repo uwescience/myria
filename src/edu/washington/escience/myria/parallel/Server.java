@@ -106,10 +106,8 @@ import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.operator.RootOperator;
 import edu.washington.escience.myria.operator.TupleSink;
 import edu.washington.escience.myria.operator.agg.Aggregate;
-import edu.washington.escience.myria.operator.agg.MultiGroupByAggregate;
 import edu.washington.escience.myria.operator.agg.PrimitiveAggregator.AggregationOp;
-import edu.washington.escience.myria.operator.agg.SingleColumnAggregatorFactory;
-import edu.washington.escience.myria.operator.agg.SingleGroupByAggregate;
+import edu.washington.escience.myria.operator.agg.PrimitiveAggregatorFactory;
 import edu.washington.escience.myria.operator.network.CollectProducer;
 import edu.washington.escience.myria.operator.network.Consumer;
 import edu.washington.escience.myria.operator.network.GenericShuffleProducer;
@@ -1569,9 +1567,9 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
     final Consumer consumer =
         new Consumer(addWorkerId.getSchema(), operatorId, ImmutableSet.copyOf(actualWorkers));
 
-    final MultiGroupByAggregate aggregate =
-        new MultiGroupByAggregate(
-            consumer, new int[] {0, 1, 2}, new SingleColumnAggregatorFactory(3, AggregationOp.SUM));
+    final Aggregate aggregate =
+        new Aggregate(
+            consumer, new int[] {0, 1, 2}, new PrimitiveAggregatorFactory(3, AggregationOp.SUM));
 
     // rename columns
     ImmutableList.Builder<Expression> renameExpressions = ImmutableList.builder();
@@ -1711,13 +1709,13 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
     final Consumer consumer =
         new Consumer(scan.getSchema(), operatorId, ImmutableSet.copyOf(actualWorkers));
 
-    final SingleGroupByAggregate aggregate =
-        new SingleGroupByAggregate(
+    final Aggregate aggregate =
+        new Aggregate(
             consumer,
-            0,
-            new SingleColumnAggregatorFactory(1, AggregationOp.SUM),
-            new SingleColumnAggregatorFactory(2, AggregationOp.MIN),
-            new SingleColumnAggregatorFactory(3, AggregationOp.MAX));
+            new int[] {0},
+            new PrimitiveAggregatorFactory(1, AggregationOp.SUM),
+            new PrimitiveAggregatorFactory(2, AggregationOp.MIN),
+            new PrimitiveAggregatorFactory(3, AggregationOp.MAX));
 
     // rename columns
     ImmutableList.Builder<Expression> renameExpressions = ImmutableList.builder();
@@ -1966,9 +1964,9 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
         new Consumer(scan.getSchema(), operatorId, ImmutableSet.copyOf(actualWorkers));
 
     // sum up the number of workers working
-    final MultiGroupByAggregate sumAggregate =
-        new MultiGroupByAggregate(
-            consumer, new int[] {0, 1}, new SingleColumnAggregatorFactory(1, AggregationOp.COUNT));
+    final Aggregate sumAggregate =
+        new Aggregate(
+            consumer, new int[] {0, 1}, new PrimitiveAggregatorFactory(1, AggregationOp.COUNT));
     // rename columns
     ImmutableList.Builder<Expression> renameExpressions = ImmutableList.builder();
     renameExpressions.add(new Expression("opId", new VariableExpression(0)));
@@ -2050,8 +2048,9 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
     final Aggregate sumAggregate =
         new Aggregate(
             consumer,
-            new SingleColumnAggregatorFactory(0, AggregationOp.MIN),
-            new SingleColumnAggregatorFactory(1, AggregationOp.MAX));
+            new int[] {},
+            new PrimitiveAggregatorFactory(0, AggregationOp.MIN),
+            new PrimitiveAggregatorFactory(1, AggregationOp.MAX));
 
     TupleSink output = new TupleSink(sumAggregate, writer, dataSink);
     final SubQueryPlan masterPlan = new SubQueryPlan(output);
@@ -2126,9 +2125,9 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
         new Consumer(scan.getSchema(), operatorId, ImmutableSet.copyOf(actualWorkers));
 
     // sum up contributions
-    final SingleGroupByAggregate sumAggregate =
-        new SingleGroupByAggregate(
-            consumer, 0, new SingleColumnAggregatorFactory(1, AggregationOp.AVG));
+    final Aggregate sumAggregate =
+        new Aggregate(
+            consumer, new int[] {0}, new PrimitiveAggregatorFactory(1, AggregationOp.AVG));
 
     // rename columns
     ImmutableList.Builder<Expression> renameExpressions = ImmutableList.builder();

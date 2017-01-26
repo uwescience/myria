@@ -23,7 +23,6 @@ import edu.washington.escience.myria.expression.Expression;
 import edu.washington.escience.myria.expression.evaluate.ExpressionOperatorParameter;
 import edu.washington.escience.myria.expression.evaluate.GenericEvaluator;
 import edu.washington.escience.myria.expression.evaluate.ScriptEvalInterface;
-import edu.washington.escience.myria.storage.Tuple;
 
 /**
  * Apply operator that has to be initialized and carries a state while new tuples are generated.
@@ -42,22 +41,13 @@ public class UserDefinedAggregatorFactory implements AggregatorFactory {
   /** Expressions that emit the final aggregation result from the state. */
   @JsonProperty private final List<Expression> emitters;
 
-  /**
-   * The states that are passed during execution.
-   */
-  private transient Tuple state;
-  /**
-   * Evaluators that update the {@link #state}. One evaluator for each expression in {@link #updaters}.
-   */
+  /** Evaluators that initialize the {@link #state}. */
+  private transient ScriptEvalInterface initEvaluator;
+  /** Evaluators that update the {@link #state}. One evaluator for each expression in {@link #updaters}. */
   private transient ScriptEvalInterface updateEvaluator;
-  /**
-   * One evaluator for each expression in {@link #emitters}.
-   */
+  /** One evaluator for each expression in {@link #emitters}. */
   private transient ArrayList<GenericEvaluator> emitEvaluators;
-
-  /**
-   * The schema of the result tuples.
-   */
+  /** The schema of the result tuples. */
   private transient Schema resultSchema;
 
   /**
@@ -77,63 +67,66 @@ public class UserDefinedAggregatorFactory implements AggregatorFactory {
     this.initializers = Objects.requireNonNull(initializers, "initializers");
     this.updaters = Objects.requireNonNull(updaters, "updaters");
     this.emitters = Objects.requireNonNull(emitters, "emitters");
-    state = null;
     updateEvaluator = null;
     emitEvaluators = null;
     resultSchema = null;
   }
 
   @Override
+  public List<Aggregator> generateInternalAggs(final Schema inputSchema, final int offset)
+      throws DbException {
+    return generateEmitAggs(inputSchema, offset);
+  }
+
+  @Override
   @Nonnull
-  public Aggregator get(final Schema inputSchema) throws DbException {
-    if (state == null) {
-      Objects.requireNonNull(inputSchema, "inputSchema");
+  public List<Aggregator> generateEmitAggs(final Schema inputSchema, final int offset)
+      throws DbException {
+    Objects.requireNonNull(inputSchema, "inputSchema");
+    Preconditions.checkArgument(
+        initializers.size() == updaters.size(),
+        "must have the same number of aggregate state initializers (%s) and updaters (%s)",
+        initializers.size(),
+        updaters.size());
+    // Verify that initializers and updaters have compatible names
+    for (int i = 0; i < initializers.size(); i++) {
       Preconditions.checkArgument(
-          initializers.size() == updaters.size(),
-          "must have the same number of aggregate state initializers (%s) and updaters (%s)",
-          initializers.size(),
-          updaters.size());
-      // Verify that initializers and updaters have compatible names
-      for (int i = 0; i < initializers.size(); i++) {
-        Preconditions.checkArgument(
-            Objects.equals(initializers.get(i).getOutputName(), updaters.get(i).getOutputName()),
-            "initializers[i] and updaters[i] have different names (%s) != (%s)",
-            initializers.get(i).getOutputName(),
-            updaters.get(i).getOutputName());
-      }
-
-      /* Initialize the state. */
-      Schema stateSchema = generateStateSchema(inputSchema);
-      state = new Tuple(stateSchema);
-      ScriptEvalInterface stateEvaluator =
-          getEvalScript(initializers, new ExpressionOperatorParameter(inputSchema));
-      stateEvaluator.evaluate(null, 0, state, null);
-
-      /* Set up the updaters. */
-      updateEvaluator =
-          getEvalScript(updaters, new ExpressionOperatorParameter(inputSchema, stateSchema));
-
-      /* Set up the emitters. */
-      emitEvaluators = new ArrayList<>();
-      emitEvaluators.ensureCapacity(emitters.size());
-      for (Expression expr : emitters) {
-        GenericEvaluator evaluator =
-            new GenericEvaluator(expr, new ExpressionOperatorParameter(null, stateSchema));
-        evaluator.compile();
-        emitEvaluators.add(evaluator);
-      }
-
-      /* Compute the result schema. */
-      ExpressionOperatorParameter emitParams = new ExpressionOperatorParameter(null, stateSchema);
-      ImmutableList.Builder<Type> types = ImmutableList.builder();
-      ImmutableList.Builder<String> names = ImmutableList.builder();
-      for (Expression e : emitters) {
-        types.add(e.getOutputType(emitParams));
-        names.add(e.getOutputName());
-      }
-      resultSchema = new Schema(types, names);
+          Objects.equals(initializers.get(i).getOutputName(), updaters.get(i).getOutputName()),
+          "initializers[i] and updaters[i] have different names (%s) != (%s)",
+          initializers.get(i).getOutputName(),
+          updaters.get(i).getOutputName());
     }
-    return new UserDefinedAggregator(state.clone(), updateEvaluator, emitEvaluators, resultSchema);
+
+    /* Initialize the state. */
+    Schema stateSchema = generateStateSchema(inputSchema);
+    initEvaluator = getEvalScript(initializers, new ExpressionOperatorParameter(inputSchema));
+
+    /* Set up the updaters. */
+    updateEvaluator =
+        getEvalScript(updaters, new ExpressionOperatorParameter(inputSchema, stateSchema));
+
+    /* Set up the emitters. */
+    emitEvaluators = new ArrayList<>();
+    emitEvaluators.ensureCapacity(emitters.size());
+    for (Expression expr : emitters) {
+      GenericEvaluator evaluator =
+          new GenericEvaluator(expr, new ExpressionOperatorParameter(null, stateSchema));
+      evaluator.compile();
+      emitEvaluators.add(evaluator);
+    }
+
+    /* Compute the result schema. */
+    ExpressionOperatorParameter emitParams = new ExpressionOperatorParameter(null, stateSchema);
+    ImmutableList.Builder<Type> types = ImmutableList.builder();
+    ImmutableList.Builder<String> names = ImmutableList.builder();
+    for (Expression e : emitters) {
+      types.add(e.getOutputType(emitParams));
+      names.add(e.getOutputName());
+    }
+    resultSchema = new Schema(types, names);
+    return ImmutableList.of(
+        new UserDefinedAggregator(
+            initEvaluator, updateEvaluator, emitEvaluators, resultSchema, stateSchema, offset));
   }
 
   /**
@@ -144,7 +137,7 @@ public class UserDefinedAggregatorFactory implements AggregatorFactory {
    *
    * @param expressions one expression for each output column.
    * @param param the inputs that expressions may use, including the {@link Schema} of the expression inputs and
-   *          worker-local variables.
+   *        worker-local variables.
    * @return a compiled object that will run all the expressions and store them into the output.
    * @throws DbException if there is an error compiling the expressions.
    */
@@ -201,16 +194,10 @@ public class UserDefinedAggregatorFactory implements AggregatorFactory {
     }
   }
 
-  /**
-   * Generate the schema of the state.
-   *
-   * @param inputSchema the {@link Schema} of the input tuples.
-   * @return the {@link Schema} of the state assuming the specified input types.
-   */
-  private Schema generateStateSchema(final Schema inputSchema) {
+  @Override
+  public Schema generateStateSchema(final Schema inputSchema) {
     ImmutableList.Builder<Type> typesBuilder = ImmutableList.builder();
     ImmutableList.Builder<String> namesBuilder = ImmutableList.builder();
-
     for (Expression expr : initializers) {
       typesBuilder.add(expr.getOutputType(new ExpressionOperatorParameter(inputSchema)));
       namesBuilder.add(expr.getOutputName());

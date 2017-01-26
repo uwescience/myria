@@ -138,7 +138,7 @@ public class StatefulApply extends Apply {
       for (int columnIdx = 0; columnIdx < stateSchema.numColumns(); columnIdx++) {
         updateEvaluators
             .get(columnIdx)
-            .eval(tb, rowIdx, null, newState.getColumn(columnIdx), state);
+            .eval(tb, rowIdx, null, newState.asWritableColumn(columnIdx), state);
       }
       state = newState;
       // apply expression
@@ -186,7 +186,7 @@ public class StatefulApply extends Apply {
       ConstantEvaluator evaluator =
           new ConstantEvaluator(expr, new ExpressionOperatorParameter(inputSchema, getNodeID()));
       evaluator.compile();
-      state.set(columnIdx, evaluator.eval());
+      state.putObject(columnIdx, evaluator.eval());
     }
 
     for (Expression expr : updateExpressions) {

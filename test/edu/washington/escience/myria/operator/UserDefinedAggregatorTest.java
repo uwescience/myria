@@ -19,8 +19,8 @@ import edu.washington.escience.myria.expression.GreaterThanExpression;
 import edu.washington.escience.myria.expression.PlusExpression;
 import edu.washington.escience.myria.expression.StateExpression;
 import edu.washington.escience.myria.expression.VariableExpression;
-import edu.washington.escience.myria.operator.agg.Aggregate;
 import edu.washington.escience.myria.operator.agg.AggregatorFactory;
+import edu.washington.escience.myria.operator.agg.Aggregate;
 import edu.washington.escience.myria.operator.agg.UserDefinedAggregatorFactory;
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
@@ -67,7 +67,7 @@ public class UserDefinedAggregatorTest {
         new UserDefinedAggregatorFactory(Initializers.build(), Updaters.build(), Emitters.build());
     factory = reader.readValue(writer.writeValueAsString(factory));
 
-    Aggregate agg = new Aggregate(new BatchTupleSource(tbb), factory);
+    Aggregate agg = new Aggregate(new BatchTupleSource(tbb), new int[] {}, factory);
     agg.open(TestEnvVars.get());
     TupleBatch result;
     int resultSize = 0;
@@ -120,7 +120,7 @@ public class UserDefinedAggregatorTest {
         new UserDefinedAggregatorFactory(Initializers.build(), Updaters.build(), Emitters.build());
     factory = reader.readValue(writer.writeValueAsString(factory));
 
-    Aggregate agg = new Aggregate(new BatchTupleSource(tbb), factory);
+    Aggregate agg = new Aggregate(new BatchTupleSource(tbb), new int[] {}, factory);
     agg.open(TestEnvVars.get());
     TupleBatch result;
     int resultSize = 0;
@@ -185,7 +185,7 @@ public class UserDefinedAggregatorTest {
         new UserDefinedAggregatorFactory(Initializers.build(), Updaters.build(), Emitters.build());
     factory = reader.readValue(writer.writeValueAsString(factory));
 
-    Aggregate agg = new Aggregate(new BatchTupleSource(tbb), factory);
+    Aggregate agg = new Aggregate(new BatchTupleSource(tbb), new int[] {}, factory);
     agg.open(TestEnvVars.get());
     TupleBatch result;
     int resultSize = 0;

@@ -1,15 +1,19 @@
 package edu.washington.escience.myria.operator.agg;
 
-import java.lang.reflect.InvocationTargetException;
+import java.util.ArrayList;
 import java.util.List;
 
-import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.Schema;
+import edu.washington.escience.myria.column.Column;
+import edu.washington.escience.myria.column.builder.ColumnBuilder;
 import edu.washington.escience.myria.expression.evaluate.GenericEvaluator;
 import edu.washington.escience.myria.expression.evaluate.ScriptEvalInterface;
 import edu.washington.escience.myria.storage.AppendableTable;
+import edu.washington.escience.myria.storage.MutableTupleBuffer;
 import edu.washington.escience.myria.storage.ReadableTable;
 import edu.washington.escience.myria.storage.Tuple;
+import edu.washington.escience.myria.storage.TupleBatch;
+import edu.washington.escience.myria.util.MyriaArrayUtils;
 
 /**
  * Apply operator that has to be initialized and carries a state while new tuples are generated.
@@ -21,80 +25,99 @@ public class UserDefinedAggregator implements Aggregator {
   private static final org.slf4j.Logger LOGGER =
       org.slf4j.LoggerFactory.getLogger(UserDefinedAggregator.class);
 
-  /**
-   * The state of the aggregate variables.
-   */
-  private final Tuple initialState;
-  /**
-   * Evaluators that update the {@link #state}. One evaluator for each expression in {@link #updateExpressions}.
-   */
+  /** Evaluators that initialize the state. */
+  private final ScriptEvalInterface initEvaluator;
+  /** Evaluators that update the {@link #state}. One evaluator for each expression in {@link #updateExpressions}. */
   private final ScriptEvalInterface updateEvaluator;
-  /**
-   * One evaluator for each expression in {@link #emitExpressions}.
-   */
+  /** One evaluator for each expression in {@link #emitExpressions}. */
   private final List<GenericEvaluator> emitEvaluators;
-  /**
-   * The Schema of the tuples produced by this aggregator.
-   */
+  /** The Schema of the tuples produced by this aggregator. */
   private final Schema resultSchema;
+  /** The Schema of the state. */
+  private final Schema stateSchema;
+  /** Column indices of this aggregator of the state hash table. */
+  private final int[] stateCols;
 
   /**
-   * @param state the initialized state of the tuple
+   * @param initEvaluator initialize the state
    * @param updateEvaluator updates the state given an input row
    * @param emitEvaluators the evaluators that finalize the state
    * @param resultSchema the schema of the tuples produced by this aggregator
+   * @param stateSchema the schema of the state
+   * @param offset the starting column index of aggregators made by this factory in the state hash table
    */
   public UserDefinedAggregator(
-      final Tuple state,
+      final ScriptEvalInterface initEvaluator,
       final ScriptEvalInterface updateEvaluator,
       final List<GenericEvaluator> emitEvaluators,
-      final Schema resultSchema) {
-    initialState = state;
+      final Schema resultSchema,
+      final Schema stateSchema,
+      final int offset) {
+    this.initEvaluator = initEvaluator;
     this.updateEvaluator = updateEvaluator;
     this.emitEvaluators = emitEvaluators;
     this.resultSchema = resultSchema;
+    this.stateSchema = stateSchema;
+    this.stateCols = MyriaArrayUtils.range(offset, stateSchema.numColumns());
   }
 
   @Override
-  public void add(final ReadableTable from, final Object state) throws DbException {
-    for (int row = 0; row < from.numTuples(); ++row) {
-      addRow(from, row, state);
-    }
-  }
-
-  @Override
-  public void addRow(final ReadableTable from, final int row, final Object state)
-      throws DbException {
-    Tuple stateTuple = (Tuple) state;
-    try {
-      updateEvaluator.evaluate(from, row, stateTuple, stateTuple);
-    } catch (Exception e) {
-      LOGGER.error("Error updating UDA state", e);
-      throw new DbException("Error updating UDA state", e);
-    }
-  }
-
-  @Override
-  public void getResult(final AppendableTable dest, final int destColumn, final Object state)
-      throws DbException {
-    Tuple stateTuple = (Tuple) state;
+  public List<Column<?>> emitOutput(final TupleBatch tb) {
+    List<Column<?>> ret = new ArrayList<Column<?>>();
+    TupleBatch state =
+        tb.selectColumns(MyriaArrayUtils.range(stateCols[0], stateSchema.numColumns()));
     for (int index = 0; index < emitEvaluators.size(); index++) {
       final GenericEvaluator evaluator = emitEvaluators.get(index);
-      try {
-        evaluator.eval(null, 0, null, dest.asWritableColumn(destColumn + index), stateTuple);
-      } catch (InvocationTargetException e) {
-        throw new DbException("Error finalizing aggregate", e);
-      }
+      ColumnBuilder<?> col = ColumnBuilder.of(evaluator.getOutputType());
+      evaluator.eval(null, 0, null, col, state);
+      ret.add(col.build());
     }
+    return ret;
   }
 
   @Override
-  public Schema getResultSchema() {
+  public Schema getOutputSchema() {
     return resultSchema;
   }
 
   @Override
-  public Object getInitialState() {
-    return initialState.clone();
+  public void addRow(ReadableTable from, int fromRow, MutableTupleBuffer to, int toRow) {
+    Tuple input = new Tuple(to, toRow, stateCols);
+    Tuple output = new Tuple(input.getSchema());
+    updateEvaluator.evaluate(from, fromRow, output, input);
+    for (int i = 0; i < stateCols.length; ++i) {
+      to.replace(stateCols[i], toRow, output.asColumn(i), 0);
+    }
+  }
+
+  @Override
+  public void initState(AppendableTable data) {
+    Tuple state = new Tuple(data.getSchema().getSubSchema(stateCols));
+    initEvaluator.evaluate(null, 0, state, null);
+    for (int i = 0; i < stateCols.length; ++i) {
+      switch (state.getSchema().getColumnType(i)) {
+        case BOOLEAN_TYPE:
+          data.putBoolean(stateCols[i], state.getBoolean(i, 0));
+          break;
+        case INT_TYPE:
+          data.putInt(stateCols[i], state.getInt(i, 0));
+          break;
+        case LONG_TYPE:
+          data.putLong(stateCols[i], state.getLong(i, 0));
+          break;
+        case DOUBLE_TYPE:
+          data.putDouble(stateCols[i], state.getDouble(i, 0));
+          break;
+        case FLOAT_TYPE:
+          data.putFloat(stateCols[i], state.getFloat(i, 0));
+          break;
+        case STRING_TYPE:
+          data.putString(stateCols[i], state.getString(i, 0));
+          break;
+        case DATETIME_TYPE:
+          data.putDateTime(stateCols[i], state.getDateTime(i, 0));
+          break;
+      }
+    }
   }
 }

@@ -1,141 +1,108 @@
 package edu.washington.escience.myria.operator.agg;
 
-import java.util.Objects;
-import java.util.Set;
+import java.util.List;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.math.LongMath;
 
 import edu.washington.escience.myria.Type;
+import edu.washington.escience.myria.column.Column;
 import edu.washington.escience.myria.storage.AppendableTable;
+import edu.washington.escience.myria.storage.MutableTupleBuffer;
+import edu.washington.escience.myria.storage.ReadableColumn;
 import edu.washington.escience.myria.storage.ReadableTable;
+import edu.washington.escience.myria.storage.ReplaceableColumn;
+import edu.washington.escience.myria.storage.TupleBatch;
 
 /**
  * Knows how to compute some aggregate over a StringColumn.
  */
 public final class StringAggregator extends PrimitiveAggregator {
 
+  protected StringAggregator(
+      final String inputName, final int column, final AggregationOp aggOp, final int[] stateCols) {
+    super(inputName, column, aggOp, stateCols);
+  }
+
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
-  /** Which column of the input this aggregator operates over. */
-  private final int fromColumn;
 
-  /**
-   * Aggregate operations applicable for string columns.
-   */
-  public static final Set<AggregationOp> AVAILABLE_AGG =
-      ImmutableSet.of(AggregationOp.COUNT, AggregationOp.MAX, AggregationOp.MIN);
-
-  /**
-   * @param aFieldName aggregate field name for use in output schema.
-   * @param aggOps the aggregate operation to simultaneously compute.
-   * @param column the column being aggregated over.
-   */
-  public StringAggregator(final String aFieldName, final AggregationOp[] aggOps, final int column) {
-    super(aFieldName, aggOps);
-    fromColumn = column;
-  }
+  /** Placeholder as MIN/MAX value of String. */
+  private static final String STRING_INIT_VALUE = "STRING_INIT_VALUE";
 
   @Override
-  public void add(final ReadableTable from, final Object state) {
-    Objects.requireNonNull(from, "from");
-    StringAggState sstate = (StringAggState) state;
-    final int numTuples = from.numTuples();
-    if (numTuples == 0) {
-      return;
-    }
-    if (needsCount) {
-      sstate.count = LongMath.checkedAdd(sstate.count, numTuples);
-    }
-    if (needsStats) {
-      for (int i = 0; i < numTuples; ++i) {
-        addStringStats(from.getString(fromColumn, i), sstate);
-      }
-    }
-  }
-
-  @Override
-  public void addRow(final ReadableTable table, final int row, final Object state) {
-    Objects.requireNonNull(table, "table");
-    StringAggState sstate = (StringAggState) state;
-    if (needsCount) {
-      sstate.count = LongMath.checkedAdd(sstate.count, 1);
-    }
-    if (needsStats) {
-      addStringStats(table.getString(fromColumn, row), sstate);
-    }
-  }
-
-  /**
-   * Helper function to add value to this aggregator. Note this does NOT update count.
-   *
-   * @param value the value to be added
-   * @param state the state of the aggregate, which will be mutated.
-   */
-  private void addStringStats(final String value, final StringAggState state) {
-    Objects.requireNonNull(value, "value");
-    if (needsMin) {
-      if ((state.min == null) || (state.min.compareTo(value) > 0)) {
-        state.min = value;
-      }
-    }
-    if (needsMax) {
-      if (state.max == null || state.max.compareTo(value) < 0) {
-        state.max = value;
-      }
-    }
-  }
-
-  @Override
-  public void getResult(final AppendableTable dest, final int destColumn, final Object state) {
-    StringAggState sstate = (StringAggState) state;
-    int idx = destColumn;
-    for (AggregationOp op : aggOps) {
-      switch (op) {
-        case COUNT:
-          dest.putLong(idx, sstate.count);
+  public void addRow(
+      final ReadableTable from, final int fromRow, final MutableTupleBuffer to, final int toRow) {
+    ReadableColumn fromCol = from.asColumn(column);
+    ReplaceableColumn toCol = to.getColumn(stateCols[0], toRow);
+    switch (aggOp) {
+      case COUNT:
+        toCol.replaceLong(toCol.getLong(toRow) + 1, toRow);
+        break;
+      case MAX:
+        {
+          String value = toCol.getString(toRow);
+          if (value.equals(STRING_INIT_VALUE) || value.compareTo(fromCol.getString(fromRow)) < 0) {
+            toCol.replaceString(fromCol.getString(fromRow), toRow);
+          }
           break;
-        case MAX:
-          dest.putString(idx, sstate.max);
+        }
+      case MIN:
+        {
+          String value = toCol.getString(toRow);
+          if (value.equals(STRING_INIT_VALUE) || value.compareTo(fromCol.getString(fromRow)) > 0) {
+            toCol.replaceString(fromCol.getString(fromRow), toRow);
+          }
           break;
-        case MIN:
-          dest.putString(idx, sstate.min);
-          break;
-        case AVG:
-        case STDEV:
-        case SUM:
-          throw new UnsupportedOperationException("Aggregate " + op + " on type String");
-      }
+        }
+      default:
+        throw new IllegalArgumentException(aggOp + " is invalid");
     }
   }
 
   @Override
-  protected Type getSumType() {
-    throw new UnsupportedOperationException("SUM of String values");
+  public List<Column<?>> emitOutput(final TupleBatch tb) {
+    switch (aggOp) {
+      case COUNT:
+      case MAX:
+      case MIN:
+        return ImmutableList.of(tb.getDataColumns().get(stateCols[0]));
+      default:
+        throw new IllegalArgumentException(aggOp + " is invalid");
+    }
   }
 
   @Override
-  public Type getType() {
-    return Type.STRING_TYPE;
+  protected boolean isSupported(final AggregationOp aggOp) {
+    return ImmutableSet.of(AggregationOp.COUNT, AggregationOp.MIN, AggregationOp.MAX)
+        .contains(aggOp);
   }
 
   @Override
-  protected Set<AggregationOp> getAvailableAgg() {
-    return AVAILABLE_AGG;
-  }
+  protected Type getOutputType() {
+    switch (aggOp) {
+      case COUNT:
+        return Type.LONG_TYPE;
+      case MAX:
+      case MIN:
+        return Type.STRING_TYPE;
+      default:
+        throw new IllegalArgumentException("Type " + aggOp + " is invalid");
+    }
+  };
 
   @Override
-  public Object getInitialState() {
-    return new StringAggState();
-  }
-
-  /** Private internal class that wraps the state required by this Aggregator as an object. */
-  private final class StringAggState {
-    /** The number of tuples seen so far. */
-    private long count = 0;
-    /** The minimum value in the aggregated column. */
-    private String min = null;
-    /** The maximum value in the aggregated column. */
-    private String max = null;
+  public void appendInitValue(AppendableTable data, final int column) {
+    switch (aggOp) {
+      case COUNT:
+        data.putLong(column, 0);
+        break;
+      case MIN:
+      case MAX:
+        data.putString(column, STRING_INIT_VALUE);
+        break;
+      default:
+        throw new IllegalArgumentException("Type " + aggOp + " is invalid");
+    }
   }
 }
