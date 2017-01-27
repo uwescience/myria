@@ -6,11 +6,11 @@ import edu.washington.escience.myria.operator.agg.AggregatorFactory;
 
 /** JSON wrapper for Aggregate. */
 public class AggregateEncoding extends UnaryOperatorEncoding<Aggregate> {
-  /** aggregators. */
+  @Required public int[] argGroupFields;
   @Required public AggregatorFactory[] aggregators;
 
   @Override
   public Aggregate construct(ConstructArgs args) {
-    return new Aggregate(null, aggregators);
+    return new Aggregate(null, argGroupFields, aggregators);
   }
 }

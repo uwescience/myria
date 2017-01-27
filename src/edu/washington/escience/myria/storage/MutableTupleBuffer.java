@@ -64,7 +64,6 @@ public class MutableTupleBuffer implements ReadableTable, AppendableTable, Clone
 
   /**
    * Makes a batch of any tuples in the buffer and appends it to the internal list.
-   *
    */
   private void finishBatch() {
     Preconditions.checkArgument(numColumnsReady == 0);
@@ -231,7 +230,8 @@ public class MutableTupleBuffer implements ReadableTable, AppendableTable, Clone
    * @param sourceColumn the column from which data will be retrieved.
    * @param sourceRow the row in the source column from which data will be retrieved.
    */
-  public final void put(final int destColumn, final Column<?> sourceColumn, final int sourceRow) {
+  public final void put(
+      final int destColumn, final ReadableColumn sourceColumn, final int sourceRow) {
     TupleUtils.copyValue(sourceColumn, sourceRow, this, destColumn);
   }
 
@@ -400,7 +400,10 @@ public class MutableTupleBuffer implements ReadableTable, AppendableTable, Clone
    * @param sourceRow the row in the source column from which data will be retrieved.
    */
   public final void replace(
-      final int destColumn, final int destRow, final Column<?> sourceColumn, final int sourceRow) {
+      final int destColumn,
+      final int destRow,
+      final ReadableColumn sourceColumn,
+      final int sourceRow) {
     checkRowIndex(destRow);
     int tupleIndex = destRow % TupleBatch.BATCH_SIZE;
     ReplaceableColumn dest = getColumn(destColumn, destRow);
