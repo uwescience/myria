@@ -12,9 +12,10 @@ import java.util.Objects;
 import javax.annotation.concurrent.NotThreadSafe;
 
 import org.apache.commons.httpclient.URIException;
+import org.apache.hadoop.conf.Configuration;
 
 import com.amazonaws.ClientConfiguration;
-import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
+import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.GetObjectRequest;
 import com.fasterxml.jackson.annotation.JsonCreator;
@@ -67,9 +68,32 @@ public class AmazonS3Source implements DataSource, Serializable {
 
   public AmazonS3Client getS3Client() {
     if (s3Client == null) {
-      clientConfig = new ClientConfiguration();
-      clientConfig.setMaxErrorRetry(3);
-      s3Client = new AmazonS3Client(new DefaultAWSCredentialsProviderChain());
+      /**
+       * Supported providers in fs.s3a.aws.credentials.provider are InstanceProfileCredentialsProvider,
+       * EnvironmentVariableCredentialsProvider and AnonymousAWSCredentialsProvider.
+       */
+      AWSCredentialsProvider credentials;
+      Configuration conf = new Configuration();
+      String className = conf.getTrimmed("fs.s3a.aws.credentials.provider");
+
+      try {
+        Class<?> credentialClass = Class.forName(className);
+        try {
+          credentials =
+              (AWSCredentialsProvider)
+                  credentialClass
+                      .getDeclaredConstructor(URI.class, Configuration.class)
+                      .newInstance(s3Uri, conf);
+        } catch (NoSuchMethodException | SecurityException e) {
+          credentials =
+              (AWSCredentialsProvider) credentialClass.getDeclaredConstructor().newInstance();
+        }
+        clientConfig = new ClientConfiguration();
+        clientConfig.setMaxErrorRetry(3);
+        s3Client = new AmazonS3Client(credentials);
+      } catch (Exception e) {
+        LOGGER.warn("Failed to instantiate AWS credentials provider", e);
+      }
     }
     return s3Client;
   }
