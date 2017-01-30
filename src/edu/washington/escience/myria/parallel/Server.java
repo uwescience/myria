@@ -1140,7 +1140,7 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
    * @param name the name of the function
    * @param definition the function definition  - this is postgres specific for postgres and function text for python.
    * @param outputSchema the output schema of the function
-   * @param isMultivalued indicates if the function returns multiple tuples.
+   * @param isMultiValued indicates if the function returns multiple tuples.
    * @param lang this is the language of the function.
    * @param binary this is an optional parameter for function for base64 encoded binary for function.
    * @param workers list of workers on which the function is registered: default is all.
@@ -1149,8 +1149,8 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
   public String createFunction(
       final String name,
       final String definition,
-      final String outputSchema,
-      final Boolean isMultivalued,
+      final String outputType,
+      final Boolean isMultiValued,
       final FunctionLanguage lang,
       final String binary,
       final Set<Integer> workers)
@@ -1172,11 +1172,10 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
                     EmptyRelation.of(Schema.EMPTY_SCHEMA),
                     name,
                     definition,
-                    outputSchema,
-                    isMultivalued,
+                    outputType,
+                    isMultiValued,
                     lang,
-                    binary,
-                    null)));
+                    binary)));
       }
 
       ListenableFuture<Query> qf =
@@ -1197,10 +1196,9 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
     }
 
     if (response == "") {
-      /* Register the function to the catalog */
+      /* Register the function to the catalog don't send the binary. */
       try {
-        catalog.registerFunction(
-            name, definition, outputSchema.toString(), isMultivalued, lang, binary);
+        catalog.registerFunction(name, definition, outputType, isMultiValued, lang);
       } catch (CatalogException e) {
         throw new DbException(e);
       }

@@ -161,7 +161,7 @@ public final class MasterCatalog {
           + "    function_name TEXT PRIMARY KEY, \n"
           + "    function_description TEXT NOT NULL,\n"
           + "    function_outputType TEXT NOT NULL,\n"
-          + "    function_isMultivalued INTEGER NOT NULL, \n"
+          + "    function_isMultiValued INTEGER NOT NULL, \n"
           + "    function_lang INTEGER );";
 
   /** CREATE TABLE statements @formatter:on */
@@ -414,7 +414,7 @@ public final class MasterCatalog {
 
                     SQLiteStatement statement =
                         sqliteConnection.prepare(
-                            "SELECT function_name, function_description, function_outputType,  function_isMultivalued, function_lang  FROM registered_functions WHERE function_name=?");
+                            "SELECT function_name, function_description, function_outputType,  function_isMultiValued, function_lang  FROM registered_functions WHERE function_name=?");
                     statement.bind(1, name);
                     if (!statement.step()) {
                       return null;
@@ -423,7 +423,7 @@ public final class MasterCatalog {
                     String name = statement.columnString(0);
                     String descrip = statement.columnString(1);
                     String outputSchema = statement.columnString(2);
-                    Boolean isMultivalued = ((statement.columnInt(3) == 0) ? false : true);
+                    Boolean isMultiValued = ((statement.columnInt(3) == 0) ? false : true);
                     int lang = statement.columnInt(4);
                     statement.dispose();
 
@@ -431,8 +431,8 @@ public final class MasterCatalog {
                         name,
                         descrip,
                         outputSchema,
-                        isMultivalued,
-                        MyriaConstants.FunctionLanguage.values()[lang],
+                        isMultiValued,
+                        FunctionLanguage.values()[lang],
                         null);
 
                   } catch (final SQLiteException e) {
@@ -1825,20 +1825,19 @@ public final class MasterCatalog {
   }
 
   /**
-   * Register a function in the catalog
+   * Register a function in the catalog.
    */
   public void registerFunction(
       @Nonnull final String name,
       @Nonnull final String description,
       @Nonnull final String outputType,
-      @Nonnull final Boolean isMultivalued,
-      @Nonnull final FunctionLanguage lang,
-      final String binary)
+      @Nonnull final Boolean isMultiValued,
+      @Nonnull final FunctionLanguage lang)
       throws CatalogException {
     Objects.requireNonNull(name, "function name");
     Objects.requireNonNull(description, "function definition");
     Objects.requireNonNull(outputType, "function output schema");
-    Objects.requireNonNull(isMultivalued, "is function a flatmap");
+    Objects.requireNonNull(isMultiValued, "is function a flatmap");
     Objects.requireNonNull(lang, "function language");
 
     if (isClosed) {
@@ -1856,11 +1855,11 @@ public final class MasterCatalog {
                   try {
                     SQLiteStatement statement =
                         sqliteConnection.prepare(
-                            "INSERT OR REPLACE INTO registered_functions (function_name, function_description, function_outputType, function_isMultivalued, function_lang) VALUES (?,?,?,?,?);");
+                            "INSERT OR REPLACE INTO registered_functions (function_name, function_description, function_outputType, function_isMultiValued, function_lang) VALUES (?,?,?,?,?);");
                     statement.bind(1, name);
                     statement.bind(2, description);
                     statement.bind(3, outputType);
-                    statement.bind(4, ((isMultivalued == true) ? 1 : 0));
+                    statement.bind(4, ((isMultiValued == true) ? 1 : 0));
                     statement.bind(5, lang.ordinal());
                     statement.stepThrough();
                     statement.dispose();

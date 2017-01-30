@@ -9,10 +9,6 @@ import com.google.common.base.Preconditions;
 import edu.washington.escience.myria.Type;
 
 public class BlobColumn extends Column<ByteBuffer> {
-  /**
-   * @param bs
-   * @param i
-   */
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1;
   /** Internal representation of the column data. */

@@ -29,7 +29,6 @@ def main(infile, outfile):
             for j in range(numTuples):
                 tupleList.append(pickleSer.read_tuple(infile, tupleSize))
 
-
             retval = func(tupleList)
             if(isFlatmap > 0):
                 count = len(retval)

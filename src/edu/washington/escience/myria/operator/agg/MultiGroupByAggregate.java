@@ -275,7 +275,7 @@ public final class MultiGroupByAggregate extends UnaryOperator {
       int curCol = 0;
       for (int agg = 0; agg < aggregators.length; ++agg) {
         if ((aggregators[agg] instanceof StatefulUserDefinedAggregator)) {
-          aggregators[agg].add(lt, rowAggs[agg]);
+          aggregators[agg].add(lt);
         }
         aggregators[agg].getResult(curGroupAggs, curCol, rowAggs[agg]);
 
@@ -324,8 +324,7 @@ public final class MultiGroupByAggregate extends UnaryOperator {
     final ImmutableList.Builder<String> aggNames = ImmutableList.<String>builder();
 
     try {
-      for (Aggregator agg :
-          AggUtils.allocateAggs(factories, getChild().getSchema(), getPythonFunctionRegistrar())) {
+      for (Aggregator agg : AggUtils.allocateAggs(factories, getChild().getSchema(), null)) {
         Schema curAggSchema = agg.getResultSchema();
         aggTypes.addAll(curAggSchema.getColumnTypes());
         aggNames.addAll(curAggSchema.getColumnNames());

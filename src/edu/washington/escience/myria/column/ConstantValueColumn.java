@@ -21,8 +21,8 @@ public class ConstantValueColumn extends Column<Comparable<?>> {
   private boolean booleanValue;
   /** If this is a DateTime column, the DateTime value of the column. */
   private DateTime dateTimeValue;
-  /** If this is a byte column, the primitive byte value of the column. */
-  private ByteBuffer byteValue;
+  /** If this is a Blob column, the primitive byte value of the column. */
+  private ByteBuffer blobValue;
   /** If this is a Double column, the primitive double value of the column. */
   private double doubleValue;
   /** If this is a Float column, the primitive float value of the column. */
@@ -71,7 +71,7 @@ public class ConstantValueColumn extends Column<Comparable<?>> {
         stringValue = (String) value;
         break;
       case BLOB_TYPE:
-        byteValue = (ByteBuffer) value;
+        blobValue = (ByteBuffer) value;
         break;
     }
   }
@@ -140,8 +140,7 @@ public class ConstantValueColumn extends Column<Comparable<?>> {
   @Override
   public ByteBuffer getBlob(final int row) {
     if (type == Type.BLOB_TYPE) {
-
-      return byteValue;
+      return blobValue;
     }
     throw new UnsupportedOperationException();
   }

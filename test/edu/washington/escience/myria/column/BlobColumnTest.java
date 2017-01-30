@@ -31,14 +31,17 @@ public class BlobColumnTest {
     assertTrue(original.size() == deserialized.size());
   }
 
-  @Test
+  @Test(expected = BufferOverflowException.class)
   public void testFull() {
-
-    final BlobColumnBuilder builder = new BlobColumnBuilder();
-    for (int i = 0; i < 1; i++) {
-      builder.appendBlob(ByteBuffer.wrap(readbb()));
-    }
-    builder.build();
+    final BlobColumnBuilder original = new BlobColumnBuilder();
+    original
+        .appendBlob(ByteBuffer.wrap("First".getBytes()))
+        .appendBlob(ByteBuffer.wrap("Second".getBytes()))
+        .appendBlob(ByteBuffer.wrap("Third".getBytes()))
+        .appendBlob(ByteBuffer.wrap("NextIsEmptyString".getBytes()))
+        .appendBlob(ByteBuffer.wrap("".getBytes()))
+        .appendBlob(ByteBuffer.wrap("VeryVeryVeryVeryVeryVeryVeryVeryLongLast".getBytes()));
+    original.build();
   }
 
   protected byte[] readbb() {

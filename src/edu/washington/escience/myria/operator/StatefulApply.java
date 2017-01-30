@@ -120,7 +120,7 @@ public class StatefulApply extends Apply {
     for (int columnIdx = 0; columnIdx < numColumns; columnIdx++) {
       final GenericEvaluator evaluator = getEmitEvaluators().get(columnIdx);
       Preconditions.checkArgument(
-          !evaluator.getExpression().isMultivalued(),
+          !evaluator.getExpression().isMultiValued(),
           "A multivalued expression cannot be used in StatefulApply.");
       if (!evaluator.needsState() || evaluator.isCopyFromInput()) {
         output.set(columnIdx, evaluator.evaluateColumn(tb).getResultColumns().get(0));

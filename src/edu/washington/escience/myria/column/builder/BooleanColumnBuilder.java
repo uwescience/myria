@@ -42,8 +42,7 @@ public final class BooleanColumnBuilder extends ColumnBuilder<Boolean> {
   public BooleanColumnBuilder() {
     data = new BitSet();
     numBits = 0;
-    Schema schema = new Schema(Arrays.asList(Type.BOOLEAN_TYPE));
-    int batchSize = TupleUtils.getBatchSize(schema);
+    int batchSize = TupleUtils.getBatchSize(Type.BOOLEAN_TYPE);
     capacity = batchSize;
   }
 

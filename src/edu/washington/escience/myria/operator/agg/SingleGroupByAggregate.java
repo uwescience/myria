@@ -481,7 +481,7 @@ public class SingleGroupByAggregate extends UnaryOperator {
 
         List<TupleBatch> listTb = ltb.get(key);
         if (listTb.size() > 0) {
-          aggregators[agg].add(listTb, aggState[agg]);
+          aggregators[agg].add(listTb);
         }
       }
       aggregators[agg].getResult(resultBuffer, index, aggState[agg]);

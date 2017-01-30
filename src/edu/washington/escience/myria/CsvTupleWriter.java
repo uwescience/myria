@@ -97,9 +97,8 @@ public class CsvTupleWriter implements TupleWriter {
   }
 
   private void writeBBtoFile(final ByteBuffer bb, final String fn) throws IOException {
-    boolean append = false;
     File file = new File(fn);
-    FileOutputStream fos = new FileOutputStream(file, append);
+    FileOutputStream fos = new FileOutputStream(file, false);
     FileChannel wChannel = fos.getChannel();
     wChannel.write(bb);
     wChannel.close();

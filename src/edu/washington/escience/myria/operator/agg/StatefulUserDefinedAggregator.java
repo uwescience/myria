@@ -51,29 +51,11 @@ public class StatefulUserDefinedAggregator extends UserDefinedAggregator {
 
   @Override
   public void add(final ReadableTable from, final Object state) throws DbException {
-    if (ltb == null) {
-      ltb = new ArrayList<>();
-    }
-    if (!ltb.contains(from)) {
-
-      ltb.add((TupleBatch) from);
-    }
-    try {
-      if (updateEvaluator != null) {
-
-        for (int row = 0; row < from.numTuples(); ++row) {
-          addRow(from, row, state);
-        }
-      }
-
-    } catch (Exception e) {
-
-      throw new DbException("Error updating UDA state", e);
-    }
+    throw new DbException(" method not implemented");
   }
 
   @Override
-  public void add(final List<TupleBatch> from, final Object state) throws DbException {
+  public void add(final List<TupleBatch> from) throws DbException {
     ltb = from;
   }
 

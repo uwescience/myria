@@ -105,29 +105,27 @@ public class PythonUDFEvaluator extends GenericEvaluator {
     try {
       if (pyFuncRegistrar != null) {
         FunctionStatus fs = pyFuncRegistrar.getFunctionStatus(pyFunctionName);
-        if (fs != null && fs.getName() == null) {
+        if (fs == null) {
           throw new DbException("No Python UDf with given name registered.");
-        } else {
-          if (pyWorker != null) {
-            isFlatmap = fs.getIsMultivalued(); //if the function is multivalued.
-            pyWorker.sendCodePickle(fs.getBinary(), numColumns, outputType, fs.getIsMultivalued());
-          }
         }
-      }
-      List<ExpressionOperator> childops = op.getChildren();
-      if (childops != null) {
+        isFlatmap = fs.getIsMultivalued(); //if the function is multivalued.
+        pyWorker.sendCodePickle(fs.getBinary(), numColumns, outputType, isFlatmap);
 
-        for (int i = 0; i < childops.size(); i++) {
+        List<ExpressionOperator> childops = op.getChildren();
+        if (childops != null) {
 
-          if (childops.get(i).getClass().equals(StateExpression.class)) {
-            isStateColumn[i] = true;
-            columnIdxs[i] = ((StateExpression) childops.get(i)).getColumnIdx();
+          for (int i = 0; i < childops.size(); i++) {
 
-          } else if (childops.get(i).getClass().equals(VariableExpression.class)) {
-            columnIdxs[i] = ((VariableExpression) childops.get(i)).getColumnIdx();
-          } else {
-            throw new DbException(
-                "Python expression can only have State or Variable expression as child expressions.");
+            if (childops.get(i).getClass().equals(StateExpression.class)) {
+              isStateColumn[i] = true;
+              columnIdxs[i] = ((StateExpression) childops.get(i)).getColumnIdx();
+
+            } else if (childops.get(i).getClass().equals(VariableExpression.class)) {
+              columnIdxs[i] = ((VariableExpression) childops.get(i)).getColumnIdx();
+            } else {
+              throw new DbException(
+                  "Python expression can only have State or Variable expression as child expressions.");
+            }
           }
         }
       }

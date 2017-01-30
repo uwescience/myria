@@ -65,7 +65,7 @@ public class PythonFunctionRegistrar {
    * @param name function name
    * @param description  of function
    * @param outputType of function
-   * @param isMultivalued does function return multiple tuples.
+   * @param isMultiValued does function return multiple tuples.
    * @param binary binary function
    * @throws DbException if any error occurs
    */
@@ -73,7 +73,7 @@ public class PythonFunctionRegistrar {
       final String name,
       final String description,
       final String outputType,
-      final Boolean isMultivalued,
+      final Boolean isMultiValued,
       final String binary)
       throws DbException {
     if (!isValid()) {
@@ -97,7 +97,7 @@ public class PythonFunctionRegistrar {
     pyFunctions.putString(0, name);
     pyFunctions.putString(1, description);
     pyFunctions.putString(2, outputType);
-    pyFunctions.putBoolean(3, isMultivalued);
+    pyFunctions.putBoolean(3, isMultiValued);
     pyFunctions.putString(4, binary);
 
     accessMethod.tupleBatchInsert(MyriaConstants.PYUDF_RELATION, pyFunctions.popAny());

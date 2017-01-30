@@ -68,8 +68,8 @@ public class FunctionResource {
           server.createFunction(
               encoding.name,
               encoding.description,
-              encoding.outputSchema,
-              encoding.isMultivalued,
+              encoding.outputType,
+              encoding.isMultiValued,
               encoding.lang,
               encoding.binary,
               encoding.workers);

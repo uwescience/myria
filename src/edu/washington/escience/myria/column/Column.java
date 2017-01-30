@@ -197,24 +197,20 @@ public abstract class Column<T extends Comparable<?>> implements ReadableColumn,
   protected static ColumnMessage defaultBytesProto(final Column<?> column) {
     final BlobColumnMessage.Builder inner = BlobColumnMessage.newBuilder();
     int bblen = 0;
-    int startP = 0, endP = 0;
     for (int i = 0; i < column.size(); i++) {
       bblen = bblen + column.getBlob(i).array().length;
     }
-    ByteBuffer bb = ByteBuffer.allocate(bblen);
-    int offset = bb.position();
 
+    ByteBuffer bb = ByteBuffer.allocate(bblen);
+    int startP = 0, endP = 0;
     for (int i = 0; i < column.size(); i++) {
       int len = column.getBlob(i).array().length;
       endP = startP + len;
       inner.addStartIndices(startP);
       inner.addEndIndices(endP);
 
-      bb.put(column.getBlob(i).array(), offset, len);
+      bb.put(column.getBlob(i).array(), bb.position(), len);
       startP = endP;
-
-      offset = bb.position(); // offset + len;
-      len = 0;
     }
     bb.flip();
     inner.setData(ByteString.copyFrom(bb));

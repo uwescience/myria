@@ -153,9 +153,7 @@ public class PythonWorker {
    * @throws IOException
    */
   private void createServerSocket() throws UnknownHostException, IOException {
-
     serverSocket = new ServerSocket(0, 1, InetAddress.getByName("127.0.0.1"));
-    int a = serverSocket.getLocalPort();
   }
 
   /**
@@ -180,8 +178,6 @@ public class PythonWorker {
     out.flush();
     clientSock = serverSocket.accept();
     setupStreams();
-
-    return;
   }
 
   /**

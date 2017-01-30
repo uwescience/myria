@@ -53,7 +53,7 @@ public class Apply extends UnaryOperator {
   private TupleBatchBuffer outputBuffer;
 
   /**
-   * AddCounter?
+   * AddCounter to the returning tuplebatch.
    */
   private Boolean addCounter;
   /**
@@ -82,13 +82,16 @@ public class Apply extends UnaryOperator {
    */
   private boolean onlySingleValuedExpressions() {
     for (Expression expr : getEmitExpressions()) {
-      if (expr.isMultivalued()) {
+      if (expr.isMultiValued()) {
         return false;
       }
     }
     return true;
   }
-
+  /**
+   * Should a counter be added?
+   * @return
+   */
   private boolean getAddCounter() {
     return addCounter;
   }
@@ -143,7 +146,7 @@ public class Apply extends UnaryOperator {
           resultColumns.add(evalResult.getResults());
 
           Preconditions.checkArgument(
-              eval.getExpression().isMultivalued() || (evalResult.getResultColumns().size() == 1),
+              eval.getExpression().isMultiValued() || (evalResult.getResultColumns().size() == 1),
               "A single-valued expression cannot have more than one result column.");
           resultColumnsForTB.add(evalResult.getResultColumns().get(0));
         }
@@ -202,7 +205,7 @@ public class Apply extends UnaryOperator {
                   countIdx.putInt(0, flatmapid);
                   flatmapid = 0;
                 }
-                if (getAddCounter() && countIdx != null) {
+                if (getAddCounter()) {
                   outputBuffer.appendFromColumn(iteratorIdx, countIdx.asColumn(0), 0);
                 }
               } while (!computeNextCombination(resultCounts, iteratorIndexes));

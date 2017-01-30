@@ -115,7 +115,7 @@ public class Expression implements Serializable {
   public String getJavaExpressionWithAppend(final ExpressionOperatorParameter parameters) {
     String appendExpression = rootExpressionOperator.getJavaExpressionWithAppend(parameters);
     if (appendExpression == null) {
-      if (isMultivalued()) {
+      if (isMultiValued()) {
         String primitiveTypeName = getOutputType(parameters).toJavaArrayType().getSimpleName();
         appendExpression =
             new StringBuilder(primitiveTypeName)
@@ -201,7 +201,7 @@ public class Expression implements Serializable {
    *
    * @return if the root expression has a primitive array return type
    */
-  public boolean isMultivalued() {
+  public boolean isMultiValued() {
     return rootExpressionOperator.hasArrayOutputType();
   }
 }

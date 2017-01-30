@@ -35,7 +35,7 @@ public class DbCreateFunction extends RootOperator {
   /** function description or text.*/
   private final String description;
   /** does function return multiple tuples.*/
-  private final Boolean isMultivalued;
+  private final Boolean isMultiValued;
   /** function language.*/
   private final MyriaConstants.FunctionLanguage lang;
   /** function output schema.*/
@@ -50,7 +50,7 @@ public class DbCreateFunction extends RootOperator {
    * @param name function name.
    * @param connectionInfo the parameters of the database connection.
    * @param outputType output schema for the function
-   * @param isMultivalued does it return multiple tuples?
+   * @param isMultiValued does it return multiple tuples?
    * @param lang function type
    * @param binary function body (encoded binary string)
    * @param description function decription, this is kept in the catalog and not sent to workers.
@@ -60,16 +60,14 @@ public class DbCreateFunction extends RootOperator {
       final String name,
       final String description,
       final String outputType,
-      final Boolean isMultivalued,
+      final Boolean isMultiValued,
       final FunctionLanguage lang,
-      final String binary,
-      final ConnectionInfo connectionInfo) {
+      final String binary) {
     super(child);
     this.name = name;
     this.description = description;
     this.outputType = outputType;
-    this.isMultivalued = isMultivalued;
-    this.connectionInfo = connectionInfo;
+    this.isMultiValued = isMultiValued;
     this.lang = lang;
     this.binary = binary;
   }
@@ -102,7 +100,7 @@ public class DbCreateFunction extends RootOperator {
       case PYTHON:
         if (binary != null) {
           PythonFunctionRegistrar pyFunc = new PythonFunctionRegistrar(connectionInfo);
-          pyFunc.addFunction(name, description, outputType, isMultivalued, binary);
+          pyFunc.addFunction(name, description, outputType, isMultiValued, binary);
         } else {
           throw new DbException("Cannot register python UDF without binary.");
         }

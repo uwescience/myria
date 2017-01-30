@@ -28,19 +28,20 @@ public class FunctionStatus {
    * @param outputType The {@link Schema} of the input to the function.
    * @param isMultiValued does function return multiple tuples?
    * @param lang language of the function.
+   * @param binary base64 encoded function binary.
    */
   @JsonCreator
   public FunctionStatus(
       @JsonProperty("name") final String name,
       @JsonProperty("description") final String description,
       @JsonProperty("outputType") final String outputType,
-      @JsonProperty("isMultivalued") final Boolean isMultivalued,
-      @JsonProperty("lang") final MyriaConstants.FunctionLanguage lang,
+      @JsonProperty("isMultiValued") final Boolean isMultiValued,
+      @JsonProperty("lang") final FunctionLanguage lang,
       @JsonProperty("binary") final String binary) {
     this.name = name;
     this.description = description;
     this.outputType = outputType;
-    this.isMultivalued = isMultivalued;
+    this.isMultiValued = isMultiValued;
     this.lang = lang;
     this.binary = binary;
   }
@@ -52,9 +53,9 @@ public class FunctionStatus {
   /** The {@link Schema} of the output tuples to the function. */
   @JsonProperty private final String outputType;
   /** Does the function return multiple tuples. */
-  @JsonProperty private final Boolean isMultivalued;
+  @JsonProperty private final Boolean isMultiValued;
   /** The language the function */
-  @JsonProperty private final MyriaConstants.FunctionLanguage lang;
+  @JsonProperty private final FunctionLanguage lang;
   /** base64 encoded sting of code binary. */
   @JsonProperty private final String binary;
 
@@ -75,7 +76,7 @@ public class FunctionStatus {
    * @return get if function is multivalued.
    */
   public Boolean getIsMultivalued() {
-    return isMultivalued;
+    return isMultiValued;
   }
   /**
    * @return the language of function
@@ -84,7 +85,7 @@ public class FunctionStatus {
     return lang;
   }
   /**
-   * @return The {@link Schema} of the output tuples in the function.
+   * @return The type of the output tuples as string.
    */
   public String getOutputType() {
     return outputType;

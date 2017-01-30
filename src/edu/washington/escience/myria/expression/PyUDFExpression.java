@@ -21,22 +21,18 @@ public class PyUDFExpression extends NAryExpression {
       org.slf4j.LoggerFactory.getLogger(PyUDFExpression.class);
 
   /** The name of the python function. */
-  @JsonProperty private final String name;
+  @JsonProperty private String name = "";
 
   /**
    * Output Type of python function.
    */
-  @JsonProperty private final Type outputType;
+  @JsonProperty private Type outputType = Type.BLOB_TYPE;
 
   /**
    * This is not really unused, it's used automagically by Jackson deserialization.
    */
   @SuppressWarnings("unused")
-  private PyUDFExpression() {
-    name = "";
-    //set default return type this is changed once pythonfunction is retrived.
-    outputType = Type.BLOB_TYPE;
-  }
+  private PyUDFExpression() {}
   /**
    * Python function expression.
    *

@@ -64,5 +64,5 @@ public interface Aggregator extends Serializable {
    * @param state object to which state is written.
    * @throws DbException in case of error.
    */
-  void add(List<TupleBatch> from, Object state) throws DbException;
+  void add(List<TupleBatch> from) throws DbException;
 }

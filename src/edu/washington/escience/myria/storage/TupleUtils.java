@@ -491,12 +491,8 @@ public final class TupleUtils {
    */
   public static int getBatchSize(Schema schema) {
     int batchSize = 1000 * 10;
-    for (int j = 0; j < schema.numColumns(); ++j) {
-      Type type = schema.getColumnType(j);
-      if (type == Type.BLOB_TYPE) {
-        batchSize = 1;
-      }
-    }
+    if (schema.getColumnTypes().indexOf(Type.BLOB_TYPE) >= 0) batchSize = 1;
+
     return batchSize;
   }
   /**
@@ -506,9 +502,7 @@ public final class TupleUtils {
    */
   public static int getBatchSize(Type type) {
     int batchSize = 1000 * 10;
-    if (type == Type.BLOB_TYPE) {
-      batchSize = 1;
-    }
+    if (type == Type.BLOB_TYPE) batchSize = 1;
 
     return batchSize;
   }

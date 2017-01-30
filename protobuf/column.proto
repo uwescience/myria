@@ -22,7 +22,7 @@ message ColumnMessage {
     STRING	= 4;
     BOOLEAN	= 5;
     DATETIME	= 6;
-    BLOB =7;
+    BLOB    = 7;
   }
 
   required ColumnMessage.Type type = 1;		// See enum above

@@ -108,8 +108,7 @@ public class GenericEvaluator extends Evaluator {
    * @param result the table storing the result
    * @param state additional state that affects the computation
    * @throws InvocationTargetException exception thrown from janino.
-   * @throws IOException
-   * @throws DbException
+   * @throws DbException in case of error.
    */
   public void eval(
       @Nonnull final ReadableTable tb,
@@ -121,7 +120,7 @@ public class GenericEvaluator extends Evaluator {
     Preconditions.checkArgument(
         evaluator != null, "Call compile first or copy the data if it is the same in the input.");
     Preconditions.checkArgument(
-        getExpression().isMultivalued() != (count == null),
+        getExpression().isMultiValued() != (count == null),
         "count must be null for a single-valued expression and non-null for a multivalued expression.");
     try {
       evaluator.evaluate(tb, rowIdx, count, result, state);
@@ -202,7 +201,7 @@ public class GenericEvaluator extends Evaluator {
     // Optimization for result counts of single-valued expressions.
     final Column<?> constCounts = new ConstantValueColumn(1, Type.INT_TYPE, tb.numTuples());
     final WritableColumn countsWriter;
-    if (getExpression().isMultivalued()) {
+    if (getExpression().isMultiValued()) {
       countsWriter = ColumnFactory.allocateColumn(Type.INT_TYPE);
     } else {
       // For single-valued expressions, the Java expression will never attempt to write to `countsWriter`.
@@ -225,7 +224,7 @@ public class GenericEvaluator extends Evaluator {
       eval(tb, rowIdx, countsWriter, resultsWriter, null);
     }
     final Column<?> resultCounts;
-    if (getExpression().isMultivalued()) {
+    if (getExpression().isMultiValued()) {
       resultCounts = ((ColumnBuilder<?>) countsWriter).build();
     } else {
       resultCounts = constCounts;

@@ -4,6 +4,7 @@ import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.List;
 import java.util.Objects;
 
 import com.almworks.sqlite4java.SQLiteException;
@@ -15,7 +16,6 @@ import edu.washington.escience.myria.column.BlobColumn;
 import edu.washington.escience.myria.column.mutable.BlobMutableColumn;
 import edu.washington.escience.myria.proto.DataProto.BlobColumnMessage;
 import edu.washington.escience.myria.proto.DataProto.ColumnMessage;
-import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleUtils;
 import edu.washington.escience.myria.util.MyriaUtils;
 /**
@@ -55,7 +55,7 @@ public final class BlobColumnBuilder extends ColumnBuilder<ByteBuffer> {
   }
 
   /*
-   * Constructs a DateColumn by deserializing the given ColumnMessage.
+   * Constructs a BlobColumn by deserializing the given ColumnMessage.
    *
    * @param message a ColumnMessage containing the contents of this column.
    *
@@ -66,18 +66,22 @@ public final class BlobColumnBuilder extends ColumnBuilder<ByteBuffer> {
   public static BlobColumn buildFromProtobuf(final ColumnMessage message, final int numTuples) {
     Preconditions.checkArgument(
         message.getType().ordinal() == ColumnMessage.Type.BLOB_VALUE,
-        "Trying to construct Bytes from non-bytes ColumnMessage %s",
+        "Trying to construct BlobColumn from non-bytes ColumnMessage %s",
         message.getType());
 
-    Preconditions.checkArgument(message.hasBlobColumn(), "ColumnMessage is missing DateColumn");
+    Preconditions.checkArgument(message.hasBlobColumn(), "ColumnMessage is missing BlobColumn");
     final BlobColumnMessage BlobColumn = message.getBlobColumn();
+
+    List<Integer> startIndices = BlobColumn.getStartIndicesList();
+    List<Integer> endIndices = BlobColumn.getEndIndicesList();
+
     ByteBuffer[] newData = new ByteBuffer[numTuples];
     ByteBuffer data = BlobColumn.getData().asReadOnlyByteBuffer();
     for (int i = 0; i < numTuples; i++) {
-      newData[i] = ByteBuffer.allocate(data.capacity());
-      newData[i].put(data);
+      int length = endIndices.get(i) - startIndices.get(i);
+      newData[i] = ByteBuffer.allocate(length);
+      data.get(newData[i].array(), 0, length);
     }
-
     return new BlobColumnBuilder(newData, numTuples).build();
   }
 
@@ -103,7 +107,6 @@ public final class BlobColumnBuilder extends ColumnBuilder<ByteBuffer> {
       throws SQLException, BufferOverflowException {
     Preconditions.checkState(
         !built, "No further changes are allowed after the builder has built the column.");
-    // TODO: fix
     return appendBlob(ByteBuffer.wrap(resultSet.getBytes(jdbcIndex)));
   }
 

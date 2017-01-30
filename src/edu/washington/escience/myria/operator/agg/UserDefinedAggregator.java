@@ -117,7 +117,7 @@ public class UserDefinedAggregator implements Aggregator {
   }
 
   @Override
-  public void add(final List<TupleBatch> from, final Object state) throws DbException {
+  public void add(final List<TupleBatch> from) throws DbException {
     throw new DbException(" method not implemented");
   }
 }

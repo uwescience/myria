@@ -67,6 +67,8 @@ def pyMean(dt):
 
 connection.create_function("pyMean","function text",outType, py,False, pyMean)
 
+
+outType= "LONG_TYPE"
 def pyAggInt(dt):
     return 5
 
@@ -78,5 +80,5 @@ connection.create_function("pyAggInt","function text",outType, py,False, pyAggIn
 def pyFlatmapInt(dt):
     return [2,3]
 
-outType= "LONG_TYPE"
+
 connection.create_function("pyFlatmapInt","function text",outType, py,True, pyFlatmapInt)

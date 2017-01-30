@@ -396,7 +396,7 @@ public final class MyriaConstants {
           Type.STRING_TYPE,
           "function_output_type",
           Type.STRING_TYPE,
-          "function_isMultivalued",
+          "function_isMultiValued",
           Type.BOOLEAN_TYPE,
           "function_binary",
           Type.STRING_TYPE);

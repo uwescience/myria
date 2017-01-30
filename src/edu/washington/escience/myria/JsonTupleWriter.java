@@ -185,7 +185,6 @@ public class JsonTupleWriter implements TupleWriter {
             print('"');
             break;
           case BLOB_TYPE:
-            // TODO: fix this later
             print('"');
             print("Byte buffer, cannot be written to json yet!");
             print('"');
