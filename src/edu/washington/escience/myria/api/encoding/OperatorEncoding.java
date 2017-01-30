@@ -8,6 +8,7 @@ import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonSubTypes.Type;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 
+import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.api.MyriaApiException;
 import edu.washington.escience.myria.api.encoding.QueryConstruct.ConstructArgs;
 import edu.washington.escience.myria.operator.Operator;
@@ -91,6 +92,7 @@ public abstract class OperatorEncoding<T extends Operator> extends MyriaApiEncod
   /**
    * @param args TODO
    * @return an instantiated operator.
+   * @throws DbException
    */
-  public abstract T construct(@Nonnull ConstructArgs args) throws MyriaApiException;
+  public abstract T construct(@Nonnull ConstructArgs args) throws MyriaApiException, DbException;
 }

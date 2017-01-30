@@ -7,6 +7,8 @@ import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonSubTypes.Type;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 
+import edu.washington.escience.myria.DbException;
+
 /**
  * An interface for any source of bits. This interface should be the principal parameter to any operator that produces
  * tuples from input data, e.g., files, the web, or other.
@@ -25,6 +27,7 @@ public interface DataSource {
    *
    * @return an {@link InputStream} providing read access to the bits in the specified data source.
    * @throws IOException if there is an error producing the input stream.
+   * @throws DbException
    */
-  InputStream getInputStream() throws IOException;
+  InputStream getInputStream() throws IOException, DbException;
 }

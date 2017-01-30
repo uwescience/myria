@@ -22,6 +22,8 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.MoreObjects;
 
+import edu.washington.escience.myria.DbException;
+
 /**
  *
  */
@@ -52,7 +54,7 @@ public class AmazonS3Source implements DataSource, Serializable {
       @JsonProperty(value = "s3Uri", required = true) final String uri,
       @JsonProperty(value = "startRange") final Long startRange,
       @JsonProperty(value = "endRange") final Long endRange)
-      throws URIException {
+      throws URIException, DbException {
     s3Uri = URI.create(Objects.requireNonNull(uri, "Parameter uri to UriSource may not be null"));
     if (!s3Uri.getScheme().equals("s3")) {
       throw new URIException("URI must contain an S3 scheme");
@@ -66,7 +68,7 @@ public class AmazonS3Source implements DataSource, Serializable {
     this.endRange = MoreObjects.firstNonNull(endRange, getFileSize());
   }
 
-  public AmazonS3Client getS3Client() {
+  public AmazonS3Client getS3Client() throws DbException {
     if (s3Client == null) {
       /**
        * Supported providers in fs.s3a.aws.credentials.provider are InstanceProfileCredentialsProvider,
@@ -90,29 +92,30 @@ public class AmazonS3Source implements DataSource, Serializable {
         }
         clientConfig = new ClientConfiguration();
         clientConfig.setMaxErrorRetry(3);
-        s3Client = new AmazonS3Client(credentials);
+        s3Client = new AmazonS3Client(credentials, clientConfig);
       } catch (Exception e) {
-        LOGGER.warn("Failed to instantiate AWS credentials provider", e);
+        throw new DbException("Failed to instantiate AWS credentials provider", e);
       }
     }
     return s3Client;
   }
 
-  public Long getFileSize() {
+  public Long getFileSize() throws DbException {
     if (fileSize == null) {
       fileSize = getS3Client().getObjectMetadata(bucket, key).getContentLength();
     }
     return fileSize;
   }
 
-  public InputStream getInputStream(final long startByte, final long endByte) throws IOException {
+  public InputStream getInputStream(final long startByte, final long endByte)
+      throws IOException, DbException {
     setStartRange(startByte);
     setEndRange(endByte);
     return getInputStream();
   }
 
   @Override
-  public InputStream getInputStream() throws IOException {
+  public InputStream getInputStream() throws IOException, DbException {
     s3Request = new GetObjectRequest(bucket, key);
     s3Request.setRange(startRange, endRange);
 
