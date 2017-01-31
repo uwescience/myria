@@ -29,5 +29,5 @@ public interface DataSource {
    * @throws IOException if there is an error producing the input stream.
    * @throws DbException
    */
-  InputStream getInputStream() throws IOException, DbException;
+  InputStream getInputStream() throws IOException;
 }

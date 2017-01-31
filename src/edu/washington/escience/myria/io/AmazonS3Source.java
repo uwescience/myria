@@ -10,6 +10,7 @@ import java.net.URI;
 import java.util.Objects;
 
 import javax.annotation.concurrent.NotThreadSafe;
+import javax.ws.rs.core.Response.Status;
 
 import org.apache.commons.httpclient.URIException;
 import org.apache.hadoop.conf.Configuration;
@@ -23,6 +24,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.MoreObjects;
 
 import edu.washington.escience.myria.DbException;
+import edu.washington.escience.myria.api.MyriaApiException;
 
 /**
  *
@@ -68,7 +70,7 @@ public class AmazonS3Source implements DataSource, Serializable {
     this.endRange = MoreObjects.firstNonNull(endRange, getFileSize());
   }
 
-  public AmazonS3Client getS3Client() throws DbException {
+  public AmazonS3Client getS3Client() throws MyriaApiException {
     if (s3Client == null) {
       /**
        * Supported providers in fs.s3a.aws.credentials.provider are InstanceProfileCredentialsProvider,
@@ -93,29 +95,38 @@ public class AmazonS3Source implements DataSource, Serializable {
         clientConfig = new ClientConfiguration();
         clientConfig.setMaxErrorRetry(3);
         s3Client = new AmazonS3Client(credentials, clientConfig);
-      } catch (Exception e) {
-        throw new DbException("Failed to instantiate AWS credentials provider", e);
+      } catch (ClassNotFoundException e) {
+        throw new MyriaApiException(Status.INTERNAL_SERVER_ERROR, className + " not found ", e);
+      } catch (NoSuchMethodException | SecurityException e) {
+        throw new MyriaApiException(
+            Status.INTERNAL_SERVER_ERROR,
+            className
+                + " constructor exception. Should provide an accessible constructor accepting URI"
+                + " and Configuration, or an accessible default constructor.",
+            e);
+      } catch (ReflectiveOperationException | IllegalArgumentException e) {
+        throw new MyriaApiException(
+            Status.INTERNAL_SERVER_ERROR, className + " instantiation exception.", e);
       }
     }
     return s3Client;
   }
 
-  public Long getFileSize() throws DbException {
+  public Long getFileSize() {
     if (fileSize == null) {
       fileSize = getS3Client().getObjectMetadata(bucket, key).getContentLength();
     }
     return fileSize;
   }
 
-  public InputStream getInputStream(final long startByte, final long endByte)
-      throws IOException, DbException {
+  public InputStream getInputStream(final long startByte, final long endByte) throws IOException {
     setStartRange(startByte);
     setEndRange(endByte);
     return getInputStream();
   }
 
   @Override
-  public InputStream getInputStream() throws IOException, DbException {
+  public InputStream getInputStream() throws IOException {
     s3Request = new GetObjectRequest(bucket, key);
     s3Request.setRange(startRange, endRange);
 

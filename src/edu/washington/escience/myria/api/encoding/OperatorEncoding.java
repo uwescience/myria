@@ -94,5 +94,5 @@ public abstract class OperatorEncoding<T extends Operator> extends MyriaApiEncod
    * @return an instantiated operator.
    * @throws DbException
    */
-  public abstract T construct(@Nonnull ConstructArgs args) throws MyriaApiException, DbException;
+  public abstract T construct(@Nonnull ConstructArgs args) throws MyriaApiException;
 }

@@ -41,4 +41,18 @@ public final class MyriaApiException extends WebApplicationException {
     super(new RuntimeException(explanation), MyriaExceptionMapper.getResponse(status, explanation));
     LOGGER.trace("In Status:String (log will be after getResponse)");
   }
+
+  /**
+   * Construct a MyriaApiException from the given status, explanation and cause.
+   * The entity of the HTTP Response includes the given HTTP status code and the body is
+   * the provided explanation string and the cause.
+   *
+   * @param status the HTTP status code used for the HTTP response.
+   * @param explanation the message is used to explain the exception in the HTTP response.
+   * @param cause the Exception, whose message is used to explain the exception in the HTTP response.
+   */
+  public MyriaApiException(final Status status, final String explanation, final Throwable cause) {
+    super(new RuntimeException(explanation), MyriaExceptionMapper.getResponse(status, cause));
+    LOGGER.trace("In Status:String (log will be after getResponse)");
+  }
 }

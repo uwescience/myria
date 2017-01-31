@@ -89,8 +89,7 @@ public class CSVFileScanFragment extends LeafOperator {
       final Schema schema,
       final long startByteRange,
       final long endByteRange,
-      final boolean isLastWorker)
-      throws DbException {
+      final boolean isLastWorker) {
     this(filename, schema, startByteRange, endByteRange, isLastWorker, null, null, null, null);
   }
 
@@ -99,8 +98,7 @@ public class CSVFileScanFragment extends LeafOperator {
       final Schema schema,
       final long startByteRange,
       final long endByteRange,
-      final boolean isLastWorker)
-      throws DbException {
+      final boolean isLastWorker) {
     this(source, schema, startByteRange, endByteRange, isLastWorker, null, null, null, null);
   }
 
@@ -110,8 +108,7 @@ public class CSVFileScanFragment extends LeafOperator {
       final long startByteRange,
       final long endByteRange,
       final boolean isLastWorker,
-      final Character delimiter)
-      throws DbException {
+      final Character delimiter) {
     this(
         new FileSource(filename),
         schema,
@@ -130,8 +127,7 @@ public class CSVFileScanFragment extends LeafOperator {
       final long startByteRange,
       final long endByteRange,
       final boolean isLastWorker,
-      final Character delimiter)
-      throws DbException {
+      final Character delimiter) {
     this(source, schema, startByteRange, endByteRange, isLastWorker, delimiter, null, null, null);
   }
 
@@ -144,8 +140,7 @@ public class CSVFileScanFragment extends LeafOperator {
       @Nullable final Character delimiter,
       @Nullable final Character quote,
       @Nullable final Character escape,
-      @Nullable final Integer numberOfSkippedLines)
-      throws DbException {
+      @Nullable final Integer numberOfSkippedLines) {
     this(
         new FileSource(filename),
         schema,
@@ -167,8 +162,7 @@ public class CSVFileScanFragment extends LeafOperator {
       @Nullable final Character delimiter,
       @Nullable final Character quote,
       @Nullable final Character escape,
-      @Nullable final Integer numberOfSkippedLines)
-      throws DbException {
+      @Nullable final Integer numberOfSkippedLines) {
     this.source = (AmazonS3Source) Preconditions.checkNotNull(source, "source");
     this.schema = Preconditions.checkNotNull(schema, "schema");
 
@@ -195,8 +189,7 @@ public class CSVFileScanFragment extends LeafOperator {
       @Nullable final Character delimiter,
       @Nullable final Character quote,
       @Nullable final Character escape,
-      @Nullable final Integer numberOfSkippedLines)
-      throws DbException {
+      @Nullable final Integer numberOfSkippedLines) {
 
     this.source = Preconditions.checkNotNull(source, "source");
     this.schema = Preconditions.checkNotNull(schema, "schema");

@@ -69,7 +69,7 @@ public class QueryConstruct {
    */
   public static Map<Integer, SubQueryPlan> instantiate(
       final List<PlanFragmentEncoding> fragments, final ConstructArgs args)
-      throws CatalogException, DbException {
+      throws CatalogException {
 
     // Assign fragment index before everything else
     int idx = 0;
@@ -522,8 +522,7 @@ public class QueryConstruct {
   private static void instantiateFragmentOperators(
       final PlanFragmentEncoding planFragment,
       final ConstructArgs args,
-      final Map<Integer, Operator> allOperators)
-      throws DbException {
+      final Map<Integer, Operator> allOperators) {
     for (OperatorEncoding<?> encoding : planFragment.operators) {
       if (allOperators.get(encoding.opId) != null) {
         throw new MyriaApiException(
