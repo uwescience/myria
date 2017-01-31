@@ -335,8 +335,8 @@ public class CSVFileScanFragment extends LeafOperator {
                 buffer.putDateTime(column, DateTimeUtils.parse(cell));
                 break;
               case BLOB_TYPE:
-                buffer.putBlob(column, getBlob(cell));
-                break;
+                throw new DbException(
+                    "Ingesting BLOB via csv isn't supported. Use DownloadBlob expression.");
             }
           } catch (final IllegalArgumentException e) {
             throw new DbException(
@@ -462,19 +462,5 @@ public class CSVFileScanFragment extends LeafOperator {
     } catch (IOException e) {
       throw new DbException(e);
     }
-  }
-
-  protected ByteBuffer getBlob(final String filename) throws DbException, IOException {
-    Preconditions.checkNotNull(filename, "s3 uri was null");
-    AmazonS3Source file = new AmazonS3Source(filename, null, null);
-    InputStream is = file.getInputStream();
-
-    byte[] data = null;
-    try {
-      data = IOUtils.toByteArray(is);
-    } catch (IOException e) {
-      throw new DbException(e);
-    }
-    return ByteBuffer.wrap(data);
   }
 }

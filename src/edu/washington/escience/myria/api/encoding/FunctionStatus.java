@@ -50,13 +50,13 @@ public class FunctionStatus {
   @JsonProperty private final String name;
   /** The text of the function */
   @JsonProperty private final String description;
-  /** The {@link Schema} of the output tuples to the function. */
+  /** The type of the output tuples to the function. */
   @JsonProperty private final String outputType;
   /** Does the function return multiple tuples. */
   @JsonProperty private final Boolean isMultiValued;
-  /** The language the function */
+  /** The language of the function */
   @JsonProperty private final FunctionLanguage lang;
-  /** base64 encoded sting of code binary. */
+  /** base64 encoded string of code binary. */
   @JsonProperty private final String binary;
 
   /**

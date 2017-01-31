@@ -133,6 +133,6 @@
          ]
       }
    ],
-   "rawQuery":"uda Foo(x){\n[0 as _count,0 as _sum];\n[_count+1,  _sum+x];\n[_sum/_count ];\n};\n\n\nT1 = scan(public:adhoc:raw);\nT2 = [from inter emit Foo(link) as res];\nT3 = [from T2 emit Log(res)];\nstore(T3, results);",
-   "language":"myrial"
+   "rawQuery":"Python Agg with SingleGroupByAggregate",
+  "language":"myrial"
 }

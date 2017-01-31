@@ -64,5 +64,5 @@
    "language":"myrial",
    "logicalRa":"Store(public:adhoc:result)[Apply(PyUDF(simpleApplyTest,))]]",
 
-   "rawQuery":"Simple Apply test for PythonUDFs"
+   "rawQuery":"Simple Apply test with BLOB Type for PythonUDFs"
 }

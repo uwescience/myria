@@ -166,8 +166,7 @@ public class CsvTupleReader implements TupleReader {
               buffer.putDateTime(column, DateTimeUtils.parse(cell));
               break;
             case BLOB_TYPE:
-              buffer.putBlob(column, getFile(cell)); // read filename
-              break;
+              throw new DbException("Reading BLOB type from csv file is not supported!");
           }
         } catch (final IllegalArgumentException e) {
           throw new DbException(
@@ -185,7 +184,6 @@ public class CsvTupleReader implements TupleReader {
     }
 
     LOGGER.debug("Scanned {} input lines", lineNumber - lineNumberBegin);
-
     return buffer.popAny();
   }
 
@@ -200,19 +198,5 @@ public class CsvTupleReader implements TupleReader {
     while (buffer.numTuples() > 0) {
       buffer.popAny();
     }
-  }
-  /**
-   *
-   */
-  protected ByteBuffer getFile(final String filename) throws DbException {
-    Preconditions.checkNotNull(filename, "byte[] filename was null");
-    Path path = Paths.get(filename);
-    byte[] data = null;
-    try {
-      data = Files.readAllBytes(path);
-    } catch (IOException e) {
-      throw new DbException(e);
-    }
-    return ByteBuffer.wrap(data);
   }
 }

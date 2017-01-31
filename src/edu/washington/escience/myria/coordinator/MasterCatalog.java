@@ -422,7 +422,7 @@ public final class MasterCatalog {
 
                     String name = statement.columnString(0);
                     String descrip = statement.columnString(1);
-                    String outputSchema = statement.columnString(2);
+                    String outputType = statement.columnString(2);
                     Boolean isMultiValued = ((statement.columnInt(3) == 0) ? false : true);
                     int lang = statement.columnInt(4);
                     statement.dispose();
@@ -430,7 +430,7 @@ public final class MasterCatalog {
                     return new FunctionStatus(
                         name,
                         descrip,
-                        outputSchema,
+                        outputType,
                         isMultiValued,
                         FunctionLanguage.values()[lang],
                         null);
@@ -1836,7 +1836,7 @@ public final class MasterCatalog {
       throws CatalogException {
     Objects.requireNonNull(name, "function name");
     Objects.requireNonNull(description, "function definition");
-    Objects.requireNonNull(outputType, "function output schema");
+    Objects.requireNonNull(outputType, "function output type");
     Objects.requireNonNull(isMultiValued, "is function a flatmap");
     Objects.requireNonNull(lang, "function language");
 

@@ -1194,16 +1194,11 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
     } catch (CatalogException e) {
       throw new DbException(e);
     }
-
-    if (response == "") {
-      /* Register the function to the catalog don't send the binary. */
-      try {
-        catalog.registerFunction(name, definition, outputType, isMultiValued, lang);
-      } catch (CatalogException e) {
-        throw new DbException(e);
-      }
-    } else {
-      response = "Function is not valid";
+    /* Register the function to the catalog don't send the binary. */
+    try {
+      catalog.registerFunction(name, definition, outputType, isMultiValued, lang);
+    } catch (CatalogException e) {
+      throw new DbException(e);
     }
     return response;
   }

@@ -67,7 +67,7 @@ public class PythonUDFEvaluator extends GenericEvaluator {
   private Type outputType = null;
 
   /** is expression a flatmap? */
-  private Boolean isFlatmap = false;
+  private Boolean isMultiValued = false;
 
   /**
    * Default constructor.
@@ -108,8 +108,8 @@ public class PythonUDFEvaluator extends GenericEvaluator {
         if (fs == null) {
           throw new DbException("No Python UDf with given name registered.");
         }
-        isFlatmap = fs.getIsMultivalued(); //if the function is multivalued.
-        pyWorker.sendCodePickle(fs.getBinary(), numColumns, outputType, isFlatmap);
+        isMultiValued = fs.getIsMultivalued(); //if the function is multivalued.
+        pyWorker.sendCodePickle(fs.getBinary(), numColumns, outputType, isMultiValued);
 
         List<ExpressionOperator> childops = op.getChildren();
         if (childops != null) {
@@ -246,7 +246,7 @@ public class PythonUDFEvaluator extends GenericEvaluator {
     int c = 1; // single valued expressions only return 1 tuple.
     try {
       // if it is a flat map operation, read number of tuples to be read.
-      if (isFlatmap) {
+      if (isMultiValued) {
         c = dIn.readInt();
         count.appendInt(c);
       } else { // not flatmap

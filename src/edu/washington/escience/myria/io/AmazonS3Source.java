@@ -70,7 +70,7 @@ public class AmazonS3Source implements DataSource, Serializable {
     if (s3Client == null) {
       clientConfig = new ClientConfiguration();
       clientConfig.setMaxErrorRetry(3);
-      s3Client = new AmazonS3Client(new AnonymousAWSCredentials());
+      s3Client = new AmazonS3Client(new DefaultAWSCredentialsProviderChain());
     }
     return s3Client;
   }

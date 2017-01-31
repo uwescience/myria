@@ -101,8 +101,6 @@ public class PythonFunctionRegistrar {
     pyFunctions.putString(4, binary);
 
     accessMethod.tupleBatchInsert(MyriaConstants.PYUDF_RELATION, pyFunctions.popAny());
-
-    return;
   }
 
   /**

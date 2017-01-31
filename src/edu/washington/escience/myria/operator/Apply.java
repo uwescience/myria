@@ -18,7 +18,6 @@ import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
-import edu.washington.escience.myria.column.Column;
 import edu.washington.escience.myria.expression.Expression;
 import edu.washington.escience.myria.expression.evaluate.ConstantEvaluator;
 import edu.washington.escience.myria.expression.evaluate.ExpressionOperatorParameter;
@@ -55,7 +54,7 @@ public class Apply extends UnaryOperator {
   /**
    * AddCounter to the returning tuplebatch.
    */
-  private Boolean addCounter;
+  private Boolean addCounter = false;
   /**
    * @return the {@link #emitExpressions}
    */
@@ -93,7 +92,7 @@ public class Apply extends UnaryOperator {
    * @return
    */
   private boolean getAddCounter() {
-    return addCounter;
+    return this.addCounter;
   }
 
   private void setAddCounter(Boolean addCounter) {
@@ -114,12 +113,13 @@ public class Apply extends UnaryOperator {
     super(child);
     Preconditions.checkNotNull(emitExpressions);
     setEmitExpressions(emitExpressions);
-    setAddCounter(false);
   }
 
   public Apply(final Operator child, List<Expression> emitExpressions, Boolean addCounter) {
     this(child, emitExpressions);
-    setAddCounter(addCounter);
+    if (addCounter != null) {
+      setAddCounter(addCounter);
+    }
   }
 
   /**
@@ -139,23 +139,19 @@ public class Apply extends UnaryOperator {
         // Evaluate expressions on each column and store counts and results.
         List<ReadableColumn> resultCountColumns = new ArrayList<>();
         List<ReadableColumn> resultColumns = new ArrayList<>();
-        List<Column<?>> resultColumnsForTB = new ArrayList<>();
         for (final GenericEvaluator eval : emitEvaluators) {
           EvaluatorResult evalResult = eval.evaluateColumn(inputTuples);
           resultCountColumns.add(evalResult.getResultCounts());
           resultColumns.add(evalResult.getResults());
-
-          Preconditions.checkArgument(
-              eval.getExpression().isMultiValued() || (evalResult.getResultColumns().size() == 1),
-              "A single-valued expression cannot have more than one result column.");
-          resultColumnsForTB.add(evalResult.getResultColumns().get(0));
         }
-        // This is a zero-copy optimization that appends result columns directly to our output buffer
-        // if we don't need to take the Cartesian product. (For expressions which are pure column references,
-        // we elide 2 copies: one in `GenericEvaluator.evaluateColumn()` and one generating the Cartesian product.)
         if (onlySingleValuedExpressions()) {
-          outputBuffer.absorb(
-              new TupleBatch(getSchema(), resultColumnsForTB, inputTuples.numTuples()));
+          int[] iteratorIndexes = new int[emitEvaluators.size()];
+          Arrays.fill(iteratorIndexes, 0);
+          for (int rowIdx = 0; rowIdx < inputTuples.numTuples(); ++rowIdx) {
+            for (int i = 0; i < iteratorIndexes.length; ++i) {
+              outputBuffer.appendFromColumn(i, resultColumns.get(i), rowIdx);
+            }
+          }
         } else {
           // Generate the Cartesian product and append to output buffer.
           int[] resultCounts = new int[emitEvaluators.size()];
@@ -281,7 +277,8 @@ public class Apply extends UnaryOperator {
       evals.add(evaluator);
     }
     setEmitEvaluators(evals);
-    outputBuffer = new TupleBatchBuffer(getSchema());
+
+    outputBuffer = new TupleBatchBuffer(generateSchema());
   }
 
   @Override
