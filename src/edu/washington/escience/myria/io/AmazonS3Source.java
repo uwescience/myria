@@ -23,7 +23,6 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.MoreObjects;
 
-import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.api.MyriaApiException;
 
 /**
@@ -56,7 +55,7 @@ public class AmazonS3Source implements DataSource, Serializable {
       @JsonProperty(value = "s3Uri", required = true) final String uri,
       @JsonProperty(value = "startRange") final Long startRange,
       @JsonProperty(value = "endRange") final Long endRange)
-      throws URIException, DbException {
+      throws URIException {
     s3Uri = URI.create(Objects.requireNonNull(uri, "Parameter uri to UriSource may not be null"));
     if (!s3Uri.getScheme().equals("s3")) {
       throw new URIException("URI must contain an S3 scheme");
