@@ -125,6 +125,9 @@ public class Aggregate extends UnaryOperator {
    */
   @Override
   protected Schema generateSchema() {
+    if (getChild() == null) {
+      return null;
+    }
     Schema inputSchema = getChild().getSchema();
     Schema schema = inputSchema.getSubSchema(gfields);
     for (int i = 0; i < factories.length; ++i) {
