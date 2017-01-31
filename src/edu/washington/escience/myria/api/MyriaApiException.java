@@ -48,8 +48,8 @@ public final class MyriaApiException extends WebApplicationException {
    * the provided explanation string and the cause.
    *
    * @param status the HTTP status code used for the HTTP response.
-   * @param explanation the message is used to explain the exception in the HTTP response.
-   * @param cause the Exception, whose message is used to explain the exception in the HTTP response.
+   * @param explanation the message used to explain the exception in the HTTP response.
+   * @param cause the cause of the exception in the HTTP response.
    */
   public MyriaApiException(final Status status, final String explanation, final Throwable cause) {
     super(new RuntimeException(explanation), MyriaExceptionMapper.getResponse(status, cause));

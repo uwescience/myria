@@ -77,7 +77,8 @@ public class AmazonS3Source implements DataSource, Serializable {
        */
       AWSCredentialsProvider credentials;
       Configuration conf = new Configuration();
-      String className = conf.getTrimmed("fs.s3a.aws.credentials.provider");
+      String propertyName = "fs.s3a.aws.credentials.provider";
+      String className = conf.getTrimmed(propertyName);
 
       try {
         Class<?> credentialClass = Class.forName(className);
@@ -95,7 +96,12 @@ public class AmazonS3Source implements DataSource, Serializable {
         clientConfig.setMaxErrorRetry(3);
         s3Client = new AmazonS3Client(credentials, clientConfig);
       } catch (ClassNotFoundException e) {
-        throw new MyriaApiException(Status.INTERNAL_SERVER_ERROR, className + " not found ", e);
+        if (className == null) {
+          throw new MyriaApiException(
+              Status.INTERNAL_SERVER_ERROR, propertyName + " does not exist", e);
+        } else {
+          throw new MyriaApiException(Status.INTERNAL_SERVER_ERROR, className + " not found ", e);
+        }
       } catch (NoSuchMethodException | SecurityException e) {
         throw new MyriaApiException(
             Status.INTERNAL_SERVER_ERROR,
