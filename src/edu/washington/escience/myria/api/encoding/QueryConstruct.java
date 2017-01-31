@@ -20,7 +20,6 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 
-import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.MyriaConstants.FTMode;
 import edu.washington.escience.myria.MyriaConstants.ProfilingMode;
@@ -65,7 +64,6 @@ public class QueryConstruct {
    * @param server the server on which the query will be executed
    * @return the physical plan
    * @throws CatalogException if there is an error instantiating the plan
-   * @throws DbException if there is an error processing the data
    */
   public static Map<Integer, SubQueryPlan> instantiate(
       final List<PlanFragmentEncoding> fragments, final ConstructArgs args)
@@ -517,7 +515,6 @@ public class QueryConstruct {
    * @param planFragment the encoded plan fragment.
    * @param args args
    * @param allOperators a map to keep instantiated operators.
-   * @throws DbException if there is an error processing the data
    */
   private static void instantiateFragmentOperators(
       final PlanFragmentEncoding planFragment,
