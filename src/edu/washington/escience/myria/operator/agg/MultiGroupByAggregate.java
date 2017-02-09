@@ -114,7 +114,7 @@ public final class MultiGroupByAggregate extends UnaryOperator {
    * @throws IOException
    */
   @Override
-  protected TupleBatch fetchNextReady() throws DbException, IOException {
+  protected TupleBatch fetchNextReady() throws DbException {
     final Operator child = getChild();
 
     if (child.eos()) {
@@ -255,9 +255,8 @@ public final class MultiGroupByAggregate extends UnaryOperator {
   /**
    * @return A batch's worth of result tuples from this aggregate.
    * @throws DbException if there is an error.
-   * @throws IOException if there is an error.
    */
-  private TupleBatch getResultBatch() throws DbException, IOException {
+  private TupleBatch getResultBatch() throws DbException {
     Preconditions.checkState(
         getChild().eos(), "cannot extract results from an aggregate until child has reached EOS");
     if (groupKeyList == null) {

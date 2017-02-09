@@ -25,6 +25,7 @@ import edu.washington.escience.myria.accessmethod.ConnectionInfo;
 import edu.washington.escience.myria.accessmethod.SQLiteInfo;
 import edu.washington.escience.myria.parallel.RelationWriteMetadata;
 import edu.washington.escience.myria.storage.TupleBatch;
+import edu.washington.escience.myria.storage.TupleUtils;
 
 /** A temporary relation that is inserted into the database. */
 public class DbInsertTemp extends AbstractDbInsert {
@@ -133,6 +134,7 @@ public class DbInsertTemp extends AbstractDbInsert {
 
   @Override
   protected void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
+    setThreshold(TupleUtils.getBatchSize(getSchema()));
     setupConnection(execEnvVars);
 
     if (overwriteTable) {

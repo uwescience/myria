@@ -2,7 +2,7 @@
   "relationKey" : {
     "userName" : "public",
     "programName" : "adhoc",
-    "relationName" : "raw"
+    "relationName" : "manifest"
   },
   "schema" : {
     "columnTypes" : ["LONG_TYPE", "LONG_TYPE","LONG_TYPE","STRING_TYPE"],

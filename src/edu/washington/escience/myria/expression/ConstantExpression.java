@@ -101,7 +101,7 @@ public class ConstantExpression extends ZeroaryExpression {
    * @param value the value of this constant.
    */
   public ConstantExpression(final ByteBuffer value) {
-    this(Type.BLOB_TYPE, String.valueOf(value));
+    throw new UnsupportedOperationException();
   }
 
   @Override

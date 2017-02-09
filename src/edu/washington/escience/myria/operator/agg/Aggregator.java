@@ -43,8 +43,7 @@ public interface Aggregator extends Serializable {
    * @throws DbException if there is an error.
    * @throws IOException in case of error.
    */
-  void getResult(AppendableTable dest, int destColumn, Object state)
-      throws DbException, IOException;
+  void getResult(AppendableTable dest, int destColumn, Object state) throws DbException;
 
   /**
    * Compute and return the initial state tuple for instances of this {@link Aggregator}.

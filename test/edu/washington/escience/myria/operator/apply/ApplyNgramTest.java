@@ -96,7 +96,9 @@ public class ApplyNgramTest {
         for (int batchIdx = 0; batchIdx < result.numTuples(); ++batchIdx, ++rowIdx) {
           char[] ngramChars = new char[] {(char) rowIdx, (char) (rowIdx + 1), (char) (rowIdx + 2)};
           String ngram = new String(ngramChars);
+          int fltmapid = (int) rowIdx;
           assertEquals(ngram, result.getString(0, batchIdx));
+          assertEquals(fltmapid, result.getInt(1, batchIdx));
         }
       }
     }

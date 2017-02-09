@@ -87,12 +87,26 @@ public class Apply extends UnaryOperator {
     }
     return true;
   }
+
+  /**
+   * @return number of columns that return more than one value for this
+   * Apply operator.
+   */
+  private int numberOfMultiValuedExpressions() {
+    int i = 0;
+    for (Expression expr : getEmitExpressions()) {
+      if (expr.isMultiValued()) {
+        i += 1;
+      }
+    }
+    return i;
+  }
   /**
    * Should a counter be added?
    * @return
    */
   private boolean getAddCounter() {
-    return this.addCounter;
+    return (this.addCounter && (numberOfMultiValuedExpressions() == 1));
   }
 
   private void setAddCounter(Boolean addCounter) {
@@ -189,7 +203,7 @@ public class Apply extends UnaryOperator {
               do {
                 for (iteratorIdx = 0; iteratorIdx < iteratorIndexes.length; ++iteratorIdx) {
                   resultRowIdx = lastCumResultCounts[iteratorIdx] + iteratorIndexes[iteratorIdx];
-                  if (flatmapid < iteratorIndexes[iteratorIdx]) {
+                  if (getAddCounter() && flatmapid < iteratorIndexes[iteratorIdx]) {
                     flatmapid = iteratorIndexes[iteratorIdx];
                   }
                   outputBuffer.appendFromColumn(
@@ -200,8 +214,6 @@ public class Apply extends UnaryOperator {
                   countIdx = new TupleBuffer(countIdxSchema, 1);
                   countIdx.putInt(0, flatmapid);
                   flatmapid = 0;
-                }
-                if (getAddCounter()) {
                   outputBuffer.appendFromColumn(iteratorIdx, countIdx.asColumn(0), 0);
                 }
               } while (!computeNextCombination(resultCounts, iteratorIndexes));

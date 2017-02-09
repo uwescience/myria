@@ -231,9 +231,4 @@ public class GenericEvaluator extends Evaluator {
     }
     return new EvaluatorResult(resultsBuffer, resultCounts);
   }
-
-  @Override
-  public void sendEos() throws DbException {
-    return;
-  }
 }

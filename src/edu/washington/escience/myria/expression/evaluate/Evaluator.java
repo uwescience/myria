@@ -140,9 +140,4 @@ public abstract class Evaluator {
   public boolean isRegisteredUDF() {
     return getExpression().isRegisteredUDF();
   }
-  /**
-   * @return
-   * @throws DbException
-   */
-  public abstract void sendEos() throws DbException;
 }

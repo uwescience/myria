@@ -128,6 +128,8 @@ public class PythonUDFEvaluator extends GenericEvaluator {
             }
           }
         }
+      } else {
+        throw new DbException("PythonRegistrar should not be null in  PythonUDFEvaluator.");
       }
 
     } catch (Exception e) {
@@ -388,13 +390,6 @@ public class PythonUDFEvaluator extends GenericEvaluator {
 
     } catch (Exception e) {
       throw new DbException(e);
-    }
-  }
-
-  @Override
-  public void sendEos() throws DbException {
-    if (pyWorker != null) {
-      pyWorker.sendEos(MyriaConstants.PythonSpecialLengths.EOS.getVal());
     }
   }
 }

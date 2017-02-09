@@ -71,9 +71,4 @@ public class BooleanEvaluator extends Evaluator {
         evaluator != null, "Call compile first or copy the data if it is the same in the input.");
     return evaluator.evaluate(tb, rowId);
   }
-
-  @Override
-  public void sendEos() throws DbException {
-    return;
-  }
 }

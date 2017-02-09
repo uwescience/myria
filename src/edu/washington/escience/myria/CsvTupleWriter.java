@@ -2,12 +2,14 @@ package edu.washington.escience.myria;
 
 import java.io.BufferedWriter;
 import java.io.File;
+import java.nio.file.Files;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.UUID;
 
@@ -68,10 +70,9 @@ public class CsvTupleWriter implements TupleWriter {
         Type type = tbsc.getColumnType(j);
         if (type.equals(Type.BLOB_TYPE)) {
           // write the file out
-          // add filename to the csv file
-          String filename = UUID.randomUUID().toString();
           ByteBuffer bb = tuples.getBlob(j, i);
-          writeBBtoFile(bb, filename);
+          String filename = createTempFile(bb);
+          //add file name to the csv.
           row[j] = filename;
         } else {
           row[j] = tuples.getObject(j, i).toString();
@@ -96,12 +97,10 @@ public class CsvTupleWriter implements TupleWriter {
     }
   }
 
-  private void writeBBtoFile(final ByteBuffer bb, final String fn) throws IOException {
-    File file = new File(fn);
-    FileOutputStream fos = new FileOutputStream(file, false);
-    FileChannel wChannel = fos.getChannel();
-    wChannel.write(bb);
-    wChannel.close();
-    fos.close();
+  private static String createTempFile(final ByteBuffer bb) throws IOException {
+    Path path = Files.createTempFile("out", null);
+    File file = path.toFile();
+    Files.write(path, bb.array());
+    return file.getAbsolutePath();
   }
 }

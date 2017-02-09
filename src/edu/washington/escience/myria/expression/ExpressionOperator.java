@@ -30,6 +30,7 @@ import edu.washington.escience.myria.expression.evaluate.ExpressionOperatorParam
   @Type(name = "CAST", value = CastExpression.class),
   @Type(name = "CEIL", value = CeilExpression.class),
   @Type(name = "COS", value = CosExpression.class),
+  @Type(name = "DOWNLOADBLOB", value = DownloadBlobExpression.class),
   @Type(name = "FLOOR", value = FloorExpression.class),
   @Type(name = "LEN", value = LenExpression.class),
   @Type(name = "LOG", value = LogExpression.class),
@@ -42,7 +43,6 @@ import edu.washington.escience.myria.expression.evaluate.ExpressionOperatorParam
   @Type(name = "SQRT", value = SqrtExpression.class),
   @Type(name = "TAN", value = TanExpression.class),
   @Type(name = "UPPER", value = ToUpperCaseExpression.class),
-  @Type(name = "DOWNLOADBLOB", value = DownloadBlobExpression.class),
   /* Binary */
   @Type(name = "AND", value = AndExpression.class),
   @Type(name = "DIVIDE", value = DivideExpression.class),

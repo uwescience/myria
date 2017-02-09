@@ -3,6 +3,8 @@
  */
 package edu.washington.escience.myria.operator;
 
+import com.google.common.collect.ImmutableMap;
+
 import edu.washington.escience.myria.storage.TupleUtils;
 
 /**
@@ -18,6 +20,6 @@ public abstract class AbstractDbInsert extends RootOperator implements DbWriter 
    * @param child the source of tuples.
    */
   public AbstractDbInsert(final Operator child) {
-    super(child, (child != null) ? TupleUtils.getBatchSize(child.generateSchema()) : 1);
+    super(child);
   }
 }

@@ -1,5 +1,8 @@
 package edu.washington.escience.myria.expression;
 
+import java.io.IOException;
+import java.net.URISyntaxException;
+
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.expression.evaluate.ExpressionOperatorParameter;
 

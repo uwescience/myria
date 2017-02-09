@@ -1,6 +1,8 @@
 package edu.washington.escience.myria.util;
 
+import java.io.IOException;
 import java.io.InputStream;
+import java.net.URISyntaxException;
 import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.Map;
@@ -153,7 +155,6 @@ public final class MyriaUtils {
    * @return Binary data in ByteBuffer format.
    */
   public static ByteBuffer getBlob(final String filename) {
-    Preconditions.checkNotNull(filename, "s3 uri was null");
     try {
       UriSource file = new UriSource(filename);
       InputStream is = file.getInputStream();

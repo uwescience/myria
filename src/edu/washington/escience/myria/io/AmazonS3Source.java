@@ -14,7 +14,6 @@ import javax.annotation.concurrent.NotThreadSafe;
 import org.apache.commons.httpclient.URIException;
 
 import com.amazonaws.ClientConfiguration;
-import com.amazonaws.auth.AnonymousAWSCredentials;
 import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.GetObjectRequest;
