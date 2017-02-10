@@ -12,6 +12,7 @@ import com.google.common.io.LittleEndianDataInputStream;
 
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
+import edu.washington.escience.myria.storage.TupleUtils;
 
 /**
  *
@@ -71,7 +72,8 @@ public class BinaryTupleReader implements TupleReader {
   public TupleBatch readTuples() throws IOException, DbException {
     boolean building = false;
     try {
-      while (buffer.numTuples() < TupleBatch.BATCH_SIZE) {
+
+      while (buffer.numTuples() < buffer.getBatchSize()) {
         for (int count = 0; count < schema.numColumns(); ++count) {
           switch (schema.getColumnType(count)) {
             case BOOLEAN_TYPE:

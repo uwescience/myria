@@ -7,6 +7,7 @@ import com.google.common.collect.Sets;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.Schema;
+import edu.washington.escience.myria.functions.PythonFunctionRegistrar;
 import edu.washington.escience.myria.operator.agg.PrimitiveAggregator.AggregationOp;
 
 /**
@@ -15,6 +16,9 @@ import edu.washington.escience.myria.operator.agg.PrimitiveAggregator.Aggregatio
 public final class AggUtils {
   /** Utility classes do not have a public constructor. */
   private AggUtils() {}
+
+  /** logger for this class. */
+  private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(AggUtils.class);
 
   /** Which aggregation ops require COUNT to be computed. */
   private static final Set<AggregationOp> COUNT_OPS =
@@ -84,14 +88,19 @@ public final class AggUtils {
    *
    * @param factories The factories that will produce the aggregators.
    * @param inputSchema The schema of the input tuples.
+   * @param pyFuncRegistrar - python function registrar to get functions from workers.
    * @return the aggregators for this operator.
    * @throws DbException if there is an error.
    */
   public static Aggregator[] allocateAggs(
-      final AggregatorFactory[] factories, final Schema inputSchema) throws DbException {
+      final AggregatorFactory[] factories,
+      final Schema inputSchema,
+      final PythonFunctionRegistrar pyFuncRegistrar)
+      throws DbException {
     Aggregator[] aggregators = new Aggregator[factories.length];
     for (int j = 0; j < factories.length; ++j) {
-      aggregators[j] = factories[j].get(inputSchema);
+
+      aggregators[j] = factories[j].get(inputSchema, pyFuncRegistrar);
     }
     return aggregators;
   }

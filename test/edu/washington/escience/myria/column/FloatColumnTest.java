@@ -6,10 +6,12 @@ import java.nio.BufferOverflowException;
 
 import org.junit.Test;
 
+import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.FloatColumn;
 import edu.washington.escience.myria.column.builder.FloatColumnBuilder;
 import edu.washington.escience.myria.proto.DataProto.ColumnMessage;
 import edu.washington.escience.myria.storage.TupleBatch;
+import edu.washington.escience.myria.storage.TupleUtils;
 
 public class FloatColumnTest {
 
@@ -30,7 +32,7 @@ public class FloatColumnTest {
   @Test
   public void testFull() {
     final FloatColumnBuilder builder = new FloatColumnBuilder();
-    for (int i = 0; i < TupleBatch.BATCH_SIZE; i++) {
+    for (int i = 0; i < TupleUtils.getBatchSize(Type.FLOAT_TYPE); i++) {
       builder.appendFloat(i * 1.0f);
     }
     builder.build();
@@ -39,7 +41,7 @@ public class FloatColumnTest {
   @Test(expected = BufferOverflowException.class)
   public void testOverflow() {
     final FloatColumnBuilder builder = new FloatColumnBuilder();
-    for (int i = 0; i < TupleBatch.BATCH_SIZE; i++) {
+    for (int i = 0; i < TupleUtils.getBatchSize(Type.FLOAT_TYPE); i++) {
       builder.appendFloat(i * 1.0f);
     }
     builder.appendFloat(0.0f);

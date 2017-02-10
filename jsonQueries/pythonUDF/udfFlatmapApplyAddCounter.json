@@ -1,0 +1,68 @@
+{
+      "fragments":[
+        {
+          "operators": [
+            {
+              "opType": "TableScan",
+              "opId": 0,
+              "relationKey": {
+                "userName": "public",
+                "relationName": "raw",
+                "programName": "adhoc"
+              }
+            },
+            {
+
+               "opType": "Apply",
+               "opId": 1,
+               "addCounter":"True",
+               "emitExpressions": [
+                 {
+                   "outputName": "udfOutput",
+                   "rootExpressionOperator": {
+                     "type": "PYUDF",
+                     "name": "flatmapApplyTest",
+                     "outputType":"BLOB_TYPE",
+                     "children": [
+                       {
+                         "type": "VARIABLE",
+                         "columnIdx": 3
+                       }
+                     ]
+                   }
+                 },
+                   {
+                   "outputName":"subjectid",
+                   "rootExpressionOperator":{
+                      "type":"VARIABLE",
+                      "columnIdx":1}
+                 },
+                 {"outputName":"imageid",
+                 "rootExpressionOperator":{
+                    "type":"VARIABLE",
+                    "columnIdx":2}
+               }
+               ],
+               "argChild": 0
+                },
+                {
+                  "opType": "DbInsert",
+                  "opId": 2,
+                  "relationKey": {
+                    "userName": "public",
+                    "relationName": "results",
+                    "programName": "adhoc"
+              },
+              "argChild": 1,
+              "argOverwriteTable": true
+                                                }
+
+             ]
+         }
+       ],
+
+   "language":"myrial",
+   "logicalRa":"Store(public:adhoc:result)[Apply(PyUDF(flatmapApplyTest))]]",
+
+   "rawQuery":"Flatmap Apply test with Blob Type and adding counters PythonUDFs"
+}

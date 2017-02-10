@@ -75,6 +75,8 @@ public final class DupElimRefOnly extends UnaryOperator {
         case DATETIME_TYPE:
           return tb.getDateTime(colIndx, rowIndx1)
               .equals(another.tb.getDateTime(colIndx, rowIndx2));
+        case BLOB_TYPE:
+          return tb.getBlob(colIndx, rowIndx1).equals(another.tb.getBlob(colIndx, rowIndx2));
       }
       return false;
     }

@@ -39,7 +39,9 @@ import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
 import com.google.common.primitives.Ints;
 
+import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.MyriaConstants.FTMode;
+import edu.washington.escience.myria.MyriaConstants.FunctionLanguage;
 import edu.washington.escience.myria.MyriaConstants.ProfilingMode;
 import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.Schema;
@@ -48,6 +50,7 @@ import edu.washington.escience.myria.accessmethod.AccessMethod.IndexRef;
 import edu.washington.escience.myria.accessmethod.SQLiteTupleBatchIterator;
 import edu.washington.escience.myria.api.MyriaJsonMapperProvider;
 import edu.washington.escience.myria.api.encoding.DatasetStatus;
+import edu.washington.escience.myria.api.encoding.FunctionStatus;
 import edu.washington.escience.myria.api.encoding.QueryEncoding;
 import edu.washington.escience.myria.api.encoding.QueryStatusEncoding;
 import edu.washington.escience.myria.api.encoding.plan.SubPlanEncoding;
@@ -152,11 +155,14 @@ public final class MasterCatalog {
           + "WHERE status = '"
           + QueryStatusEncoding.Status.ACCEPTED.toString()
           + "';";
+  /** create registered functions table.*/
   private static final String CREATE_REGISTERED_FUNCTIONS =
       "CREATE TABLE registered_functions (\n"
           + "    function_name TEXT PRIMARY KEY, \n"
-          + "    function_definition TEXT NOT NULL,\n"
-          + "    function_outputSchema TEXT NOT NULL);";
+          + "    function_description TEXT NOT NULL,\n"
+          + "    function_outputType TEXT NOT NULL,\n"
+          + "    function_isMultiValued INTEGER NOT NULL, \n"
+          + "    function_lang INTEGER );";
 
   /** CREATE TABLE statements @formatter:on */
 
@@ -340,6 +346,99 @@ public final class MasterCatalog {
                   }
 
                   return relations;
+                }
+              })
+          .get();
+    } catch (InterruptedException | ExecutionException e) {
+      throw new CatalogException(e);
+    }
+  }
+  /**
+   * @return the list of known functions in the Catalog.
+   * +   * @throws CatalogException if the relation is already in the catalog or there is an error in the database.
+   * +   */
+  public List<String> getFunctions() throws CatalogException {
+    if (isClosed) {
+      throw new CatalogException("Catalog is closed.");
+    }
+    try {
+      return queue
+          .execute(
+              new SQLiteJob<List<String>>() {
+                @Override
+                protected List<String> job(final SQLiteConnection sqliteConnection)
+                    throws SQLiteException, CatalogException {
+                  final List<String> udfnames = new ArrayList<String>();
+
+                  try {
+                    final SQLiteStatement statement =
+                        sqliteConnection.prepare(
+                            "SELECT function_name FROM registered_functions;", false);
+                    while (statement.step()) {
+                      udfnames.add(statement.columnString(0));
+                    }
+                    statement.dispose();
+                  } catch (final SQLiteException e) {
+                    throw new CatalogException(e);
+                  }
+
+                  return udfnames;
+                }
+              })
+          .get();
+    } catch (InterruptedException | ExecutionException e) {
+      throw new CatalogException(e);
+    }
+  }
+
+  /**
+   * Get the metadata about a relation.
+   *
+   * @param name name of the function to be retrieved..
+   * @return the metadata of the specified relation.
+   * @throws CatalogException if there is an error in the catalog.
+   */
+  public FunctionStatus getFunctionStatus(final String name) throws CatalogException {
+    if (isClosed) {
+      throw new CatalogException("Catalog is closed.");
+    }
+
+    try {
+      return queue
+          .execute(
+              new SQLiteJob<FunctionStatus>() {
+                @Override
+                protected FunctionStatus job(final SQLiteConnection sqliteConnection)
+                    throws CatalogException, SQLiteException {
+                  try {
+
+                    SQLiteStatement statement =
+                        sqliteConnection.prepare(
+                            "SELECT function_name, function_description, function_outputType,  function_isMultiValued, function_lang  FROM registered_functions WHERE function_name=?");
+                    statement.bind(1, name);
+                    if (!statement.step()) {
+                      return null;
+                    }
+
+                    String name = statement.columnString(0);
+                    String descrip = statement.columnString(1);
+                    String outputType = statement.columnString(2);
+                    Boolean isMultiValued = ((statement.columnInt(3) == 0) ? false : true);
+                    int lang = statement.columnInt(4);
+                    statement.dispose();
+
+                    return new FunctionStatus(
+                        name,
+                        descrip,
+                        outputType,
+                        isMultiValued,
+                        FunctionLanguage.values()[lang],
+                        null);
+
+                  } catch (final SQLiteException e) {
+
+                    throw new CatalogException(e);
+                  }
                 }
               })
           .get();
@@ -1725,20 +1824,25 @@ public final class MasterCatalog {
     }
   }
 
-  /* Register a function in the catalog */
-
+  /**
+   * Register a function in the catalog.
+   */
   public void registerFunction(
       @Nonnull final String name,
-      @Nonnull final String definition,
-      @Nonnull final String outputSchema)
+      @Nonnull final String description,
+      @Nonnull final String outputType,
+      @Nonnull final Boolean isMultiValued,
+      @Nonnull final FunctionLanguage lang)
       throws CatalogException {
     Objects.requireNonNull(name, "function name");
-    Objects.requireNonNull(definition, "function definition");
-    Objects.requireNonNull(outputSchema, "function output schema");
+    Objects.requireNonNull(description, "function definition");
+    Objects.requireNonNull(outputType, "function output type");
+    Objects.requireNonNull(isMultiValued, "is function a flatmap");
+    Objects.requireNonNull(lang, "function language");
+
     if (isClosed) {
       throw new CatalogException("Catalog is closed.");
     }
-
     /* Do the work */
     try {
       queue
@@ -1746,14 +1850,17 @@ public final class MasterCatalog {
               new SQLiteJob<Void>() {
                 @Override
                 protected Void job(final SQLiteConnection sqliteConnection)
-                    throws CatalogException, SQLiteException {
+                    throws CatalogException, SQLiteException, IOException {
+
                   try {
                     SQLiteStatement statement =
                         sqliteConnection.prepare(
-                            "INSERT OR REPLACE INTO registered_functions (function_name, function_definition, function_outputSchema) VALUES (?,?,?);");
+                            "INSERT OR REPLACE INTO registered_functions (function_name, function_description, function_outputType, function_isMultiValued, function_lang) VALUES (?,?,?,?,?);");
                     statement.bind(1, name);
-                    statement.bind(2, definition);
-                    statement.bind(3, outputSchema);
+                    statement.bind(2, description);
+                    statement.bind(3, outputType);
+                    statement.bind(4, ((isMultiValued == true) ? 1 : 0));
+                    statement.bind(5, lang.ordinal());
                     statement.stepThrough();
                     statement.dispose();
                     statement = null;
@@ -1765,6 +1872,7 @@ public final class MasterCatalog {
               })
           .get();
     } catch (InterruptedException | ExecutionException e) {
+
       throw new CatalogException(e);
     }
   }

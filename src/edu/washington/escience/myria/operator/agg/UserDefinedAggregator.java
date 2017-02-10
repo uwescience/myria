@@ -1,15 +1,18 @@
 package edu.washington.escience.myria.operator.agg;
 
+import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.util.List;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.expression.evaluate.GenericEvaluator;
+import edu.washington.escience.myria.expression.evaluate.PythonUDFEvaluator;
 import edu.washington.escience.myria.expression.evaluate.ScriptEvalInterface;
 import edu.washington.escience.myria.storage.AppendableTable;
 import edu.washington.escience.myria.storage.ReadableTable;
 import edu.washington.escience.myria.storage.Tuple;
+import edu.washington.escience.myria.storage.TupleBatch;
 
 /**
  * Apply operator that has to be initialized and carries a state while new tuples are generated.
@@ -24,34 +27,42 @@ public class UserDefinedAggregator implements Aggregator {
   /**
    * The state of the aggregate variables.
    */
-  private final Tuple initialState;
+  protected final Tuple initialState;
   /**
    * Evaluators that update the {@link #state}. One evaluator for each expression in {@link #updateExpressions}.
    */
-  private final ScriptEvalInterface updateEvaluator;
+  protected final ScriptEvalInterface updateEvaluator;
   /**
    * One evaluator for each expression in {@link #emitExpressions}.
    */
-  private final List<GenericEvaluator> emitEvaluators;
+  protected final List<GenericEvaluator> emitEvaluators;
+  /**
+   * One evaluator for each python expression.
+   */
+  protected final List<PythonUDFEvaluator> pyUDFEvaluators;
+
   /**
    * The Schema of the tuples produced by this aggregator.
    */
-  private final Schema resultSchema;
+  protected final Schema resultSchema;
 
   /**
    * @param state the initialized state of the tuple
    * @param updateEvaluator updates the state given an input row
+   * @param pyUDFEvaluators for python expression evaluation.
    * @param emitEvaluators the evaluators that finalize the state
    * @param resultSchema the schema of the tuples produced by this aggregator
    */
   public UserDefinedAggregator(
       final Tuple state,
       final ScriptEvalInterface updateEvaluator,
+      final List<PythonUDFEvaluator> pyUDFEvaluators,
       final List<GenericEvaluator> emitEvaluators,
       final Schema resultSchema) {
     initialState = state;
     this.updateEvaluator = updateEvaluator;
     this.emitEvaluators = emitEvaluators;
+    this.pyUDFEvaluators = pyUDFEvaluators;
     this.resultSchema = resultSchema;
   }
 
@@ -65,11 +76,17 @@ public class UserDefinedAggregator implements Aggregator {
   @Override
   public void addRow(final ReadableTable from, final int row, final Object state)
       throws DbException {
+    if (pyUDFEvaluators.size() > 0) {
+      throw new DbException("this aggregate has python UDF, StatefulAggreagte should be called!");
+    }
     Tuple stateTuple = (Tuple) state;
+
     try {
-      updateEvaluator.evaluate(from, row, stateTuple, stateTuple);
+      if (updateEvaluator != null) {
+        updateEvaluator.evaluate(from, row, stateTuple, stateTuple);
+      }
+
     } catch (Exception e) {
-      LOGGER.error("Error updating UDA state", e);
       throw new DbException("Error updating UDA state", e);
     }
   }
@@ -95,6 +112,12 @@ public class UserDefinedAggregator implements Aggregator {
 
   @Override
   public Object getInitialState() {
+
     return initialState.clone();
+  }
+
+  @Override
+  public void add(final List<TupleBatch> from) throws DbException {
+    throw new DbException(" method not implemented");
   }
 }

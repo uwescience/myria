@@ -1,0 +1,120 @@
+{
+  "rawQuery": "Python  Stateful agg",
+  "fragments": [
+    {
+      "operators":[
+         {
+            "opName":"MyriaShuffleConsumer",
+            "opType":"ShuffleConsumer",
+            "argOperatorId":2,
+            "opId":3
+         },
+         {
+            "opType":"MultiGroupByAggregate",
+            "argGroupFields":[1,2],
+            "aggregators":[
+               {
+                  "initializers":[
+
+                       {
+                          "rootExpressionOperator":{
+                             "value":"null",
+                             "valueType":"BLOB_TYPE",
+                             "type":"CONSTANT"
+                          },
+                          "outputName":"tm"
+                       }
+                  ],
+                  "updaters":[
+                     {
+                     "rootExpressionOperator":{
+                       "children": [
+                         {
+                           "columnIdx":0,
+                          "type":"STATE"
+                         },
+                         {
+                           "type": "VARIABLE",
+                           "columnIdx": 0
+                         },
+                         {
+                           "type": "VARIABLE",
+                           "columnIdx": 2
+                         },
+                         {
+                           "columnIdx":3,
+                          "type":"VARIABLE"
+                         }
+                       ],
+                       "type": "PYUDF",
+                       "outputType":"BLOB_TYPE",
+                       "name": "udfAgg"
+
+                     },
+                     "outputName":"tm"
+                  }
+                  ],
+                  "emitters":[
+                     {
+                    "rootExpressionOperator":{
+
+                       "columnIdx": 0,
+                       "type": "STATE"
+                       },
+                       "outputName":"voxel"
+
+                     }
+                  ],
+                  "type":"UserDefined"
+               }
+            ],
+            "argChild":3,
+            "opId":4,
+            "opName":"MyriaGroupBy(a; UDA(_count__147))"
+         },
+
+         {
+           "opId":6,
+           "relationKey":{
+              "relationName":"agg",
+              "userName":"public",
+              "programName":"adhoc"
+           },
+           "argChild":4,
+           "argOverwriteTable":true,
+           "opType":"DbInsert",
+           "opName":"MyriaStore(public:adhoc:agg)"
+        }
+       ]
+      },
+      {
+  		"operators": [
+  		{
+
+                  "opType": "TableScan",
+                  "opId": 0,
+                  "relationKey": {
+                    "userName": "public",
+                    "relationName": "raw",
+                    "programName": "adhoc"
+                  }
+
+  		},
+  	{
+           "distributeFunction" : {
+                    "type" : "Hash",
+                    "indexes" : [1,2]
+                },
+           "opName":"MyriaShuffleProducer(h($1,$2))",
+           "opType":"ShuffleProducer",
+           "argChild":0,
+           "opId":2
+         }
+  		 ]
+  		 }
+
+  ],
+
+  "logicalRa": ""
+
+}

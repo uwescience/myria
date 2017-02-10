@@ -7,6 +7,10 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.nio.ByteBuffer;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Iterator;
 
 import javax.annotation.Nullable;
@@ -23,6 +27,7 @@ import com.google.common.primitives.Floats;
 
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
+import edu.washington.escience.myria.storage.TupleUtils;
 import edu.washington.escience.myria.util.DateTimeUtils;
 
 /**
@@ -106,7 +111,7 @@ public class CsvTupleReader implements TupleReader {
     /* Let's assume that the scanner always starts at the beginning of a line. */
     long lineNumberBegin = lineNumber;
 
-    while ((buffer.numTuples() < TupleBatch.BATCH_SIZE)) {
+    while ((buffer.numTuples() < buffer.getBatchSize())) {
       lineNumber++;
       if (parser.isClosed()) {
         break;
@@ -160,6 +165,8 @@ public class CsvTupleReader implements TupleReader {
             case DATETIME_TYPE:
               buffer.putDateTime(column, DateTimeUtils.parse(cell));
               break;
+            case BLOB_TYPE:
+              throw new DbException("Reading BLOB type from csv file is not supported!");
           }
         } catch (final IllegalArgumentException e) {
           throw new DbException(
@@ -177,7 +184,6 @@ public class CsvTupleReader implements TupleReader {
     }
 
     LOGGER.debug("Scanned {} input lines", lineNumber - lineNumberBegin);
-
     return buffer.popAny();
   }
 

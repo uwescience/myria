@@ -25,6 +25,7 @@ import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.accessmethod.SQLiteInfo;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
 import edu.washington.escience.myria.util.FSUtils;
+import edu.washington.escience.myria.util.TestEnvVars;
 
 public class SQLiteInsertTest {
 
@@ -70,7 +71,7 @@ public class SQLiteInsertTest {
     final BatchTupleSource source = new BatchTupleSource(data);
     final DbInsert insert =
         new DbInsert(source, tuplesKey, SQLiteInfo.of(tempFile.getAbsolutePath()));
-    insert.open(null);
+    insert.open(TestEnvVars.get());
     while (!insert.eos()) {
       insert.nextReady();
     }

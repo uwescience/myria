@@ -20,6 +20,7 @@ import edu.washington.escience.myria.column.Column;
 import edu.washington.escience.myria.column.builder.ColumnBuilder;
 import edu.washington.escience.myria.column.builder.ColumnFactory;
 import edu.washington.escience.myria.storage.TupleBatch;
+import edu.washington.escience.myria.storage.TupleUtils;
 
 /**
  * Wraps a SQLiteStatement result set in a Iterator<TupleBatch>.
@@ -81,9 +82,10 @@ public class SQLiteTupleBatchIterator implements Iterator<TupleBatch> {
      * Loop through resultSet, adding one row at a time. Stop when numTuples hits BATCH_SIZE or there are no more
      * results.
      */
+    int batch_size = TupleUtils.getBatchSize(schema);
     int numTuples;
     try {
-      for (numTuples = 0; numTuples < TupleBatch.BATCH_SIZE && statement.hasRow(); ++numTuples) {
+      for (numTuples = 0; numTuples < batch_size && statement.hasRow(); ++numTuples) {
         for (int column = 0; column < numFields; ++column) {
           columnBuilders.get(column).appendFromSQLite(statement, column);
         }

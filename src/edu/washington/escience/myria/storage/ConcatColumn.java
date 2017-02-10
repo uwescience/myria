@@ -2,7 +2,7 @@ package edu.washington.escience.myria.storage;
 
 import java.util.Map;
 import java.util.TreeMap;
-
+import java.nio.ByteBuffer;
 import org.joda.time.DateTime;
 
 import com.google.common.base.Preconditions;
@@ -119,6 +119,12 @@ public class ConcatColumn<T extends Comparable<?>> extends Column<T> {
   public long getLong(final int row) {
     Map.Entry<Integer, Column<?>> entry = getColumnEntry(row);
     return entry.getValue().getLong(row - entry.getKey());
+  }
+
+  @Override
+  public ByteBuffer getBlob(final int row) {
+    Map.Entry<Integer, Column<?>> entry = getColumnEntry(row);
+    return entry.getValue().getBlob(row - entry.getKey());
   }
 
   @SuppressWarnings("unchecked")

@@ -1,5 +1,6 @@
 package edu.washington.escience.myria.operator;
 
+import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.List;
@@ -19,6 +20,7 @@ import edu.washington.escience.myria.expression.Expression;
 import edu.washington.escience.myria.expression.evaluate.ConstantEvaluator;
 import edu.washington.escience.myria.expression.evaluate.ExpressionOperatorParameter;
 import edu.washington.escience.myria.expression.evaluate.GenericEvaluator;
+import edu.washington.escience.myria.expression.evaluate.PythonUDFEvaluator;
 import edu.washington.escience.myria.storage.Tuple;
 import edu.washington.escience.myria.storage.TupleBatch;
 
@@ -28,6 +30,9 @@ import edu.washington.escience.myria.storage.TupleBatch;
 public class StatefulApply extends Apply {
   /***/
   private static final long serialVersionUID = 1L;
+  /** logger for this class. */
+  private static final org.slf4j.Logger LOGGER =
+      org.slf4j.LoggerFactory.getLogger(StatefulApply.class);
 
   /**
    * Expressions that are used to initialize the state.
@@ -94,7 +99,7 @@ public class StatefulApply extends Apply {
   }
 
   @Override
-  protected TupleBatch fetchNextReady() throws DbException, InvocationTargetException {
+  protected TupleBatch fetchNextReady() throws DbException, InvocationTargetException, IOException {
     Operator child = getChild();
 
     if (child.eoi() || getChild().eos()) {
@@ -115,7 +120,7 @@ public class StatefulApply extends Apply {
     for (int columnIdx = 0; columnIdx < numColumns; columnIdx++) {
       final GenericEvaluator evaluator = getEmitEvaluators().get(columnIdx);
       Preconditions.checkArgument(
-          !evaluator.getExpression().isMultivalued(),
+          !evaluator.getExpression().isMultiValued(),
           "A multivalued expression cannot be used in StatefulApply.");
       if (!evaluator.needsState() || evaluator.isCopyFromInput()) {
         output.set(columnIdx, evaluator.evaluateColumn(tb).getResultColumns().get(0));
@@ -136,6 +141,7 @@ public class StatefulApply extends Apply {
       // update state
       Tuple newState = new Tuple(getStateSchema());
       for (int columnIdx = 0; columnIdx < stateSchema.numColumns(); columnIdx++) {
+
         updateEvaluators
             .get(columnIdx)
             .eval(tb, rowIdx, null, newState.getColumn(columnIdx), state);
@@ -165,10 +171,22 @@ public class StatefulApply extends Apply {
 
     ArrayList<GenericEvaluator> evaluators = new ArrayList<>();
     evaluators.ensureCapacity(getEmitExpressions().size());
+    // initialize evaluators for Emit expressions.
+    // these can only be generic or python expressions.
     for (Expression expr : getEmitExpressions()) {
-      GenericEvaluator evaluator =
-          new GenericEvaluator(
-              expr, new ExpressionOperatorParameter(inputSchema, getStateSchema(), getNodeID()));
+      GenericEvaluator evaluator;
+      if (expr.isRegisteredUDF()) {
+        evaluator =
+            new PythonUDFEvaluator(
+                expr,
+                new ExpressionOperatorParameter(inputSchema, getStateSchema(), getNodeID()),
+                getPythonFunctionRegistrar());
+
+      } else {
+        evaluator =
+            new GenericEvaluator(
+                expr, new ExpressionOperatorParameter(inputSchema, getStateSchema(), getNodeID()));
+      }
       if (evaluator.needsCompiling()) {
         evaluator.compile();
       }
@@ -181,6 +199,7 @@ public class StatefulApply extends Apply {
 
     state = new Tuple(getStateSchema());
 
+    // initialize init evaluators. these could be constant expressions only!
     for (int columnIdx = 0; columnIdx < getStateSchema().numColumns(); columnIdx++) {
       Expression expr = initExpressions.get(columnIdx);
       ConstantEvaluator evaluator =
@@ -188,11 +207,23 @@ public class StatefulApply extends Apply {
       evaluator.compile();
       state.set(columnIdx, evaluator.eval());
     }
+    // initialize update evaluators -- these can be generic or python evaluators
 
     for (Expression expr : updateExpressions) {
-      GenericEvaluator evaluator =
-          new GenericEvaluator(
-              expr, new ExpressionOperatorParameter(inputSchema, getStateSchema(), getNodeID()));
+      GenericEvaluator evaluator;
+      if (expr.isRegisteredUDF()) {
+        evaluator =
+            new PythonUDFEvaluator(
+                expr,
+                new ExpressionOperatorParameter(inputSchema, getStateSchema(), getNodeID()),
+                getPythonFunctionRegistrar());
+
+      } else {
+        evaluator =
+            new GenericEvaluator(
+                expr, new ExpressionOperatorParameter(inputSchema, getStateSchema(), getNodeID()));
+      }
+
       evaluator.compile();
       updateEvaluators.add(evaluator);
     }

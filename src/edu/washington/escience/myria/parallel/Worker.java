@@ -81,6 +81,7 @@ import edu.washington.escience.myria.tools.MyriaWorkerConfigurationModule.Worker
 import edu.washington.escience.myria.util.IPCUtils;
 import edu.washington.escience.myria.util.concurrent.RenamingThreadFactory;
 import edu.washington.escience.myria.util.concurrent.ThreadAffinityFixedRoundRobinExecutionPool;
+import edu.washington.escience.myria.functions.PythonFunctionRegistrar;
 
 /**
  * Workers do the real query execution. A query received by the server will be pre-processed and then dispatched to the
@@ -458,6 +459,12 @@ public final class Worker implements Task, TaskMessageSource {
   private ProfilingLogger profilingLogger;
 
   /**
+   * The pythonUDF registry for this worker.
+   */
+  @GuardedBy("this")
+  private PythonFunctionRegistrar pythonFunctionRegistrar;
+
+  /**
    * @return my control message queue.
    */
   LinkedBlockingQueue<ControlMessage> getControlMessageQueue() {
@@ -817,5 +824,20 @@ public final class Worker implements Task, TaskMessageSource {
       }
     }
     return profilingLogger;
+  }
+  /**
+   * @return Python function registrar
+   * @throws DbException if there is an error initializing the python function registrar
+   */
+  public synchronized PythonFunctionRegistrar getPythonFunctionRegistrar() throws DbException {
+    if (pythonFunctionRegistrar == null || !pythonFunctionRegistrar.isValid()) {
+      pythonFunctionRegistrar = null;
+      ConnectionInfo connectionInfo =
+          (ConnectionInfo) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_DATABASE_CONN_INFO);
+      if (connectionInfo.getDbms().equals(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL)) {
+        pythonFunctionRegistrar = new PythonFunctionRegistrar(connectionInfo);
+      }
+    }
+    return pythonFunctionRegistrar;
   }
 }

@@ -28,6 +28,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.nio.ByteBuffer;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -77,9 +78,11 @@ import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.TupleWriter;
 import edu.washington.escience.myria.Type;
+import edu.washington.escience.myria.accessmethod.ConnectionInfo;
 import edu.washington.escience.myria.accessmethod.AccessMethod.IndexRef;
 import edu.washington.escience.myria.api.MyriaJsonMapperProvider;
 import edu.washington.escience.myria.api.encoding.DatasetStatus;
+import edu.washington.escience.myria.api.encoding.FunctionStatus;
 import edu.washington.escience.myria.api.encoding.QueryEncoding;
 import edu.washington.escience.myria.coordinator.CatalogException;
 import edu.washington.escience.myria.coordinator.MasterCatalog;
@@ -92,6 +95,7 @@ import edu.washington.escience.myria.io.DataSink;
 import edu.washington.escience.myria.io.UriSink;
 import edu.washington.escience.myria.operator.Apply;
 import edu.washington.escience.myria.operator.CSVFileScanFragment;
+import edu.washington.escience.myria.operator.DbCreateFunction;
 import edu.washington.escience.myria.operator.DbCreateIndex;
 import edu.washington.escience.myria.operator.DbCreateView;
 import edu.washington.escience.myria.operator.DbDelete;
@@ -127,6 +131,7 @@ import edu.washington.escience.myria.proto.TransportProto.TransportMessage;
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
 import edu.washington.escience.myria.storage.TupleBuffer;
+import edu.washington.escience.myria.storage.TupleUtils;
 import edu.washington.escience.myria.tools.MyriaGlobalConfigurationModule.DefaultInstancePath;
 import edu.washington.escience.myria.tools.MyriaGlobalConfigurationModule.FlowControlWriteBufferHighMarkBytes;
 import edu.washington.escience.myria.tools.MyriaGlobalConfigurationModule.FlowControlWriteBufferLowMarkBytes;
@@ -145,7 +150,10 @@ import edu.washington.escience.myria.util.IPCUtils;
 import edu.washington.escience.myria.util.concurrent.ErrorLoggingTimerTask;
 import edu.washington.escience.myria.util.concurrent.RenamingThreadFactory;
 
-/** The master entrance. */
+import edu.washington.escience.myria.MyriaConstants.FunctionLanguage;
+/**
+ * The master entrance.
+ */
 public final class Server implements TaskMessageSource, EventHandler<DriverMessage> {
 
   /** Master message processor. */
@@ -678,6 +686,8 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
           MyriaConstants.RESOURCE_PROFILING_SCHEMA,
           workerIds,
           false);
+      addRelationToCatalog(
+          MyriaConstants.PYUDF_RELATION, MyriaConstants.PYUDF_SCHEMA, workerIds, false);
     }
   }
 
@@ -1125,70 +1135,97 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
   }
 
   /**
-   * Create a function and register it in the catalog
+   * Create a function and register it in the catalog.
    *
    * @param name the name of the function
-   * @param definition the function definition (must be postgres specific)
+   * @param definition the function definition  - this is postgres specific for postgres and function text for python.
    * @param outputSchema the output schema of the function
+   * @param isMultiValued indicates if the function returns multiple tuples.
+   * @param lang this is the language of the function.
+   * @param binary this is an optional parameter for function for base64 encoded binary for function.
+   * @param workers list of workers on which the function is registered: default is all.
    * @return the status of the function
    */
   public String createFunction(
       final String name,
       final String definition,
-      final String outputSchema,
+      final String outputType,
+      final Boolean isMultiValued,
+      final FunctionLanguage lang,
+      final String binary,
       final Set<Integer> workers)
       throws DbException, InterruptedException {
-    String response = "Created Function";
+
+    String response = "";
     Set<Integer> actualWorkers = workers;
     if (workers == null) {
       actualWorkers = getWorkers().keySet();
     }
+    try {
 
-    /* Postgres specific syntax - Validate the command */
-    Pattern pattern = Pattern.compile("(CREATE FUNCTION)([\\s\\S]*)(LANGUAGE SQL;)");
-    Matcher matcher = pattern.matcher(definition);
-
-    if (matcher.matches()) {
-      /* Add a replace statement */
-      String modifiedReplaceFunction =
-          definition.replace("CREATE FUNCTION", "CREATE OR REPLACE FUNCTION");
-
-      /* Create the function */
-      try {
-        Map<Integer, SubQueryPlan> workerPlans = new HashMap<>();
-        for (Integer workerId : actualWorkers) {
-          workerPlans.put(
-              workerId,
-              new SubQueryPlan(
-                  new DbExecute(
-                      EmptyRelation.of(Schema.EMPTY_SCHEMA), modifiedReplaceFunction, null)));
-        }
-        ListenableFuture<Query> qf =
-            queryManager.submitQuery(
-                "create function",
-                "create function",
-                "create function",
-                new SubQueryPlan(new EmptySink(new EOSSource())),
-                workerPlans);
-        try {
-          qf.get().getQueryId();
-        } catch (ExecutionException e) {
-          throw new DbException("Error executing query", e.getCause());
-        }
-      } catch (CatalogException e) {
-        throw new DbException(e);
+      Map<Integer, SubQueryPlan> workerPlans = new HashMap<>();
+      for (Integer workerId : actualWorkers) {
+        workerPlans.put(
+            workerId,
+            new SubQueryPlan(
+                new DbCreateFunction(
+                    EmptyRelation.of(Schema.EMPTY_SCHEMA),
+                    name,
+                    definition,
+                    outputType,
+                    isMultiValued,
+                    lang,
+                    binary)));
       }
 
-      /* Register the function to the catalog */
+      ListenableFuture<Query> qf =
+          queryManager.submitQuery(
+              "create function",
+              "create function",
+              "create function",
+              new SubQueryPlan(new EmptySink(new EOSSource())),
+              workerPlans);
+
       try {
-        catalog.registerFunction(name, definition, outputSchema);
-      } catch (CatalogException e) {
-        throw new DbException(e);
+        qf.get().getQueryId();
+      } catch (ExecutionException e) {
+        throw new DbException("Error executing query", e.getCause());
       }
-    } else {
-      response = "Function is not valid";
+    } catch (CatalogException e) {
+      throw new DbException(e);
+    }
+    /* Register the function to the catalog don't send the binary. */
+    try {
+      catalog.registerFunction(name, definition, outputType, isMultiValued, lang);
+    } catch (CatalogException e) {
+      throw new DbException(e);
     }
     return response;
+  }
+  /**
+   *
+   * @return list of functions from the catalog
+   * @throws DbException in case of error.
+   */
+  public List<String> getFunctions() throws DbException {
+    try {
+      return catalog.getFunctions();
+    } catch (CatalogException e) {
+      throw new DbException(e);
+    }
+  }
+  /**
+   *
+   * @param functionName : name of the function to retrieve.
+   * @return functiondetails for the function
+   * @throws DbException in case of error.
+   */
+  public FunctionStatus getFunctionDetails(final String functionName) throws DbException {
+    try {
+      return catalog.getFunctionStatus(functionName);
+    } catch (CatalogException e) {
+      throw new DbException(e);
+    }
   }
 
   /**
@@ -1470,7 +1507,7 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
 
     Random r = new Random();
     final TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
-    for (int i = 0; i < TupleBatch.BATCH_SIZE; i++) {
+    for (int i = 0; i < tbb.getBatchSize(); i++) {
       tbb.putLong(0, r.nextLong());
       tbb.putString(1, new java.util.Date().toString());
     }

@@ -12,6 +12,7 @@ import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
+import edu.washington.escience.myria.util.TestEnvVars;
 import edu.washington.escience.myria.util.TestUtils;
 import edu.washington.escience.myria.util.Tuple;
 
@@ -55,7 +56,7 @@ public class DifferenceTest {
     BatchTupleSource right = new BatchTupleSource(rightTbb);
 
     BinaryOperator diff = new Difference(left, right);
-    diff.open(null);
+    diff.open(TestEnvVars.get());
 
     TupleBatchBuffer result = new TupleBatchBuffer(diff.getSchema());
     TupleBatchBuffer expected = new TupleBatchBuffer(diff.getSchema());
@@ -97,6 +98,6 @@ public class DifferenceTest {
     Operator right = EmptyRelation.of(s2);
 
     BinaryOperator diff = new Difference(left, right);
-    diff.open(null);
+    diff.open(TestEnvVars.get());
   }
 }

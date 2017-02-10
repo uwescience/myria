@@ -20,11 +20,12 @@ import edu.washington.escience.myria.operator.StatefulApply;
 import edu.washington.escience.myria.operator.BatchTupleSource;
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
+import edu.washington.escience.myria.storage.TupleUtils;
 import edu.washington.escience.myria.util.TestEnvVars;
 
 public class StatefulApplyTest {
 
-  private final int NUM_TUPLES = 2 * TupleBatch.BATCH_SIZE;
+  private final int NUM_TUPLES = 2 * TupleUtils.getBatchSize(Type.LONG_TYPE);
   private final int SMALL_NUM_TUPLES = 10;
 
   @Test

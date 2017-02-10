@@ -10,6 +10,7 @@ import org.joda.time.DateTime;
 import com.google.protobuf.ByteString;
 
 import edu.washington.escience.myria.Type;
+import edu.washington.escience.myria.proto.DataProto.BlobColumnMessage;
 import edu.washington.escience.myria.proto.DataProto.BooleanColumnMessage;
 import edu.washington.escience.myria.proto.DataProto.ColumnMessage;
 import edu.washington.escience.myria.proto.DataProto.DateTimeColumnMessage;
@@ -18,6 +19,7 @@ import edu.washington.escience.myria.proto.DataProto.FloatColumnMessage;
 import edu.washington.escience.myria.proto.DataProto.IntColumnMessage;
 import edu.washington.escience.myria.proto.DataProto.LongColumnMessage;
 import edu.washington.escience.myria.proto.DataProto.StringColumnMessage;
+import edu.washington.escience.myria.proto.DataProto.BlobColumnMessage;
 import edu.washington.escience.myria.storage.ReadableColumn;
 import edu.washington.escience.myria.util.ImmutableIntArray;
 
@@ -68,6 +70,11 @@ public abstract class Column<T extends Comparable<?>> implements ReadableColumn,
 
   @Override
   public String getString(final int row) {
+    throw new UnsupportedOperationException(getClass().getName());
+  }
+
+  @Override
+  public ByteBuffer getBlob(final int row) {
     throw new UnsupportedOperationException(getClass().getName());
   }
 
@@ -126,6 +133,8 @@ public abstract class Column<T extends Comparable<?>> implements ReadableColumn,
         return new LongColumn(new long[] {}, 0);
       case STRING_TYPE:
         return new StringArrayColumn(new String[] {}, 0);
+      case BLOB_TYPE:
+        return new BlobColumn(new ByteBuffer[] {}, 0);
     }
     throw new UnsupportedOperationException("Allocating an empty column of type " + type);
   }
@@ -178,6 +187,35 @@ public abstract class Column<T extends Comparable<?>> implements ReadableColumn,
         .setType(ColumnMessage.Type.DATETIME)
         .setDateColumn(inner)
         .build();
+  }
+  /**
+   * A default implementation to serialize any Bytes Type column to a proto.
+   *
+   * @param column the column to be serialized.
+   * @return a ColumnMessage with a BytesType member.
+   */
+  protected static ColumnMessage defaultBytesProto(final Column<?> column) {
+    final BlobColumnMessage.Builder inner = BlobColumnMessage.newBuilder();
+    int bblen = 0;
+    for (int i = 0; i < column.size(); i++) {
+      bblen = bblen + column.getBlob(i).array().length;
+    }
+
+    ByteBuffer bb = ByteBuffer.allocate(bblen);
+    int startP = 0, endP = 0;
+    for (int i = 0; i < column.size(); i++) {
+      int len = column.getBlob(i).array().length;
+      endP = startP + len;
+      inner.addStartIndices(startP);
+      inner.addEndIndices(endP);
+
+      bb.put(column.getBlob(i).array(), bb.position(), len);
+      startP = endP;
+    }
+    bb.flip();
+    inner.setData(ByteString.copyFrom(bb));
+
+    return ColumnMessage.newBuilder().setType(ColumnMessage.Type.BLOB).setBlobColumn(inner).build();
   }
 
   /**
@@ -276,6 +314,8 @@ public abstract class Column<T extends Comparable<?>> implements ReadableColumn,
         return defaultLongProto(column);
       case STRING_TYPE:
         return defaultStringProto(column);
+      case BLOB_TYPE:
+        return defaultBytesProto(column);
     }
     throw new UnsupportedOperationException("Serializing a column of type " + column.getType());
   }

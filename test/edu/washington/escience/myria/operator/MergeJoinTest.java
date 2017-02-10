@@ -18,6 +18,7 @@ import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
+import edu.washington.escience.myria.util.TestEnvVars;
 import edu.washington.escience.myria.util.TestUtils;
 
 public class MergeJoinTest {
@@ -61,7 +62,7 @@ public class MergeJoinTest {
 
     BinaryOperator join =
         new MergeJoin(children[0], children[1], new int[] {0}, new int[] {0}, new boolean[] {true});
-    join.open(null);
+    join.open(TestEnvVars.get());
     TupleBatch tb;
     final ArrayList<TupleBatch> batches = new ArrayList<TupleBatch>();
     while (!join.eos()) {
@@ -108,7 +109,7 @@ public class MergeJoinTest {
             new int[] {0},
             new int[] {0},
             new boolean[] {true});
-    join.open(null);
+    join.open(TestEnvVars.get());
     TupleBatch tb = null;
     int count = 0;
     Multiset<Long> left = HashMultiset.create();
@@ -158,7 +159,7 @@ public class MergeJoinTest {
             new int[] {0},
             new int[] {0},
             new boolean[] {true});
-    join.open(null);
+    join.open(TestEnvVars.get());
     TupleBatch tb;
     final ArrayList<Entry<Long, String>> entries = new ArrayList<Entry<Long, String>>();
     while (!join.eos()) {
@@ -226,7 +227,7 @@ public class MergeJoinTest {
             new int[] {0, 1},
             new int[] {0, 1},
             new boolean[] {true, false});
-    join.open(null);
+    join.open(TestEnvVars.get());
     TupleBatch tb;
     final ArrayList<TupleBatch> batches = new ArrayList<TupleBatch>();
     while (!join.eos()) {
@@ -283,7 +284,7 @@ public class MergeJoinTest {
 
     BinaryOperator join =
         new MergeJoin(sort0, sort1, new int[] {0}, new int[] {0}, new boolean[] {false});
-    join.open(null);
+    join.open(TestEnvVars.get());
     TupleBatch tb;
     final ArrayList<TupleBatch> batches = new ArrayList<TupleBatch>();
     while (!join.eos()) {

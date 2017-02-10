@@ -1,7 +1,7 @@
 package edu.washington.escience.myria.operator;
 
 import org.joda.time.DateTime;
-
+import java.nio.ByteBuffer;
 import com.google.common.collect.ImmutableList;
 
 import edu.washington.escience.myria.DbException;
@@ -9,6 +9,7 @@ import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
+import edu.washington.escience.myria.storage.TupleUtils;
 
 /**
  * This class generates a range of single-column tuples.
@@ -49,7 +50,7 @@ public final class TupleRangeSource extends LeafOperator {
       return null;
     }
     TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
-    for (int i = 0; i < TupleBatch.BATCH_SIZE && currentCount < count; ++i) {
+    for (int i = 0; i < tbb.getBatchSize() && currentCount < count; ++i) {
       switch (type) {
         case BOOLEAN_TYPE:
           tbb.putBoolean(0, currentValue % 2 == 0);
@@ -71,6 +72,9 @@ public final class TupleRangeSource extends LeafOperator {
           break;
         case STRING_TYPE:
           tbb.putString(0, String.valueOf(currentValue));
+          break;
+        case BLOB_TYPE:
+          tbb.putBlob(0, ByteBuffer.allocate(Long.SIZE / Byte.SIZE).putLong(currentValue));
           break;
       }
       currentValue++;

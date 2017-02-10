@@ -1,5 +1,6 @@
 package edu.washington.escience.myria.expression.evaluate;
 
+import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.util.List;
 
@@ -106,7 +107,8 @@ public class GenericEvaluator extends Evaluator {
    * @param count column storing number of results (null for single-valued expressions)
    * @param result the table storing the result
    * @param state additional state that affects the computation
-   * @throws InvocationTargetException exception thrown from janino
+   * @throws InvocationTargetException exception thrown from janino.
+   * @throws DbException in case of error.
    */
   public void eval(
       @Nonnull final ReadableTable tb,
@@ -114,11 +116,11 @@ public class GenericEvaluator extends Evaluator {
       @Nullable final WritableColumn count,
       @Nonnull final WritableColumn result,
       @Nullable final ReadableTable state)
-      throws InvocationTargetException {
+      throws InvocationTargetException, DbException {
     Preconditions.checkArgument(
         evaluator != null, "Call compile first or copy the data if it is the same in the input.");
     Preconditions.checkArgument(
-        getExpression().isMultivalued() != (count == null),
+        getExpression().isMultiValued() != (count == null),
         "count must be null for a single-valued expression and non-null for a multivalued expression.");
     try {
       evaluator.evaluate(tb, rowIdx, count, result, state);
@@ -192,12 +194,14 @@ public class GenericEvaluator extends Evaluator {
    * @param tb the tuples to be input to this expression
    * @return an {@link EvaluatorResult} containing the results and result counts of evaluating this expression on the entire TupleBatch
    * @throws InvocationTargetException exception thrown from janino
+   * @throws DbException
    */
-  public EvaluatorResult evaluateColumn(final TupleBatch tb) throws InvocationTargetException {
+  public EvaluatorResult evaluateColumn(final TupleBatch tb)
+      throws InvocationTargetException, DbException {
     // Optimization for result counts of single-valued expressions.
     final Column<?> constCounts = new ConstantValueColumn(1, Type.INT_TYPE, tb.numTuples());
     final WritableColumn countsWriter;
-    if (getExpression().isMultivalued()) {
+    if (getExpression().isMultiValued()) {
       countsWriter = ColumnFactory.allocateColumn(Type.INT_TYPE);
     } else {
       // For single-valued expressions, the Java expression will never attempt to write to `countsWriter`.
@@ -220,7 +224,7 @@ public class GenericEvaluator extends Evaluator {
       eval(tb, rowIdx, countsWriter, resultsWriter, null);
     }
     final Column<?> resultCounts;
-    if (getExpression().isMultivalued()) {
+    if (getExpression().isMultiValued()) {
       resultCounts = ((ColumnBuilder<?>) countsWriter).build();
     } else {
       resultCounts = constCounts;

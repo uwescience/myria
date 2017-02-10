@@ -8,6 +8,7 @@ import org.junit.Test;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.io.FileSource;
+import edu.washington.escience.myria.util.TestEnvVars;
 
 public class SeaFlowFileScanTest {
 
@@ -17,7 +18,7 @@ public class SeaFlowFileScanTest {
         new SeaFlowFileScan(
             new FileSource(Paths.get("testdata", "seaflow", "1.evt.opp").toString()));
     EmptySink sink = new EmptySink(scan);
-    sink.open(null);
+    sink.open(TestEnvVars.get());
     while (!sink.eos()) {
       sink.nextReady();
     }
