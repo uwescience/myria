@@ -171,8 +171,8 @@ public final class SymmetricHashJoin extends BinaryOperator {
   /** Whether the last child polled was the left child. */
   private boolean pollLeft = false;
 
-  /** Join pull order, default: ALTER. */
-  private JoinPullOrder order = JoinPullOrder.ALTER;
+  /** Join pull order, default: ALTERNATE. */
+  private JoinPullOrder order = JoinPullOrder.ALTERNATE;
 
   /** if the hash table of the left child should use set semantics. */
   private boolean setSemanticsLeft = false;
@@ -254,14 +254,14 @@ public final class SymmetricHashJoin extends BinaryOperator {
    * columns in compareIndx1 and compareIndx2 match.
    *
    * @param outputColumns the names of the columns in the output schema. If null, the corresponding columns will be
-   *          copied from the children.
+   *        copied from the children.
    * @param left the left child.
    * @param right the right child.
    * @param compareIndx1 the columns of the left child to be compared with the right. Order matters.
    * @param compareIndx2 the columns of the right child to be compared with the left. Order matters.
    * @param answerColumns1 the columns of the left child to be returned. Order matters.
    * @param answerColumns2 the columns of the right child to be returned. Order matters. * @param setSemanticsLeft if
-   *          the hash table of the left child should use set semantics.
+   *        the hash table of the left child should use set semantics.
    * @param setSemanticsLeft if the hash table of the left child should use set semantics.
    * @param setSemanticsRight if the hash table of the right child should use set semantics.
    * @throw IllegalArgumentException if there are duplicated column names in <tt>outputColumns</tt>, or if
@@ -287,7 +287,7 @@ public final class SymmetricHashJoin extends BinaryOperator {
    * in compareIndx1 and compareIndx2 match.
    *
    * @param outputColumns the names of the columns in the output schema. If null, the corresponding columns will be
-   *          copied from the children.
+   *        copied from the children.
    * @param left the left child.
    * @param right the right child.
    * @param compareIndx1 the columns of the left child to be compared with the right. Order matters.
@@ -329,7 +329,7 @@ public final class SymmetricHashJoin extends BinaryOperator {
    * compareIndx1 and compareIndx2 match.
    *
    * @param outputColumns the names of the columns in the output schema. If null, the corresponding columns will be
-   *          copied from the children.
+   *        copied from the children.
    * @param left the left child.
    * @param right the right child.
    * @param compareIndx1 the columns of the left child to be compared with the right. Order matters.
@@ -567,10 +567,8 @@ public final class SymmetricHashJoin extends BinaryOperator {
       return nexttb;
     }
 
-    /*
-     * if both children are eos or both children have recorded eoi, pop any tuples in buffer. If the buffer is empty,
-     * set EOS or EOI.
-     */
+    /* if both children are eos or both children have recorded eoi, pop any tuples in buffer. If the buffer is empty,
+     * set EOS or EOI. */
     if (isEOIReady()) {
       nexttb = ans.popAny();
       if (nexttb == null) {
@@ -596,8 +594,8 @@ public final class SymmetricHashJoin extends BinaryOperator {
       if (tb != null) {
         processChildTB(tb, pollLeft);
         noDataStreak = 0;
-        /* ALTER: switch to the other child */
-        if (order.equals(JoinPullOrder.ALTER)) {
+        /* ALTERNATE: switch to the other child */
+        if (order.equals(JoinPullOrder.ALTERNATE)) {
           pollLeft = !pollLeft;
         }
         nexttb = ans.popAnyUsingTimeout();
@@ -608,7 +606,7 @@ public final class SymmetricHashJoin extends BinaryOperator {
         /* if current operator is eoi, consume it, check whether it will cause EOI of this operator */
         consumeChildEOI(pollLeft);
         noDataStreak = 0;
-        if (order.equals(JoinPullOrder.ALTER)) {
+        if (order.equals(JoinPullOrder.ALTERNATE)) {
           pollLeft = !pollLeft;
         }
         /* If this operator is ready to emit EOI (reminder that it needs to clear buffer), break to EOI handle part */
@@ -628,10 +626,8 @@ public final class SymmetricHashJoin extends BinaryOperator {
       }
     }
 
-    /*
-     * If the operator is ready to emit EOI, empty its output buffer first. If the buffer is already empty, set EOI
-     * and/or EOS
-     */
+    /* If the operator is ready to emit EOI, empty its output buffer first. If the buffer is already empty, set EOI
+     * and/or EOS */
     if (isEOIReady()) {
       nexttb = ans.popAny();
       if (nexttb == null) {
@@ -674,18 +670,14 @@ public final class SymmetricHashJoin extends BinaryOperator {
     final Operator right = getRight();
 
     if (left.eos() && rightHashTableIndices != null) {
-      /*
-       * delete right child's hash table if the left child is EOS, since there will be no incoming tuples from right as
-       * it will never be probed again.
-       */
+      /* delete right child's hash table if the left child is EOS, since there will be no incoming tuples from right as
+       * it will never be probed again. */
       rightHashTableIndices = null;
       hashTable2 = null;
     }
     if (right.eos() && leftHashTableIndices != null) {
-      /*
-       * delete left child's hash table if the right child is EOS, since there will be no incoming tuples from left as
-       * it will never be probed again.
-       */
+      /* delete left child's hash table if the right child is EOS, since there will be no incoming tuples from left as
+       * it will never be probed again. */
       leftHashTableIndices = null;
       hashTable1 = null;
     }
@@ -794,7 +786,7 @@ public final class SymmetricHashJoin extends BinaryOperator {
   /** Join pull order options. */
   public enum JoinPullOrder {
     /** Alternatively. */
-    ALTER,
+    ALTERNATE,
     /** Pull from the left child whenever there is data available. */
     LEFT,
     /** Pull from the right child whenever there is data available. */
