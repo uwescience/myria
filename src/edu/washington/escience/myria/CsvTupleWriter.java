@@ -71,7 +71,7 @@ public class CsvTupleWriter implements TupleWriter {
         if (type.equals(Type.BLOB_TYPE)) {
           // write the file out
           ByteBuffer bb = tuples.getBlob(j, i);
-          String filename = createTempFile(bb);
+          String filename = writeToTempFile(bb);
           //add file name to the csv.
           row[j] = filename;
         } else {
@@ -96,11 +96,15 @@ public class CsvTupleWriter implements TupleWriter {
       csvPrinter.close();
     }
   }
-
-  private static String createTempFile(final ByteBuffer bb) throws IOException {
+  /**
+   * Write the bytebuffer to file.
+   * @param bb - bytebuffer to be written to file
+   * @return
+   * @throws IOException in case of error.
+   */
+  private static String writeToTempFile(final ByteBuffer bb) throws IOException {
     Path path = Files.createTempFile("out", null);
-    File file = path.toFile();
     Files.write(path, bb.array());
-    return file.getAbsolutePath();
+    return path.toFile().getAbsolutePath();
   }
 }

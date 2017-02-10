@@ -1,11 +1,10 @@
 package edu.washington.escience.myria.expression;
 
-import java.io.IOException;
-import java.net.URISyntaxException;
-
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.expression.evaluate.ExpressionOperatorParameter;
-
+/**
+ * Expression to downloadblob data from a provided URI.
+ */
 public class DownloadBlobExpression extends UnaryExpression {
   /***/
   private static final long serialVersionUID = 1L;
