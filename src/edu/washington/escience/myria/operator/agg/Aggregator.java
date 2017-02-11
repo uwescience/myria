@@ -39,7 +39,7 @@ public interface Aggregator extends Serializable {
   /**
    * Initialize a new state by appending initial values to a new row.
    *
-   * @param data the table containing internal states
+   * @param state the table containing internal states
    */
-  void initState(AppendableTable data);
+  void initState(AppendableTable state);
 }

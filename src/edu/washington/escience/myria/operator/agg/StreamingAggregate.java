@@ -15,7 +15,7 @@ import edu.washington.escience.myria.storage.TupleBatch;
 
 /**
  * This aggregate operator computes the aggregation in streaming manner (requires input sorted on grouping column(s)).
- * Intend to substitute Aggregate when input is known to be sorted.
+ * Intended to substitute for Aggregate when input is known to be sorted.
  *
  * @see Aggregate
  */
@@ -53,6 +53,8 @@ public class StreamingAggregate extends Aggregate {
         IntIterator iter = groupStates.getIndices(tb, gfields, row).intIterator();
         int indice;
         if (!iter.hasNext()) {
+          /* A new group is encountered. Since input tuples are sorted on the grouping key, the previous group must be
+           * finished so we can add its state to the result. */
           addToResult();
           groupStates.addTuple(tb, gfields, row, true);
           for (int i = 0; i < internalAggs.size(); ++i) {
@@ -84,9 +86,7 @@ public class StreamingAggregate extends Aggregate {
   private void addToResult() {
     for (TupleBatch tb : groupStates.getData().getAll()) {
       List<Column<?>> columns = new ArrayList<Column<?>>();
-      for (int i = 0; i < gfields.length; ++i) {
-        columns.add(tb.getDataColumns().get(i));
-      }
+      columns.addAll(tb.getDataColumns().subList(0, gfields.length));
       for (Aggregator agg : emitAggs) {
         columns.addAll(agg.emitOutput(tb));
       }

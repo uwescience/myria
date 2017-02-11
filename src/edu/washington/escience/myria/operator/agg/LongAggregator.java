@@ -3,6 +3,7 @@ package edu.washington.escience.myria.operator.agg;
 import java.util.List;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.math.LongMath;
 
 import edu.washington.escience.myria.Type;
@@ -99,7 +100,15 @@ public final class LongAggregator extends PrimitiveAggregator {
 
   @Override
   protected boolean isSupported(final AggregationOp aggOp) {
-    return true;
+    return ImmutableSet.of(
+            AggregationOp.COUNT,
+            AggregationOp.MIN,
+            AggregationOp.MAX,
+            AggregationOp.SUM,
+            AggregationOp.AVG,
+            AggregationOp.STDEV,
+            AggregationOp.SUM_SQUARED)
+        .contains(aggOp);
   }
 
   @Override

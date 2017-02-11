@@ -34,8 +34,8 @@ import edu.washington.escience.myria.column.builder.FloatColumnBuilder;
 import edu.washington.escience.myria.column.builder.IntColumnBuilder;
 import edu.washington.escience.myria.column.builder.LongColumnBuilder;
 import edu.washington.escience.myria.column.builder.StringColumnBuilder;
-import edu.washington.escience.myria.operator.agg.AggregatorFactory;
 import edu.washington.escience.myria.operator.agg.Aggregate;
+import edu.washington.escience.myria.operator.agg.AggregatorFactory;
 import edu.washington.escience.myria.operator.agg.PrimitiveAggregator.AggregationOp;
 import edu.washington.escience.myria.operator.agg.PrimitiveAggregatorFactory;
 import edu.washington.escience.myria.storage.TupleBatch;
@@ -49,17 +49,9 @@ import edu.washington.escience.myria.util.Tuple;
 public class AggregateTest {
 
   /**
-   * Ensure that the given Schema matches the expected numeric aggregate types for the given Type.
-   *
-   * All numeric aggs, in order: COUNT, MIN, MAX, SUM, AVG, STDEV
-   *
-   * MIN,MAX match the input type
-   *
-   * SUM is the big form (int->long) and (float->double) of the input type
-   *
-   * COUNT is always long
-   *
-   * AVG and STDEV are always double
+   * Ensure that the given Schema matches the expected numeric aggregate types for the given Type. All numeric aggs, in
+   * order: COUNT, MIN, MAX, SUM, AVG, STDEV MIN,MAX match the input type SUM is the big form (int->long) and
+   * (float->double) of the input type COUNT is always long AVG and STDEV are always double
    *
    * @param schema the schema
    * @param type the type being aggregated
@@ -81,13 +73,8 @@ public class AggregateTest {
   }
 
   /**
-   * For ensure that the given Schema matches the expected non-numeric aggregate types for the given Type.
-   *
-   * All non-numeric aggs, in order: COUNT, MIN, MAX
-   *
-   * MIN,MAX match the input type
-   *
-   * COUNT is always long
+   * For ensure that the given Schema matches the expected non-numeric aggregate types for the given Type. All
+   * non-numeric aggs, in order: COUNT, MIN, MAX MIN,MAX match the input type COUNT is always long
    *
    * @param schema the schema
    * @param type the type being aggregated
@@ -117,7 +104,7 @@ public class AggregateTest {
    * @param builder the tuples to be aggregated
    * @param aggOps the aggregate operations over the column
    * @param noColumns whether to group by no columns (if true) or to append a constant value single column and group by
-   *          it (if false).
+   *        it (if false).
    * @return a single TupleBatch containing the results of the aggregation
    * @throws Exception if there is an error
    */
@@ -139,8 +126,7 @@ public class AggregateTest {
 
   /**
    * Helper function to instantiate an aggregator and do the aggregation. Do not use if more than one TupleBatch are
-   * expected. This variant uses a SingleGroupByAggregate in order to do extra testing of the Aggregators by hitting a
-   * function that Aggregate does not use.
+   * expected.
    *
    * @param builder the tuples to be aggregated
    * @param aggOps the aggregate operations over the column

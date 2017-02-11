@@ -34,7 +34,7 @@ public class UserDefinedAggregator implements Aggregator {
   private final Schema resultSchema;
   /** The Schema of the state. */
   private final Schema stateSchema;
-  /** Column indices of this aggregator of the state hash table. */
+  /** Column indices of this aggregator in the state hash table. */
   private final int[] stateCols;
 
   /**
@@ -65,8 +65,7 @@ public class UserDefinedAggregator implements Aggregator {
     List<Column<?>> ret = new ArrayList<Column<?>>();
     TupleBatch state =
         tb.selectColumns(MyriaArrayUtils.range(stateCols[0], stateSchema.numColumns()));
-    for (int index = 0; index < emitEvaluators.size(); index++) {
-      final GenericEvaluator evaluator = emitEvaluators.get(index);
+    for (final GenericEvaluator evaluator : emitEvaluators) {
       ColumnBuilder<?> col = ColumnBuilder.of(evaluator.getOutputType());
       evaluator.eval(null, 0, null, col, state);
       ret.add(col.build());
@@ -90,31 +89,31 @@ public class UserDefinedAggregator implements Aggregator {
   }
 
   @Override
-  public void initState(AppendableTable data) {
-    Tuple state = new Tuple(data.getSchema().getSubSchema(stateCols));
-    initEvaluator.evaluate(null, 0, state, null);
+  public void initState(AppendableTable state) {
+    Tuple stateTuple = new Tuple(state.getSchema().getSubSchema(stateCols));
+    initEvaluator.evaluate(null, 0, stateTuple, null);
     for (int i = 0; i < stateCols.length; ++i) {
-      switch (state.getSchema().getColumnType(i)) {
+      switch (stateTuple.getSchema().getColumnType(i)) {
         case BOOLEAN_TYPE:
-          data.putBoolean(stateCols[i], state.getBoolean(i, 0));
+          state.putBoolean(stateCols[i], stateTuple.getBoolean(i, 0));
           break;
         case INT_TYPE:
-          data.putInt(stateCols[i], state.getInt(i, 0));
+          state.putInt(stateCols[i], stateTuple.getInt(i, 0));
           break;
         case LONG_TYPE:
-          data.putLong(stateCols[i], state.getLong(i, 0));
+          state.putLong(stateCols[i], stateTuple.getLong(i, 0));
           break;
         case DOUBLE_TYPE:
-          data.putDouble(stateCols[i], state.getDouble(i, 0));
+          state.putDouble(stateCols[i], stateTuple.getDouble(i, 0));
           break;
         case FLOAT_TYPE:
-          data.putFloat(stateCols[i], state.getFloat(i, 0));
+          state.putFloat(stateCols[i], stateTuple.getFloat(i, 0));
           break;
         case STRING_TYPE:
-          data.putString(stateCols[i], state.getString(i, 0));
+          state.putString(stateCols[i], stateTuple.getString(i, 0));
           break;
         case DATETIME_TYPE:
-          data.putDateTime(stateCols[i], state.getDateTime(i, 0));
+          state.putDateTime(stateCols[i], stateTuple.getDateTime(i, 0));
           break;
       }
     }

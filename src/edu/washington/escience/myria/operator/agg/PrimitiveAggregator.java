@@ -24,16 +24,15 @@ public abstract class PrimitiveAggregator implements Aggregator, Serializable {
     MIN,
     /** MAX. Applies to all types. Result is same as input type. */
     MAX,
-    /**
-     * SUM. Applies to numeric types. Result is the bigger numeric type, i.e., {@link Type#INT_TYPE} ->
-     * {@link Type#LONG_TYPE} and . {@link Type#FLOAT_TYPE} -> {@link Type#DOUBLE_TYPE}.
-     */
+    /** SUM. Applies to numeric types. Result is coerced to the largest compatible numeric type (long or double). */
     SUM,
     /** AVG. Applies to numeric types. Result is always {@link Type#DOUBLE_TYPE}. */
     AVG,
     /** STDEV. Applies to numeric types. Result is always {@link Type#DOUBLE_TYPE}. */
     STDEV,
-    /** SUM_SQUARED. Applies to numeric types. Result is the bigger numeric type. */
+    /**
+     * SUM_SQUARED. Applies to numeric types. Result is coerced to the largest compatible numeric type (long or double).
+     */
     SUM_SQUARED
   };
 
@@ -86,9 +85,9 @@ public abstract class PrimitiveAggregator implements Aggregator, Serializable {
   protected abstract boolean isSupported(AggregationOp aggOp);
 
   @Override
-  public void initState(AppendableTable data) {
+  public void initState(AppendableTable state) {
     for (int i = 0; i < stateCols.length; ++i) {
-      appendInitValue(data, stateCols[i]);
+      appendInitValue(state, stateCols[i]);
     }
   }
 }

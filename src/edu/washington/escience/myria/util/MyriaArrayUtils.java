@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.IntStream;
 
 import org.slf4j.LoggerFactory;
 
@@ -162,10 +163,6 @@ public final class MyriaArrayUtils extends org.apache.commons.lang3.ArrayUtils {
    * @return an array of the numbers [start, start+length).
    */
   public static int[] range(final int start, final int length) {
-    int[] ret = new int[length];
-    for (int i = 0; i < length; ++i) {
-      ret[i] = start + i;
-    }
-    return ret;
+    return IntStream.range(start, start + length).toArray();
   }
 }

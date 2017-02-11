@@ -20,7 +20,7 @@ public final class TupleHashTable implements Serializable {
   private static final long serialVersionUID = 1L;
 
   /** Map from hash codes to indices. */
-  private transient IntObjectHashMap<IntArrayList> keyToIndices;
+  private transient IntObjectHashMap<IntArrayList> keyHashCodesToIndices;
   /** The table containing keys and values. */
   private transient MutableTupleBuffer data;
   /** Key column indices. */
@@ -33,7 +33,7 @@ public final class TupleHashTable implements Serializable {
   public TupleHashTable(final Schema schema, final int[] keyColumns) {
     this.keyColumns = keyColumns;
     data = new MutableTupleBuffer(schema);
-    keyToIndices = new IntObjectHashMap<IntArrayList>();
+    keyHashCodesToIndices = new IntObjectHashMap<IntArrayList>();
   }
 
   /**
@@ -53,7 +53,7 @@ public final class TupleHashTable implements Serializable {
    */
   public IntArrayList getIndices(final TupleBatch tb, final int[] key, final int row) {
     IntArrayList ret = new IntArrayList();
-    IntArrayList indices = keyToIndices.get(HashUtils.hashSubRow(tb, key, row));
+    IntArrayList indices = keyHashCodesToIndices.get(HashUtils.hashSubRow(tb, key, row));
     if (indices != null) {
       IntIterator iter = indices.intIterator();
       while (iter.hasNext()) {
@@ -97,10 +97,10 @@ public final class TupleHashTable implements Serializable {
   public void addTuple(
       final TupleBatch tb, final int[] keyColumns, final int row, final boolean keyOnly) {
     int hashcode = HashUtils.hashSubRow(tb, keyColumns, row);
-    IntArrayList indices = keyToIndices.get(hashcode);
+    IntArrayList indices = keyHashCodesToIndices.get(hashcode);
     if (indices == null) {
       indices = new IntArrayList();
-      keyToIndices.put(hashcode, indices);
+      keyHashCodesToIndices.put(hashcode, indices);
     }
     indices.add(numTuples());
     if (keyOnly) {
@@ -125,7 +125,7 @@ public final class TupleHashTable implements Serializable {
    * Clean up the hash table.
    */
   public void cleanup() {
-    keyToIndices = new IntObjectHashMap<IntArrayList>();
+    keyHashCodesToIndices = new IntObjectHashMap<IntArrayList>();
     data = new MutableTupleBuffer(data.getSchema());
   }
 }

@@ -105,8 +105,7 @@ public class UserDefinedAggregatorFactory implements AggregatorFactory {
         getEvalScript(updaters, new ExpressionOperatorParameter(inputSchema, stateSchema));
 
     /* Set up the emitters. */
-    emitEvaluators = new ArrayList<>();
-    emitEvaluators.ensureCapacity(emitters.size());
+    emitEvaluators = new ArrayList<>(emitters.size());
     for (Expression expr : emitters) {
       GenericEvaluator evaluator =
           new GenericEvaluator(expr, new ExpressionOperatorParameter(null, stateSchema));
@@ -203,7 +202,7 @@ public class UserDefinedAggregatorFactory implements AggregatorFactory {
           expr.getOutputType(new ExpressionOperatorParameter(inputSchema, stateSchema)));
       namesBuilder.add(expr.getOutputName());
     }
-    return new Schema(typesBuilder.build(), namesBuilder.build());
+    return Schema.of(typesBuilder.build(), namesBuilder.build());
   }
 
   @Override
@@ -214,6 +213,6 @@ public class UserDefinedAggregatorFactory implements AggregatorFactory {
       typesBuilder.add(expr.getOutputType(new ExpressionOperatorParameter(inputSchema)));
       namesBuilder.add(expr.getOutputName());
     }
-    return new Schema(typesBuilder.build(), namesBuilder.build());
+    return Schema.of(typesBuilder.build(), namesBuilder.build());
   }
 }

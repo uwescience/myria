@@ -30,9 +30,9 @@ public final class SymmetricHashJoin extends BinaryOperator {
   /** The names of the output columns. */
   private final ImmutableList<String> outputColumns;
   /** The column indices for comparing of the left child. */
-  private final int[] leftCompareIndx;
+  private final int[] leftCompareColumns;
   /** The column indices for comparing of the right child. */
-  private final int[] rightCompareIndx;
+  private final int[] rightCompareColumns;
   /** Which columns in the left child are to be output. */
   private final int[] leftAnswerColumns;
   /** Which columns in the right child are to be output. */
@@ -75,6 +75,7 @@ public final class SymmetricHashJoin extends BinaryOperator {
       final int[] compareIndx2,
       final int[] answerColumns1,
       final int[] answerColumns2) {
+    /* Only used by tests */
     this(
         left,
         right,
@@ -84,7 +85,8 @@ public final class SymmetricHashJoin extends BinaryOperator {
         answerColumns2,
         false,
         false,
-        null);
+        null,
+        JoinPullOrder.ALTER);
   }
 
   /**
@@ -101,6 +103,7 @@ public final class SymmetricHashJoin extends BinaryOperator {
    * @param answerColumns2 the columns of the right child to be returned. Order matters.
    * @param setSemanticsLeft if the hash table of the left child should use set semantics.
    * @param setSemanticsRight if the hash table of the right child should use set semantics.
+   * @param pullOrder the join pull order policy.
    * @throw IllegalArgumentException if there are duplicated column names in <tt>outputColumns</tt>, or if
    *        <tt>outputColumns</tt> does not have the correct number of columns and column types.
    */
@@ -113,7 +116,8 @@ public final class SymmetricHashJoin extends BinaryOperator {
       final int[] answerColumns2,
       final boolean setSemanticsLeft,
       final boolean setSemanticsRight,
-      final List<String> outputColumns) {
+      final List<String> outputColumns,
+      final JoinPullOrder pullOrder) {
     super(left, right);
     Preconditions.checkArgument(compareIndx1.length == compareIndx2.length);
     if (outputColumns != null) {
@@ -127,12 +131,13 @@ public final class SymmetricHashJoin extends BinaryOperator {
     } else {
       this.outputColumns = null;
     }
-    leftCompareIndx = MyriaArrayUtils.warnIfNotSet(compareIndx1);
-    rightCompareIndx = MyriaArrayUtils.warnIfNotSet(compareIndx2);
+    leftCompareColumns = MyriaArrayUtils.warnIfNotSet(compareIndx1);
+    rightCompareColumns = MyriaArrayUtils.warnIfNotSet(compareIndx2);
     leftAnswerColumns = MyriaArrayUtils.warnIfNotSet(answerColumns1);
     rightAnswerColumns = MyriaArrayUtils.warnIfNotSet(answerColumns2);
     this.setSemanticsLeft = setSemanticsLeft;
     this.setSemanticsRight = setSemanticsRight;
+    this.order = order;
   }
 
   @Override
@@ -149,9 +154,9 @@ public final class SymmetricHashJoin extends BinaryOperator {
     ImmutableList.Builder<String> names = ImmutableList.builder();
 
     /* Assert that the compare index types are the same. */
-    for (int i = 0; i < rightCompareIndx.length; ++i) {
-      int leftIndex = leftCompareIndx[i];
-      int rightIndex = rightCompareIndx[i];
+    for (int i = 0; i < rightCompareColumns.length; ++i) {
+      int leftIndex = leftCompareColumns[i];
+      int rightIndex = rightCompareColumns[i];
       Type leftType = leftSchema.getColumnType(leftIndex);
       Type rightType = rightSchema.getColumnType(rightIndex);
       Preconditions.checkState(
@@ -406,8 +411,8 @@ public final class SymmetricHashJoin extends BinaryOperator {
 
   @Override
   public void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
-    leftHashTable = new TupleHashTable(getLeft().getSchema(), leftCompareIndx);
-    rightHashTable = new TupleHashTable(getRight().getSchema(), rightCompareIndx);
+    leftHashTable = new TupleHashTable(getLeft().getSchema(), leftCompareColumns);
+    rightHashTable = new TupleHashTable(getRight().getSchema(), rightCompareColumns);
     ans = new TupleBatchBuffer(getSchema());
     nonBlocking =
         (QueryExecutionMode) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_EXECUTION_MODE)
@@ -441,11 +446,11 @@ public final class SymmetricHashJoin extends BinaryOperator {
     if (fromLeft) {
       buildHashTable = leftHashTable;
       probeHashTable = rightHashTable;
-      buildCompareColumns = leftCompareIndx;
+      buildCompareColumns = leftCompareColumns;
     } else {
       buildHashTable = rightHashTable;
       probeHashTable = leftHashTable;
-      buildCompareColumns = rightCompareIndx;
+      buildCompareColumns = rightCompareColumns;
     }
     for (int row = 0; row < tb.numTuples(); ++row) {
       IntIterator iter = probeHashTable.getIndices(tb, buildCompareColumns, row).intIterator();
@@ -511,7 +516,5 @@ public final class SymmetricHashJoin extends BinaryOperator {
    *
    * @param order the pull order.
    */
-  public void setPullOrder(final JoinPullOrder order) {
-    this.order = order;
-  }
+  public void setPullOrder(final JoinPullOrder order) {}
 }

@@ -27,7 +27,7 @@ public final class StringAggregator extends PrimitiveAggregator {
   private static final long serialVersionUID = 1L;
 
   /** Placeholder as MIN/MAX value of String. */
-  private static final String STRING_INIT_VALUE = "STRING_INIT_VALUE";
+  private static final String STRING_INIT_VALUE = "NULL";
 
   @Override
   public void addRow(

@@ -57,25 +57,7 @@ public class PrimitiveAggregatorFactory implements AggregatorFactory {
     List<Aggregator> ret = new ArrayList<Aggregator>();
     List<AggregationOp> ops = getInternalOps();
     for (int i = 0; i < ops.size(); ++i) {
-      switch (ops.get(i)) {
-        case COUNT:
-          ret.add(generateAgg(inputSchema, AggregationOp.COUNT, new int[] {offset + i}));
-          break;
-        case SUM:
-          ret.add(generateAgg(inputSchema, AggregationOp.SUM, new int[] {offset + i}));
-          break;
-        case MIN:
-          ret.add(generateAgg(inputSchema, AggregationOp.MIN, new int[] {offset + i}));
-          break;
-        case MAX:
-          ret.add(generateAgg(inputSchema, AggregationOp.MAX, new int[] {offset + i}));
-          break;
-        case SUM_SQUARED:
-          ret.add(generateAgg(inputSchema, AggregationOp.SUM_SQUARED, new int[] {offset + i}));
-          break;
-        default:
-          throw new IllegalArgumentException("Invalid internal aggregate type: " + ops.get(i));
-      }
+      ret.add(generateAgg(inputSchema, ops.get(i), new int[] {offset + i}));
     }
     return ret;
   }
@@ -146,13 +128,10 @@ public class PrimitiveAggregatorFactory implements AggregatorFactory {
   private List<AggregationOp> getInternalOps(AggregationOp op) {
     switch (op) {
       case COUNT:
-        return ImmutableList.of(AggregationOp.COUNT);
       case MIN:
-        return ImmutableList.of(AggregationOp.MIN);
       case MAX:
-        return ImmutableList.of(AggregationOp.MAX);
       case SUM:
-        return ImmutableList.of(AggregationOp.SUM);
+        return ImmutableList.of(op);
       case AVG:
         return ImmutableList.of(AggregationOp.SUM, AggregationOp.COUNT);
       case STDEV:

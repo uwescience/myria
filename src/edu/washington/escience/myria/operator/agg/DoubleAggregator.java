@@ -3,6 +3,7 @@ package edu.washington.escience.myria.operator.agg;
 import java.util.List;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.Column;
@@ -12,6 +13,7 @@ import edu.washington.escience.myria.storage.MutableTupleBuffer;
 import edu.washington.escience.myria.storage.ReadableColumn;
 import edu.washington.escience.myria.storage.ReplaceableColumn;
 import edu.washington.escience.myria.storage.TupleBatch;
+import jersey.repackaged.com.google.common.base.Preconditions;
 
 /**
  * Knows how to compute some aggregates over a DoubleColumn.
@@ -31,26 +33,26 @@ public final class DoubleAggregator extends PrimitiveAggregator {
       final TupleBatch from, final int fromRow, final MutableTupleBuffer to, final int toRow) {
     ReadableColumn fromCol = from.asColumn(column);
     ReplaceableColumn toCol = to.getColumn(stateCols[0], toRow);
-    final int inColumRow = to.getInColumnIndex(toRow);
+    final int inColumnRow = to.getInColumnIndex(toRow);
     switch (aggOp) {
       case COUNT:
-        toCol.replaceLong(toCol.getLong(inColumRow) + 1, inColumRow);
+        toCol.replaceLong(toCol.getLong(inColumnRow) + 1, inColumnRow);
         break;
       case MAX:
         toCol.replaceDouble(
-            Math.max(fromCol.getDouble(fromRow), toCol.getDouble(inColumRow)), inColumRow);
+            Math.max(fromCol.getDouble(fromRow), toCol.getDouble(inColumnRow)), inColumnRow);
         break;
       case MIN:
         toCol.replaceDouble(
-            Math.min(fromCol.getDouble(fromRow), toCol.getDouble(inColumRow)), inColumRow);
+            Math.min(fromCol.getDouble(fromRow), toCol.getDouble(inColumnRow)), inColumnRow);
         break;
       case SUM:
-        toCol.replaceDouble(fromCol.getDouble(fromRow) + toCol.getDouble(inColumRow), inColumRow);
+        toCol.replaceDouble(fromCol.getDouble(fromRow) + toCol.getDouble(inColumnRow), inColumnRow);
         break;
       case SUM_SQUARED:
         toCol.replaceDouble(
-            fromCol.getDouble(fromRow) * fromCol.getDouble(fromRow) + toCol.getDouble(inColumRow),
-            inColumRow);
+            fromCol.getDouble(fromRow) * fromCol.getDouble(fromRow) + toCol.getDouble(inColumnRow),
+            inColumnRow);
         break;
       default:
         throw new IllegalArgumentException(aggOp + " is invalid");
@@ -69,9 +71,10 @@ public final class DoubleAggregator extends PrimitiveAggregator {
         {
           ReadableColumn sumCol = tb.asColumn(stateCols[0]);
           ReadableColumn countCol = tb.asColumn(stateCols[1]);
+          Preconditions.checkArgument(sumCol.size() == countCol.size());
           double[] ret = new double[sumCol.size()];
           for (int i = 0; i < sumCol.size(); ++i) {
-            ret[i] = (sumCol.getDouble(i)) / countCol.getLong(i);
+            ret[i] = sumCol.getDouble(i) / countCol.getLong(i);
           }
           return ImmutableList.of(new DoubleColumn(ret, ret.length));
         }
@@ -80,10 +83,12 @@ public final class DoubleAggregator extends PrimitiveAggregator {
           ReadableColumn sumCol = tb.asColumn(stateCols[0]);
           ReadableColumn sumSquaredCol = tb.asColumn(stateCols[1]);
           ReadableColumn countCol = tb.asColumn(stateCols[2]);
+          Preconditions.checkArgument(sumCol.size() == countCol.size());
+          Preconditions.checkArgument(sumCol.size() == sumSquaredCol.size());
           double[] ret = new double[sumCol.size()];
           for (int i = 0; i < sumCol.size(); ++i) {
-            double first = (sumSquaredCol.getDouble(i)) / countCol.getLong(i);
-            double second = (sumCol.getDouble(i)) / countCol.getLong(i);
+            double first = sumSquaredCol.getDouble(i) / countCol.getLong(i);
+            double second = sumCol.getDouble(i) / countCol.getLong(i);
             ret[i] = Math.sqrt(first - second * second);
           }
           return ImmutableList.of(new DoubleColumn(ret, ret.length));
@@ -95,7 +100,15 @@ public final class DoubleAggregator extends PrimitiveAggregator {
 
   @Override
   protected boolean isSupported(final AggregationOp aggOp) {
-    return true;
+    return ImmutableSet.of(
+            AggregationOp.COUNT,
+            AggregationOp.MIN,
+            AggregationOp.MAX,
+            AggregationOp.SUM,
+            AggregationOp.AVG,
+            AggregationOp.STDEV,
+            AggregationOp.SUM_SQUARED)
+        .contains(aggOp);
   }
 
   @Override
