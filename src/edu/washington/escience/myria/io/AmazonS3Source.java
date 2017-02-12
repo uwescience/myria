@@ -81,6 +81,9 @@ public class AmazonS3Source implements DataSource, Serializable {
       String className = conf.getTrimmed(propertyName);
 
       try {
+        if (className == null) {
+          throw new ClassNotFoundException();
+        }
         Class<?> credentialClass = Class.forName(className);
         try {
           credentials =
