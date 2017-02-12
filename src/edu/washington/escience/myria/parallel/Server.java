@@ -1134,6 +1134,10 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
 
   /**
    * Create a materialized view
+   * @param viewName the name of the view
+   * @param viewDefinition the sql text for the view
+   * @param workers the workers creating the view
+   * @return the queryID for the view creation query
    */
   public long createMaterializedView(
       final String viewName, final String viewDefinition, final Set<Integer> workers)
@@ -1365,6 +1369,7 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
    * @param sqlString command to run on the database
    * @param outputSchema the schema of the output result
    * @param workers the workers that will run the command
+   * @return the resulting tuples from the SQL statement
    */
   public String[] executeSQLStatement(
       final String sqlString, final Schema outputSchema, final Set<Integer> workers)
@@ -1381,10 +1386,10 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
     for (Integer w : workers) {
       workerPlans.put(w, workerPlan);
     }
-    
+
     final Consumer consumer = new Consumer(outputSchema, operatorId, workers);
     TupleSink output = new TupleSink(consumer, writer, byteSink, false);
-    
+
     final SubQueryPlan masterPlan = new SubQueryPlan(output);
 
     String planString = "execute sql statement : " + sqlString;

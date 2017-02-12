@@ -35,13 +35,12 @@ import edu.washington.escience.myria.operator.DbQueryScan;
 import edu.washington.escience.myria.operator.EOSSource;
 import edu.washington.escience.myria.operator.EmptySink;
 import edu.washington.escience.myria.operator.RootOperator;
-import edu.washington.escience.myria.operator.network.GenericShuffleConsumer;
+import edu.washington.escience.myria.operator.network.Consumer;
 import edu.washington.escience.myria.operator.network.GenericShuffleProducer;
-import edu.washington.escience.myria.operator.network.partition.FixValuePartitionFunction;
-import edu.washington.escience.myria.operator.network.partition.RoundRobinPartitionFunction;
+import edu.washington.escience.myria.operator.network.distribute.BroadcastDistributeFunction;
+import edu.washington.escience.myria.operator.network.distribute.RoundRobinDistributeFunction;
 import edu.washington.escience.myria.parallel.ExchangePairID;
 import edu.washington.escience.myria.parallel.Server;
-import edu.washington.escience.myria.util.MyriaUtils;
 
 /**
  * Methods to help prepare the data for PSLA generation
@@ -117,7 +116,8 @@ public class PerfEnforceDataPreparation {
           relationKeyOriginal.toString(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL),
           PerfEnforceUtils.createUnionQuery(relationKeysToUnion),
           maxWorkerRange);
-      server.addDatasetToCatalog(relationKeyOriginal, factTableDesc.schema, maxWorkerRange);
+      server.addDatasetToCatalog(
+          relationKeyOriginal, factTableDesc.schema, new ArrayList<Integer>(maxWorkerRange));
       factTableRelationMapper.put(maxConfig, relationKeyOriginal);
 
       /*
@@ -148,11 +148,10 @@ public class PerfEnforceDataPreparation {
         GenericShuffleProducer producer =
             new GenericShuffleProducer(
                 scan,
-                shuffleId,
+                new ExchangePairID[] {shuffleId},
                 receivingWorkers,
-                new RoundRobinPartitionFunction(receivingWorkers.length));
-        GenericShuffleConsumer consumer =
-            new GenericShuffleConsumer(factTableDesc.schema, shuffleId, producingWorkers);
+                new RoundRobinDistributeFunction());
+        Consumer consumer = new Consumer(factTableDesc.schema, shuffleId, producingWorkers);
         DbInsert insert = new DbInsert(consumer, currentRelationKeyToUnion, true);
 
         Map<Integer, RootOperator[]> workerPlans = new HashMap<>(currentSize);
@@ -176,7 +175,9 @@ public class PerfEnforceDataPreparation {
             PerfEnforceUtils.createUnionQuery(relationKeysToUnion),
             currentWorkerRange);
         server.addDatasetToCatalog(
-            currentConfigRelationKey, factTableDesc.schema, currentWorkerRange);
+            currentConfigRelationKey,
+            factTableDesc.schema,
+            new ArrayList<Integer>(currentWorkerRange));
         factTableRelationMapper.put(currentSize, currentConfigRelationKey);
         previousWorkerRange = currentWorkerRange;
         previousRelationKey = currentConfigRelationKey;
@@ -211,28 +212,18 @@ public class PerfEnforceDataPreparation {
           null);
 
       DbQueryScan dbscan = new DbQueryScan(dimTableDesc.relationKey, dimTableDesc.schema);
-      /*
-       * Is there a better way to broadcast relations?
-       */
+
       final ExchangePairID broadcastID = ExchangePairID.newID();
-      int[][] cellPartition = new int[1][];
-      int[] allCells = new int[totalWorkers.size()];
-      for (int i = 0; i < totalWorkers.size(); i++) {
-        allCells[i] = i;
-      }
-      cellPartition[0] = allCells;
 
       GenericShuffleProducer producer =
           new GenericShuffleProducer(
               dbscan,
-              broadcastID,
-              cellPartition,
-              MyriaUtils.integerSetToIntArray(totalWorkers),
-              new FixValuePartitionFunction(0));
+              new ExchangePairID[] {broadcastID},
+              PerfEnforceUtils.getRangeInclusiveArray(
+                  Collections.min(totalWorkers), Collections.max(totalWorkers)),
+              new BroadcastDistributeFunction());
 
-      GenericShuffleConsumer consumer =
-          new GenericShuffleConsumer(
-              dimTableDesc.schema, broadcastID, MyriaUtils.integerSetToIntArray(totalWorkers));
+      Consumer consumer = new Consumer(dimTableDesc.schema, broadcastID, totalWorkers);
       DbInsert insert = new DbInsert(consumer, dimTableDesc.relationKey, true);
       Map<Integer, RootOperator[]> workerPlans = new HashMap<>(totalWorkers.size());
       for (Integer workerID : totalWorkers) {
@@ -405,13 +396,7 @@ public class PerfEnforceDataPreparation {
         selectivityKeys.add(sqlResult[0]);
       }
 
-      /* This is only done because we cannot yet properly count the broadcast tables */
-      long modifiedSize = tableSize;
-      if (type.equalsIgnoreCase("dimension")) {
-        modifiedSize = tableSize / Collections.max(PerfEnforceDriver.configurations);
-      }
-
-      return new PerfEnforceStatisticsEncoding(tableName, modifiedSize, selectivityKeys);
+      return new PerfEnforceStatisticsEncoding(tableName, tableSize, selectivityKeys);
     } catch (Exception e) {
       throw new PerfEnforceException("error running table ranks");
     }
