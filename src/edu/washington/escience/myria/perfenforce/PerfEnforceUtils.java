@@ -3,14 +3,15 @@
  */
 package edu.washington.escience.myria.perfenforce;
 
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
 import org.slf4j.LoggerFactory;
+
+import com.google.common.base.Joiner;
+import com.google.common.primitives.Ints;
 
 import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.Schema;
@@ -28,6 +29,7 @@ public class PerfEnforceUtils {
    * Returns a subset of workers
    *
    * @param limit the upper bound for the range of workers
+   * @return the resulting set of worker ids
    */
   public static Set<Integer> getWorkerRangeSet(final int limit) {
     Set<Integer> seq = new HashSet<Integer>();
@@ -42,6 +44,7 @@ public class PerfEnforceUtils {
    *
    * @param min the min worker id (inclusive)
    * @param max the max worker id (inclusive)
+   * @return the resulting array of worker ids
    */
   public static int[] getRangeInclusiveArray(final int min, final int max) {
     int numberElements = (max - min) + 1;
@@ -56,6 +59,7 @@ public class PerfEnforceUtils {
    * Creates a UNION sql statement based on a set of relationKeys
    *
    * @param keysToUnion the relationKeys to union
+   * @return the UNION sql statement across a set of relations
    */
   public static String createUnionQuery(final List<RelationKey> keysToUnion) {
     String sql = "";
@@ -78,18 +82,11 @@ public class PerfEnforceUtils {
    *
    * @param keys the set of columns to concatenate
    * @param schema the schema of the relation
+   * @return the string representation of the schema separated by commas
+   *
    */
   public static String getAttributeKeyString(final Set<Integer> keys, final Schema schema) {
-    String keyString = "";
-    int counter = 1;
-    for (int key : keys) {
-      keyString += schema.getColumnName(key);
-      if (counter != keys.size()) {
-        keyString += ",";
-      }
-      counter++;
-    }
-    return keyString;
+    return Joiner.on(",").join(getAttributeKeySchema(keys, schema).getColumnNames());
   }
 
   /**
@@ -97,14 +94,10 @@ public class PerfEnforceUtils {
    *
    * @param keys the set of columns to concatenate
    * @param schema the schema to create
+   * @return the schema for a subset of columns
    */
   public static Schema getAttributeKeySchema(final Set<Integer> keys, final Schema schema) {
-    Schema keySchema = Schema.EMPTY_SCHEMA;
-    for (int key : keys) {
-      keySchema =
-          Schema.appendColumn(keySchema, schema.getColumnType(key), schema.getColumnName(key));
-    }
-    return keySchema;
+    return schema.getSubSchema(Ints.toArray(keys));
   }
 
   /**
@@ -113,6 +106,7 @@ public class PerfEnforceUtils {
    * @param server an instance of the server
    * @param sqlQuery the SQL statement to run
    * @param configuration the configuration
+   * @return the features with the highest cost
    * @throws PerfEnforceException
    */
   public static String getMaxFeature(final Server server, String sqlQuery, final int configuration)
@@ -134,18 +128,11 @@ public class PerfEnforceUtils {
         if (currentWorkerFeatures.contains("cost")) {
           currentWorkerFeatures =
               currentWorkerFeatures.substring(currentWorkerFeatures.indexOf("cost"));
-          currentWorkerFeatures = currentWorkerFeatures.replace("\"", " ");
-          String[] cmd = {
-            "sh",
-            "-c",
-            "echo \""
-                + currentWorkerFeatures
-                + "\" | sed -e 's/.*cost=//' -e 's/\\.\\./,/' -e 's/ rows=/,/' -e 's/ width=/,/' -e 's/)//'"
-          };
-          ProcessBuilder pb = new ProcessBuilder(cmd);
-          Process p = pb.start();
-          BufferedReader input = new BufferedReader(new InputStreamReader(p.getInputStream()));
-          currentWorkerFeatures = input.readLine();
+          currentWorkerFeatures =
+              currentWorkerFeatures
+                  .replace("\"", " ")
+                  .replaceAll(".*cost=|\\)", "")
+                  .replaceAll("\\.\\.| rows=| width=", ",");
 
           if (explainQuery.contains("WHERE")) {
             String[] tables =

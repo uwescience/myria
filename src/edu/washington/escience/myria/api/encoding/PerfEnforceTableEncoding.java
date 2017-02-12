@@ -16,13 +16,19 @@ import edu.washington.escience.myria.io.AmazonS3Source;
  * This class returns an encoding describing a table's schema.
  */
 public class PerfEnforceTableEncoding {
+  /** The relationkey of the relation */
   public RelationKey relationKey;
+  /** The type of the relation, which can be either "Dimension" or "fact". */
   public String type;
+  /** The S3 source of the relation. */
   public AmazonS3Source source;
+  /** The schema of the relation. */
   public Schema schema;
+  /** The delimiter on the source file of the relation. */
   public Character delimiter;
+  /** The indexes of the primary keys. Can support candidate keys. */
   public Set<Integer> keys;
-
+  /** The indexes of foreign keys for the dimension tables. These keys correspond to indexes in the fact table.  */
   public Set<Integer> corresponding_fact_key;
 
   /**

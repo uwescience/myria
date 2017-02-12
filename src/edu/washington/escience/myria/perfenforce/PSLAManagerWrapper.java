@@ -6,14 +6,16 @@ package edu.washington.escience.myria.perfenforce;
 import java.io.IOException;
 import java.nio.file.Path;
 
-import org.apache.commons.io.IOUtils;
-
 /**
  * A wrapper for the PSLAManager executable
  */
 public class PSLAManagerWrapper {
   final Path PSLAManagerExePath;
 
+  /**
+   * The constructor for the PSLAManagerWrapper class.
+   * Initially sets up the path pointing to the executable for PSLAManager.
+   */
   public PSLAManagerWrapper() {
     PSLAManagerExePath =
         PerfEnforceDriver.configurationPath
@@ -22,6 +24,10 @@ public class PSLAManagerWrapper {
             .resolve("PSLAManager.exe");
   }
 
+  /**
+   * Runs the PSLAManager with the "-q" flag. It generates a set of queries based on the user's dataset.
+   * @throws Exception if there is an error running the PSLAManager process
+   */
   public void generateQueries() throws Exception {
     try {
 
@@ -34,14 +40,16 @@ public class PSLAManagerWrapper {
                       + PerfEnforceDriver.configurationPath.resolve("PSLAGeneration").toString()
                       + " -q");
 
-      System.out.println(IOUtils.toString(p.getErrorStream()));
-
       p.waitFor();
     } catch (IOException e) {
       throw e;
     }
   }
 
+  /**
+   * Runs the PSLAManager with the "-p" flag. It generates the resulting PSLA.
+   * @throws Exception if there is an error running the PSLAManager process
+   */
   public void generatePSLA() throws Exception {
     try {
       Process p =

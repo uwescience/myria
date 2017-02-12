@@ -10,12 +10,24 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  *
  */
 public class PerfEnforceQueryMetadataEncoding {
+  /** The query id. */
   public int id;
+  /** The query's SLA. */
   public double slaRuntime;
+  /** The query's sql text */
   public String queryText;
 
+  /**
+   * Constructor for the PerfEnforceQueryMetadataEncoding
+   */
   public PerfEnforceQueryMetadataEncoding() {}
 
+  /**
+   * Constructor for the PerfEnforceQueryMetadataEncoding
+   * @param id the identifier for the query
+   * @param slaRuntime the SLA runtime of the query
+   * @param queryText the string representation of the query
+   */
   @JsonCreator
   public PerfEnforceQueryMetadataEncoding(
       @JsonProperty(value = "id", required = true) final int id,
@@ -27,10 +39,18 @@ public class PerfEnforceQueryMetadataEncoding {
     this.queryText = queryText;
   }
 
+  /**
+   * Returns the SLA of the query
+   * @return the SLA of the query
+   */
   public double getSLA() {
     return slaRuntime;
   }
 
+  /**
+   * Returns the string representation of the query
+   * @return the string representation of the query
+   */
   public String getQueryText() {
     return queryText;
   }

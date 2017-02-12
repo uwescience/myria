@@ -437,7 +437,7 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
    *
    * @param masterHost hostname of the master
    * @param masterPort RPC port of the master
-   * @param catalogPath absolute path of the directory containing the master catalog files
+   * @param instancePath absolute path of the directory containing the master catalog files
    * @param databaseSystem name of the storage DB system
    * @param connectTimeoutMillis connect timeout for worker IPC
    * @param sendBufferSize send buffer size in bytes for worker IPC

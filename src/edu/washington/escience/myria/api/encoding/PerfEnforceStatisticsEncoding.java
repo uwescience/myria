@@ -5,36 +5,40 @@ package edu.washington.escience.myria.api.encoding;
 
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 /**
  * This class encodes statistical information about a table from the user's schema.
  */
 public class PerfEnforceStatisticsEncoding {
-  @Required public String table_name;
-  @Required public long table_size;
-  @Required public String selectivity_predicate_001;
-  @Required public String selectivity_predicate_01;
-  @Required public String selectivity_predicate_1;
+  /** The relation name */
+  public String table_name;
+  /** The relation size */
+  public long table_size;
+  /** The column value to obtain .001% of the data */
+  public String selectivity_predicate_001;
+  /**  The column value to obtain .01% of the data */
+  public String selectivity_predicate_01;
+  /**  The column value to obtain 1% of the data */
+  public String selectivity_predicate_1;
 
+  /**
+   * Constructor for the PerfEnforceStatisticsEncoding encoding class.
+   * @param table_name the name of the relation
+   * @param table_size the size of the relation
+   * @param selectivityList an array holding column values to obtain .001%, .01% and 1% of the relation
+   */
+  @JsonCreator
   public PerfEnforceStatisticsEncoding(
-      final String table_name, final long table_size, final List<String> selectivityList) {
-    this(
-        table_name,
-        table_size,
-        selectivityList.get(0),
-        selectivityList.get(1),
-        selectivityList.get(2));
-  }
-
-  public PerfEnforceStatisticsEncoding(
-      final String table_name,
-      final long table_size,
-      final String selectivity_predicate_001,
-      final String selectivity_predicate_01,
-      final String selectivity_predicate_1) {
+      @JsonProperty(value = "table_name", required = true) final String table_name,
+      @JsonProperty(value = "table_size", required = true) final long table_size,
+      @JsonProperty(value = "selectivityList", required = true)
+      final List<String> selectivityList) {
     this.table_name = table_name;
     this.table_size = table_size;
-    this.selectivity_predicate_001 = selectivity_predicate_001;
-    this.selectivity_predicate_01 = selectivity_predicate_01;
-    this.selectivity_predicate_1 = selectivity_predicate_1;
+    this.selectivity_predicate_001 = selectivityList.get(0);
+    this.selectivity_predicate_01 = selectivityList.get(1);
+    this.selectivity_predicate_1 = selectivityList.get(2);
   }
 }

@@ -36,11 +36,15 @@ public final class PerfEnforceDriver {
 
   protected static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(PerfEnforceDriver.class);
 
+  /** The cluster sizes PerfEnforce considers. */
   final public static List<Integer> configurations = Arrays.asList(4, 6, 8, 10, 12);
 
+  /** The configuration path storing PerfEnforce helper files. */
   public static Path configurationPath;
 
+  /** The list of relations from the user. */
   public static List<PerfEnforceTableEncoding> tableList;
+  /** Metadata about the fact table. */
   public static PerfEnforceTableEncoding factTableDesc;
 
   private final Server server;
@@ -64,21 +68,22 @@ public final class PerfEnforceDriver {
 
   /**
    * Fetch necessary files from S3
+   * @throws PerfEnforceException throws an exception if there is an error fetching files from S3
    */
   public void fetchS3Files() throws PerfEnforceException {
     AmazonS3 s3Client = new AmazonS3Client(new AnonymousAWSCredentials());
     String currentFile = "";
-    BufferedReader bufferedReader;
+
     try {
-      bufferedReader =
-          new BufferedReader(
-              new FileReader(configurationPath.resolve("filesToFetch.txt").toString()));
-      while ((currentFile = bufferedReader.readLine()) != null) {
-        Path filePath = configurationPath.resolve(currentFile);
-        s3Client.getObject(
-            new GetObjectRequest("perfenforce", currentFile), new File(filePath.toString()));
+      try (BufferedReader bufferedReader =
+              new BufferedReader(
+                  new FileReader(configurationPath.resolve("filesToFetch.txt").toString()))) {
+        while ((currentFile = bufferedReader.readLine()) != null) {
+          Path filePath = configurationPath.resolve(currentFile);
+          s3Client.getObject(
+              new GetObjectRequest("perfenforce", currentFile), new File(filePath.toString()));
+        }
       }
-      bufferedReader.close();
     } catch (Exception e) {
       throw new PerfEnforceException("Error while fetching files from S3");
     }
@@ -113,14 +118,14 @@ public final class PerfEnforceDriver {
 
     Gson gson = new Gson();
     String schemaDefinitionFile = gson.toJson(tableList);
-    PrintWriter out =
-        new PrintWriter(
-            configurationPath
-                .resolve("PSLAGeneration")
-                .resolve("SchemaDefinition.json")
-                .toString());
-    out.print(schemaDefinitionFile);
-    out.close();
+    try (PrintWriter out =
+            new PrintWriter(
+                configurationPath
+                    .resolve("PSLAGeneration")
+                    .resolve("SchemaDefinition.json")
+                    .toString())) {
+      out.print(schemaDefinitionFile);
+    }
 
     dataPreparationStatus = "Generating Queries for PSLA";
     PSLAManagerWrapper pslaManager = new PSLAManagerWrapper();
@@ -134,6 +139,7 @@ public final class PerfEnforceDriver {
 
   /**
    * Returns the status of the PSLA generation process
+   * @return the data preparation status
    */
   public String getDataPreparationStatus() {
     return dataPreparationStatus;
@@ -141,6 +147,7 @@ public final class PerfEnforceDriver {
 
   /**
    * Return a boolean to determine whether the PSLA is finished generating
+   * @return a boolean determining whether the PSLA is finished
    */
   public boolean isDonePSLA() {
     return isDonePSLA;
@@ -148,6 +155,8 @@ public final class PerfEnforceDriver {
 
   /**
    * Returns the final PSLA
+   * @return the generated PSLA
+   * @throws PerfEnforceException if there is an error generating the PSLA
    */
   public String getPSLA() throws PerfEnforceException {
     StringWriter output = new StringWriter();
@@ -179,6 +188,7 @@ public final class PerfEnforceDriver {
    * Finds the SLA for a given query
    *
    * @param querySQL the given query
+   * @throws PerfEnforceException if there is an error computing the SLA for a query
    */
   public void findSLA(String querySQL) throws PerfEnforceException {
     perfenforceOnlineLearning.findSLA(querySQL);
@@ -189,6 +199,7 @@ public final class PerfEnforceDriver {
    * Records the runtime of a query
    *
    * @param queryRuntime the runtime of a query
+   * @throws PerfEnforceException throws an exception if
    */
   public void recordRealRuntime(final Double queryRuntime) throws PerfEnforceException {
     perfenforceOnlineLearning.recordRealRuntime(queryRuntime);
@@ -196,6 +207,7 @@ public final class PerfEnforceDriver {
 
   /**
    * Returns information about the current query, assuming the user recently requested the SLA
+   * @return metadata about the current query
    */
   public PerfEnforceQueryMetadataEncoding getCurrentQuery() {
     return perfenforceOnlineLearning.getCurrentQuery();
@@ -203,6 +215,7 @@ public final class PerfEnforceDriver {
 
   /**
    * Returns the current cluster size
+   * @return the current cluster size
    */
   public int getClusterSize() {
     return perfenforceOnlineLearning.getClusterSize();

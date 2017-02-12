@@ -17,6 +17,8 @@ import java.util.List;
 
 import org.slf4j.LoggerFactory;
 
+import com.google.common.base.Joiner;
+
 import edu.washington.escience.myria.api.encoding.PerfEnforceQueryMetadataEncoding;
 import edu.washington.escience.myria.parallel.Server;
 
@@ -60,6 +62,7 @@ public class PerfEnforceOnlineLearning {
    *
    * @param queryText the query that the user will run
    * @param configuration the current configuration
+   * @return the final query string after modifying the current cluster size
    */
   public String convertQueryForConfiguration(String queryText, int configuration) {
     String convertedQuery = "";
@@ -75,6 +78,7 @@ public class PerfEnforceOnlineLearning {
    * Finds the SLA for a given query
    *
    * @param querySQL the query from the user
+   * @throws PerfEnforceException if there is an error computing the query's SLA
    */
   public void findSLA(final String querySQL) throws PerfEnforceException {
     String pslaPath = PerfEnforceDriver.configurationPath.resolve("PSLAGeneration").toString();
@@ -86,9 +90,8 @@ public class PerfEnforceOnlineLearning {
         PerfEnforceUtils.getMaxFeature(
             server, currentQueryForConfiguration, currentConfigurationSize);
 
-    try {
-      PrintWriter featureWriter =
-          new PrintWriter(Paths.get(pslaPath, "current-q-features.arff").toString(), "UTF-8");
+    try (PrintWriter featureWriter =
+            new PrintWriter(Paths.get(pslaPath, "current-q-features.arff").toString(), "UTF-8")) {
 
       featureWriter.write("@relation testing \n");
 
@@ -126,16 +129,17 @@ public class PerfEnforceOnlineLearning {
       };
 
       Process p = Runtime.getRuntime().exec(cmd);
-      BufferedReader reader = new BufferedReader(new InputStreamReader(p.getInputStream()));
-      while ((reader.readLine()) != null) {}
+      try (BufferedReader reader = new BufferedReader(new InputStreamReader(p.getInputStream()))) {
+        while ((reader.readLine()) != null) {}
+      }
 
       String querySLA = "";
-      BufferedReader predictionReader =
-          new BufferedReader(
-              new FileReader(Paths.get(pslaPath, "current-q-results.txt").toString()));
-      predictionReader.readLine();
-      querySLA = predictionReader.readLine().split(",")[2];
-      predictionReader.close();
+      try (BufferedReader predictionReader =
+              new BufferedReader(
+                  new FileReader(Paths.get(pslaPath, "current-q-results.txt").toString()));) {
+        predictionReader.readLine();
+        querySLA = predictionReader.readLine().split(",")[2];
+      }
 
       currentQuery =
           new PerfEnforceQueryMetadataEncoding(
@@ -147,6 +151,7 @@ public class PerfEnforceOnlineLearning {
 
   /**
    * Determines the best configuration size for currentQuery
+   * @throws PerfEnforceException if there is an error selecting the best configuration size
    */
   public void findBestConfigurationSize() throws PerfEnforceException {
     try {
@@ -228,6 +233,7 @@ public class PerfEnforceOnlineLearning {
    * Given a configuration size, this method predicts the runtime of the currentQuery
    *
    * @param configurationIndex the configuration size in consideration
+   * @throws PerfEnforceException if there is an error during the training phase
    */
   public void trainOnlineQueries(final int configurationIndex) throws PerfEnforceException {
     String MOAFileName = Paths.get(onlineLearningPath, "moa.jar").toString();
@@ -272,9 +278,9 @@ public class PerfEnforceOnlineLearning {
 
       Process p = Runtime.getRuntime().exec(arrayCommand);
 
-      BufferedReader reader = new BufferedReader(new InputStreamReader(p.getInputStream()));
-      while ((reader.readLine()) != null) {}
-
+      try (BufferedReader reader = new BufferedReader(new InputStreamReader(p.getInputStream()))) {
+        while ((reader.readLine()) != null) {}
+      }
       parsingOnlineFile(configurationIndex, predictionsFileName);
     } catch (Exception e) {
       throw new PerfEnforceException("Error during training");
@@ -286,17 +292,16 @@ public class PerfEnforceOnlineLearning {
    *
    * @param configurationIndex the configuration size in consideration
    * @param predictionFileName the file that contains the prediction
+   * @throws PerfEnforceException if there is an error from the parsing the predictions output
    */
   public void parsingOnlineFile(final int configurationIndex, final String predictionFileName)
       throws PerfEnforceException {
-    try {
-      BufferedReader streamReader = new BufferedReader(new FileReader(predictionFileName));
+    try (BufferedReader streamReader = new BufferedReader(new FileReader(predictionFileName))) {
       String currentLine = "";
       double nextQueryPrediction = 0;
       while ((currentLine = streamReader.readLine()) != null) {
         nextQueryPrediction = Double.parseDouble((currentLine.split(",")[0]).split(":")[1]);
       }
-      streamReader.close();
       queryPredictions[configurationIndex] = nextQueryPrediction;
     } catch (Exception e) {
       throw new PerfEnforceException("Error parsing online predictions file");
@@ -308,6 +313,8 @@ public class PerfEnforceOnlineLearning {
    *
    * @param configurationIndex the configuration size in consideration
    * @param queryRuntime the runtime of the query
+   * @return the string containing features for a query
+   * @throws PerfEnforceException if there is an error collecting the query features
    */
   public String getQueryFeature(final int configurationIndex, final double queryRuntime)
       throws PerfEnforceException {
@@ -318,28 +325,14 @@ public class PerfEnforceOnlineLearning {
                 String.valueOf(PerfEnforceDriver.configurations.get(configurationIndex)))
             .toString();
 
-    try {
-      BufferedReader featureReader = new BufferedReader(new FileReader(featureFilePath));
+    try (BufferedReader featureReader = new BufferedReader(new FileReader(featureFilePath))) {
       String result = featureReader.readLine();
       if (queryRuntime != 0) {
         String[] parts = result.split(",");
-        result =
-            parts[0]
-                + ","
-                + parts[1]
-                + ","
-                + parts[2]
-                + ","
-                + parts[3]
-                + ","
-                + parts[4]
-                + ","
-                + parts[5]
-                + ","
-                + queryRuntime;
+        result = Joiner.on(",").join(parts);
+        result += "," + queryRuntime;
       }
 
-      featureReader.close();
       return result;
     } catch (Exception e) {
       throw new PerfEnforceException("Error collecting query feature");
