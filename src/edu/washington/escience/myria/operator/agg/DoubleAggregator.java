@@ -1,28 +1,21 @@
 package edu.washington.escience.myria.operator.agg;
 
-import java.util.List;
-
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 
 import edu.washington.escience.myria.Type;
-import edu.washington.escience.myria.column.Column;
-import edu.washington.escience.myria.column.DoubleColumn;
 import edu.washington.escience.myria.storage.AppendableTable;
 import edu.washington.escience.myria.storage.MutableTupleBuffer;
 import edu.washington.escience.myria.storage.ReadableColumn;
 import edu.washington.escience.myria.storage.ReplaceableColumn;
 import edu.washington.escience.myria.storage.TupleBatch;
-import jersey.repackaged.com.google.common.base.Preconditions;
 
 /**
  * Knows how to compute some aggregates over a DoubleColumn.
  */
 public final class DoubleAggregator extends PrimitiveAggregator {
 
-  protected DoubleAggregator(
-      final String inputName, final int column, final AggregationOp aggOp, final int[] stateCols) {
-    super(inputName, column, aggOp, stateCols);
+  protected DoubleAggregator(final String inputName, final int column, final AggregationOp aggOp) {
+    super(inputName, column, aggOp);
   }
 
   /** Required for Java serialization. */
@@ -30,9 +23,13 @@ public final class DoubleAggregator extends PrimitiveAggregator {
 
   @Override
   public void addRow(
-      final TupleBatch from, final int fromRow, final MutableTupleBuffer to, final int toRow) {
+      final TupleBatch from,
+      final int fromRow,
+      final MutableTupleBuffer to,
+      final int toRow,
+      final int offset) {
     ReadableColumn fromCol = from.asColumn(column);
-    ReplaceableColumn toCol = to.getColumn(stateCols[0], toRow);
+    ReplaceableColumn toCol = to.getColumn(offset, toRow);
     final int inColumnRow = to.getInColumnIndex(toRow);
     switch (aggOp) {
       case COUNT:
@@ -54,45 +51,6 @@ public final class DoubleAggregator extends PrimitiveAggregator {
             fromCol.getDouble(fromRow) * fromCol.getDouble(fromRow) + toCol.getDouble(inColumnRow),
             inColumnRow);
         break;
-      default:
-        throw new IllegalArgumentException(aggOp + " is invalid");
-    }
-  }
-
-  @Override
-  public List<Column<?>> emitOutput(final TupleBatch tb) {
-    switch (aggOp) {
-      case COUNT:
-      case SUM:
-      case MAX:
-      case MIN:
-        return ImmutableList.of(tb.getDataColumns().get(stateCols[0]));
-      case AVG:
-        {
-          ReadableColumn sumCol = tb.asColumn(stateCols[0]);
-          ReadableColumn countCol = tb.asColumn(stateCols[1]);
-          Preconditions.checkArgument(sumCol.size() == countCol.size());
-          double[] ret = new double[sumCol.size()];
-          for (int i = 0; i < sumCol.size(); ++i) {
-            ret[i] = sumCol.getDouble(i) / countCol.getLong(i);
-          }
-          return ImmutableList.of(new DoubleColumn(ret, ret.length));
-        }
-      case STDEV:
-        {
-          ReadableColumn sumCol = tb.asColumn(stateCols[0]);
-          ReadableColumn sumSquaredCol = tb.asColumn(stateCols[1]);
-          ReadableColumn countCol = tb.asColumn(stateCols[2]);
-          Preconditions.checkArgument(sumCol.size() == countCol.size());
-          Preconditions.checkArgument(sumCol.size() == sumSquaredCol.size());
-          double[] ret = new double[sumCol.size()];
-          for (int i = 0; i < sumCol.size(); ++i) {
-            double first = sumSquaredCol.getDouble(i) / countCol.getLong(i);
-            double second = sumCol.getDouble(i) / countCol.getLong(i);
-            ret[i] = Math.sqrt(first - second * second);
-          }
-          return ImmutableList.of(new DoubleColumn(ret, ret.length));
-        }
       default:
         throw new IllegalArgumentException(aggOp + " is invalid");
     }

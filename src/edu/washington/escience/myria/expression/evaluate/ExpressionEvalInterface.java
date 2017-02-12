@@ -15,16 +15,18 @@ public interface ExpressionEvalInterface {
    * {@link edu.washington.escience.myria.operator.StatefulApply}. The variables will be fetched from the tuple buffer
    * using the rowId provided in {@link edu.washington.escience.myria.expression.VariableExpression}.
    *
-   * @param tb a tuple batch
-   * @param row index of the row in the tb that should be used
-   * @param count a column storing the number of results returned from this row
-   * @param result a table storing evaluation results
+   * @param input the input tuple batch
+   * @param inputRow row index of the input tuple batch
    * @param state optional state that is passed during evaluation
+   * @param stateRow row index of the state
+   * @param result a table storing evaluation results
+   * @param count a column storing the number of results returned from this row
    */
   void evaluate(
-      final ReadableTable tb,
-      final int row,
-      final WritableColumn count,
+      final ReadableTable input,
+      final int inputRow,
+      final ReadableTable state,
+      final int stateRow,
       final WritableColumn result,
-      final ReadableTable state);
+      final WritableColumn count);
 }

@@ -1,6 +1,5 @@
 package edu.washington.escience.myria.operator;
 
-import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -94,7 +93,7 @@ public class StatefulApply extends Apply {
   }
 
   @Override
-  protected TupleBatch fetchNextReady() throws DbException, InvocationTargetException {
+  protected TupleBatch fetchNextReady() throws DbException {
     Operator child = getChild();
 
     if (child.eoi() || getChild().eos()) {
@@ -138,14 +137,14 @@ public class StatefulApply extends Apply {
       for (int columnIdx = 0; columnIdx < stateSchema.numColumns(); columnIdx++) {
         updateEvaluators
             .get(columnIdx)
-            .eval(tb, rowIdx, null, newState.asWritableColumn(columnIdx), state);
+            .eval(tb, rowIdx, state, 0, newState.asWritableColumn(columnIdx), null);
       }
       state = newState;
       // apply expression
       for (int index = 0; index < needState.size(); index++) {
         final GenericEvaluator evaluator = getEmitEvaluators().get(needState.get(index));
         // TODO: optimize the case where the state is copied directly
-        evaluator.eval(tb, rowIdx, null, columnBuilders.get(index), state);
+        evaluator.eval(tb, rowIdx, state, 0, columnBuilders.get(index), null);
       }
     }
 

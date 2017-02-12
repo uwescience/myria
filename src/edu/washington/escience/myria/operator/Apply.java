@@ -1,6 +1,5 @@
 package edu.washington.escience.myria.operator;
 
-import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -103,7 +102,7 @@ public class Apply extends UnaryOperator {
   }
 
   @Override
-  protected TupleBatch fetchNextReady() throws DbException, InvocationTargetException {
+  protected TupleBatch fetchNextReady() throws DbException {
     // If there's a batch already finished, return it, otherwise keep reading
     // batches from the child until we have a full batch or the child returns null.
     while (!outputBuffer.hasFilledTB()) {

@@ -1,11 +1,7 @@
 package edu.washington.escience.myria.operator.agg;
 
 import java.io.Serializable;
-import java.util.List;
 
-import edu.washington.escience.myria.Schema;
-import edu.washington.escience.myria.column.Column;
-import edu.washington.escience.myria.storage.AppendableTable;
 import edu.washington.escience.myria.storage.MutableTupleBuffer;
 import edu.washington.escience.myria.storage.TupleBatch;
 
@@ -23,23 +19,22 @@ public interface Aggregator extends Serializable {
    * @param toRow the row index of the state.
    */
   public abstract void addRow(
-      final TupleBatch from, final int fromRow, final MutableTupleBuffer to, final int toRow);
+      final TupleBatch from,
+      final int fromRow,
+      final MutableTupleBuffer to,
+      final int toRow,
+      final int offset);
 
   /**
-   * @param tb the internal states
-   * @return output states as columns
+   * @return the size of the state schema
    */
-  public List<Column<?>> emitOutput(final TupleBatch tb);
-
-  /**
-   * @return the output schema
-   */
-  Schema getOutputSchema();
+  int getStateSize();
 
   /**
    * Initialize a new state by appending initial values to a new row.
    *
    * @param state the table containing internal states
+   * @param offset the column index of state to start from
    */
-  void initState(AppendableTable state);
+  void initState(final MutableTupleBuffer state, final int offset);
 }

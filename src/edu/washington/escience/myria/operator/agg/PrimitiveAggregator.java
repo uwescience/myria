@@ -2,9 +2,9 @@ package edu.washington.escience.myria.operator.agg;
 
 import java.io.Serializable;
 
-import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.storage.AppendableTable;
+import edu.washington.escience.myria.storage.MutableTupleBuffer;
 
 /**
  * Single column aggregator.
@@ -40,8 +40,6 @@ public abstract class PrimitiveAggregator implements Aggregator, Serializable {
   protected final AggregationOp aggOp;
   /** The column to aggregate on. */
   protected final int column;
-  /** Column indices of this aggregator of the state hash table. */
-  protected final int[] stateCols;
   /** The output name of the aggregate. */
   private final String outputName;
 
@@ -52,19 +50,18 @@ public abstract class PrimitiveAggregator implements Aggregator, Serializable {
    * @param aggOps the set of aggregate operations to be computed.
    */
   protected PrimitiveAggregator(
-      final String inputName, final int column, final AggregationOp aggOp, final int[] stateCols) {
+      final String inputName, final int column, final AggregationOp aggOp) {
     if (!isSupported(aggOp)) {
       throw new IllegalArgumentException("Unsupported aggregation " + aggOp);
     }
     this.aggOp = aggOp;
     this.column = column;
-    this.stateCols = stateCols;
     this.outputName = aggOp.toString().toLowerCase() + "_" + inputName;
   }
 
   @Override
-  public Schema getOutputSchema() {
-    return Schema.ofFields(outputName, getOutputType());
+  public int getStateSize() {
+    return 1;
   }
 
   /** @return The {@link Type} of the values this aggregator handles. */
@@ -85,9 +82,7 @@ public abstract class PrimitiveAggregator implements Aggregator, Serializable {
   protected abstract boolean isSupported(AggregationOp aggOp);
 
   @Override
-  public void initState(AppendableTable state) {
-    for (int i = 0; i < stateCols.length; ++i) {
-      appendInitValue(state, stateCols[i]);
-    }
+  public void initState(final MutableTupleBuffer state, final int offset) {
+    appendInitValue(state, offset);
   }
 }

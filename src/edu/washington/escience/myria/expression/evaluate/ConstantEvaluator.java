@@ -10,7 +10,6 @@ import com.google.common.base.Preconditions;
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.Type;
-import edu.washington.escience.myria.column.Column;
 import edu.washington.escience.myria.column.ConstantValueColumn;
 import edu.washington.escience.myria.column.builder.WritableColumn;
 import edu.washington.escience.myria.expression.Expression;
@@ -96,11 +95,12 @@ public final class ConstantEvaluator extends GenericEvaluator {
 
   @Override
   public void eval(
-      final ReadableTable tb,
-      final int rowIdx,
-      final WritableColumn count,
+      final ReadableTable input,
+      final int inputRow,
+      final ReadableTable state,
+      final int stateRow,
       final WritableColumn result,
-      final ReadableTable state) {
+      final WritableColumn count) {
     throw new UnsupportedOperationException(
         "Should not be here. Should be using evaluateColumn() instead");
   }

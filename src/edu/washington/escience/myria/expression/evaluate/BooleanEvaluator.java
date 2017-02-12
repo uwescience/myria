@@ -52,7 +52,7 @@ public class BooleanEvaluator extends Evaluator {
               se.createFastEvaluator(
                   getJavaExpressionWithAppend(),
                   BooleanEvalInterface.class,
-                  new String[] {Expression.TB, Expression.ROW});
+                  new String[] {Expression.INPUT, Expression.INPUTROW});
     } catch (Exception e) {
       throw new DbException("Error when compiling expression " + this, e);
     }

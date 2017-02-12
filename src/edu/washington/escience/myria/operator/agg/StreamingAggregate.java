@@ -1,15 +1,11 @@
 package edu.washington.escience.myria.operator.agg;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import com.gs.collections.api.iterator.IntIterator;
 
 import edu.washington.escience.myria.DbException;
-import edu.washington.escience.myria.column.Column;
 import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.storage.TupleBatch;
 
@@ -51,21 +47,25 @@ public class StreamingAggregate extends Aggregate {
     while (tb != null) {
       for (int row = 0; row < tb.numTuples(); ++row) {
         IntIterator iter = groupStates.getIndices(tb, gfields, row).intIterator();
-        int indice;
+        int index;
         if (!iter.hasNext()) {
           /* A new group is encountered. Since input tuples are sorted on the grouping key, the previous group must be
            * finished so we can add its state to the result. */
-          addToResult();
+          generateResult();
           groupStates.addTuple(tb, gfields, row, true);
-          for (int i = 0; i < internalAggs.size(); ++i) {
-            internalAggs.get(i).initState(groupStates.getData());
+          int offset = gfields.length;
+          for (Aggregator agg : internalAggs) {
+            agg.initState(groupStates.getData(), offset);
+            offset += agg.getStateSize();
           }
-          indice = groupStates.getData().numTuples() - 1;
+          index = groupStates.getData().numTuples() - 1;
         } else {
-          indice = iter.next();
+          index = iter.next();
         }
-        for (int i = 0; i < internalAggs.size(); ++i) {
-          internalAggs.get(i).addRow(tb, row, groupStates.getData(), indice);
+        int offset = gfields.length;
+        for (Aggregator agg : internalAggs) {
+          agg.addRow(tb, row, groupStates.getData(), index, offset);
+          offset += agg.getStateSize();
         }
       }
       if (resultBuffer.hasFilledTB()) {
@@ -74,24 +74,9 @@ public class StreamingAggregate extends Aggregate {
       tb = child.nextReady();
     }
     if (child.eos()) {
-      addToResult();
+      generateResult();
       return resultBuffer.popAny();
     }
     return null;
-  }
-
-  /**
-   * Add aggregate results with previous grouping key to result buffer.
-   */
-  private void addToResult() {
-    for (TupleBatch tb : groupStates.getData().getAll()) {
-      List<Column<?>> columns = new ArrayList<Column<?>>();
-      columns.addAll(tb.getDataColumns().subList(0, gfields.length));
-      for (Aggregator agg : emitAggs) {
-        columns.addAll(agg.emitOutput(tb));
-      }
-      resultBuffer.absorb(new TupleBatch(getSchema(), columns), false);
-    }
-    groupStates.cleanup();
   }
 }

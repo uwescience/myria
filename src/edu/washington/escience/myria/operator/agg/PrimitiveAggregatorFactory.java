@@ -11,10 +11,16 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
-import com.google.common.primitives.Ints;
 
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
+import edu.washington.escience.myria.expression.DivideExpression;
+import edu.washington.escience.myria.expression.Expression;
+import edu.washington.escience.myria.expression.ExpressionOperator;
+import edu.washington.escience.myria.expression.MinusExpression;
+import edu.washington.escience.myria.expression.SqrtExpression;
+import edu.washington.escience.myria.expression.TimesExpression;
+import edu.washington.escience.myria.expression.VariableExpression;
 import edu.washington.escience.myria.operator.agg.PrimitiveAggregator.AggregationOp;
 
 /**
@@ -53,11 +59,11 @@ public class PrimitiveAggregatorFactory implements AggregatorFactory {
   }
 
   @Override
-  public List<Aggregator> generateInternalAggs(final Schema inputSchema, final int offset) {
+  public List<Aggregator> generateInternalAggs(final Schema inputSchema) {
     List<Aggregator> ret = new ArrayList<Aggregator>();
     List<AggregationOp> ops = getInternalOps();
     for (int i = 0; i < ops.size(); ++i) {
-      ret.add(generateAgg(inputSchema, ops.get(i), new int[] {offset + i}));
+      ret.add(generateAgg(inputSchema, ops.get(i)));
     }
     return ret;
   }
@@ -68,42 +74,68 @@ public class PrimitiveAggregatorFactory implements AggregatorFactory {
    * @param indices the column indices of this aggregator in the state hash table
    * @return the generated aggregator
    */
-  private Aggregator generateAgg(
-      final Schema inputSchema, final AggregationOp aggOp, final int[] indices) {
+  private Aggregator generateAgg(final Schema inputSchema, final AggregationOp aggOp) {
     String inputName = inputSchema.getColumnName(column);
     Type type = inputSchema.getColumnType(column);
     switch (type) {
       case BOOLEAN_TYPE:
-        return new BooleanAggregator(inputName, column, aggOp, indices);
+        return new BooleanAggregator(inputName, column, aggOp);
       case DATETIME_TYPE:
-        return new DateTimeAggregator(inputName, column, aggOp, indices);
+        return new DateTimeAggregator(inputName, column, aggOp);
       case DOUBLE_TYPE:
-        return new DoubleAggregator(inputName, column, aggOp, indices);
+        return new DoubleAggregator(inputName, column, aggOp);
       case FLOAT_TYPE:
-        return new FloatAggregator(inputName, column, aggOp, indices);
+        return new FloatAggregator(inputName, column, aggOp);
       case INT_TYPE:
-        return new IntegerAggregator(inputName, column, aggOp, indices);
+        return new IntegerAggregator(inputName, column, aggOp);
       case LONG_TYPE:
-        return new LongAggregator(inputName, column, aggOp, indices);
+        return new LongAggregator(inputName, column, aggOp);
       case STRING_TYPE:
-        return new StringAggregator(inputName, column, aggOp, indices);
+        return new StringAggregator(inputName, column, aggOp);
       default:
         throw new IllegalArgumentException("Unknown column type: " + type);
     }
   }
 
   @Override
-  public List<Aggregator> generateEmitAggs(final Schema inputSchema, final int offset) {
-    List<Aggregator> aggs = new ArrayList<Aggregator>();
+  public List<Expression> generateEmitExpressions(final Schema inputSchema) {
     List<AggregationOp> cols = getInternalOps();
-    for (AggregationOp aggOp : aggOps) {
-      List<Integer> indices = new ArrayList<Integer>();
-      for (AggregationOp op : getInternalOps(aggOp)) {
-        indices.add(cols.indexOf(op) + offset);
+    List<Expression> exps = new ArrayList<Expression>();
+    for (int i = 0; i < aggOps.length; ++i) {
+      String name = aggOps[i].toString().toLowerCase() + "_" + inputSchema.getColumnName(column);
+      switch (aggOps[i]) {
+        case COUNT:
+        case MIN:
+        case MAX:
+        case SUM:
+          exps.add(new Expression(name, new VariableExpression(cols.indexOf(aggOps[i]))));
+          continue;
+        case AVG:
+          exps.add(
+              new Expression(
+                  name,
+                  new DivideExpression(
+                      new VariableExpression(cols.indexOf(AggregationOp.SUM)),
+                      new VariableExpression(cols.indexOf(AggregationOp.COUNT)))));
+          continue;
+        case STDEV:
+          ExpressionOperator sumExp = new VariableExpression(cols.indexOf(AggregationOp.SUM));
+          ExpressionOperator countExp = new VariableExpression(cols.indexOf(AggregationOp.COUNT));
+          ExpressionOperator sumSquaredExp =
+              new VariableExpression(cols.indexOf(AggregationOp.SUM_SQUARED));
+          ExpressionOperator first = new DivideExpression(sumSquaredExp, countExp);
+          ExpressionOperator second = new DivideExpression(sumExp, countExp);
+          exps.add(
+              new Expression(
+                  name,
+                  new SqrtExpression(
+                      new MinusExpression(first, new TimesExpression(second, second)))));
+          continue;
+        default:
+          throw new IllegalArgumentException("Type " + aggOps[i] + " is invalid");
       }
-      aggs.add(generateAgg(inputSchema, aggOp, Ints.toArray(indices)));
     }
-    return aggs;
+    return exps;
   }
 
   /**

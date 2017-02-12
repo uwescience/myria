@@ -42,13 +42,13 @@ public class VariableExpression extends ZeroaryExpression {
   @Override
   public String getJavaString(final ExpressionOperatorParameter parameters) {
     // We generate a variable access into the tuple buffer.
-    return new StringBuilder(Expression.TB)
+    return new StringBuilder(Expression.INPUT)
         .append(".get")
         .append(getOutputType(parameters).getName())
         .append("(")
         .append(columnIdx)
         .append(", ")
-        .append(Expression.ROW)
+        .append(Expression.INPUTROW)
         .append(")")
         .toString();
   }

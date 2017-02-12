@@ -1,6 +1,5 @@
 package edu.washington.escience.myria.expression.evaluate;
 
-import java.lang.reflect.InvocationTargetException;
 import java.util.List;
 
 import javax.annotation.Nonnull;
@@ -85,11 +84,12 @@ public class GenericEvaluator extends Evaluator {
                   javaExpression,
                   ExpressionEvalInterface.class,
                   new String[] {
-                    Expression.TB,
-                    Expression.ROW,
-                    Expression.COUNT,
+                    Expression.INPUT,
+                    Expression.INPUTROW,
+                    Expression.STATE,
+                    Expression.STATEROW,
                     Expression.RESULT,
-                    Expression.STATE
+                    Expression.COUNT
                   });
     } catch (CompileException e) {
       LOGGER.error("Error when compiling expression {}: {}", javaExpression, e);
@@ -101,25 +101,27 @@ public class GenericEvaluator extends Evaluator {
    * Evaluates the {@link #getJavaExpressionWithAppend()} using the {@link #evaluator}. Prefer to use
    * {@link #evaluateColumn(TupleBatch)} since it can evaluate an entire TupleBatch at a time for better locality.
    *
-   * @param tb a tuple batch
-   * @param rowIdx index of the row that should be used for input data
-   * @param count column storing number of results (null for single-valued expressions)
-   * @param result the table storing the result
+   * @param input a tuple batch
+   * @param inputRow index of the row that should be used for input data
    * @param state additional state that affects the computation
+   * @param stateRow index of the row that should be used for state
+   * @param result the table storing the result
+   * @param count column storing number of results (null for single-valued expressions)
    */
   public void eval(
-      @Nonnull final ReadableTable tb,
-      final int rowIdx,
-      @Nullable final WritableColumn count,
+      @Nonnull final ReadableTable input,
+      final int inputRow,
+      @Nonnull final ReadableTable state,
+      final int stateRow,
       @Nonnull final WritableColumn result,
-      @Nullable final ReadableTable state) {
+      @Nullable final WritableColumn count) {
     Preconditions.checkArgument(
         evaluator != null, "Call compile first or copy the data if it is the same in the input.");
     Preconditions.checkArgument(
         getExpression().isMultivalued() != (count == null),
         "count must be null for a single-valued expression and non-null for a multivalued expression.");
     try {
-      evaluator.evaluate(tb, rowIdx, count, result, state);
+      evaluator.evaluate(input, inputRow, state, stateRow, result, count);
     } catch (Exception e) {
       LOGGER.error(getJavaExpressionWithAppend(), e);
       throw e;
@@ -190,9 +192,8 @@ public class GenericEvaluator extends Evaluator {
    * @param tb the tuples to be input to this expression
    * @return an {@link EvaluatorResult} containing the results and result counts of evaluating this expression on the
    *         entire TupleBatch
-   * @throws InvocationTargetException exception thrown from janino
    */
-  public EvaluatorResult evaluateColumn(final TupleBatch tb) throws InvocationTargetException {
+  public EvaluatorResult evaluateColumn(final TupleBatch tb) {
     // Optimization for result counts of single-valued expressions.
     final Column<?> constCounts = new ConstantValueColumn(1, Type.INT_TYPE, tb.numTuples());
     final WritableColumn countsWriter;
@@ -216,7 +217,7 @@ public class GenericEvaluator extends Evaluator {
         new TupleBuffer(Schema.ofFields(getExpression().getOutputName(), type));
     final WritableColumn resultsWriter = resultsBuffer.asWritableColumn(0);
     for (int rowIdx = 0; rowIdx < tb.numTuples(); ++rowIdx) {
-      eval(tb, rowIdx, countsWriter, resultsWriter, null);
+      eval(tb, rowIdx, tb, rowIdx, resultsWriter, countsWriter);
     }
     final Column<?> resultCounts;
     if (getExpression().isMultivalued()) {

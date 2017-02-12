@@ -22,7 +22,6 @@ import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.expression.Expression;
 import edu.washington.escience.myria.expression.evaluate.ExpressionOperatorParameter;
 import edu.washington.escience.myria.expression.evaluate.GenericEvaluator;
-import edu.washington.escience.myria.expression.evaluate.ScriptEvalInterface;
 
 /**
  * Apply operator that has to be initialized and carries a state while new tuples are generated.
@@ -73,14 +72,16 @@ public class UserDefinedAggregatorFactory implements AggregatorFactory {
   }
 
   @Override
-  public List<Aggregator> generateInternalAggs(final Schema inputSchema, final int offset)
-      throws DbException {
-    return generateEmitAggs(inputSchema, offset);
+  public List<Expression> generateEmitExpressions(final Schema inputSchema) throws DbException {
+    // for (Expression emit : emitters) {
+    // if (emit.getRootExpressionOperator() instanceof VariableExpression) {
+    // }
+    // }
+    return emitters;
   }
 
   @Override
-  public List<Aggregator> generateEmitAggs(final Schema inputSchema, final int offset)
-      throws DbException {
+  public List<Aggregator> generateInternalAggs(final Schema inputSchema) throws DbException {
     Objects.requireNonNull(inputSchema, "inputSchema");
     Preconditions.checkArgument(
         initializers.size() == updaters.size(),
@@ -105,13 +106,12 @@ public class UserDefinedAggregatorFactory implements AggregatorFactory {
         getEvalScript(updaters, new ExpressionOperatorParameter(inputSchema, stateSchema));
 
     /* Set up the emitters. */
-    emitEvaluators = new ArrayList<>(emitters.size());
-    for (Expression expr : emitters) {
-      GenericEvaluator evaluator =
-          new GenericEvaluator(expr, new ExpressionOperatorParameter(null, stateSchema));
-      evaluator.compile();
-      emitEvaluators.add(evaluator);
-    }
+    // emitEvaluators = new ArrayList<>(emitters.size());
+    // for (Expression expr : emitters) {
+    // GenericEvaluator evaluator = new GenericEvaluator(expr, new ExpressionOperatorParameter(null, stateSchema));
+    // evaluator.compile();
+    // emitEvaluators.add(evaluator);
+    // }
 
     /* Compute the result schema. */
     ExpressionOperatorParameter emitParams = new ExpressionOperatorParameter(null, stateSchema);
@@ -123,8 +123,7 @@ public class UserDefinedAggregatorFactory implements AggregatorFactory {
     }
     resultSchema = new Schema(types, names);
     return ImmutableList.of(
-        new UserDefinedAggregator(
-            initEvaluator, updateEvaluator, emitEvaluators, resultSchema, stateSchema, offset));
+        new UserDefinedAggregator(initEvaluator, updateEvaluator, resultSchema, stateSchema));
   }
 
   /**
@@ -157,16 +156,35 @@ public class UserDefinedAggregatorFactory implements AggregatorFactory {
           .append(expr.getJavaExpression(param))
           .append(";\n");
 
-      // result.putType(I, valI);
-      output
-          .append(Expression.RESULT)
-          .append(".put")
-          .append(type.toJavaObjectType().getSimpleName())
-          .append("(")
-          .append(varCount)
-          .append(", val")
-          .append(varCount)
-          .append(");\n");
+      if (param.getStateSchema() == null) {
+        // state.putType(I, valI);
+        output
+            .append(Expression.STATE)
+            .append(".put")
+            .append(type.toJavaObjectType().getSimpleName())
+            .append("(")
+            .append(varCount)
+            .append("+")
+            .append(Expression.STATECOLOFFSET)
+            .append(", val")
+            .append(varCount)
+            .append(");\n");
+      } else {
+        // state.replaceType(I, stateRow, valI);
+        output
+            .append(Expression.STATE)
+            .append(".replace")
+            .append(type.toJavaObjectType().getSimpleName())
+            .append("(")
+            .append(varCount)
+            .append("+")
+            .append(Expression.STATECOLOFFSET)
+            .append(", ")
+            .append(Expression.STATEROW)
+            .append(", val")
+            .append(varCount)
+            .append(");\n");
+      }
     }
     String script = compute.append(output).toString();
     LOGGER.debug("Compiling UDA {}", script);
@@ -185,7 +203,13 @@ public class UserDefinedAggregatorFactory implements AggregatorFactory {
           se.createFastEvaluator(
               script,
               ScriptEvalInterface.class,
-              new String[] {Expression.TB, Expression.ROW, Expression.RESULT, Expression.STATE});
+              new String[] {
+                Expression.INPUT,
+                Expression.INPUTROW,
+                Expression.STATE,
+                Expression.STATEROW,
+                Expression.STATECOLOFFSET
+              });
     } catch (CompileException e) {
       LOGGER.error("Error when compiling expression {}: {}", script, e);
       throw new DbException("Error when compiling expression: " + script, e);
