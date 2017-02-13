@@ -12,6 +12,7 @@ import org.junit.Test;
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
+import edu.washington.escience.myria.util.TestEnvVars;
 import edu.washington.escience.myria.util.TestUtils;
 
 public class OrderedDupElimTest {
@@ -23,7 +24,7 @@ public class OrderedDupElimTest {
     int count = 0;
 
     /* Count the dupelim */
-    dupElim.open(null);
+    dupElim.open(TestEnvVars.get());
     while (!dupElim.eos()) {
       TupleBatch tb = dupElim.nextReady();
       if (tb == null) {

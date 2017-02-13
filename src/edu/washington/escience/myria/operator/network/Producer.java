@@ -6,7 +6,6 @@ import java.util.List;
 
 import org.jboss.netty.channel.ChannelFuture;
 
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 
 import edu.washington.escience.myria.DbException;
@@ -29,7 +28,6 @@ import edu.washington.escience.myria.parallel.ipc.StreamIOChannelID;
 import edu.washington.escience.myria.parallel.ipc.StreamOutputChannel;
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
-import edu.washington.escience.myria.util.MyriaArrayUtils;
 
 /**
  * A Producer is the counterpart of a consumer. It dispatch data using IPC channels to Consumers. Like network socket,
@@ -40,23 +38,15 @@ public abstract class Producer extends RootOperator implements StreamingStateful
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
 
-  /**
-   * The worker this operator is located at.
-   */
+  /** The worker where this operator is located. */
   private transient LocalFragmentResourceManager taskResourceManager;
 
-  /**
-   * the netty channels doing the true IPC IO.
-   */
+  /** the netty channels doing the true IPC IO. */
   private transient StreamOutputChannel<TupleBatch>[] ioChannels;
-  /**
-   * if the corresponding ioChannel is available to write again.
-   */
+  /** if the corresponding ioChannel is available to write again. */
   private transient boolean[] ioChannelsAvail;
 
-  /**
-   * output buffers of partitions.
-   */
+  /** output buffers of partitions. */
   private transient TupleBatchBuffer[] partitionBuffers;
 
   /** tried to send tuples for each channel. */
@@ -64,19 +54,13 @@ public abstract class Producer extends RootOperator implements StreamingStateful
   /** pending tuples to be sent for each channel. */
   private transient List<LinkedList<TupleBatch>> pendingTuplesToSend;
 
-  /**
-   * output channel IDs.
-   */
+  /** output channel IDs. */
   private final StreamIOChannelID[] outputIDs;
 
-  /**
-   * localized output stream channel IDs, with self references dereferenced.
-   */
+  /** localized output stream channel IDs, with self references dereferenced. */
   private transient StreamIOChannelID[] localizedOutputIDs;
 
-  /**
-   * if current query execution is in non-blocking mode.
-   */
+  /** if current query execution is in non-blocking mode. */
   private transient boolean nonBlockingExecution;
 
   /** number of parition, by default 1. */
@@ -84,67 +68,6 @@ public abstract class Producer extends RootOperator implements StreamingStateful
 
   /** if the outgoing channels are totally local. */
   private boolean totallyLocal;
-
-  /**
-   * no worker means to the owner worker.
-   *
-   * @param child the child providing data.
-   * @param oIDs operator IDs.
-   */
-  public Producer(final Operator child, final ExchangePairID[] oIDs) {
-    this(
-        child,
-        oIDs,
-        MyriaArrayUtils.arrayFillAndReturn(new int[oIDs.length], IPCConnectionPool.SELF_IPC_ID),
-        true);
-  }
-
-  /**
-   * the same oID to different workers (shuffle or copy).
-   *
-   * @param oID the operator ID.
-   * @param child the child providing data.
-   * @param destinationWorkerIDs worker IDs.
-   *
-   */
-  public Producer(
-      final Operator child, final ExchangePairID oID, final int[] destinationWorkerIDs) {
-    this(
-        child,
-        (ExchangePairID[])
-            MyriaArrayUtils.arrayFillAndReturn(
-                new ExchangePairID[destinationWorkerIDs.length], oID),
-        destinationWorkerIDs,
-        true);
-  }
-
-  /**
-   * same worker with different oIDs (multiway copy).
-   *
-   * @param oIDs the operator IDs.
-   * @param child the child providing data.
-   * @param destinationWorkerID the worker ID.
-   */
-  public Producer(
-      final Operator child, final ExchangePairID[] oIDs, final int destinationWorkerID) {
-    this(
-        child,
-        oIDs,
-        MyriaArrayUtils.arrayFillAndReturn(
-            new int[oIDs.length], Integer.valueOf(destinationWorkerID)),
-        true);
-  }
-
-  /**
-   * A single oID to a single worker (collect).
-   *
-   * @param oID the operator ID.
-   * @param child the child providing data.
-   * @param destinationWorkerID the worker ID.
-   */
-  public Producer(final Operator child, final ExchangePairID oID, final int destinationWorkerID) {
-    this(child, new ExchangePairID[] {oID}, new int[] {destinationWorkerID}, true);
-  }
 
   /**
    * Two modes:
@@ -160,34 +83,20 @@ public abstract class Producer extends RootOperator implements StreamingStateful
    *    The number of producer channels is oID.length*destinationWorkerIDs.length
    * </pre>
    *
-   *
    * @param oIDs the operator IDs.
    * @param child the child providing data.
    * @param destinationWorkerIDs the worker IDs.
    * @param isOne2OneMapping choosing the mode.
-   *
    */
   public Producer(
-      final Operator child,
-      final ExchangePairID[] oIDs,
-      final int[] destinationWorkerIDs,
-      final boolean isOne2OneMapping) {
+      final Operator child, final ExchangePairID[] oIDs, final int[] destinationWorkerIDs) {
     super(child);
-    if (isOne2OneMapping) {
-      // oID and worker pairs. each ( oIDs[i], destinationWorkerIDs[i] ) pair is a logical channel.
-      Preconditions.checkArgument(oIDs.length == destinationWorkerIDs.length);
-      outputIDs = new StreamIOChannelID[oIDs.length];
-      for (int i = 0; i < oIDs.length; i++) {
-        outputIDs[i] = new StreamIOChannelID(oIDs[i].getLong(), destinationWorkerIDs[i]);
-      }
-    } else {
-      outputIDs = new StreamIOChannelID[oIDs.length * destinationWorkerIDs.length];
-      int idx = 0;
-      for (int wID : destinationWorkerIDs) {
-        for (ExchangePairID oID : oIDs) {
-          outputIDs[idx] = new StreamIOChannelID(oID.getLong(), wID);
-          idx++;
-        }
+    outputIDs = new StreamIOChannelID[oIDs.length * destinationWorkerIDs.length];
+    int idx = 0;
+    for (int wID : destinationWorkerIDs) {
+      for (ExchangePairID oID : oIDs) {
+        outputIDs[idx] = new StreamIOChannelID(oID.getLong(), wID);
+        idx++;
       }
     }
     totallyLocal = true;
@@ -201,9 +110,7 @@ public abstract class Producer extends RootOperator implements StreamingStateful
     setBackupBuffer(new SimpleAppenderStateEncoding());
   }
 
-  /**
-   * @return the outputIDs
-   */
+  /** @return the outputIDs */
   protected StreamIOChannelID[] getOutputIDs() {
     return outputIDs;
   }
@@ -295,7 +202,6 @@ public abstract class Producer extends RootOperator implements StreamingStateful
    * set backup buffers.
    *
    * @param stateEncoding the streaming state encoding.
-   *
    */
   public void setBackupBuffer(final StreamingStateEncoding<?> stateEncoding) {
     List<StreamingState> states = new ArrayList<StreamingState>();
@@ -343,73 +249,23 @@ public abstract class Producer extends RootOperator implements StreamingStateful
   }
 
   /**
-   * Pop tuple batches from each of the buffers and try to write them to corresponding channels, if possible.
+   * Pop tuple batches from each of the buffers and try to write them to corresponding channels if possible.
    *
-   * @param usingTimeout use popAny() or popAnyUsingTimeout() when poping
    * @param partitions the list of partitions as tuple batches.
    */
-  protected final void writePartitionsIntoChannels(
-      final boolean usingTimeout, final TupleBatch[] partitions) {
-    writePartitionsIntoChannels(
-        usingTimeout, MyriaArrayUtils.create2DVerticalIndex(numChannels()), partitions);
-  }
-
-  /**
-   * Pop tuple batches from each of the buffers and try to write them to corresponding channels, if possible.
-   *
-   * @param usingTimeout use {@link TupleBatchBuffer#popAny()} or {@link TupleBatchBuffer#popAnyUsingTimeout()} when
-   *          popping
-   * @param channelIndices the same as {@link GenericShuffleProducer#cellPartition}.
-   * @param partitions the list of partitions as tuple batches.
-   */
-  protected final void writePartitionsIntoChannels(
-      final boolean usingTimeout, final int[][] channelIndices, final TupleBatch[] partitions) {
+  protected final void writePartitionsIntoChannels(final List<List<TupleBatch>> partitions) {
     FTMode mode = taskResourceManager.getFragment().getLocalSubQuery().getFTMode();
-
-    if (totallyLocal) {
-      if (partitions != null) {
-        for (int i = 0; i < numOfPartition; ++i) {
-          if (partitions[i] != null) {
-            for (int j : channelIndices[i]) {
-              if (!ioChannelsAvail[j] && mode.equals(FTMode.ABANDON)) {
-                continue;
-              }
-              pendingTuplesToSend.get(j).add(partitions[i]);
-            }
-          }
-        }
-      }
-    } else {
-      if (partitions != null) {
-        for (int i = 0; i < numOfPartition; ++i) {
-          if (partitions[i] != null) {
-            partitionBuffers[i].absorb(partitions[i]);
-          }
-        }
-      }
-      for (int i = 0; i < numOfPartition; ++i) {
-        while (true) {
-          TupleBatch tb = null;
-          if (usingTimeout) {
-            tb = partitionBuffers[i].popAnyUsingTimeout();
-          } else {
-            tb = partitionBuffers[i].popAny();
-          }
-          if (tb == null) {
-            break;
-          }
-          for (int j : channelIndices[i]) {
-            if (!ioChannelsAvail[j] && mode.equals(FTMode.ABANDON)) {
-              continue;
-            }
-            pendingTuplesToSend.get(j).add(tb);
-          }
-        }
-      }
-    }
-
     for (int i = 0; i < numChannels(); ++i) {
-      if (!ioChannelsAvail[i] && (mode.equals(FTMode.ABANDON) || mode.equals(FTMode.REJOIN))) {
+      if (!ioChannelsAvail[i] && mode.equals(FTMode.ABANDON)) {
+        continue;
+      }
+      if (partitions != null)
+        for (TupleBatch tb : partitions.get(i)) {
+          if (tb != null) {
+            pendingTuplesToSend.get(i).add(tb);
+          }
+        }
+      if (!ioChannelsAvail[i] && mode.equals(FTMode.REJOIN)) {
         continue;
       }
       while (true) {
@@ -418,7 +274,7 @@ public abstract class Producer extends RootOperator implements StreamingStateful
           break;
         }
         if (mode.equals(FTMode.REJOIN) && !(this instanceof LocalMultiwayProducer)) {
-          // rejoin, append the TB into the backup buffer in case of recovering
+          // append the TB into the backup buffer for recovery
           tb = triedToSendTuples.get(i).update(tb);
         }
         try {
@@ -426,10 +282,7 @@ public abstract class Producer extends RootOperator implements StreamingStateful
             writeMessage(i, tb);
           }
         } catch (IllegalStateException e) {
-          if (mode.equals(FTMode.ABANDON)) {
-            ioChannelsAvail[i] = false;
-            break;
-          } else if (mode.equals(FTMode.REJOIN)) {
+          if (mode.equals(FTMode.ABANDON) || mode.equals(FTMode.REJOIN)) {
             ioChannelsAvail[i] = false;
             break;
           } else {
@@ -440,9 +293,7 @@ public abstract class Producer extends RootOperator implements StreamingStateful
     }
   }
 
-  /**
-   * @return the number of tuples in all buffers.
-   */
+  /** @return the number of tuples in all buffers. */
   public final long getNumTuplesInBuffers() {
     long sum = 0;
     for (StreamingState state : triedToSendTuples) {
@@ -494,16 +345,12 @@ public abstract class Producer extends RootOperator implements StreamingStateful
     return result;
   }
 
-  /**
-   * @return number of output channels.
-   */
+  /** @return number of output channels. */
   public final int numChannels() {
     return ioChannels.length;
   }
 
-  /**
-   * @return The resource manager of the running task.
-   */
+  /** @return The resource manager of the running task. */
   protected LocalFragmentResourceManager getTaskResourceManager() {
     return taskResourceManager;
   }
@@ -546,23 +393,17 @@ public abstract class Producer extends RootOperator implements StreamingStateful
     return ret;
   }
 
-  /**
-   * @return the channel availability array.
-   */
+  /** @return the channel availability array. */
   public boolean[] getChannelsAvail() {
     return ioChannelsAvail;
   }
 
-  /**
-   * @return the channel array.
-   */
+  /** @return the channel array. */
   public StreamOutputChannel<TupleBatch>[] getChannels() {
     return ioChannels;
   }
 
-  /**
-   * process EOS and EOI logic.
-   */
+  /** process EOS and EOI logic. */
   @Override
   protected final void checkEOSAndEOI() {
     Operator child = getChild();
@@ -573,7 +414,8 @@ public abstract class Producer extends RootOperator implements StreamingStateful
       if (taskResourceManager.getFragment().getLocalSubQuery().getFTMode().equals(FTMode.REJOIN)) {
         for (LinkedList<TupleBatch> tbs : pendingTuplesToSend) {
           if (tbs.size() > 0) {
-            // due to failure, buffers are not empty, this task needs to be executed again to push these TBs out when
+            // due to failure, buffers are not empty, this task
+            // needs to be executed again to push these TBs out when
             // channels are available
             return;
           }
@@ -593,17 +435,12 @@ public abstract class Producer extends RootOperator implements StreamingStateful
     numOfPartition = num;
   }
 
-  /**
-   *
-   * @return the number of partitions.
-   */
+  /** @return the number of partitions. */
   public int getNumOfPartition() {
     return numOfPartition;
   }
 
-  /**
-   * @return the number of tuples written to channels.
-   */
+  /** @return the number of tuples written to channels. */
   public final long getNumTuplesWrittenToChannels() {
     return numTuplesWrittenToChannels;
   }

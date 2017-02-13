@@ -6,8 +6,13 @@ import java.util.Set;
 import edu.washington.escience.myria.operator.network.Consumer;
 import edu.washington.escience.myria.parallel.ExchangePairID;
 
+/**
+ * @param <C> type of the consumer
+ */
 public abstract class AbstractConsumerEncoding<C extends Consumer> extends LeafOperatorEncoding<C>
     implements ExchangeEncoding {
+
+  /** operator Id. */
   @Required public Integer argOperatorId;
 
   Integer getArgOperatorId() {

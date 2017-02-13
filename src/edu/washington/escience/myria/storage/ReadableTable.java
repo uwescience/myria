@@ -1,7 +1,7 @@
 package edu.washington.escience.myria.storage;
 
 import javax.annotation.Nonnull;
-
+import java.nio.ByteBuffer;
 import org.joda.time.DateTime;
 
 /**
@@ -66,6 +66,13 @@ public interface ReadableTable extends TupleTable {
    */
   @Nonnull
   String getString(final int column, final int row);
+
+  /**
+   * @param column the column of the desired value.
+   * @param row the row of the desired value.
+   * @return the value in the specified column and row.
+   */
+  ByteBuffer getBlob(final int column, final int row);
 
   /**
    * @param column the index of the column to be returned.

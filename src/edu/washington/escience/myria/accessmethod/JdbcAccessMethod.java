@@ -37,6 +37,7 @@ import edu.washington.escience.myria.column.Column;
 import edu.washington.escience.myria.column.builder.ColumnBuilder;
 import edu.washington.escience.myria.column.builder.ColumnFactory;
 import edu.washington.escience.myria.storage.TupleBatch;
+import edu.washington.escience.myria.storage.TupleUtils;
 import edu.washington.escience.myria.util.ErrorUtils;
 
 /**
@@ -47,7 +48,7 @@ import edu.washington.escience.myria.util.ErrorUtils;
 public final class JdbcAccessMethod extends AccessMethod {
 
   /** The logger for this class. */
-  private static final Logger LOGGER = LoggerFactory.getLogger(JdbcAccessMethod.class);
+  private final Logger LOGGER = LoggerFactory.getLogger(JdbcAccessMethod.class);
   /** The database connection information. */
   private JdbcInfo jdbcInfo;
   /** The database connection. */
@@ -204,6 +205,9 @@ public final class JdbcAccessMethod extends AccessMethod {
               case STRING_TYPE:
                 statement.setString(col + 1, tupleBatch.getString(col, row));
                 break;
+              case BLOB_TYPE:
+                statement.setBytes(col + 1, tupleBatch.getBlob(col, row).array());
+                break;
             }
           }
           statement.addBatch();
@@ -221,6 +225,7 @@ public final class JdbcAccessMethod extends AccessMethod {
   public Iterator<TupleBatch> tupleBatchIteratorFromQuery(
       final String queryString, final Schema schema) throws DbException {
     Objects.requireNonNull(jdbcConnection, "jdbcConnection");
+    int batch_size = TupleUtils.getBatchSize(schema);
     try {
       PreparedStatement statement;
       if (jdbcInfo.getDbms().equals(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL)) {
@@ -231,7 +236,7 @@ public final class JdbcAccessMethod extends AccessMethod {
         jdbcConnection.setAutoCommit(false);
         statement = jdbcConnection.prepareStatement(queryString);
         ((PGStatement) statement).setPrepareThreshold(-1);
-        statement.setFetchSize(TupleBatch.BATCH_SIZE);
+        statement.setFetchSize(batch_size);
       } else if (jdbcInfo.getDbms().equals(MyriaConstants.STORAGE_SYSTEM_MYSQL)) {
         /*
          * Special handling for MySQL comes from here:
@@ -246,7 +251,7 @@ public final class JdbcAccessMethod extends AccessMethod {
       } else {
         /* Unknown tricks for this DBMS. Hope it works! */
         statement = jdbcConnection.prepareStatement(queryString);
-        statement.setFetchSize(TupleBatch.BATCH_SIZE);
+        statement.setFetchSize(batch_size);
       }
       final ResultSet resultSet = statement.executeQuery();
       return new JdbcTupleBatchIterator(resultSet, schema);
@@ -425,6 +430,8 @@ public final class JdbcAccessMethod extends AccessMethod {
         return "BIGINT";
       case STRING_TYPE:
         return "TEXT";
+      case BLOB_TYPE:
+        return "BYTEA";
       case DATETIME_TYPE:
         return "TIMESTAMP";
       default:
@@ -693,6 +700,8 @@ public final class JdbcAccessMethod extends AccessMethod {
 class JdbcTupleBatchIterator implements Iterator<TupleBatch> {
   /** The results from a JDBC query that will be returned in TupleBatches by this Iterator. */
   private final ResultSet resultSet;
+  /** The logger for this class. */
+  private final Logger LOGGER = LoggerFactory.getLogger(JdbcTupleBatchIterator.class);
   /** The Schema of the TupleBatches returned by this Iterator. */
   private final Schema schema;
   /** Next TB. */
@@ -736,7 +745,8 @@ class JdbcTupleBatchIterator implements Iterator<TupleBatch> {
     final int numFields = schema.numColumns();
     final List<ColumnBuilder<?>> columnBuilders = ColumnFactory.allocateColumns(schema);
     int numTuples = 0;
-    for (numTuples = 0; numTuples < TupleBatch.BATCH_SIZE; ++numTuples) {
+    int batchSize = TupleUtils.getBatchSize(schema);
+    for (numTuples = 0; numTuples < batchSize; ++numTuples) {
       if (!resultSet.next()) {
         final Connection connection = resultSet.getStatement().getConnection();
         resultSet.getStatement().close();

@@ -1,5 +1,6 @@
 package edu.washington.escience.myria.expression;
 
+import java.nio.ByteBuffer;
 import java.util.Objects;
 
 import org.apache.commons.lang.StringEscapeUtils;
@@ -94,6 +95,14 @@ public class ConstantExpression extends ZeroaryExpression {
   public ConstantExpression(final String value) {
     this(Type.STRING_TYPE, value);
   }
+  /**
+   * Construct Blob constant.
+   *
+   * @param value the value of this constant.
+   */
+  public ConstantExpression(final ByteBuffer value) {
+    throw new UnsupportedOperationException();
+  }
 
   @Override
   public Type getOutputType(final ExpressionOperatorParameter parameters) {
@@ -111,6 +120,8 @@ public class ConstantExpression extends ZeroaryExpression {
         return value;
       case DATETIME_TYPE:
         throw new UnsupportedOperationException("using constant value of type DateTime");
+      case BLOB_TYPE:
+        return value;
       case STRING_TYPE:
         return '\"' + StringEscapeUtils.escapeJava(value) + '\"';
     }

@@ -160,6 +160,11 @@ public final class InMemoryOrderBy extends UnaryOperator {
                     table.getDateTime(columnIdx, rowIdx),
                     table.getDateTime(columnIdx, otherRowIdx));
             break;
+          case BLOB_TYPE:
+            compared =
+                Type.compareRaw(
+                    table.getBlob(columnIdx, rowIdx), table.getBlob(columnIdx, otherRowIdx));
+            break;
         }
         if (compared != 0) {
           if (ascending[i]) {

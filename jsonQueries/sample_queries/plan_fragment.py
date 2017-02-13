@@ -53,9 +53,9 @@ def repartition_on_x():
         'opId' : 'Scatter',
         'argChild' : 'Scan',
         'argOperatorId' : 'hash(follower)',
-        'argPf' : {
-            'type' : 'SingleFieldHash',
-            'index' : 0
+        'distributeFunction' : {
+            'type' : 'Hash',
+            'indexes' : [0]
         }
     }
     gather = {
@@ -107,9 +107,9 @@ def single_join():
         'opId' : 'Scatter0',
         'argChild' : 'Scan0',
         'argOperatorId' : 'hash(x)',
-        'argPf' : {
-            'type' : 'SingleFieldHash',
-            'index' : 0
+        'distributeFunction' : {
+            'type' : 'Hash',
+            'indexes' : [0]
         }
     }
     gather0 = {
@@ -136,9 +136,9 @@ def single_join():
         'opId' : 'Scatter1',
         'argChild' : 'Scan1',
         'argOperatorId' : 'hash(y)',
-        'argPf' : {
-            'type' : 'SingleFieldHash',
-            'index' : 1
+        'distributeFunction' : {
+            'type' : 'Hash',
+            'indexes' : [1]
         }
     }
     gather1 = {
@@ -218,7 +218,7 @@ def ingest_tipsy_rr():
         'opId' : 'Scatter',
         'argChild' : 'Scan',
         'argOperatorId' : 'RoundRobin',
-        'argPf' : {
+        'distributeFunction' : {
             'type' : 'RoundRobin'
         }
     }
@@ -268,9 +268,9 @@ def ingest_tipsy_hash_iorder():
         'opId' : 'Scatter',
         'argChild' : 'Scan',
         'argOperatorId' : 'hash(iorder)',
-        'argPf' : {
-            'type' : 'SingleFieldHash',
-            'index' : 0
+        'distributeFunction' : {
+            'type' : 'Hash',
+            'indexes' : [0]
         }
     }
     scan_fragment = {

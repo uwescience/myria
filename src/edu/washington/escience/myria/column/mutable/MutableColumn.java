@@ -5,7 +5,7 @@ import java.io.Serializable;
 import javax.annotation.Nonnull;
 
 import org.joda.time.DateTime;
-
+import java.nio.ByteBuffer;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.Column;
 import edu.washington.escience.myria.storage.ReadableColumn;
@@ -50,6 +50,11 @@ public abstract class MutableColumn<T extends Comparable<?>>
 
   @Override
   public long getLong(final int row) {
+    throw new UnsupportedOperationException(getClass().getName());
+  }
+
+  @Override
+  public ByteBuffer getBlob(final int row) {
     throw new UnsupportedOperationException(getClass().getName());
   }
 
@@ -100,6 +105,11 @@ public abstract class MutableColumn<T extends Comparable<?>>
 
   @Override
   public void replaceString(@Nonnull final String value, final int row) {
+    throw new UnsupportedOperationException(getClass().getName());
+  }
+
+  @Override
+  public void replaceBlob(@Nonnull final ByteBuffer value, final int row) {
     throw new UnsupportedOperationException(getClass().getName());
   }
 

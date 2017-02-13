@@ -6,7 +6,7 @@ import java.util.List;
 import javax.annotation.Nonnull;
 
 import org.joda.time.DateTime;
-
+import java.nio.ByteBuffer;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 
@@ -107,6 +107,12 @@ public class Tuple implements Cloneable, AppendableTable, ReadableTable, Seriali
   }
 
   @Override
+  public ByteBuffer getBlob(final int column, final int row) {
+    Preconditions.checkArgument(getSchema().getColumnType(column) == Type.BLOB_TYPE);
+    return (ByteBuffer) getValue(column, row);
+  }
+
+  @Override
   public Object getObject(final int column, final int row) {
     return getValue(column, row);
   }
@@ -191,6 +197,11 @@ public class Tuple implements Cloneable, AppendableTable, ReadableTable, Seriali
 
   @Override
   public void putObject(final int column, final @Nonnull Object value) {
+    set(column, value);
+  }
+
+  @Override
+  public void putBlob(final int column, @Nonnull final ByteBuffer value) {
     set(column, value);
   }
 

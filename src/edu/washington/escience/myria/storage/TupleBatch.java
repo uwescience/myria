@@ -5,7 +5,7 @@ import java.util.Arrays;
 import java.util.BitSet;
 import java.util.List;
 import java.util.Objects;
-
+import java.nio.ByteBuffer;
 import org.joda.time.DateTime;
 
 import com.google.common.base.Preconditions;
@@ -15,21 +15,21 @@ import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.Column;
 import edu.washington.escience.myria.column.PrefixColumn;
-import edu.washington.escience.myria.operator.network.partition.PartitionFunction;
+import edu.washington.escience.myria.operator.network.distribute.PartitionFunction;
 import edu.washington.escience.myria.proto.TransportProto.TransportMessage;
 import edu.washington.escience.myria.util.IPCUtils;
 import net.jcip.annotations.ThreadSafe;
 
 /**
- * Container class for a batch of tuples. The goal is to amortize memory management overhead.
- *
+ * Container class for a batch of tuples. The goal is to amortize memory management overhead and processing overhead
+ * from code/data locality.
  */
 @ThreadSafe
 public class TupleBatch implements ReadableTable, Serializable {
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
   /** The hard-coded number of tuples in a batch. */
-  public static final int BATCH_SIZE = 10 * 1000;
+  private int batchSize;
   /** Schema of tuples in this batch. */
   private final Schema schema;
   /** Tuple data stored as columns in this batch. */
@@ -54,9 +54,10 @@ public class TupleBatch implements ReadableTable, Serializable {
     }
     columns = b.build();
     isEOI = isEoi;
+    batchSize = TupleUtils.getBatchSize(schema);
   }
 
-  /**
+  /*
    * @param columnNames the new column names.
    * @return a shallow copy of the specified TupleBatch with the new column names.
    */
@@ -117,6 +118,7 @@ public class TupleBatch implements ReadableTable, Serializable {
     }
     this.numTuples = numTuples;
     this.isEOI = isEOI;
+    batchSize = TupleUtils.getBatchSize(schema);
   }
 
   /**
@@ -230,6 +232,11 @@ public class TupleBatch implements ReadableTable, Serializable {
   }
 
   @Override
+  public ByteBuffer getBlob(final int column, final int row) {
+    return columns.get(column).getBlob(row);
+  }
+
+  @Override
   public final int numColumns() {
     return schema.numColumns();
   }
@@ -247,36 +254,17 @@ public class TupleBatch implements ReadableTable, Serializable {
    * @param pf the partition function.
    */
   public final TupleBatch[] partition(final PartitionFunction pf) {
-    TupleBatch[] result = new TupleBatch[pf.numPartition()];
     if (isEOI) {
+      TupleBatch[] result = new TupleBatch[pf.numPartitions()];
       Arrays.fill(result, this);
       return result;
     }
-
-    final int[] partitions = pf.partition(this);
-
-    BitSet[] resultBitSet = new BitSet[result.length];
-    for (int i = 0; i < partitions.length; i++) {
-      int p = partitions[i];
-      Preconditions.checkElementIndex(p, result.length);
-      if (resultBitSet[p] == null) {
-        resultBitSet[p] = new BitSet(result.length);
-      }
-      resultBitSet[p].set(i);
-    }
-
-    for (int i = 0; i < result.length; i++) {
-      if (resultBitSet[i] != null) {
-        result[i] = filter(resultBitSet[i]);
-      }
-    }
-    return result;
+    return pf.partition(this);
   }
 
   /**
-   * Creates a new TupleBatch with only the indicated columns.
-   *
-   * Internal implementation of a (non-duplicate-eliminating) PROJECT statement.
+   * Creates a new TupleBatch with only the indicated columns. Internal implementation of a (non-duplicate-eliminating)
+   * PROJECT statement.
    *
    * @param remainingColumns zero-indexed array of columns to retain.
    * @return a projected TupleBatch.
@@ -319,16 +307,12 @@ public class TupleBatch implements ReadableTable, Serializable {
     return sb.toString();
   }
 
-  /**
-   * @return the data columns.
-   */
+  /** @return the data columns. */
   public final ImmutableList<? extends Column<?>> getDataColumns() {
     return columns;
   }
 
-  /**
-   * @return a TransportMessage encoding the TupleBatch.
-   */
+  /** @return a TransportMessage encoding the TupleBatch. */
   public final TransportMessage toTransportMessage() {
     return IPCUtils.normalDataMessage(columns, numTuples);
   }
@@ -343,9 +327,7 @@ public class TupleBatch implements ReadableTable, Serializable {
     return new TupleBatch(schema, true);
   }
 
-  /**
-   * @return if the TupleBatch is an EOI.
-   */
+  /** @return if the TupleBatch is an EOI. */
   public final boolean isEOI() {
     return isEOI;
   }
@@ -373,5 +355,9 @@ public class TupleBatch implements ReadableTable, Serializable {
   @Override
   public ReadableColumn asColumn(final int column) {
     return columns.get(column);
+  }
+
+  public int getBatchSize() {
+    return batchSize;
   }
 }

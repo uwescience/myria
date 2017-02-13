@@ -1,21 +1,26 @@
 package edu.washington.escience.myria.util;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URISyntaxException;
+import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.SortedSet;
-import java.util.TreeSet;
-
+import org.apache.commons.io.IOUtils;
 import org.joda.time.DateTime;
 
 import com.google.common.base.Preconditions;
+import edu.washington.escience.myria.io.AmazonS3Source;
+import edu.washington.escience.myria.io.UriSource;
 
 /**
  * Generic utilities for Myria.
- *
  */
 public final class MyriaUtils {
+  private static final org.slf4j.Logger LOGGER =
+      org.slf4j.LoggerFactory.getLogger(MyriaUtils.class);
   /**
    * Utility classes should not be instantiated.
    */
@@ -49,28 +54,6 @@ public final class MyriaUtils {
       return e;
     }
     return null;
-  }
-
-  /**
-   * Convert a collection of integers to a sorted int[].
-   *
-   * @param input the collection of integers.
-   * @return an int[] containing the given integers.
-   */
-  public static int[] integerSetToIntArray(final Set<Integer> input) {
-    SortedSet<Integer> set;
-    if (input instanceof SortedSet) {
-      set = (SortedSet<Integer>) input;
-    } else {
-      set = new TreeSet<>(input);
-    }
-    int[] output = new int[input.size()];
-    int i = 0;
-    for (int value : set) {
-      output[i] = value;
-      ++i;
-    }
-    return output;
   }
 
   /**
@@ -155,7 +138,31 @@ public final class MyriaUtils {
     if (o instanceof String) {
       return o;
     }
+    if (o instanceof ByteBuffer) {
+      return o;
+    }
+    if (o == null) {
+      // allow initialization with a null object -- needed for BlobType.
+      return o;
+    }
     throw new IllegalArgumentException(
         "Object of type " + o.getClass() + " is not a valid Myria type");
+  }
+  /**
+   * This function is called by DownloadBlob expression. It cannot throw an exception as it
+   * is a complied expression, so, it returns null if there is an error in retriving the binary data.
+   * @param filename uri of the binary data.
+   * @return Binary data in ByteBuffer format.
+   */
+  public static ByteBuffer getBlob(final String filename) {
+    try {
+      UriSource file = new UriSource(filename);
+      InputStream is = file.getInputStream();
+      return ByteBuffer.wrap(IOUtils.toByteArray(is));
+
+    } catch (Exception e) {
+      LOGGER.debug(e.getMessage());
+      return null;
+    }
   }
 }

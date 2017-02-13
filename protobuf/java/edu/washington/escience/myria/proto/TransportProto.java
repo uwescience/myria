@@ -8,10 +8,10 @@ public final class TransportProto {
   public static void registerAllExtensions(
       com.google.protobuf.ExtensionRegistry registry) {
   }
-  public interface TransportMessageOrBuilder
-      extends com.google.protobuf.MessageOrBuilder {
+  public interface TransportMessageOrBuilder extends
+      // @@protoc_insertion_point(interface_extends:TransportMessage)
+      com.google.protobuf.MessageOrBuilder {
 
-    // required .TransportMessage.Type type = 1;
     /**
      * <code>required .TransportMessage.Type type = 1;</code>
      */
@@ -21,7 +21,6 @@ public final class TransportProto {
      */
     edu.washington.escience.myria.proto.TransportProto.TransportMessage.Type getType();
 
-    // optional .DataMessage dataMessage = 2;
     /**
      * <code>optional .DataMessage dataMessage = 2;</code>
      */
@@ -35,7 +34,6 @@ public final class TransportProto {
      */
     edu.washington.escience.myria.proto.DataProto.DataMessageOrBuilder getDataMessageOrBuilder();
 
-    // optional .QueryMessage queryMessage = 3;
     /**
      * <code>optional .QueryMessage queryMessage = 3;</code>
      */
@@ -49,7 +47,6 @@ public final class TransportProto {
      */
     edu.washington.escience.myria.proto.QueryProto.QueryMessageOrBuilder getQueryMessageOrBuilder();
 
-    // optional .ControlMessage controlMessage = 4;
     /**
      * <code>optional .ControlMessage controlMessage = 4;</code>
      */
@@ -67,8 +64,9 @@ public final class TransportProto {
    * Protobuf type {@code TransportMessage}
    */
   public static final class TransportMessage extends
-      com.google.protobuf.GeneratedMessage
-      implements TransportMessageOrBuilder {
+      com.google.protobuf.GeneratedMessage implements
+      // @@protoc_insertion_point(message_implements:TransportMessage)
+      TransportMessageOrBuilder {
     // Use TransportMessage.newBuilder() to construct.
     private TransportMessage(com.google.protobuf.GeneratedMessage.Builder<?> builder) {
       super(builder);
@@ -295,7 +293,6 @@ public final class TransportProto {
     }
 
     private int bitField0_;
-    // required .TransportMessage.Type type = 1;
     public static final int TYPE_FIELD_NUMBER = 1;
     private edu.washington.escience.myria.proto.TransportProto.TransportMessage.Type type_;
     /**
@@ -311,7 +308,6 @@ public final class TransportProto {
       return type_;
     }
 
-    // optional .DataMessage dataMessage = 2;
     public static final int DATAMESSAGE_FIELD_NUMBER = 2;
     private edu.washington.escience.myria.proto.DataProto.DataMessage dataMessage_;
     /**
@@ -333,7 +329,6 @@ public final class TransportProto {
       return dataMessage_;
     }
 
-    // optional .QueryMessage queryMessage = 3;
     public static final int QUERYMESSAGE_FIELD_NUMBER = 3;
     private edu.washington.escience.myria.proto.QueryProto.QueryMessage queryMessage_;
     /**
@@ -355,7 +350,6 @@ public final class TransportProto {
       return queryMessage_;
     }
 
-    // optional .ControlMessage controlMessage = 4;
     public static final int CONTROLMESSAGE_FIELD_NUMBER = 4;
     private edu.washington.escience.myria.proto.ControlProto.ControlMessage controlMessage_;
     /**
@@ -386,7 +380,8 @@ public final class TransportProto {
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
       byte isInitialized = memoizedIsInitialized;
-      if (isInitialized != -1) return isInitialized == 1;
+      if (isInitialized == 1) return true;
+      if (isInitialized == 0) return false;
 
       if (!hasType()) {
         memoizedIsInitialized = 0;
@@ -536,8 +531,9 @@ public final class TransportProto {
      * Protobuf type {@code TransportMessage}
      */
     public static final class Builder extends
-        com.google.protobuf.GeneratedMessage.Builder<Builder>
-       implements edu.washington.escience.myria.proto.TransportProto.TransportMessageOrBuilder {
+        com.google.protobuf.GeneratedMessage.Builder<Builder> implements
+        // @@protoc_insertion_point(builder_implements:TransportMessage)
+        edu.washington.escience.myria.proto.TransportProto.TransportMessageOrBuilder {
       public static final com.google.protobuf.Descriptors.Descriptor
           getDescriptor() {
         return edu.washington.escience.myria.proto.TransportProto.internal_static_TransportMessage_descriptor;
@@ -726,7 +722,6 @@ public final class TransportProto {
       }
       private int bitField0_;
 
-      // required .TransportMessage.Type type = 1;
       private edu.washington.escience.myria.proto.TransportProto.TransportMessage.Type type_ = edu.washington.escience.myria.proto.TransportProto.TransportMessage.Type.DATA;
       /**
        * <code>required .TransportMessage.Type type = 1;</code>
@@ -762,7 +757,6 @@ public final class TransportProto {
         return this;
       }
 
-      // optional .DataMessage dataMessage = 2;
       private edu.washington.escience.myria.proto.DataProto.DataMessage dataMessage_ = edu.washington.escience.myria.proto.DataProto.DataMessage.getDefaultInstance();
       private com.google.protobuf.SingleFieldBuilder<
           edu.washington.escience.myria.proto.DataProto.DataMessage, edu.washington.escience.myria.proto.DataProto.DataMessage.Builder, edu.washington.escience.myria.proto.DataProto.DataMessageOrBuilder> dataMessageBuilder_;
@@ -871,7 +865,7 @@ public final class TransportProto {
         if (dataMessageBuilder_ == null) {
           dataMessageBuilder_ = new com.google.protobuf.SingleFieldBuilder<
               edu.washington.escience.myria.proto.DataProto.DataMessage, edu.washington.escience.myria.proto.DataProto.DataMessage.Builder, edu.washington.escience.myria.proto.DataProto.DataMessageOrBuilder>(
-                  dataMessage_,
+                  getDataMessage(),
                   getParentForChildren(),
                   isClean());
           dataMessage_ = null;
@@ -879,7 +873,6 @@ public final class TransportProto {
         return dataMessageBuilder_;
       }
 
-      // optional .QueryMessage queryMessage = 3;
       private edu.washington.escience.myria.proto.QueryProto.QueryMessage queryMessage_ = edu.washington.escience.myria.proto.QueryProto.QueryMessage.getDefaultInstance();
       private com.google.protobuf.SingleFieldBuilder<
           edu.washington.escience.myria.proto.QueryProto.QueryMessage, edu.washington.escience.myria.proto.QueryProto.QueryMessage.Builder, edu.washington.escience.myria.proto.QueryProto.QueryMessageOrBuilder> queryMessageBuilder_;
@@ -988,7 +981,7 @@ public final class TransportProto {
         if (queryMessageBuilder_ == null) {
           queryMessageBuilder_ = new com.google.protobuf.SingleFieldBuilder<
               edu.washington.escience.myria.proto.QueryProto.QueryMessage, edu.washington.escience.myria.proto.QueryProto.QueryMessage.Builder, edu.washington.escience.myria.proto.QueryProto.QueryMessageOrBuilder>(
-                  queryMessage_,
+                  getQueryMessage(),
                   getParentForChildren(),
                   isClean());
           queryMessage_ = null;
@@ -996,7 +989,6 @@ public final class TransportProto {
         return queryMessageBuilder_;
       }
 
-      // optional .ControlMessage controlMessage = 4;
       private edu.washington.escience.myria.proto.ControlProto.ControlMessage controlMessage_ = edu.washington.escience.myria.proto.ControlProto.ControlMessage.getDefaultInstance();
       private com.google.protobuf.SingleFieldBuilder<
           edu.washington.escience.myria.proto.ControlProto.ControlMessage, edu.washington.escience.myria.proto.ControlProto.ControlMessage.Builder, edu.washington.escience.myria.proto.ControlProto.ControlMessageOrBuilder> controlMessageBuilder_;
@@ -1105,7 +1097,7 @@ public final class TransportProto {
         if (controlMessageBuilder_ == null) {
           controlMessageBuilder_ = new com.google.protobuf.SingleFieldBuilder<
               edu.washington.escience.myria.proto.ControlProto.ControlMessage, edu.washington.escience.myria.proto.ControlProto.ControlMessage.Builder, edu.washington.escience.myria.proto.ControlProto.ControlMessageOrBuilder>(
-                  controlMessage_,
+                  getControlMessage(),
                   getParentForChildren(),
                   isClean());
           controlMessage_ = null;
@@ -1124,7 +1116,7 @@ public final class TransportProto {
     // @@protoc_insertion_point(class_scope:TransportMessage)
   }
 
-  private static com.google.protobuf.Descriptors.Descriptor
+  private static final com.google.protobuf.Descriptors.Descriptor
     internal_static_TransportMessage_descriptor;
   private static
     com.google.protobuf.GeneratedMessage.FieldAccessorTable
@@ -1149,19 +1141,13 @@ public final class TransportProto {
       "oto"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
-      new com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
-        public com.google.protobuf.ExtensionRegistry assignDescriptors(
-            com.google.protobuf.Descriptors.FileDescriptor root) {
-          descriptor = root;
-          internal_static_TransportMessage_descriptor =
-            getDescriptor().getMessageTypes().get(0);
-          internal_static_TransportMessage_fieldAccessorTable = new
-            com.google.protobuf.GeneratedMessage.FieldAccessorTable(
-              internal_static_TransportMessage_descriptor,
-              new java.lang.String[] { "Type", "DataMessage", "QueryMessage", "ControlMessage", });
-          return null;
-        }
-      };
+        new com.google.protobuf.Descriptors.FileDescriptor.    InternalDescriptorAssigner() {
+          public com.google.protobuf.ExtensionRegistry assignDescriptors(
+              com.google.protobuf.Descriptors.FileDescriptor root) {
+            descriptor = root;
+            return null;
+          }
+        };
     com.google.protobuf.Descriptors.FileDescriptor
       .internalBuildGeneratedFileFrom(descriptorData,
         new com.google.protobuf.Descriptors.FileDescriptor[] {
@@ -1169,6 +1155,15 @@ public final class TransportProto {
           edu.washington.escience.myria.proto.ControlProto.getDescriptor(),
           edu.washington.escience.myria.proto.QueryProto.getDescriptor(),
         }, assigner);
+    internal_static_TransportMessage_descriptor =
+      getDescriptor().getMessageTypes().get(0);
+    internal_static_TransportMessage_fieldAccessorTable = new
+      com.google.protobuf.GeneratedMessage.FieldAccessorTable(
+        internal_static_TransportMessage_descriptor,
+        new java.lang.String[] { "Type", "DataMessage", "QueryMessage", "ControlMessage", });
+    edu.washington.escience.myria.proto.DataProto.getDescriptor();
+    edu.washington.escience.myria.proto.ControlProto.getDescriptor();
+    edu.washington.escience.myria.proto.QueryProto.getDescriptor();
   }
 
   // @@protoc_insertion_point(outer_class_scope)

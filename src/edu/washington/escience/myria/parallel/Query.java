@@ -206,10 +206,8 @@ public final class Query {
       return currentSubQuery;
     }
     planQ.getFirst().instantiate(planQ, subQueryQ, new ConstructArgs(server, queryId));
-    /*
-     * The above line may have emptied planQ, mucked with subQueryQ, not sure. So just recurse to make sure we do the
-     * right thing.
-     */
+    /* The above line may have emptied planQ, mucked with subQueryQ, not sure. So just recurse to make sure we do the
+     * right thing. */
     return nextSubQuery();
   }
 
@@ -451,10 +449,8 @@ public final class Query {
     if (persistentRelations.size() == 0) {
       return;
     }
-    /*
-     * Add the DatasetMetadataUpdater, which will update the catalog with the set of workers created when the query
-     * succeeds. Note that we only use persistent relations here.
-     */
+    /* Add the DatasetMetadataUpdater, which will update the catalog with the set of workers created when the query
+     * succeeds. Note that we only use persistent relations here. */
     DatasetMetadataUpdater dsmd =
         new DatasetMetadataUpdater(catalog, persistentRelations, subQuery.getSubQueryId());
     future.addPreListener(dsmd);
@@ -476,7 +472,7 @@ public final class Query {
    * @param relationKey the desired temp relation
    * @return the set of workers storing the specified temp relation
    */
-  public Set<Integer> getWorkersForTempRelation(@Nonnull final RelationKey relationKey) {
+  public @Nonnull Set<Integer> getWorkersForTempRelation(@Nonnull final RelationKey relationKey) {
     return getMetadata(relationKey).getWorkers();
   }
 

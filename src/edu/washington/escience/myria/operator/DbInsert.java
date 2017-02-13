@@ -20,16 +20,14 @@ import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.accessmethod.AccessMethod;
 import edu.washington.escience.myria.accessmethod.AccessMethod.IndexRef;
+import edu.washington.escience.myria.operator.network.distribute.DistributeFunction;
 import edu.washington.escience.myria.accessmethod.ConnectionInfo;
 import edu.washington.escience.myria.accessmethod.SQLiteInfo;
-import edu.washington.escience.myria.operator.network.partition.PartitionFunction;
 import edu.washington.escience.myria.parallel.RelationWriteMetadata;
 import edu.washington.escience.myria.storage.TupleBatch;
+import edu.washington.escience.myria.storage.TupleUtils;
 
-/**
- * @author valmeida
- *
- */
+/** @author valmeida */
 public class DbInsert extends AbstractDbInsert {
 
   /** Required for Java serialization. */
@@ -46,47 +44,41 @@ public class DbInsert extends AbstractDbInsert {
   private RelationKey tempRelationKey;
   /** The indexes to be created on the table. Each entry is a list of columns. */
   private final List<List<IndexRef>> indexes;
-  /** The PartitionFunction used to partition the table across workers. */
-  private final PartitionFunction partitionFunction;
+  /** The DistributeFunction used to distribute the table across workers. */
+  private final DistributeFunction distributeFunction;
 
-  /**
-   * Constructs an insertion operator to store the tuples from the specified child into the specified database. If the
+  /** Constructs an insertion operator to store the tuples from the specified child into the specified database. If the
    * table does not exist, it will be created; if it does exist then old data will persist and new data will be
    * inserted.
    *
    * @param child the source of tuples to be inserted.
    * @param relationKey the key of the table the tuples should be inserted into.
-   * @param connectionInfo the parameters of the database connection.
-   */
+   * @param connectionInfo the parameters of the database connection. */
   public DbInsert(
       final Operator child, final RelationKey relationKey, final ConnectionInfo connectionInfo) {
     this(child, relationKey, connectionInfo, false);
   }
 
-  /**
-   * Constructs an insertion operator to store the tuples from the specified child into the worker's default database.
+  /** Constructs an insertion operator to store the tuples from the specified child into the worker's default database.
    * If the table does not exist, it will be created. If <code>overwriteTable</code> is <code>true</code>, any existing
    * data will be dropped.
    *
    * @param child the source of tuples to be inserted.
    * @param relationKey the key of the table the tuples should be inserted into.
-   * @param overwriteTable whether to overwrite a table that already exists.
-   */
+   * @param overwriteTable whether to overwrite a table that already exists. */
   public DbInsert(
       final Operator child, final RelationKey relationKey, final boolean overwriteTable) {
     this(child, relationKey, null, overwriteTable);
   }
 
-  /**
-   * Constructs an insertion operator to store the tuples from the specified child into the specified database. If the
+  /** Constructs an insertion operator to store the tuples from the specified child into the specified database. If the
    * table does not exist, it will be created. If <code>overwriteTable</code> is <code>true</code>, any existing data
    * will be dropped.
    *
    * @param child the source of tuples to be inserted.
    * @param relationKey the key of the table the tuples should be inserted into.
    * @param overwriteTable whether to overwrite a table that already exists.
-   * @param indexes indexes created.
-   */
+   * @param indexes indexes created. */
   public DbInsert(
       final Operator child,
       final RelationKey relationKey,
@@ -95,16 +87,14 @@ public class DbInsert extends AbstractDbInsert {
     this(child, relationKey, null, overwriteTable, indexes);
   }
 
-  /**
-   * Constructs an insertion operator to store the tuples from the specified child into the specified database. If the
+  /** Constructs an insertion operator to store the tuples from the specified child into the specified database. If the
    * table does not exist, it will be created. If <code>overwriteTable</code> is <code>true</code>, any existing data
    * will be dropped.
    *
    * @param child the source of tuples to be inserted.
    * @param relationKey the key of the table the tuples should be inserted into.
    * @param connectionInfo the parameters of the database connection.
-   * @param overwriteTable whether to overwrite a table that already exists.
-   */
+   * @param overwriteTable whether to overwrite a table that already exists. */
   public DbInsert(
       final Operator child,
       final RelationKey relationKey,
@@ -113,8 +103,7 @@ public class DbInsert extends AbstractDbInsert {
     this(child, relationKey, connectionInfo, overwriteTable, null);
   }
 
-  /**
-   * Constructs an insertion operator to store the tuples from the specified child into the specified database. If the
+  /** Constructs an insertion operator to store the tuples from the specified child into the specified database. If the
    * table does not exist, it will be created. If <code>overwriteTable</code> is <code>true</code>, any existing data
    * will be dropped.
    *
@@ -122,8 +111,7 @@ public class DbInsert extends AbstractDbInsert {
    * @param relationKey the key of the table the tuples should be inserted into.
    * @param connectionInfo the parameters of the database connection.
    * @param overwriteTable whether to overwrite a table that already exists.
-   * @param indexes the indexes to be created on the table. Each entry is a list of columns.
-   */
+   * @param indexes the indexes to be created on the table. Each entry is a list of columns. */
   public DbInsert(
       final Operator child,
       final RelationKey relationKey,
@@ -133,8 +121,7 @@ public class DbInsert extends AbstractDbInsert {
     this(child, relationKey, connectionInfo, overwriteTable, indexes, null);
   }
 
-  /**
-   * Constructs an insertion operator to store the tuples from the specified child into the specified database. If the
+  /** Constructs an insertion operator to store the tuples from the specified child into the specified database. If the
    * table does not exist, it will be created. If <code>overwriteTable</code> is <code>true</code>, any existing data
    * will be dropped.
    *
@@ -143,34 +130,28 @@ public class DbInsert extends AbstractDbInsert {
    * @param connectionInfo the parameters of the database connection.
    * @param overwriteTable whether to overwrite a table that already exists.
    * @param indexes the indexes to be created on the table. Each entry is a list of columns.
-   * @param partitionFunction the PartitionFunction used to partition the table across workers.
-   */
+   * @param partitionFunction the PartitionFunction used to partition the table across workers. */
   public DbInsert(
       final Operator child,
       final RelationKey relationKey,
       final ConnectionInfo connectionInfo,
       final boolean overwriteTable,
       final List<List<IndexRef>> indexes,
-      final PartitionFunction partitionFunction) {
+      final DistributeFunction distributeFunction) {
     super(child);
     Objects.requireNonNull(relationKey, "relationKey");
     this.connectionInfo = connectionInfo;
     this.relationKey = relationKey;
     this.overwriteTable = overwriteTable;
-    this.partitionFunction = partitionFunction;
+    this.distributeFunction = distributeFunction;
     /* Sanity check arguments -- cannot create an index in append mode. */
     Preconditions.checkArgument(
         overwriteTable || indexes == null || indexes.size() == 0,
         "Cannot create indexes when appending to a relation.");
-    /*
-     * 1) construct immutable copies of the given indexes.
-     *
+    /* 1) construct immutable copies of the given indexes.
      * 2) ensure that the index requests are valid:
-     *
-     * - lists of column references must be non-null.
-     *
-     * - column references are unique per index.
-     */
+     *    - lists of column references must be non-null.
+     *    - column references are unique per index. */
     if (indexes != null) {
       ImmutableList.Builder<List<IndexRef>> index = ImmutableList.builder();
       for (List<IndexRef> i : indexes) {
@@ -212,6 +193,8 @@ public class DbInsert extends AbstractDbInsert {
 
   @Override
   protected void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
+
+    setThreshold(TupleUtils.getBatchSize(getSchema()));
 
     /* retrieve connection information from the environment variables, if not already set */
     if (connectionInfo == null && execEnvVars != null) {
@@ -267,9 +250,7 @@ public class DbInsert extends AbstractDbInsert {
   @Override
   protected void childEOI() throws DbException {}
 
-  /**
-   * @return the name of the relation that this operator will write to.
-   */
+  /** @return the name of the relation that this operator will write to. */
   public RelationKey getRelationKey() {
     return relationKey;
   }
@@ -279,6 +260,6 @@ public class DbInsert extends AbstractDbInsert {
     return ImmutableMap.of(
         relationKey,
         new RelationWriteMetadata(
-            relationKey, getSchema(), overwriteTable, false, partitionFunction));
+            relationKey, getSchema(), overwriteTable, false, distributeFunction));
   }
 }

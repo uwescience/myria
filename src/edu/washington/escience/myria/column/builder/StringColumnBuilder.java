@@ -17,6 +17,7 @@ import edu.washington.escience.myria.column.mutable.StringMutableColumn;
 import edu.washington.escience.myria.proto.DataProto.ColumnMessage;
 import edu.washington.escience.myria.proto.DataProto.StringColumnMessage;
 import edu.washington.escience.myria.storage.TupleBatch;
+import edu.washington.escience.myria.storage.TupleUtils;
 import edu.washington.escience.myria.util.MyriaUtils;
 
 /**
@@ -40,7 +41,7 @@ public final class StringColumnBuilder extends ColumnBuilder<String> {
   /** Constructs an empty column that can hold up to TupleBatch.BATCH_SIZE elements. */
   public StringColumnBuilder() {
     numStrings = 0;
-    data = new String[TupleBatch.BATCH_SIZE];
+    data = new String[TupleUtils.getBatchSize(Type.STRING_TYPE)];
   }
 
   /**
@@ -84,7 +85,7 @@ public final class StringColumnBuilder extends ColumnBuilder<String> {
     Preconditions.checkState(
         !built, "No further changes are allowed after the builder has built the column.");
     Objects.requireNonNull(value, "value");
-    if (numStrings >= TupleBatch.BATCH_SIZE) {
+    if (numStrings >= TupleUtils.getBatchSize(Type.STRING_TYPE)) {
       throw new BufferOverflowException();
     }
     data[numStrings++] = value;

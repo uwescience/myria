@@ -43,6 +43,7 @@ import edu.washington.escience.myria.operator.agg.SingleGroupByAggregate;
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
 import edu.washington.escience.myria.storage.TupleBuffer;
+import edu.washington.escience.myria.storage.TupleUtils;
 import edu.washington.escience.myria.util.HashUtils;
 import edu.washington.escience.myria.util.TestEnvVars;
 import edu.washington.escience.myria.util.TestUtils;
@@ -171,6 +172,7 @@ public class AggregateTest {
     /* Do it -- this should cause an error. */
     agg.open(TestEnvVars.get());
     TupleBatch tb = agg.nextReady();
+
     agg.close();
     /* Take the 1st through nth column, because the first column is the thing we grouped by. */
     int[] colsToKeep = new int[tb.numColumns() - 1];
@@ -392,7 +394,7 @@ public class AggregateTest {
 
   @Test
   public void testSingleGroupAvg() throws DbException, InterruptedException {
-    final int numTuples = 2 * TupleBatch.BATCH_SIZE + 1;
+    final int numTuples = 2 * TupleUtils.getBatchSize(Type.DOUBLE_TYPE) + 1;
 
     final TupleBatchBuffer testBase = generateRandomTuples(numTuples);
     // group by name, aggregate on id
@@ -401,7 +403,7 @@ public class AggregateTest {
             new BatchTupleSource(testBase),
             1,
             new SingleColumnAggregatorFactory(0, AggregationOp.AVG));
-    agg.open(null);
+    agg.open(TestEnvVars.get());
     TupleBatch tb = null;
     final TupleBatchBuffer result = new TupleBatchBuffer(agg.getSchema());
     while (!agg.eos()) {
@@ -417,7 +419,7 @@ public class AggregateTest {
 
   @Test
   public void testSingleGroupMax() throws DbException, InterruptedException {
-    final int numTuples = 2 * TupleBatch.BATCH_SIZE + 1;
+    final int numTuples = 2 * TupleUtils.getBatchSize(Type.LONG_TYPE) + 1;
 
     final TupleBatchBuffer testBase = generateRandomTuples(numTuples);
     // group by name, aggregate on id
@@ -426,7 +428,7 @@ public class AggregateTest {
             new BatchTupleSource(testBase),
             1,
             new SingleColumnAggregatorFactory(0, AggregationOp.MAX));
-    agg.open(null);
+    agg.open(TestEnvVars.get());
     TupleBatch tb = null;
     TupleBatchBuffer result = new TupleBatchBuffer(agg.getSchema());
     while (!agg.eos()) {
@@ -444,7 +446,7 @@ public class AggregateTest {
             new BatchTupleSource(testBase),
             0,
             new SingleColumnAggregatorFactory(1, AggregationOp.MAX));
-    agg.open(null);
+    agg.open(TestEnvVars.get());
     tb = null;
     result = new TupleBatchBuffer(agg.getSchema());
     while (!agg.eos()) {
@@ -460,7 +462,7 @@ public class AggregateTest {
 
   @Test
   public void testSingleGroupMin() throws DbException, InterruptedException {
-    final int numTuples = 2 * TupleBatch.BATCH_SIZE + 1;
+    final int numTuples = 2 * TupleUtils.getBatchSize(Type.LONG_TYPE) + 1;
 
     final TupleBatchBuffer testBase = generateRandomTuples(numTuples);
     // group by name, aggregate on id
@@ -469,7 +471,7 @@ public class AggregateTest {
             new BatchTupleSource(testBase),
             1,
             new SingleColumnAggregatorFactory(0, AggregationOp.MIN));
-    agg.open(null);
+    agg.open(TestEnvVars.get());
     TupleBatch tb = null;
     TupleBatchBuffer result = new TupleBatchBuffer(agg.getSchema());
     while (!agg.eos()) {
@@ -487,7 +489,7 @@ public class AggregateTest {
             new BatchTupleSource(testBase),
             0,
             new SingleColumnAggregatorFactory(1, AggregationOp.MIN));
-    agg.open(null);
+    agg.open(TestEnvVars.get());
     tb = null;
     result = new TupleBatchBuffer(agg.getSchema());
     while (!agg.eos()) {
@@ -503,7 +505,7 @@ public class AggregateTest {
 
   @Test
   public void testSingleGroupSum() throws DbException, InterruptedException {
-    final int numTuples = 2 * TupleBatch.BATCH_SIZE + 1;
+    final int numTuples = 2 * TupleUtils.getBatchSize(Type.DOUBLE_TYPE) + 1;
 
     final TupleBatchBuffer testBase = generateRandomTuples(numTuples);
     // group by name, aggregate on id
@@ -512,7 +514,7 @@ public class AggregateTest {
             new BatchTupleSource(testBase),
             1,
             new SingleColumnAggregatorFactory(0, AggregationOp.SUM));
-    agg.open(null);
+    agg.open(TestEnvVars.get());
     TupleBatch tb = null;
     final TupleBatchBuffer result = new TupleBatchBuffer(agg.getSchema());
     while (!agg.eos()) {
@@ -559,7 +561,7 @@ public class AggregateTest {
             new BatchTupleSource(testBase),
             0,
             new SingleColumnAggregatorFactory(1, AggregationOp.STDEV));
-    agg.open(null);
+    agg.open(TestEnvVars.get());
     TupleBatch tb = null;
     final TupleBatchBuffer result = new TupleBatchBuffer(agg.getSchema());
     while (!agg.eos()) {
@@ -575,7 +577,7 @@ public class AggregateTest {
 
   @Test
   public void testMultiGroupSum() throws DbException {
-    final int numTuples = 2 * TupleBatch.BATCH_SIZE + 2;
+    final int numTuples = 2 * TupleUtils.getBatchSize(Type.DOUBLE_TYPE) + 2;
     final Schema schema =
         new Schema(
             ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE, Type.LONG_TYPE, Type.LONG_TYPE),
@@ -607,7 +609,7 @@ public class AggregateTest {
             new BatchTupleSource(tbb),
             new int[] {0, 1},
             new SingleColumnAggregatorFactory(3, AggregationOp.SUM));
-    mga.open(null);
+    mga.open(TestEnvVars.get());
     TupleBatch result = mga.nextReady();
     assertNotNull(result);
     assertEquals(1, result.numTuples());
@@ -621,7 +623,7 @@ public class AggregateTest {
             new BatchTupleSource(tbb),
             new int[] {0, 1, 2},
             new SingleColumnAggregatorFactory(3, AggregationOp.SUM));
-    mgaTwo.open(null);
+    mgaTwo.open(TestEnvVars.get());
     TupleBatch resultTwo = mgaTwo.nextReady();
     assertNotNull(result);
     assertEquals(2, resultTwo.numTuples());
@@ -657,7 +659,7 @@ public class AggregateTest {
             new BatchTupleSource(tbb),
             new int[] {0, 1, 2},
             new SingleColumnAggregatorFactory(3, AggregationOp.AVG));
-    mga.open(null);
+    mga.open(TestEnvVars.get());
     TupleBatch result = mga.nextReady();
     assertNotNull(result);
     assertEquals(2, result.numTuples());
@@ -690,7 +692,7 @@ public class AggregateTest {
             new BatchTupleSource(tbb),
             new int[] {0, 1},
             new SingleColumnAggregatorFactory(3, AggregationOp.MIN));
-    mga.open(null);
+    mga.open(TestEnvVars.get());
     TupleBatch result = mga.nextReady();
     assertNotNull(result);
     assertEquals(1, result.numTuples());
@@ -723,7 +725,7 @@ public class AggregateTest {
             new BatchTupleSource(tbb),
             new int[] {0, 1},
             new SingleColumnAggregatorFactory(3, AggregationOp.MAX));
-    mga.open(null);
+    mga.open(TestEnvVars.get());
     TupleBatch result = mga.nextReady();
     assertNotNull(result);
     assertEquals(1, result.numTuples());
@@ -757,7 +759,7 @@ public class AggregateTest {
             new BatchTupleSource(tbb),
             new int[] {0, 1},
             new SingleColumnAggregatorFactory(3, AggregationOp.MAX, AggregationOp.MIN));
-    mga.open(null);
+    mga.open(TestEnvVars.get());
     TupleBatch result = mga.nextReady();
     assertNotNull(result);
     assertEquals(1, result.numTuples());
@@ -795,7 +797,7 @@ public class AggregateTest {
             new int[] {0, 1},
             new SingleColumnAggregatorFactory(3, AggregationOp.MAX),
             new SingleColumnAggregatorFactory(3, AggregationOp.MIN));
-    mga.open(null);
+    mga.open(TestEnvVars.get());
     TupleBatch result = mga.nextReady();
     assertNotNull(result);
     assertEquals(1, result.numTuples());
@@ -829,7 +831,7 @@ public class AggregateTest {
             new BatchTupleSource(tbb),
             new int[] {0, 1},
             new SingleColumnAggregatorFactory(0, AggregationOp.COUNT));
-    mga.open(null);
+    mga.open(TestEnvVars.get());
     TupleBatch result = mga.nextReady();
     assertNotNull(result);
     assertEquals(1, result.numTuples());
@@ -926,7 +928,7 @@ public class AggregateTest {
     MultiGroupByAggregate mga =
         new MultiGroupByAggregate(
             source, groupCols, new SingleColumnAggregatorFactory(1, AggregationOp.COUNT));
-    mga.open(null);
+    mga.open(TestEnvVars.get());
     TupleBatch result = mga.nextReady();
     assertNotNull(result);
     assertEquals(3, result.numTuples());
@@ -959,7 +961,7 @@ public class AggregateTest {
             new BatchTupleSource(tbb),
             new int[] {0, 1},
             new SingleColumnAggregatorFactory(0, AggregationOp.COUNT));
-    mga.open(null);
+    mga.open(TestEnvVars.get());
     TupleBatch result = mga.nextReady();
     assertNull(result);
     mga.close();

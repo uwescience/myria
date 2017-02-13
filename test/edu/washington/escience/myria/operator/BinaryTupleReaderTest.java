@@ -20,6 +20,7 @@ import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.io.FileSource;
 import edu.washington.escience.myria.storage.TupleBatch;
+import edu.washington.escience.myria.util.TestEnvVars;
 
 /**
  * To test BinaryFileScan, and it is based on the code from FileScanTest
@@ -206,7 +207,7 @@ public class BinaryTupleReaderTest {
    * @throws DbException if the file does not match the given Schema.
    */
   private static int getRowCount(final TupleSource input) throws DbException {
-    input.open(null);
+    input.open(TestEnvVars.get());
 
     int count = 0;
     TupleBatch tb = null;

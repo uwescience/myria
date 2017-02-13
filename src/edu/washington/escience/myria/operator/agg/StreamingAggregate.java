@@ -1,5 +1,6 @@
 package edu.washington.escience.myria.operator.agg;
 
+import java.io.IOException;
 import java.util.Objects;
 
 import javax.annotation.Nonnull;
@@ -88,6 +89,7 @@ public class StreamingAggregate extends UnaryOperator {
    *
    * @throws DbException if any error occurs.
    * @return result tuple batch
+   * @throws IOException
    */
   @Override
   protected TupleBatch fetchNextReady() throws DbException {
@@ -151,7 +153,11 @@ public class StreamingAggregate extends UnaryOperator {
       TupleUtils.copyValue(curGroupKey, fromIndex, 0, resultBuffer, fromIndex);
     }
     for (int agg = 0; agg < aggregators.length; ++agg) {
-      aggregators[agg].getResult(resultBuffer, fromIndex, aggregatorStates[agg]);
+      try {
+        aggregators[agg].getResult(resultBuffer, fromIndex, aggregatorStates[agg]);
+      } catch (Exception e) {
+        throw new DbException(e);
+      }
       fromIndex += aggregators[agg].getResultSchema().numColumns();
     }
   }
@@ -175,7 +181,8 @@ public class StreamingAggregate extends UnaryOperator {
     groupSchema = inputSchema.getSubSchema(gFields);
     resultSchema = Schema.of(groupSchema.getColumnTypes(), groupSchema.getColumnNames());
     try {
-      for (Aggregator agg : AggUtils.allocateAggs(factories, inputSchema)) {
+      for (Aggregator agg :
+          AggUtils.allocateAggs(factories, inputSchema, getPythonFunctionRegistrar())) {
         Schema curAggSchema = agg.getResultSchema();
         resultSchema = Schema.merge(resultSchema, curAggSchema);
       }
@@ -188,7 +195,8 @@ public class StreamingAggregate extends UnaryOperator {
   @Override
   protected void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
     Preconditions.checkState(getSchema() != null, "unable to determine schema in init");
-    aggregators = AggUtils.allocateAggs(factories, getChild().getSchema());
+    aggregators =
+        AggUtils.allocateAggs(factories, getChild().getSchema(), getPythonFunctionRegistrar());
     aggregatorStates = AggUtils.allocateAggStates(aggregators);
     resultBuffer = new TupleBatchBuffer(getSchema());
   }

@@ -32,6 +32,7 @@ public final class TestEnvVars {
 
     vars.put(MyriaConstants.EXEC_ENV_VAR_NODE_ID, nodeId);
     vars.put(MyriaConstants.EXEC_ENV_VAR_EXECUTION_MODE, QueryExecutionMode.NON_BLOCKING);
+    vars.put(MyriaConstants.EXEC_ENV_VAR_TEST_MODE, "true");
 
     return vars;
   }

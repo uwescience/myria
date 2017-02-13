@@ -41,9 +41,9 @@
 				"opId" : 5,
 				"opType" : "ShuffleProducer",
 				"argChild" : 4,
-				"argPf" : {
-					"type" : "SingleFieldHash",
-					"index" : 0
+				"distributeFunction" : {
+					"type" : "Hash",
+					"indexes" : [0]
 				}
 			}
 			]
@@ -64,9 +64,9 @@
 				"opId" : 16,
 				"opType" : "ShuffleProducer",
 				"argChild" : 17,
-				"argPf" : {
-					"type" : "SingleFieldHash",
-					"index" : 1
+				"distributeFunction" : {
+					"type" : "Hash",
+					"indexes" : [1]
 				}
 			}
 			]
@@ -137,9 +137,9 @@
 					"type" : "DupElim"
 				},
 				"argChild" : 12,
-				"argPf" : {
-					"type" : "SingleFieldHash",
-					"index" : 0
+				"distributeFunction" : {
+					"type" : "Hash",
+					"indexes" : [0]
 				}
 			}
 			]

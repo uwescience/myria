@@ -10,6 +10,7 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.Schema;
+import edu.washington.escience.myria.functions.PythonFunctionRegistrar;
 
 /**
  * Creates instances of the {@link Aggregator} class.
@@ -30,4 +31,11 @@ public interface AggregatorFactory extends Serializable {
    */
   @Nonnull
   Aggregator get(Schema inputSchema) throws DbException;
+  /**
+   * @param inputSchema input schema for aggregator.
+   * @param pyFuncReg python function registrar.
+   * @return a new aggregator for tuples of the specified schema.
+   * @throws DbException in case of error.
+   */
+  Aggregator get(Schema inputSchema, PythonFunctionRegistrar pyFuncReg) throws DbException;
 }

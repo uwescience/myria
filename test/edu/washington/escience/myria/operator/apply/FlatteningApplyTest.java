@@ -19,13 +19,14 @@ import edu.washington.escience.myria.operator.Apply;
 import edu.washington.escience.myria.operator.BatchTupleSource;
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
+import edu.washington.escience.myria.storage.TupleUtils;
 import edu.washington.escience.myria.util.TestEnvVars;
 
 public class FlatteningApplyTest {
 
   private final String SEPARATOR = ",";
   private final int SPLIT_MAX = 10;
-  private final long COUNTER_MAX = 2 * TupleBatch.BATCH_SIZE + 1;
+  private final long COUNTER_MAX = 2 * TupleUtils.getBatchSize(Type.LONG_TYPE) + 1;
   private final long EXPECTED_RESULTS = SPLIT_MAX * COUNTER_MAX;
 
   @Test

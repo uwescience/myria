@@ -19,6 +19,7 @@ import edu.washington.escience.myria.api.encoding.QueryEncoding;
 import edu.washington.escience.myria.coordinator.CatalogException;
 import edu.washington.escience.myria.coordinator.MasterCatalog;
 import edu.washington.escience.myria.storage.TupleBatch;
+import edu.washington.escience.myria.util.TestEnvVars;
 
 /**
  *
@@ -60,7 +61,7 @@ public class CatalogScanTest {
     Schema schema = Schema.ofFields(Type.LONG_TYPE, "id", Type.STRING_TYPE, "raw");
     CatalogQueryScan scan =
         new CatalogQueryScan("select query_id, raw_query from queries", schema, catalog);
-    scan.open(null);
+    scan.open(TestEnvVars.get());
 
     assertEquals(false, scan.eos());
     TupleBatch tb = scan.nextReady();

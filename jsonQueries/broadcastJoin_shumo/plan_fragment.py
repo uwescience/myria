@@ -119,9 +119,9 @@ def scan_and_shuffle(relation_key, relation_name):
         "argOperatorId": "Shuffle("+relation_name+")",
         "opId": "Shuffle("+relation_name+")",
         "opType": "ShuffleProducer",
-        "argPf": {
-            "index": 1,
-            "type": "SingleFieldHash"
+        "distributeFunction": {
+            "indexes": [1],
+            "type": "Hash"
         }
     }
     fragment = {

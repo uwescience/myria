@@ -115,7 +115,7 @@ public class Expression implements Serializable {
   public String getJavaExpressionWithAppend(final ExpressionOperatorParameter parameters) {
     String appendExpression = rootExpressionOperator.getJavaExpressionWithAppend(parameters);
     if (appendExpression == null) {
-      if (isMultivalued()) {
+      if (isMultiValued()) {
         String primitiveTypeName = getOutputType(parameters).toJavaArrayType().getSimpleName();
         appendExpression =
             new StringBuilder(primitiveTypeName)
@@ -187,13 +187,21 @@ public class Expression implements Serializable {
         && !hasOperator(StateExpression.class)
         && !hasOperator(RandomExpression.class);
   }
+  /**
+   * An expression is a registeredUDF expression when it contains a python expression.
+   *
+   * @return if this expression contains a python UDF.
+   */
+  public boolean isRegisteredUDF() {
+    return hasOperator(PyUDFExpression.class);
+  }
 
   /**
    * An expression is "multivalued" when it has a primitive array return type.
    *
    * @return if the root expression has a primitive array return type
    */
-  public boolean isMultivalued() {
+  public boolean isMultiValued() {
     return rootExpressionOperator.hasArrayOutputType();
   }
 }

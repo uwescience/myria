@@ -2,6 +2,7 @@ package edu.washington.escience.myria.storage;
 
 import com.google.common.base.Preconditions;
 
+import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.builder.ColumnBuilder;
 
@@ -44,6 +45,9 @@ public final class TupleUtils {
       case STRING_TYPE:
         to.appendString(from.getString(fromRow));
         break;
+      case BLOB_TYPE:
+        to.appendBlob(from.getBlob(fromRow));
+        break;
     }
   }
 
@@ -79,6 +83,9 @@ public final class TupleUtils {
         break;
       case STRING_TYPE:
         to.putString(toColumn, from.getString(fromRow));
+        break;
+      case BLOB_TYPE:
+        to.putBlob(toColumn, from.getBlob(fromRow));
         break;
     }
   }
@@ -121,6 +128,9 @@ public final class TupleUtils {
       case STRING_TYPE:
         to.appendString(from.getString(fromColumn, fromRow));
         break;
+      case BLOB_TYPE:
+        to.appendBlob(from.getBlob(fromColumn, fromRow));
+        break;
     }
   }
 
@@ -162,6 +172,9 @@ public final class TupleUtils {
       case STRING_TYPE:
         to.putString(toColumn, from.getString(fromColumn, fromRow));
         break;
+      case BLOB_TYPE:
+        to.putBlob(toColumn, from.getBlob(fromColumn, fromRow));
+        break;
     }
   }
 
@@ -200,6 +213,8 @@ public final class TupleUtils {
       case DATETIME_TYPE:
         return Type.compareRaw(
             table1.getDateTime(column1, row1), table2.getDateTime(column2, row2));
+      case BLOB_TYPE:
+        return Type.compareRaw(table1.getBlob(column1, row1), table2.getBlob(column2, row2));
     }
 
     throw new IllegalStateException("Invalid type.");
@@ -331,6 +346,12 @@ public final class TupleUtils {
             return false;
           }
           break;
+        case BLOB_TYPE:
+          if (!table1
+              .getBlob(compareColumns1[i], row1)
+              .equals(table2.getBlob(compareColumns2[i], row2))) {
+            return false;
+          }
       }
     }
     return true;
@@ -384,6 +405,11 @@ public final class TupleUtils {
           break;
         case DATETIME_TYPE:
           if (!table1.getDateTime(i, row1).equals(table2.getDateTime(i, row2))) {
+            return false;
+          }
+          break;
+        case BLOB_TYPE:
+          if (!table1.getBlob(i, row1).equals(table2.getBlob(i, row2))) {
             return false;
           }
           break;
@@ -449,8 +475,35 @@ public final class TupleUtils {
             return false;
           }
           break;
+        case BLOB_TYPE:
+          if (!table1.getBlob(compareColumns[i], row1).equals(table2.getBlob(i, index))) {
+            return false;
+          }
+          break;
       }
     }
     return true;
+  }
+  /**
+   * batch size for tuple batch depending on schema.
+   * @param schema of tuplebatch
+   * @return batchsize.
+   */
+  public static int getBatchSize(Schema schema) {
+    int batchSize = 1000 * 10;
+    if (schema.getColumnTypes().indexOf(Type.BLOB_TYPE) >= 0) batchSize = 1;
+
+    return batchSize;
+  }
+  /**
+   * batch size for column depending upon type.
+   * @param type of column.
+   * @return batchsize.
+   */
+  public static int getBatchSize(Type type) {
+    int batchSize = 1000 * 10;
+    if (type == Type.BLOB_TYPE) batchSize = 1;
+
+    return batchSize;
   }
 }

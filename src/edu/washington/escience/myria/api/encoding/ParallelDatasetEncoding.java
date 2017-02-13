@@ -8,8 +8,8 @@ import java.util.Set;
 import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.io.AmazonS3Source;
-import edu.washington.escience.myria.operator.network.partition.PartitionFunction;
-import edu.washington.escience.myria.operator.network.partition.RoundRobinPartitionFunction;
+import edu.washington.escience.myria.operator.network.distribute.DistributeFunction;
+import edu.washington.escience.myria.operator.network.distribute.RoundRobinDistributeFunction;
 
 /**
  *
@@ -23,5 +23,5 @@ public class ParallelDatasetEncoding extends MyriaApiEncoding {
   public Integer numberOfSkippedLines;
   public Character quote;
   public Set<Integer> workers;
-  public PartitionFunction partitionFunction = new RoundRobinPartitionFunction(null);
+  public DistributeFunction distributeFunction = new RoundRobinDistributeFunction();
 }
