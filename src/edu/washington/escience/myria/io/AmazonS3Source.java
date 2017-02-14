@@ -13,11 +13,8 @@ import javax.annotation.concurrent.NotThreadSafe;
 import javax.ws.rs.core.Response.Status;
 
 import org.apache.commons.httpclient.URIException;
-<<<<<<< HEAD
 
 import org.apache.hadoop.conf.Configuration;
-=======
->>>>>>> only keep Default chain
 
 import com.amazonaws.ClientConfiguration;
 import com.amazonaws.auth.AWSCredentialsProvider;
