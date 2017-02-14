@@ -1111,7 +1111,7 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
             workerId,
             new SubQueryPlan(
                 new DbCreateView(
-                    EmptyRelation.of(Schema.EMPTY_SCHEMA), viewName, viewDefinition, true, null)));
+                    EmptyRelation.of(Schema.EMPTY_SCHEMA), viewName, viewDefinition, false, null)));
       }
       ListenableFuture<Query> qf =
           queryManager.submitQuery(
@@ -1156,7 +1156,7 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
             workerId,
             new SubQueryPlan(
                 new DbCreateView(
-                    EmptyRelation.of(Schema.EMPTY_SCHEMA), viewName, viewDefinition, false, null)));
+                    EmptyRelation.of(Schema.EMPTY_SCHEMA), viewName, viewDefinition, true, null)));
       }
       ListenableFuture<Query> qf =
           queryManager.submitQuery(

@@ -24,6 +24,7 @@ import org.slf4j.LoggerFactory;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Sets;
 
+import edu.washington.escience.myria.CsvTupleReader;
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.RelationKey;
@@ -35,6 +36,7 @@ import edu.washington.escience.myria.operator.DbQueryScan;
 import edu.washington.escience.myria.operator.EOSSource;
 import edu.washington.escience.myria.operator.EmptySink;
 import edu.washington.escience.myria.operator.RootOperator;
+import edu.washington.escience.myria.operator.TupleSource;
 import edu.washington.escience.myria.operator.network.Consumer;
 import edu.washington.escience.myria.operator.network.GenericShuffleProducer;
 import edu.washington.escience.myria.operator.network.distribute.BroadcastDistributeFunction;
@@ -137,20 +139,19 @@ public class PerfEnforceDataPreparation {
                 factTableDesc.relationKey.getProgramName(),
                 factTableDesc.relationKey.getRelationName() + currentSize + "_U");
 
-        final ExchangePairID shuffleId = ExchangePairID.newID();
         DbQueryScan scan = new DbQueryScan(previousRelationKey, factTableDesc.schema);
 
         int[] producingWorkers =
             PerfEnforceUtils.getRangeInclusiveArray(Collections.min(diff), Collections.max(diff));
         int[] receivingWorkers =
             PerfEnforceUtils.getRangeInclusiveArray(1, Collections.max(currentWorkerRange));
+        final ExchangePairID shuffleId = ExchangePairID.newID();
 
+        RoundRobinDistributeFunction df = new RoundRobinDistributeFunction();
+        df.setDestinations(receivingWorkers.length, 1);
         GenericShuffleProducer producer =
             new GenericShuffleProducer(
-                scan,
-                new ExchangePairID[] {shuffleId},
-                receivingWorkers,
-                new RoundRobinDistributeFunction());
+                scan, new ExchangePairID[] {shuffleId}, receivingWorkers, df);
         Consumer consumer = new Consumer(factTableDesc.schema, shuffleId, producingWorkers);
         DbInsert insert = new DbInsert(consumer, currentRelationKeyToUnion, true);
 
@@ -200,37 +201,18 @@ public class PerfEnforceDataPreparation {
         PerfEnforceUtils.getWorkerRangeSet(Collections.max(PerfEnforceDriver.configurations));
 
     try {
-      server.parallelIngestDataset(
+
+      TupleSource source =
+          new TupleSource(
+              new CsvTupleReader(dimTableDesc.schema, dimTableDesc.delimiter), dimTableDesc.source);
+
+      server.ingestDataset(
           dimTableDesc.relationKey,
-          dimTableDesc.schema,
-          dimTableDesc.delimiter,
+          new ArrayList<Integer>(totalWorkers),
           null,
-          null,
-          null,
-          dimTableDesc.source,
-          totalWorkers,
-          null);
+          source,
+          new BroadcastDistributeFunction());
 
-      DbQueryScan dbscan = new DbQueryScan(dimTableDesc.relationKey, dimTableDesc.schema);
-
-      final ExchangePairID broadcastID = ExchangePairID.newID();
-
-      GenericShuffleProducer producer =
-          new GenericShuffleProducer(
-              dbscan,
-              new ExchangePairID[] {broadcastID},
-              PerfEnforceUtils.getRangeInclusiveArray(
-                  Collections.min(totalWorkers), Collections.max(totalWorkers)),
-              new BroadcastDistributeFunction());
-
-      Consumer consumer = new Consumer(dimTableDesc.schema, broadcastID, totalWorkers);
-      DbInsert insert = new DbInsert(consumer, dimTableDesc.relationKey, true);
-      Map<Integer, RootOperator[]> workerPlans = new HashMap<>(totalWorkers.size());
-      for (Integer workerID : totalWorkers) {
-        workerPlans.put(workerID, new RootOperator[] {producer, insert});
-      }
-
-      server.submitQueryPlan(new EmptySink(new EOSSource()), workerPlans).get();
     } catch (Exception e) {
       throw new PerfEnforceException("Error ingesting dimension tables");
     }
