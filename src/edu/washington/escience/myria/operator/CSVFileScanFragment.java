@@ -63,10 +63,10 @@ public class CSVFileScanFragment extends LeafOperator {
   private static final String truncatedQuoteErrorMessage =
       "EOF reached before encapsulated token finished";
 
-  private final boolean isLastWorker;
+  private boolean isLastWorker;
   private final long maxByteRange;
-  private final long partitionStartByteRange;
-  private final long partitionEndByteRange;
+  private long partitionStartByteRange;
+  private long partitionEndByteRange;
 
   private long adjustedStartByteRange;
   private int byteOffsetFromTruncatedRowAtStart = 0;
@@ -75,6 +75,8 @@ public class CSVFileScanFragment extends LeafOperator {
   private boolean onLastRow;
   private boolean finishedReadingLastRow;
   private boolean flagAsIncomplete;
+  private boolean flagAsRangeSelected;
+  private int[] workerIds;
 
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
@@ -180,6 +182,32 @@ public class CSVFileScanFragment extends LeafOperator {
     onLastRow = false;
     finishedReadingLastRow = false;
     flagAsIncomplete = false;
+    flagAsRangeSelected = true;
+  }
+
+  public CSVFileScanFragment(
+      final AmazonS3Source source,
+      final Schema schema,
+      final int[] workerIds,
+      @Nullable final Character delimiter,
+      @Nullable final Character quote,
+      @Nullable final Character escape,
+      @Nullable final Integer numberOfSkippedLines) {
+
+    this.source = Preconditions.checkNotNull(source, "source");
+    this.schema = Preconditions.checkNotNull(schema, "schema");
+    this.workerIds = workerIds;
+
+    this.delimiter = MoreObjects.firstNonNull(delimiter, CSVFormat.DEFAULT.getDelimiter());
+    this.quote = MoreObjects.firstNonNull(quote, CSVFormat.DEFAULT.getQuoteCharacter());
+    this.escape = escape;
+    this.numberOfSkippedLines = MoreObjects.firstNonNull(numberOfSkippedLines, 0);
+
+    maxByteRange = source.getFileSize();
+    onLastRow = false;
+    finishedReadingLastRow = false;
+    flagAsIncomplete = false;
+    flagAsRangeSelected = false;
   }
 
   @Override
@@ -379,6 +407,31 @@ public class CSVFileScanFragment extends LeafOperator {
   @Override
   protected void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
     buffer = new TupleBatchBuffer(getSchema());
+
+    if (!flagAsRangeSelected) {
+      int workerID = getNodeID();
+      long fileSize = source.getFileSize();
+      long currentPartitionSize = fileSize / workerIds.length;
+      int workerIndex = 0;
+      for (int i = 0; i < workerIds.length; i++) {
+        if (workerID == workerIds[i]) {
+          workerIndex = i;
+        }
+      }
+      boolean isLastWorker = workerIndex == workerIds.length - 1;
+      long startByteRange = currentPartitionSize * workerIndex;
+      long endByteRange;
+
+      if (isLastWorker) {
+        endByteRange = fileSize - 1;
+      } else {
+        endByteRange = (currentPartitionSize * (workerIndex + 1)) - 1;
+      }
+      this.partitionStartByteRange = startByteRange;
+      this.partitionEndByteRange = endByteRange;
+      this.isLastWorker = isLastWorker;
+    }
+
     try {
 
       adjustedStartByteRange = partitionStartByteRange;

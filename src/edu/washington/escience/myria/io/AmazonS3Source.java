@@ -10,16 +10,20 @@ import java.net.URI;
 import java.util.Objects;
 
 import javax.annotation.concurrent.NotThreadSafe;
+import javax.ws.rs.core.Response.Status;
 
 import org.apache.commons.httpclient.URIException;
+import org.apache.hadoop.conf.Configuration;
 
 import com.amazonaws.ClientConfiguration;
-import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
+import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.GetObjectRequest;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.MoreObjects;
+
+import edu.washington.escience.myria.api.MyriaApiException;
 
 /**
  *
@@ -65,11 +69,47 @@ public class AmazonS3Source implements DataSource, Serializable {
     this.endRange = MoreObjects.firstNonNull(endRange, getFileSize());
   }
 
-  public AmazonS3Client getS3Client() {
+  public AmazonS3Client getS3Client() throws MyriaApiException {
     if (s3Client == null) {
-      clientConfig = new ClientConfiguration();
-      clientConfig.setMaxErrorRetry(3);
-      s3Client = new AmazonS3Client(new DefaultAWSCredentialsProviderChain());
+      /**
+       * Supported providers in fs.s3a.aws.credentials.provider are InstanceProfileCredentialsProvider,
+       * EnvironmentVariableCredentialsProvider and AnonymousAWSCredentialsProvider.
+       */
+      AWSCredentialsProvider credentials;
+      Configuration conf = new Configuration();
+      String propertyName = "fs.s3a.aws.credentials.provider";
+      String className = conf.getTrimmed(propertyName);
+      if (className == null) {
+        throw new MyriaApiException(Status.INTERNAL_SERVER_ERROR, propertyName + " does not exist");
+      }
+      try {
+        Class<?> credentialClass = Class.forName(className);
+        try {
+          credentials =
+              (AWSCredentialsProvider)
+                  credentialClass
+                      .getDeclaredConstructor(URI.class, Configuration.class)
+                      .newInstance(s3Uri, conf);
+        } catch (NoSuchMethodException | SecurityException e) {
+          credentials =
+              (AWSCredentialsProvider) credentialClass.getDeclaredConstructor().newInstance();
+        }
+        clientConfig = new ClientConfiguration();
+        clientConfig.setMaxErrorRetry(3);
+        s3Client = new AmazonS3Client(credentials, clientConfig);
+      } catch (ClassNotFoundException e) {
+        throw new MyriaApiException(Status.INTERNAL_SERVER_ERROR, className + " not found ", e);
+      } catch (NoSuchMethodException | SecurityException e) {
+        throw new MyriaApiException(
+            Status.INTERNAL_SERVER_ERROR,
+            className
+                + " constructor exception. Should provide an accessible constructor accepting URI"
+                + " and Configuration, or an accessible default constructor.",
+            e);
+      } catch (ReflectiveOperationException | IllegalArgumentException e) {
+        throw new MyriaApiException(
+            Status.INTERNAL_SERVER_ERROR, className + " instantiation exception.", e);
+      }
     }
     return s3Client;
   }
