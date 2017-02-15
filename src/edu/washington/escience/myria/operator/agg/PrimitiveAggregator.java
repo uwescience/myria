@@ -49,8 +49,7 @@ public abstract class PrimitiveAggregator implements Aggregator, Serializable {
    * @param fieldName the name of the field being aggregated, for naming output columns.
    * @param aggOps the set of aggregate operations to be computed.
    */
-  protected PrimitiveAggregator(
-      final String inputName, final int column, final AggregationOp aggOp) {
+  protected PrimitiveAggregator(final String inputName, final int column, final AggregationOp aggOp) {
     if (!isSupported(aggOp)) {
       throw new IllegalArgumentException("Unsupported aggregation " + aggOp);
     }
@@ -85,9 +84,4 @@ public abstract class PrimitiveAggregator implements Aggregator, Serializable {
   public void initState(final MutableTupleBuffer state, final int offset) {
     appendInitValue(state, offset);
   }
-
-  // @Override
-  // public void add(final List<TupleBatch> from) throws DbException {
-  // throw new DbException(" method not implemented");
-  // }
 }

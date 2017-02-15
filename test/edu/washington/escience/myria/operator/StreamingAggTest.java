@@ -35,24 +35,9 @@ public class StreamingAggTest {
    * @return filled TupleBatchBuffer with each group key having (numTuples/10) tuples
    */
   private TupleBatchBuffer fillInputTbb(final int numTuples) {
-    final Schema schema =
-        Schema.ofFields(
-            Type.INT_TYPE,
-            "Int",
-            Type.DOUBLE_TYPE,
-            "Double",
-            Type.FLOAT_TYPE,
-            "Float",
-            Type.LONG_TYPE,
-            "Long",
-            Type.DATETIME_TYPE,
-            "Datetime",
-            Type.STRING_TYPE,
-            "String",
-            Type.BOOLEAN_TYPE,
-            "Boolean",
-            Type.LONG_TYPE,
-            "value");
+    final Schema schema = Schema.ofFields(Type.INT_TYPE, "Int", Type.DOUBLE_TYPE, "Double", Type.FLOAT_TYPE, "Float",
+        Type.LONG_TYPE, "Long", Type.DATETIME_TYPE, "Datetime", Type.STRING_TYPE, "String", Type.BOOLEAN_TYPE,
+        "Boolean", Type.LONG_TYPE, "value");
 
     final TupleBatchBuffer source = new TupleBatchBuffer(schema);
     for (int i = 0; i < numTuples; i++) {
@@ -77,11 +62,8 @@ public class StreamingAggTest {
     TupleBatchBuffer source = fillInputTbb(numTuples);
 
     // group by col0
-    StreamingAggregate agg =
-        new StreamingAggregate(
-            new BatchTupleSource(source),
-            new int[] {0},
-            new PrimitiveAggregatorFactory(7, AggregationOp.COUNT));
+    StreamingAggregate agg = new StreamingAggregate(new BatchTupleSource(source), new int[] { 0 },
+        new PrimitiveAggregatorFactory(7, AggregationOp.COUNT));
     agg.open(TestEnvVars.get());
     TupleBatch result = agg.nextReady();
     assertNotNull(result);
@@ -93,11 +75,8 @@ public class StreamingAggTest {
     agg.close();
 
     // group by col1
-    agg =
-        new StreamingAggregate(
-            new BatchTupleSource(source),
-            new int[] {1},
-            new PrimitiveAggregatorFactory(7, AggregationOp.COUNT));
+    agg = new StreamingAggregate(new BatchTupleSource(source), new int[] { 1 },
+        new PrimitiveAggregatorFactory(7, AggregationOp.COUNT));
     agg.open(TestEnvVars.get());
     result = agg.nextReady();
     assertNotNull(result);
@@ -109,11 +88,8 @@ public class StreamingAggTest {
     agg.close();
 
     // group by col2
-    agg =
-        new StreamingAggregate(
-            new BatchTupleSource(source),
-            new int[] {2},
-            new PrimitiveAggregatorFactory(7, AggregationOp.COUNT));
+    agg = new StreamingAggregate(new BatchTupleSource(source), new int[] { 2 },
+        new PrimitiveAggregatorFactory(7, AggregationOp.COUNT));
     agg.open(TestEnvVars.get());
     result = agg.nextReady();
     assertNotNull(result);
@@ -125,11 +101,8 @@ public class StreamingAggTest {
     agg.close();
 
     // group by col3
-    agg =
-        new StreamingAggregate(
-            new BatchTupleSource(source),
-            new int[] {3},
-            new PrimitiveAggregatorFactory(7, AggregationOp.COUNT));
+    agg = new StreamingAggregate(new BatchTupleSource(source), new int[] { 3 },
+        new PrimitiveAggregatorFactory(7, AggregationOp.COUNT));
     agg.open(TestEnvVars.get());
     result = agg.nextReady();
     assertNotNull(result);
@@ -141,11 +114,8 @@ public class StreamingAggTest {
     agg.close();
 
     // group by col4
-    agg =
-        new StreamingAggregate(
-            new BatchTupleSource(source),
-            new int[] {4},
-            new PrimitiveAggregatorFactory(7, AggregationOp.COUNT));
+    agg = new StreamingAggregate(new BatchTupleSource(source), new int[] { 4 },
+        new PrimitiveAggregatorFactory(7, AggregationOp.COUNT));
     agg.open(TestEnvVars.get());
     result = agg.nextReady();
     assertNotNull(result);
@@ -157,11 +127,8 @@ public class StreamingAggTest {
     agg.close();
 
     // group by col5
-    agg =
-        new StreamingAggregate(
-            new BatchTupleSource(source),
-            new int[] {5},
-            new PrimitiveAggregatorFactory(7, AggregationOp.COUNT));
+    agg = new StreamingAggregate(new BatchTupleSource(source), new int[] { 5 },
+        new PrimitiveAggregatorFactory(7, AggregationOp.COUNT));
     agg.open(TestEnvVars.get());
     result = agg.nextReady();
     assertNotNull(result);
@@ -173,11 +140,8 @@ public class StreamingAggTest {
     agg.close();
 
     // group by col6
-    agg =
-        new StreamingAggregate(
-            new BatchTupleSource(source),
-            new int[] {6},
-            new PrimitiveAggregatorFactory(7, AggregationOp.COUNT));
+    agg = new StreamingAggregate(new BatchTupleSource(source), new int[] { 6 },
+        new PrimitiveAggregatorFactory(7, AggregationOp.COUNT));
     agg.open(TestEnvVars.get());
     result = agg.nextReady();
     assertNotNull(result);
@@ -197,11 +161,8 @@ public class StreamingAggTest {
     TupleBatchBuffer source = fillInputTbb(numTuples);
 
     // group by col0
-    StreamingAggregate agg =
-        new StreamingAggregate(
-            new BatchTupleSource(source),
-            new int[] {0},
-            new PrimitiveAggregatorFactory(7, AggregationOp.SUM));
+    StreamingAggregate agg = new StreamingAggregate(new BatchTupleSource(source), new int[] { 0 },
+        new PrimitiveAggregatorFactory(7, AggregationOp.SUM));
     agg.open(TestEnvVars.get());
     TupleBatch result = agg.nextReady();
     assertNotNull(result);
@@ -213,11 +174,8 @@ public class StreamingAggTest {
     agg.close();
 
     // group by col1
-    agg =
-        new StreamingAggregate(
-            new BatchTupleSource(source),
-            new int[] {1},
-            new PrimitiveAggregatorFactory(7, AggregationOp.SUM));
+    agg = new StreamingAggregate(new BatchTupleSource(source), new int[] { 1 },
+        new PrimitiveAggregatorFactory(7, AggregationOp.SUM));
     agg.open(TestEnvVars.get());
     result = agg.nextReady();
     assertNotNull(result);
@@ -229,11 +187,8 @@ public class StreamingAggTest {
     agg.close();
 
     // group by col2
-    agg =
-        new StreamingAggregate(
-            new BatchTupleSource(source),
-            new int[] {2},
-            new PrimitiveAggregatorFactory(7, AggregationOp.SUM));
+    agg = new StreamingAggregate(new BatchTupleSource(source), new int[] { 2 },
+        new PrimitiveAggregatorFactory(7, AggregationOp.SUM));
     agg.open(TestEnvVars.get());
     result = agg.nextReady();
     assertNotNull(result);
@@ -245,11 +200,8 @@ public class StreamingAggTest {
     agg.close();
 
     // group by col3
-    agg =
-        new StreamingAggregate(
-            new BatchTupleSource(source),
-            new int[] {3},
-            new PrimitiveAggregatorFactory(7, AggregationOp.SUM));
+    agg = new StreamingAggregate(new BatchTupleSource(source), new int[] { 3 },
+        new PrimitiveAggregatorFactory(7, AggregationOp.SUM));
     agg.open(TestEnvVars.get());
     result = agg.nextReady();
     assertNotNull(result);
@@ -261,11 +213,8 @@ public class StreamingAggTest {
     agg.close();
 
     // group by col4
-    agg =
-        new StreamingAggregate(
-            new BatchTupleSource(source),
-            new int[] {4},
-            new PrimitiveAggregatorFactory(7, AggregationOp.SUM));
+    agg = new StreamingAggregate(new BatchTupleSource(source), new int[] { 4 },
+        new PrimitiveAggregatorFactory(7, AggregationOp.SUM));
     agg.open(TestEnvVars.get());
     result = agg.nextReady();
     assertNotNull(result);
@@ -277,11 +226,8 @@ public class StreamingAggTest {
     agg.close();
 
     // group by col5
-    agg =
-        new StreamingAggregate(
-            new BatchTupleSource(source),
-            new int[] {5},
-            new PrimitiveAggregatorFactory(7, AggregationOp.SUM));
+    agg = new StreamingAggregate(new BatchTupleSource(source), new int[] { 5 },
+        new PrimitiveAggregatorFactory(7, AggregationOp.SUM));
     agg.open(TestEnvVars.get());
     result = agg.nextReady();
     assertNotNull(result);
@@ -293,11 +239,8 @@ public class StreamingAggTest {
     agg.close();
 
     // group by col6
-    agg =
-        new StreamingAggregate(
-            new BatchTupleSource(source),
-            new int[] {6},
-            new PrimitiveAggregatorFactory(7, AggregationOp.SUM));
+    agg = new StreamingAggregate(new BatchTupleSource(source), new int[] { 6 },
+        new PrimitiveAggregatorFactory(7, AggregationOp.SUM));
     agg.open(TestEnvVars.get());
     result = agg.nextReady();
     assertNotNull(result);
@@ -317,11 +260,8 @@ public class StreamingAggTest {
     TupleBatchBuffer source = fillInputTbb(numTuples);
 
     // group by col0
-    StreamingAggregate agg =
-        new StreamingAggregate(
-            new BatchTupleSource(source),
-            new int[] {0},
-            new PrimitiveAggregatorFactory(7, AggregationOp.AVG));
+    StreamingAggregate agg = new StreamingAggregate(new BatchTupleSource(source), new int[] { 0 },
+        new PrimitiveAggregatorFactory(7, AggregationOp.AVG));
     agg.open(TestEnvVars.get());
     TupleBatch result = agg.nextReady();
     assertNotNull(result);
@@ -333,11 +273,8 @@ public class StreamingAggTest {
     agg.close();
 
     // group by col1
-    agg =
-        new StreamingAggregate(
-            new BatchTupleSource(source),
-            new int[] {1},
-            new PrimitiveAggregatorFactory(7, AggregationOp.AVG));
+    agg = new StreamingAggregate(new BatchTupleSource(source), new int[] { 1 },
+        new PrimitiveAggregatorFactory(7, AggregationOp.AVG));
     agg.open(TestEnvVars.get());
     result = agg.nextReady();
     assertNotNull(result);
@@ -349,11 +286,8 @@ public class StreamingAggTest {
     agg.close();
 
     // group by col2
-    agg =
-        new StreamingAggregate(
-            new BatchTupleSource(source),
-            new int[] {2},
-            new PrimitiveAggregatorFactory(7, AggregationOp.AVG));
+    agg = new StreamingAggregate(new BatchTupleSource(source), new int[] { 2 },
+        new PrimitiveAggregatorFactory(7, AggregationOp.AVG));
     agg.open(TestEnvVars.get());
     result = agg.nextReady();
     assertNotNull(result);
@@ -365,11 +299,8 @@ public class StreamingAggTest {
     agg.close();
 
     // group by col3
-    agg =
-        new StreamingAggregate(
-            new BatchTupleSource(source),
-            new int[] {3},
-            new PrimitiveAggregatorFactory(7, AggregationOp.AVG));
+    agg = new StreamingAggregate(new BatchTupleSource(source), new int[] { 3 },
+        new PrimitiveAggregatorFactory(7, AggregationOp.AVG));
     agg.open(TestEnvVars.get());
     result = agg.nextReady();
     assertNotNull(result);
@@ -381,11 +312,8 @@ public class StreamingAggTest {
     agg.close();
 
     // group by col4
-    agg =
-        new StreamingAggregate(
-            new BatchTupleSource(source),
-            new int[] {4},
-            new PrimitiveAggregatorFactory(7, AggregationOp.AVG));
+    agg = new StreamingAggregate(new BatchTupleSource(source), new int[] { 4 },
+        new PrimitiveAggregatorFactory(7, AggregationOp.AVG));
     agg.open(TestEnvVars.get());
     result = agg.nextReady();
     assertNotNull(result);
@@ -397,11 +325,8 @@ public class StreamingAggTest {
     agg.close();
 
     // group by col5
-    agg =
-        new StreamingAggregate(
-            new BatchTupleSource(source),
-            new int[] {5},
-            new PrimitiveAggregatorFactory(7, AggregationOp.AVG));
+    agg = new StreamingAggregate(new BatchTupleSource(source), new int[] { 5 },
+        new PrimitiveAggregatorFactory(7, AggregationOp.AVG));
     agg.open(TestEnvVars.get());
     result = agg.nextReady();
     assertNotNull(result);
@@ -413,11 +338,8 @@ public class StreamingAggTest {
     agg.close();
 
     // group by col6
-    agg =
-        new StreamingAggregate(
-            new BatchTupleSource(source),
-            new int[] {6},
-            new PrimitiveAggregatorFactory(7, AggregationOp.AVG));
+    agg = new StreamingAggregate(new BatchTupleSource(source), new int[] { 6 },
+        new PrimitiveAggregatorFactory(7, AggregationOp.AVG));
     agg.open(TestEnvVars.get());
     result = agg.nextReady();
     assertNotNull(result);
@@ -437,11 +359,8 @@ public class StreamingAggTest {
     TupleBatchBuffer source = fillInputTbb(numTuples);
 
     // group by col0
-    StreamingAggregate agg =
-        new StreamingAggregate(
-            new BatchTupleSource(source),
-            new int[] {0},
-            new PrimitiveAggregatorFactory(7, AggregationOp.STDEV));
+    StreamingAggregate agg = new StreamingAggregate(new BatchTupleSource(source), new int[] { 0 },
+        new PrimitiveAggregatorFactory(7, AggregationOp.STDEV));
     agg.open(TestEnvVars.get());
     TupleBatch result = agg.nextReady();
     assertNotNull(result);
@@ -453,11 +372,8 @@ public class StreamingAggTest {
     agg.close();
 
     // group by col1
-    agg =
-        new StreamingAggregate(
-            new BatchTupleSource(source),
-            new int[] {1},
-            new PrimitiveAggregatorFactory(7, AggregationOp.STDEV));
+    agg = new StreamingAggregate(new BatchTupleSource(source), new int[] { 1 },
+        new PrimitiveAggregatorFactory(7, AggregationOp.STDEV));
     agg.open(TestEnvVars.get());
     result = agg.nextReady();
     assertNotNull(result);
@@ -469,11 +385,8 @@ public class StreamingAggTest {
     agg.close();
 
     // group by col2
-    agg =
-        new StreamingAggregate(
-            new BatchTupleSource(source),
-            new int[] {2},
-            new PrimitiveAggregatorFactory(7, AggregationOp.STDEV));
+    agg = new StreamingAggregate(new BatchTupleSource(source), new int[] { 2 },
+        new PrimitiveAggregatorFactory(7, AggregationOp.STDEV));
     agg.open(TestEnvVars.get());
     result = agg.nextReady();
     assertNotNull(result);
@@ -485,11 +398,8 @@ public class StreamingAggTest {
     agg.close();
 
     // group by col3
-    agg =
-        new StreamingAggregate(
-            new BatchTupleSource(source),
-            new int[] {3},
-            new PrimitiveAggregatorFactory(7, AggregationOp.STDEV));
+    agg = new StreamingAggregate(new BatchTupleSource(source), new int[] { 3 },
+        new PrimitiveAggregatorFactory(7, AggregationOp.STDEV));
     agg.open(TestEnvVars.get());
     result = agg.nextReady();
     assertNotNull(result);
@@ -501,11 +411,8 @@ public class StreamingAggTest {
     agg.close();
 
     // group by col4
-    agg =
-        new StreamingAggregate(
-            new BatchTupleSource(source),
-            new int[] {4},
-            new PrimitiveAggregatorFactory(7, AggregationOp.STDEV));
+    agg = new StreamingAggregate(new BatchTupleSource(source), new int[] { 4 },
+        new PrimitiveAggregatorFactory(7, AggregationOp.STDEV));
     agg.open(TestEnvVars.get());
     result = agg.nextReady();
     assertNotNull(result);
@@ -517,11 +424,8 @@ public class StreamingAggTest {
     agg.close();
 
     // group by col5
-    agg =
-        new StreamingAggregate(
-            new BatchTupleSource(source),
-            new int[] {5},
-            new PrimitiveAggregatorFactory(7, AggregationOp.STDEV));
+    agg = new StreamingAggregate(new BatchTupleSource(source), new int[] { 5 },
+        new PrimitiveAggregatorFactory(7, AggregationOp.STDEV));
     agg.open(TestEnvVars.get());
     result = agg.nextReady();
     assertNotNull(result);
@@ -533,11 +437,8 @@ public class StreamingAggTest {
     agg.close();
 
     // group by col6
-    agg =
-        new StreamingAggregate(
-            new BatchTupleSource(source),
-            new int[] {6},
-            new PrimitiveAggregatorFactory(7, AggregationOp.STDEV));
+    agg = new StreamingAggregate(new BatchTupleSource(source), new int[] { 6 },
+        new PrimitiveAggregatorFactory(7, AggregationOp.STDEV));
     agg.open(TestEnvVars.get());
     result = agg.nextReady();
     assertNotNull(result);
@@ -557,11 +458,8 @@ public class StreamingAggTest {
     TupleBatchBuffer source = fillInputTbb(numTuples);
 
     // group by col7, agg over col0
-    StreamingAggregate agg =
-        new StreamingAggregate(
-            new BatchTupleSource(source),
-            new int[] {7},
-            new PrimitiveAggregatorFactory(0, AggregationOp.MIN));
+    StreamingAggregate agg = new StreamingAggregate(new BatchTupleSource(source), new int[] { 7 },
+        new PrimitiveAggregatorFactory(0, AggregationOp.MIN));
     agg.open(TestEnvVars.get());
     TupleBatch result = agg.nextReady();
     assertNotNull(result);
@@ -573,11 +471,8 @@ public class StreamingAggTest {
     agg.close();
 
     // group by col7, agg over col1
-    agg =
-        new StreamingAggregate(
-            new BatchTupleSource(source),
-            new int[] {7},
-            new PrimitiveAggregatorFactory(1, AggregationOp.MIN));
+    agg = new StreamingAggregate(new BatchTupleSource(source), new int[] { 7 },
+        new PrimitiveAggregatorFactory(1, AggregationOp.MIN));
     agg.open(TestEnvVars.get());
     result = agg.nextReady();
     assertNotNull(result);
@@ -589,11 +484,8 @@ public class StreamingAggTest {
     agg.close();
 
     // group by col7, agg over col2
-    agg =
-        new StreamingAggregate(
-            new BatchTupleSource(source),
-            new int[] {7},
-            new PrimitiveAggregatorFactory(2, AggregationOp.MIN));
+    agg = new StreamingAggregate(new BatchTupleSource(source), new int[] { 7 },
+        new PrimitiveAggregatorFactory(2, AggregationOp.MIN));
     agg.open(TestEnvVars.get());
     result = agg.nextReady();
     assertNotNull(result);
@@ -605,11 +497,8 @@ public class StreamingAggTest {
     agg.close();
 
     // group by col7, agg over col3
-    agg =
-        new StreamingAggregate(
-            new BatchTupleSource(source),
-            new int[] {7},
-            new PrimitiveAggregatorFactory(3, AggregationOp.MIN));
+    agg = new StreamingAggregate(new BatchTupleSource(source), new int[] { 7 },
+        new PrimitiveAggregatorFactory(3, AggregationOp.MIN));
     agg.open(TestEnvVars.get());
     result = agg.nextReady();
     assertNotNull(result);
@@ -621,11 +510,8 @@ public class StreamingAggTest {
     agg.close();
 
     // group by col4, agg over col4
-    agg =
-        new StreamingAggregate(
-            new BatchTupleSource(source),
-            new int[] {7},
-            new PrimitiveAggregatorFactory(4, AggregationOp.MIN));
+    agg = new StreamingAggregate(new BatchTupleSource(source), new int[] { 7 },
+        new PrimitiveAggregatorFactory(4, AggregationOp.MIN));
     agg.open(TestEnvVars.get());
     result = agg.nextReady();
     assertNotNull(result);
@@ -637,11 +523,8 @@ public class StreamingAggTest {
     agg.close();
 
     // group by col7, agg over col5
-    agg =
-        new StreamingAggregate(
-            new BatchTupleSource(source),
-            new int[] {7},
-            new PrimitiveAggregatorFactory(5, AggregationOp.MIN));
+    agg = new StreamingAggregate(new BatchTupleSource(source), new int[] { 7 },
+        new PrimitiveAggregatorFactory(5, AggregationOp.MIN));
     agg.open(TestEnvVars.get());
     result = agg.nextReady();
     assertNotNull(result);
@@ -663,11 +546,8 @@ public class StreamingAggTest {
     TupleBatchBuffer source = fillInputTbb(numTuples);
 
     // group by col7, agg over col0
-    StreamingAggregate agg =
-        new StreamingAggregate(
-            new BatchTupleSource(source),
-            new int[] {7},
-            new PrimitiveAggregatorFactory(0, AggregationOp.MAX));
+    StreamingAggregate agg = new StreamingAggregate(new BatchTupleSource(source), new int[] { 7 },
+        new PrimitiveAggregatorFactory(0, AggregationOp.MAX));
     agg.open(TestEnvVars.get());
     TupleBatch result = agg.nextReady();
     assertNotNull(result);
@@ -679,11 +559,8 @@ public class StreamingAggTest {
     agg.close();
 
     // group by col7, agg over col1
-    agg =
-        new StreamingAggregate(
-            new BatchTupleSource(source),
-            new int[] {7},
-            new PrimitiveAggregatorFactory(1, AggregationOp.MAX));
+    agg = new StreamingAggregate(new BatchTupleSource(source), new int[] { 7 },
+        new PrimitiveAggregatorFactory(1, AggregationOp.MAX));
     agg.open(TestEnvVars.get());
     result = agg.nextReady();
     assertNotNull(result);
@@ -695,11 +572,8 @@ public class StreamingAggTest {
     agg.close();
 
     // group by col7, agg over col2
-    agg =
-        new StreamingAggregate(
-            new BatchTupleSource(source),
-            new int[] {7},
-            new PrimitiveAggregatorFactory(2, AggregationOp.MAX));
+    agg = new StreamingAggregate(new BatchTupleSource(source), new int[] { 7 },
+        new PrimitiveAggregatorFactory(2, AggregationOp.MAX));
     agg.open(TestEnvVars.get());
     result = agg.nextReady();
     assertNotNull(result);
@@ -711,11 +585,8 @@ public class StreamingAggTest {
     agg.close();
 
     // group by col7, agg over col3
-    agg =
-        new StreamingAggregate(
-            new BatchTupleSource(source),
-            new int[] {7},
-            new PrimitiveAggregatorFactory(3, AggregationOp.MAX));
+    agg = new StreamingAggregate(new BatchTupleSource(source), new int[] { 7 },
+        new PrimitiveAggregatorFactory(3, AggregationOp.MAX));
     agg.open(TestEnvVars.get());
     result = agg.nextReady();
     assertNotNull(result);
@@ -727,11 +598,8 @@ public class StreamingAggTest {
     agg.close();
 
     // group by col4, agg over col4
-    agg =
-        new StreamingAggregate(
-            new BatchTupleSource(source),
-            new int[] {7},
-            new PrimitiveAggregatorFactory(4, AggregationOp.MAX));
+    agg = new StreamingAggregate(new BatchTupleSource(source), new int[] { 7 },
+        new PrimitiveAggregatorFactory(4, AggregationOp.MAX));
     agg.open(TestEnvVars.get());
     result = agg.nextReady();
     assertNotNull(result);
@@ -743,11 +611,8 @@ public class StreamingAggTest {
     agg.close();
 
     // group by col7, agg over col5
-    agg =
-        new StreamingAggregate(
-            new BatchTupleSource(source),
-            new int[] {7},
-            new PrimitiveAggregatorFactory(5, AggregationOp.MAX));
+    agg = new StreamingAggregate(new BatchTupleSource(source), new int[] { 7 },
+        new PrimitiveAggregatorFactory(5, AggregationOp.MAX));
     agg.open(TestEnvVars.get());
     result = agg.nextReady();
     assertNotNull(result);
@@ -764,8 +629,7 @@ public class StreamingAggTest {
   @Test
   public void testMultiGroupSingleColumnCount() throws DbException {
     final int numTuples = 50;
-    final Schema schema =
-        Schema.ofFields(Type.LONG_TYPE, "g0", Type.LONG_TYPE, "g1", Type.LONG_TYPE, "value");
+    final Schema schema = Schema.ofFields(Type.LONG_TYPE, "g0", Type.LONG_TYPE, "g1", Type.LONG_TYPE, "value");
     final TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
     // g0 same for all tuples, g1 split to 5 groups, g2 gets i
     for (long i = 0; i < numTuples; i++) {
@@ -773,11 +637,8 @@ public class StreamingAggTest {
       tbb.putLong(1, i / (numTuples / 5));
       tbb.putLong(2, i);
     }
-    StreamingAggregate agg =
-        new StreamingAggregate(
-            new BatchTupleSource(tbb),
-            new int[] {0, 1},
-            new PrimitiveAggregatorFactory(2, AggregationOp.COUNT));
+    StreamingAggregate agg = new StreamingAggregate(new BatchTupleSource(tbb), new int[] { 0, 1 },
+        new PrimitiveAggregatorFactory(2, AggregationOp.COUNT));
     agg.open(TestEnvVars.get());
     TupleBatch result = agg.nextReady();
     assertNotNull(result);
@@ -792,8 +653,7 @@ public class StreamingAggTest {
   @Test
   public void testMultiGroupSingleColumnMin() throws DbException {
     final int numTuples = 50;
-    final Schema schema =
-        Schema.ofFields(Type.LONG_TYPE, "g0", Type.LONG_TYPE, "g1", Type.LONG_TYPE, "value");
+    final Schema schema = Schema.ofFields(Type.LONG_TYPE, "g0", Type.LONG_TYPE, "g1", Type.LONG_TYPE, "value");
     final TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
     // g0 same for all tuples, g1 split to 5 groups, g2 gets i
     for (long i = 0; i < numTuples; i++) {
@@ -801,11 +661,8 @@ public class StreamingAggTest {
       tbb.putLong(1, i / (numTuples / 5));
       tbb.putLong(2, i);
     }
-    StreamingAggregate agg =
-        new StreamingAggregate(
-            new BatchTupleSource(tbb),
-            new int[] {0, 1},
-            new PrimitiveAggregatorFactory(2, AggregationOp.MIN));
+    StreamingAggregate agg = new StreamingAggregate(new BatchTupleSource(tbb), new int[] { 0, 1 },
+        new PrimitiveAggregatorFactory(2, AggregationOp.MIN));
     agg.open(TestEnvVars.get());
     TupleBatch result = agg.nextReady();
     assertNotNull(result);
@@ -822,8 +679,7 @@ public class StreamingAggTest {
   @Test
   public void testMultiGroupSingleColumnMax() throws DbException {
     final int numTuples = 50;
-    final Schema schema =
-        Schema.ofFields(Type.LONG_TYPE, "g0", Type.LONG_TYPE, "g1", Type.LONG_TYPE, "value");
+    final Schema schema = Schema.ofFields(Type.LONG_TYPE, "g0", Type.LONG_TYPE, "g1", Type.LONG_TYPE, "value");
     final TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
     // g0 same for all tuples, g1 split to 5 groups, g2 gets i
     for (long i = 0; i < numTuples; i++) {
@@ -831,11 +687,8 @@ public class StreamingAggTest {
       tbb.putLong(1, i / (numTuples / 5));
       tbb.putLong(2, i);
     }
-    StreamingAggregate agg =
-        new StreamingAggregate(
-            new BatchTupleSource(tbb),
-            new int[] {0, 1},
-            new PrimitiveAggregatorFactory(2, AggregationOp.MAX));
+    StreamingAggregate agg = new StreamingAggregate(new BatchTupleSource(tbb), new int[] { 0, 1 },
+        new PrimitiveAggregatorFactory(2, AggregationOp.MAX));
     agg.open(TestEnvVars.get());
     TupleBatch result = agg.nextReady();
     assertNotNull(result);
@@ -852,8 +705,7 @@ public class StreamingAggTest {
   @Test
   public void testMultiGroupSingleColumnSum() throws DbException {
     final int numTuples = 50;
-    final Schema schema =
-        Schema.ofFields(Type.LONG_TYPE, "g0", Type.LONG_TYPE, "g1", Type.LONG_TYPE, "value");
+    final Schema schema = Schema.ofFields(Type.LONG_TYPE, "g0", Type.LONG_TYPE, "g1", Type.LONG_TYPE, "value");
     final TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
     // g0 same for all tuples, g1 split to 5 groups, g2 gets 10
     for (long i = 0; i < numTuples; i++) {
@@ -861,11 +713,8 @@ public class StreamingAggTest {
       tbb.putLong(1, i / (numTuples / 5));
       tbb.putLong(2, 10L);
     }
-    StreamingAggregate agg =
-        new StreamingAggregate(
-            new BatchTupleSource(tbb),
-            new int[] {0, 1},
-            new PrimitiveAggregatorFactory(2, AggregationOp.SUM));
+    StreamingAggregate agg = new StreamingAggregate(new BatchTupleSource(tbb), new int[] { 0, 1 },
+        new PrimitiveAggregatorFactory(2, AggregationOp.SUM));
     agg.open(TestEnvVars.get());
     TupleBatch result = agg.nextReady();
     assertNotNull(result);
@@ -880,8 +729,7 @@ public class StreamingAggTest {
   @Test
   public void testMultiGroupSingleColumnAvg() throws DbException {
     final int numTuples = 50;
-    final Schema schema =
-        Schema.ofFields(Type.LONG_TYPE, "g0", Type.LONG_TYPE, "g1", Type.LONG_TYPE, "value");
+    final Schema schema = Schema.ofFields(Type.LONG_TYPE, "g0", Type.LONG_TYPE, "g1", Type.LONG_TYPE, "value");
     final TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
     // g0 same for all tuples, g1 split to 5 groups, g2 gets 10
     for (long i = 0; i < numTuples; i++) {
@@ -889,11 +737,8 @@ public class StreamingAggTest {
       tbb.putLong(1, i / (numTuples / 5));
       tbb.putLong(2, 10L);
     }
-    StreamingAggregate agg =
-        new StreamingAggregate(
-            new BatchTupleSource(tbb),
-            new int[] {0, 1},
-            new PrimitiveAggregatorFactory(2, AggregationOp.AVG));
+    StreamingAggregate agg = new StreamingAggregate(new BatchTupleSource(tbb), new int[] { 0, 1 },
+        new PrimitiveAggregatorFactory(2, AggregationOp.AVG));
     agg.open(TestEnvVars.get());
     TupleBatch result = agg.nextReady();
     assertNotNull(result);
@@ -908,8 +753,7 @@ public class StreamingAggTest {
   @Test
   public void testMultiGroupSingleColumnStdev() throws DbException {
     final int numTuples = 50;
-    final Schema schema =
-        Schema.ofFields(Type.LONG_TYPE, "g0", Type.LONG_TYPE, "g1", Type.LONG_TYPE, "value");
+    final Schema schema = Schema.ofFields(Type.LONG_TYPE, "g0", Type.LONG_TYPE, "g1", Type.LONG_TYPE, "value");
     final TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
     // g0 same for all tuples, g1 split to 5 groups, g2 gets 10
     for (long i = 0; i < numTuples; i++) {
@@ -917,11 +761,8 @@ public class StreamingAggTest {
       tbb.putLong(1, i / (numTuples / 5));
       tbb.putLong(2, 10L);
     }
-    StreamingAggregate agg =
-        new StreamingAggregate(
-            new BatchTupleSource(tbb),
-            new int[] {0, 1},
-            new PrimitiveAggregatorFactory(2, AggregationOp.STDEV));
+    StreamingAggregate agg = new StreamingAggregate(new BatchTupleSource(tbb), new int[] { 0, 1 },
+        new PrimitiveAggregatorFactory(2, AggregationOp.STDEV));
     agg.open(TestEnvVars.get());
     TupleBatch result = agg.nextReady();
     assertNotNull(result);
@@ -944,16 +785,10 @@ public class StreamingAggTest {
       tbb.putLong(1, 10L);
     }
     // group by gkey; min on gkey, max on gkey, count on value, sum on value, avg on value, stdev on value
-    StreamingAggregate agg =
-        new StreamingAggregate(
-            new BatchTupleSource(tbb),
-            new int[] {0},
-            new PrimitiveAggregatorFactory(0, AggregationOp.MIN),
-            new PrimitiveAggregatorFactory(0, AggregationOp.MAX),
-            new PrimitiveAggregatorFactory(1, AggregationOp.COUNT),
-            new PrimitiveAggregatorFactory(1, AggregationOp.SUM),
-            new PrimitiveAggregatorFactory(1, AggregationOp.AVG),
-            new PrimitiveAggregatorFactory(1, AggregationOp.STDEV));
+    StreamingAggregate agg = new StreamingAggregate(new BatchTupleSource(tbb), new int[] { 0 },
+        new PrimitiveAggregatorFactory(0, new AggregationOp[] { AggregationOp.MIN, AggregationOp.MAX }),
+        new PrimitiveAggregatorFactory(1,
+            new AggregationOp[] { AggregationOp.COUNT, AggregationOp.SUM, AggregationOp.AVG, AggregationOp.STDEV }));
     agg.open(TestEnvVars.get());
     TupleBatch result = agg.nextReady();
     assertNotNull(result);
@@ -979,8 +814,7 @@ public class StreamingAggTest {
   @Test
   public void testMultiGroupMultiColumn() throws DbException {
     final int numTuples = 50;
-    final Schema schema =
-        Schema.ofFields(Type.LONG_TYPE, "g0", Type.LONG_TYPE, "g1", Type.LONG_TYPE, "value");
+    final Schema schema = Schema.ofFields(Type.LONG_TYPE, "g0", Type.LONG_TYPE, "g1", Type.LONG_TYPE, "value");
     final TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
     // {0, 2, i} on first half tuples, {0, 4, i} on the second half
     int sumFirst = 0;
@@ -1015,16 +849,9 @@ public class StreamingAggTest {
     double expectedSecondStdev = Math.sqrt(diffSquaredSecond / (numTuples / 2));
 
     // group by col0 and col1, then min max count sum avg stdev
-    StreamingAggregate agg =
-        new StreamingAggregate(
-            new BatchTupleSource(tbb),
-            new int[] {0, 1},
-            new PrimitiveAggregatorFactory(2, AggregationOp.MIN),
-            new PrimitiveAggregatorFactory(2, AggregationOp.MAX),
-            new PrimitiveAggregatorFactory(2, AggregationOp.COUNT),
-            new PrimitiveAggregatorFactory(2, AggregationOp.SUM),
-            new PrimitiveAggregatorFactory(2, AggregationOp.AVG),
-            new PrimitiveAggregatorFactory(2, AggregationOp.STDEV));
+    StreamingAggregate agg = new StreamingAggregate(new BatchTupleSource(tbb), new int[] { 0, 1 },
+        new PrimitiveAggregatorFactory(2, new AggregationOp[] { AggregationOp.MIN, AggregationOp.MAX,
+            AggregationOp.COUNT, AggregationOp.SUM, AggregationOp.AVG, AggregationOp.STDEV }));
     agg.open(TestEnvVars.get());
     TupleBatch result = agg.nextReady();
     assertNotNull(result);
@@ -1076,16 +903,9 @@ public class StreamingAggTest {
     double expectedStdev = Math.sqrt(diffSquared / numTuples);
 
     // group by gkey, then min max count sum avg stdev
-    StreamingAggregate agg =
-        new StreamingAggregate(
-            new BatchTupleSource(tbb),
-            new int[] {0},
-            new PrimitiveAggregatorFactory(1, AggregationOp.MIN),
-            new PrimitiveAggregatorFactory(1, AggregationOp.MAX),
-            new PrimitiveAggregatorFactory(1, AggregationOp.COUNT),
-            new PrimitiveAggregatorFactory(1, AggregationOp.SUM),
-            new PrimitiveAggregatorFactory(1, AggregationOp.AVG),
-            new PrimitiveAggregatorFactory(1, AggregationOp.STDEV));
+    StreamingAggregate agg = new StreamingAggregate(new BatchTupleSource(tbb), new int[] { 0 },
+        new PrimitiveAggregatorFactory(1, new AggregationOp[] { AggregationOp.MIN, AggregationOp.MAX,
+            AggregationOp.COUNT, AggregationOp.SUM, AggregationOp.AVG, AggregationOp.STDEV }));
     agg.open(TestEnvVars.get());
     TupleBatch result = agg.nextReady();
     assertNotNull(result);
@@ -1109,8 +929,7 @@ public class StreamingAggTest {
   @Test
   public void testMultiGroupAllAggLargeInput() throws DbException {
 
-    final Schema schema =
-        Schema.ofFields(Type.LONG_TYPE, "g0", Type.LONG_TYPE, "g1", Type.LONG_TYPE, "value");
+    final Schema schema = Schema.ofFields(Type.LONG_TYPE, "g0", Type.LONG_TYPE, "g1", Type.LONG_TYPE, "value");
     final TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
     final int numTuples = 3 * TupleUtils.getBatchSize(schema);
     // split into 4 groups, each group may spread across different batches
@@ -1167,16 +986,9 @@ public class StreamingAggTest {
     double expectedFourthStdev = Math.sqrt(diffSquaredFourth / (numTuples / 4));
 
     // group by col0 and col1, then min max count sum avg stdev
-    StreamingAggregate agg =
-        new StreamingAggregate(
-            new BatchTupleSource(tbb),
-            new int[] {0, 1},
-            new PrimitiveAggregatorFactory(2, AggregationOp.MIN),
-            new PrimitiveAggregatorFactory(2, AggregationOp.MAX),
-            new PrimitiveAggregatorFactory(2, AggregationOp.COUNT),
-            new PrimitiveAggregatorFactory(2, AggregationOp.SUM),
-            new PrimitiveAggregatorFactory(2, AggregationOp.AVG),
-            new PrimitiveAggregatorFactory(2, AggregationOp.STDEV));
+    StreamingAggregate agg = new StreamingAggregate(new BatchTupleSource(tbb), new int[] { 0, 1 },
+        new PrimitiveAggregatorFactory(2, new AggregationOp[] { AggregationOp.MIN, AggregationOp.MAX,
+            AggregationOp.COUNT, AggregationOp.SUM, AggregationOp.AVG, AggregationOp.STDEV }));
     agg.open(TestEnvVars.get());
     TupleBatch result = agg.nextReady();
     assertNotNull(result);
@@ -1228,11 +1040,8 @@ public class StreamingAggTest {
       tbb.putLong(1, 1L);
     }
     // group by col0, count
-    StreamingAggregate agg =
-        new StreamingAggregate(
-            new BatchTupleSource(tbb),
-            new int[] {0},
-            new PrimitiveAggregatorFactory(1, AggregationOp.COUNT));
+    StreamingAggregate agg = new StreamingAggregate(new BatchTupleSource(tbb), new int[] { 0 },
+        new PrimitiveAggregatorFactory(1, AggregationOp.COUNT));
     agg.open(TestEnvVars.get());
     TupleBatch result = agg.nextReady();
     assertNotNull(result);

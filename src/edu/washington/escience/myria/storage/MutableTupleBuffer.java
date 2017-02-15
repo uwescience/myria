@@ -53,8 +53,7 @@ public class MutableTupleBuffer implements ReadableTable, AppendableTable, Clone
   public MutableTupleBuffer(final Schema schema) {
     this.schema = Objects.requireNonNull(schema);
     readyTuples = new ArrayList<MutableColumn<?>[]>();
-    currentBuildingColumns =
-        ColumnFactory.allocateColumns(schema).toArray(new ColumnBuilder<?>[] {});
+    currentBuildingColumns = ColumnFactory.allocateColumns(schema).toArray(new ColumnBuilder<?>[] {});
     numColumns = schema.numColumns();
     columnsReady = new BitSet(numColumns);
     numColumnsReady = 0;
@@ -85,8 +84,7 @@ public class MutableTupleBuffer implements ReadableTable, AppendableTable, Clone
       buildingColumns[i++] = cb.buildMutable();
     }
     readyTuples.add(buildingColumns);
-    currentBuildingColumns =
-        ColumnFactory.allocateColumns(schema).toArray(new ColumnBuilder<?>[] {});
+    currentBuildingColumns = ColumnFactory.allocateColumns(schema).toArray(new ColumnBuilder<?>[] {});
     currentInProgressTuples = 0;
   }
 
@@ -232,8 +230,7 @@ public class MutableTupleBuffer implements ReadableTable, AppendableTable, Clone
   private void checkPutIndex(final int column) {
     Preconditions.checkElementIndex(column, numColumns);
     if (columnsReady.get(column)) {
-      throw new RuntimeException(
-          "Need to fill up one row of TupleBatchBuffer before starting new one");
+      throw new RuntimeException("Need to fill up one row of TupleBatchBuffer before starting new one");
     }
   }
 
@@ -262,8 +259,7 @@ public class MutableTupleBuffer implements ReadableTable, AppendableTable, Clone
    * @param sourceColumn the column from which data will be retrieved.
    * @param sourceRow the row in the source column from which data will be retrieved.
    */
-  public final void put(
-      final int destColumn, final ReadableColumn sourceColumn, final int sourceRow) {
+  public final void put(final int destColumn, final ReadableColumn sourceColumn, final int sourceRow) {
     TupleUtils.copyValue(sourceColumn, sourceRow, this, destColumn);
   }
 
@@ -425,18 +421,8 @@ public class MutableTupleBuffer implements ReadableTable, AppendableTable, Clone
    * @param destRow the row.
    * @param value the replacement.
    */
-  public final void replaceByteBuffer(
-      final int destColumn, final int destRow, final ByteBuffer value) {
-    getColumn(destColumn, destRow).replaceBlob(value, destRow % batchSize);
-  }
-
-  /**
-   * @param destColumn the destination column.
-   * @param destRow the row.
-   * @param value the replacement.
-   */
-  public final void replaceDateTime(final int destColumn, final int destRow, final DateTime value) {
-    getColumn(destColumn, destRow).replaceDateTime(value, getInColumnIndex(destRow));
+  public final void replaceByteBuffer(final int destColumn, final int destRow, final ByteBuffer value) {
+    getColumn(destColumn, destRow).replaceBlob(value, getInColumnIndex(destRow));
   }
 
   /**
@@ -447,10 +433,7 @@ public class MutableTupleBuffer implements ReadableTable, AppendableTable, Clone
    * @param sourceColumn the column from which data will be retrieved.
    * @param sourceRow the row in the source column from which data will be retrieved.
    */
-  public final void replace(
-      final int destColumn,
-      final int destRow,
-      final ReadableColumn sourceColumn,
+  public final void replace(final int destColumn, final int destRow, final ReadableColumn sourceColumn,
       final int sourceRow) {
     checkRowIndex(destRow);
     int tupleIndex = getInColumnIndex(destRow);

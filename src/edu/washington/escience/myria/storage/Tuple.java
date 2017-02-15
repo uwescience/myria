@@ -116,8 +116,7 @@ public class Tuple implements Cloneable, AppendableTable, ReadableTable, Seriali
 
   @Override
   public ReadableColumn asColumn(final int column) {
-    return new ReadableSubColumn(
-        this, Preconditions.checkElementIndex(column, schema.numColumns()));
+    return new ReadableSubColumn(this, Preconditions.checkElementIndex(column, schema.numColumns()));
   }
 
   @Override

@@ -705,7 +705,6 @@ public class AggregateTest {
             new int[] {0, 1},
             new PrimitiveAggregatorFactory(3, AggregationOp.MAX));
     mga.open(TestEnvVars.get());
-
     TupleBatch result = mga.nextReady();
     assertNotNull(result);
     assertEquals(1, result.numTuples());
@@ -909,7 +908,6 @@ public class AggregateTest {
     Aggregate mga =
         new Aggregate(source, groupCols, new PrimitiveAggregatorFactory(1, AggregationOp.COUNT));
     mga.open(TestEnvVars.get());
-
     TupleBatch result = mga.nextReady();
     assertNotNull(result);
     assertEquals(3, result.numTuples());

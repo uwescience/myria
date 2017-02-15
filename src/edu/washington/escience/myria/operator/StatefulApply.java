@@ -1,6 +1,7 @@
 package edu.washington.escience.myria.operator;
 
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -180,7 +181,6 @@ public class StatefulApply extends Apply {
                 expr,
                 new ExpressionOperatorParameter(
                     inputSchema, getStateSchema(), getNodeID(), getPythonFunctionRegistrar()));
-
       } else {
         evaluator =
             new GenericEvaluator(
@@ -216,13 +216,11 @@ public class StatefulApply extends Apply {
                 expr,
                 new ExpressionOperatorParameter(
                     inputSchema, getStateSchema(), getNodeID(), getPythonFunctionRegistrar()));
-
       } else {
         evaluator =
             new GenericEvaluator(
                 expr, new ExpressionOperatorParameter(inputSchema, getStateSchema(), getNodeID()));
       }
-
       evaluator.compile();
       updateEvaluators.add(evaluator);
     }

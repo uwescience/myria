@@ -9,6 +9,7 @@ import com.google.common.collect.ImmutableList;
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
+
 import edu.washington.escience.myria.expression.DownloadBlobExpression;
 import edu.washington.escience.myria.expression.Expression;
 import edu.washington.escience.myria.expression.ExpressionOperator;
@@ -18,6 +19,7 @@ import edu.washington.escience.myria.operator.Apply;
 import edu.washington.escience.myria.operator.BatchTupleSource;
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
+
 import edu.washington.escience.myria.util.TestEnvVars;
 
 public class ApplyDownloadBlobTest {

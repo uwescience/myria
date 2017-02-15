@@ -3,6 +3,10 @@
  */
 package edu.washington.escience.myria.expression.evaluate;
 
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+import javax.validation.constraints.NotNull;
+
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -21,6 +25,13 @@ import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.api.encoding.FunctionStatus;
+import edu.washington.escience.myria.Schema;
+import edu.washington.escience.myria.Type;
+import edu.washington.escience.myria.accessmethod.ConnectionInfo;
+import edu.washington.escience.myria.api.encoding.FunctionStatus;
+import edu.washington.escience.myria.column.Column;
+import edu.washington.escience.myria.column.builder.ColumnBuilder;
+import edu.washington.escience.myria.column.builder.ColumnFactory;
 import edu.washington.escience.myria.column.builder.WritableColumn;
 import edu.washington.escience.myria.expression.Expression;
 import edu.washington.escience.myria.expression.ExpressionOperator;
@@ -33,6 +44,10 @@ import edu.washington.escience.myria.operator.Apply;
 import edu.washington.escience.myria.operator.StatefulApply;
 import edu.washington.escience.myria.storage.AppendableTable;
 import edu.washington.escience.myria.storage.ReadableTable;
+import edu.washington.escience.myria.profiling.ProfilingLogger;
+import edu.washington.escience.myria.storage.AppendableTable;
+import edu.washington.escience.myria.storage.ReadableTable;
+import edu.washington.escience.myria.storage.Tuple;
 import edu.washington.escience.myria.storage.TupleBatch;
 
 /**
@@ -89,7 +104,6 @@ public class PythonUDFEvaluator extends GenericEvaluator {
 
   /**
    * Initializes the python evaluator.
-   *
    * @throws DbException in case of error.
    */
   private void initEvaluator() throws DbException {

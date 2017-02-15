@@ -8,7 +8,7 @@ import java.sql.SQLException;
 import javax.annotation.Nonnull;
 
 import org.joda.time.DateTime;
-
+import java.nio.ByteBuffer;
 import com.almworks.sqlite4java.SQLiteException;
 import com.almworks.sqlite4java.SQLiteStatement;
 

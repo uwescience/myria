@@ -57,13 +57,5 @@ public interface AggregatorFactory extends Serializable {
    */
   Schema generateSchema(final Schema inputSchema);
 
-  /**
-   * @param inputSchema input schema for aggregator.
-   * @param pyFuncReg python function registrar.
-   * @return a new aggregator for tuples of the specified schema.
-   * @throws DbException in case of error.
-   */
-  // Aggregator get(Schema inputSchema, PythonFunctionRegistrar pyFuncReg) throws DbException;
-
   void setPyFuncReg(PythonFunctionRegistrar pyFuncReg);
 }

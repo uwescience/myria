@@ -69,24 +69,10 @@ public final class SymmetricHashJoin extends BinaryOperator {
    * @throw IllegalArgumentException if there are duplicated column names in <tt>outputColumns</tt>, or if
    *        <tt>outputColumns</tt> does not have the correct number of columns and column types.
    */
-  public SymmetricHashJoin(
-      final Operator left,
-      final Operator right,
-      final int[] compareIndx1,
-      final int[] compareIndx2,
-      final int[] answerColumns1,
-      final int[] answerColumns2) {
+  public SymmetricHashJoin(final Operator left, final Operator right, final int[] compareIndx1,
+      final int[] compareIndx2, final int[] answerColumns1, final int[] answerColumns2) {
     /* Only used by tests */
-    this(
-        left,
-        right,
-        compareIndx1,
-        compareIndx2,
-        answerColumns1,
-        answerColumns2,
-        false,
-        false,
-        null,
+    this(left, right, compareIndx1, compareIndx2, answerColumns1, answerColumns2, false, false, null,
         JoinPullOrder.ALTERNATE);
   }
 
@@ -108,25 +94,15 @@ public final class SymmetricHashJoin extends BinaryOperator {
    * @throw IllegalArgumentException if there are duplicated column names in <tt>outputColumns</tt>, or if
    *        <tt>outputColumns</tt> does not have the correct number of columns and column types.
    */
-  public SymmetricHashJoin(
-      final Operator left,
-      final Operator right,
-      final int[] compareIndx1,
-      final int[] compareIndx2,
-      final int[] answerColumns1,
-      final int[] answerColumns2,
-      final boolean setSemanticsLeft,
-      final boolean setSemanticsRight,
-      final List<String> outputColumns,
-      final JoinPullOrder pullOrder) {
+  public SymmetricHashJoin(final Operator left, final Operator right, final int[] compareIndx1,
+      final int[] compareIndx2, final int[] answerColumns1, final int[] answerColumns2, final boolean setSemanticsLeft,
+      final boolean setSemanticsRight, final List<String> outputColumns, final JoinPullOrder pullOrder) {
     super(left, right);
     Preconditions.checkArgument(compareIndx1.length == compareIndx2.length);
     if (outputColumns != null) {
-      Preconditions.checkArgument(
-          outputColumns.size() == answerColumns1.length + answerColumns2.length,
+      Preconditions.checkArgument(outputColumns.size() == answerColumns1.length + answerColumns2.length,
           "length mismatch between output column names and columns selected for output");
-      Preconditions.checkArgument(
-          ImmutableSet.copyOf(outputColumns).size() == outputColumns.size(),
+      Preconditions.checkArgument(ImmutableSet.copyOf(outputColumns).size() == outputColumns.size(),
           "duplicate column names in outputColumns");
       this.outputColumns = ImmutableList.copyOf(outputColumns);
     } else {
@@ -160,14 +136,9 @@ public final class SymmetricHashJoin extends BinaryOperator {
       int rightIndex = rightCompareColumns[i];
       Type leftType = leftSchema.getColumnType(leftIndex);
       Type rightType = rightSchema.getColumnType(rightIndex);
-      Preconditions.checkState(
-          leftType == rightType,
-          "column types do not match for join at index %s: left column type %s [%s] != right column type %s [%s]",
-          i,
-          leftIndex,
-          leftType,
-          rightIndex,
-          rightType);
+      Preconditions.checkState(leftType == rightType,
+          "column types do not match for join at index %s: left column type %s [%s] != right column type %s [%s]", i,
+          leftIndex, leftType, rightIndex, rightType);
     }
 
     for (int i : leftAnswerColumns) {
@@ -193,11 +164,7 @@ public final class SymmetricHashJoin extends BinaryOperator {
    * @param index the index of hashTable, which the cntTuple is to join with
    * @param fromLeft if the tuple is from child 1
    */
-  protected void addToAns(
-      final TupleBatch cntTB,
-      final int row,
-      final MutableTupleBuffer hashTable,
-      final int index,
+  protected void addToAns(final TupleBatch cntTB, final int row, final MutableTupleBuffer hashTable, final int index,
       final boolean fromLeft) {
     if (fromLeft) {
       for (int leftAnswerColumn : leftAnswerColumns) {
@@ -415,9 +382,8 @@ public final class SymmetricHashJoin extends BinaryOperator {
     leftHashTable = new TupleHashTable(getLeft().getSchema(), leftCompareColumns);
     rightHashTable = new TupleHashTable(getRight().getSchema(), rightCompareColumns);
     ans = new TupleBatchBuffer(getSchema());
-    nonBlocking =
-        (QueryExecutionMode) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_EXECUTION_MODE)
-            == QueryExecutionMode.NON_BLOCKING;
+    nonBlocking = (QueryExecutionMode) execEnvVars
+        .get(MyriaConstants.EXEC_ENV_VAR_EXECUTION_MODE) == QueryExecutionMode.NON_BLOCKING;
   }
 
   /**
@@ -470,12 +436,8 @@ public final class SymmetricHashJoin extends BinaryOperator {
    * @param hashCode the hashCode of the tb.
    * @param replace if need to replace the hash table with new values.
    */
-  private void addToHashTable(
-      final TupleBatch tb,
-      final int[] compareIndx,
-      final int row,
-      final TupleHashTable hashTable,
-      final boolean replace) {
+  private void addToHashTable(final TupleBatch tb, final int[] compareIndx, final int row,
+      final TupleHashTable hashTable, final boolean replace) {
     if (replace) {
       if (hashTable.replace(tb, compareIndx, row)) {
         return;
@@ -517,5 +479,6 @@ public final class SymmetricHashJoin extends BinaryOperator {
    *
    * @param order the pull order.
    */
-  public void setPullOrder(final JoinPullOrder order) {}
+  public void setPullOrder(final JoinPullOrder order) {
+  }
 }
