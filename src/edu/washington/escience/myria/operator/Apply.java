@@ -40,14 +40,12 @@ public class Apply extends UnaryOperator {
   /**
    * List (possibly empty) of expressions that will be used to create the output.
    */
-  @Nonnull
-  private ImmutableList<Expression> emitExpressions = ImmutableList.of();
+  @Nonnull private ImmutableList<Expression> emitExpressions = ImmutableList.of();
 
   /**
    * One evaluator for each expression in {@link #emitExpressions}.
    */
-  @Nonnull
-  private ImmutableList<GenericEvaluator> emitEvaluators = ImmutableList.of();
+  @Nonnull private ImmutableList<GenericEvaluator> emitEvaluators = ImmutableList.of();
 
   /**
    * Buffer to hold finished and in-progress TupleBatches.
@@ -107,7 +105,7 @@ public class Apply extends UnaryOperator {
 
   /**
    * Should a counter be added?
-   * 
+   *
    * @return
    */
   private boolean getAddCounter() {
@@ -218,7 +216,8 @@ public class Apply extends UnaryOperator {
                   if (getAddCounter() && flatmapid < iteratorIndexes[iteratorIdx]) {
                     flatmapid = iteratorIndexes[iteratorIdx];
                   }
-                  outputBuffer.appendFromColumn(iteratorIdx, resultColumns.get(iteratorIdx), resultRowIdx);
+                  outputBuffer.appendFromColumn(
+                      iteratorIdx, resultColumns.get(iteratorIdx), resultRowIdx);
                 }
 
                 if (getAddCounter()) {
@@ -281,8 +280,9 @@ public class Apply extends UnaryOperator {
     Schema inputSchema = Objects.requireNonNull(getChild().getSchema());
 
     List<GenericEvaluator> evals = new ArrayList<>();
-    final ExpressionOperatorParameter parameters = new ExpressionOperatorParameter(inputSchema, null, getNodeID(),
-        getPythonFunctionRegistrar());
+    final ExpressionOperatorParameter parameters =
+        new ExpressionOperatorParameter(
+            inputSchema, null, getNodeID(), getPythonFunctionRegistrar());
 
     for (Expression expr : emitExpressions) {
       GenericEvaluator evaluator;

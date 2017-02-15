@@ -11,7 +11,8 @@ public class UserDefinedAggregator implements Aggregator {
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
   /** logger for this class. */
-  private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(UserDefinedAggregator.class);
+  private static final org.slf4j.Logger LOGGER =
+      org.slf4j.LoggerFactory.getLogger(UserDefinedAggregator.class);
 
   /** Evaluators that initialize the state. */
   protected final ScriptEvalInterface initEvaluator;
@@ -30,8 +31,11 @@ public class UserDefinedAggregator implements Aggregator {
    * @param resultSchema the schema of the tuples produced by this aggregator
    * @param stateSchema the schema of the state
    */
-  public UserDefinedAggregator(final ScriptEvalInterface initEvaluator, final ScriptEvalInterface updateEvaluator,
-      final Schema resultSchema, final Schema stateSchema) {
+  public UserDefinedAggregator(
+      final ScriptEvalInterface initEvaluator,
+      final ScriptEvalInterface updateEvaluator,
+      final Schema resultSchema,
+      final Schema stateSchema) {
     this.initEvaluator = initEvaluator;
     this.updateEvaluator = updateEvaluator;
     this.resultSchema = resultSchema;
@@ -44,7 +48,8 @@ public class UserDefinedAggregator implements Aggregator {
   }
 
   @Override
-  public void addRow(TupleBatch input, int inputRow, MutableTupleBuffer state, int stateRow, final int offset) {
+  public void addRow(
+      TupleBatch input, int inputRow, MutableTupleBuffer state, int stateRow, final int offset) {
     updateEvaluator.evaluate(input, inputRow, state, stateRow, offset);
   }
 

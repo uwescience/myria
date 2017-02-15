@@ -49,7 +49,8 @@ public abstract class PrimitiveAggregator implements Aggregator, Serializable {
    * @param fieldName the name of the field being aggregated, for naming output columns.
    * @param aggOps the set of aggregate operations to be computed.
    */
-  protected PrimitiveAggregator(final String inputName, final int column, final AggregationOp aggOp) {
+  protected PrimitiveAggregator(
+      final String inputName, final int column, final AggregationOp aggOp) {
     if (!isSupported(aggOp)) {
       throw new IllegalArgumentException("Unsupported aggregation " + aggOp);
     }
