@@ -1,6 +1,7 @@
 package edu.washington.escience.myria.column.builder;
 
 import java.nio.BufferOverflowException;
+import java.nio.ByteBuffer;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
@@ -65,6 +66,16 @@ public abstract class ColumnBuilder<T extends Comparable<?>>
 
   @Override
   public String getString(final int row) {
+    throw new UnsupportedOperationException(getClass().getName());
+  }
+
+  @Override
+  public ByteBuffer getBlob(final int row) {
+    throw new UnsupportedOperationException(getClass().getName());
+  }
+
+  @Override
+  public ColumnBuilder<T> appendBlob(final ByteBuffer value) throws BufferOverflowException {
     throw new UnsupportedOperationException(getClass().getName());
   }
 
@@ -206,5 +217,10 @@ public abstract class ColumnBuilder<T extends Comparable<?>>
       default:
         throw new IllegalArgumentException("Type " + type + " is invalid");
     }
+  }
+
+  @Override
+  public void replaceBlob(@Nonnull final ByteBuffer value, final int row) {
+    throw new UnsupportedOperationException(getClass().getName());
   }
 }

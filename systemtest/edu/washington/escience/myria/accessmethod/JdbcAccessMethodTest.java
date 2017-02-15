@@ -77,7 +77,7 @@ public class JdbcAccessMethodTest {
     final RelationKey relation = RelationKey.of("myria", "test", dbms);
     DbInsert insert = new DbInsert(source, relation, jdbcInfo, true);
     /* Run to completion. */
-    insert.open(null);
+    insert.open(TestEnvVars.get());
     while (!insert.eos()) {
       insert.nextReady();
     }
@@ -88,7 +88,7 @@ public class JdbcAccessMethodTest {
 
     /* Count up the results and assert they match expectations */
     int count = 0;
-    scan.open(null);
+    scan.open(TestEnvVars.get());
     TupleBatch tb = null;
     while (!scan.eos()) {
       tb = scan.nextReady();

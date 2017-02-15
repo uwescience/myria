@@ -1,0 +1,63 @@
+{
+      "fragments":[
+        {
+          "operators": [
+            {
+              "opType": "TableScan",
+              "opId": 0,
+              "relationKey": {
+                "userName": "jwang",
+                "relationName": "smallTable",
+                "programName": "global_join"
+              }
+            },
+            {
+
+               "opType": "Apply",
+               "addCounter":"False",
+               "opId": 1,
+               "emitExpressions": [
+                 {
+                   "outputName": "udfOutput",
+                   "rootExpressionOperator": {
+                     "type": "PYUDF",
+                     "name": "pyAggInt",
+                     "outputType":"LONG_TYPE",
+                     "children": [
+                       {
+                         "type": "VARIABLE",
+                         "columnIdx": 1
+                       }
+                     ]
+                   }
+                 },
+
+                 {"outputName":"col2",
+                 "rootExpressionOperator":{
+                    "type":"VARIABLE",
+                    "columnIdx":1}
+               }
+               ],
+               "argChild": 0
+                },
+                {
+                  "opType": "DbInsert",
+                  "opId": 2,
+                  "relationKey": {
+                    "userName": "public",
+                    "relationName": "smallTableResults",
+                    "programName": "adhoc"
+              },
+              "argChild": 1,
+              "argOverwriteTable": true
+                                                }
+
+             ]
+         }
+       ],
+
+   "language":"myrial",
+   "logicalRa":"Store(public:adhoc:result)[Apply(PyUDF(simpleApplyTest,))]]",
+
+   "rawQuery":"Simple Apply test with return type Long for PythonUDFs"
+}

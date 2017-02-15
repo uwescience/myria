@@ -25,6 +25,7 @@ import edu.washington.escience.myria.accessmethod.ConnectionInfo;
 import edu.washington.escience.myria.accessmethod.SQLiteInfo;
 import edu.washington.escience.myria.parallel.RelationWriteMetadata;
 import edu.washington.escience.myria.storage.TupleBatch;
+import edu.washington.escience.myria.storage.TupleUtils;
 
 /** @author valmeida */
 public class DbInsert extends AbstractDbInsert {
@@ -192,6 +193,8 @@ public class DbInsert extends AbstractDbInsert {
 
   @Override
   protected void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
+
+    setThreshold(TupleUtils.getBatchSize(getSchema()));
 
     /* retrieve connection information from the environment variables, if not already set */
     if (connectionInfo == null && execEnvVars != null) {

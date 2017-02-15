@@ -13,6 +13,7 @@ import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
+import edu.washington.escience.myria.util.TestEnvVars;
 import edu.washington.escience.myria.util.TestUtils;
 
 public class KeepAndSortOnMinTest {
@@ -46,7 +47,7 @@ public class KeepAndSortOnMinTest {
     BatchTupleSource scan = new BatchTupleSource(input);
     StreamingStateWrapper keepmin =
         new StreamingStateWrapper(scan, new KeepAndSortOnMinValue(new int[] {0}, new int[] {1}));
-    keepmin.open(null);
+    keepmin.open(TestEnvVars.get());
     while (!keepmin.eos()) {
       keepmin.nextReady();
       long lastValue = -1;

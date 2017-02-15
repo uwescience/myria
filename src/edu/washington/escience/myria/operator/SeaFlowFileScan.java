@@ -20,6 +20,7 @@ import edu.washington.escience.myria.io.DataSource;
 import edu.washington.escience.myria.io.FileSource;
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
+import edu.washington.escience.myria.storage.TupleUtils;
 
 /**
  * Read a SeaFlow EVT/OPP file. See the formats in https://github.com/fribalet/flowPhyto/blob/master/R/Globals.R
@@ -95,7 +96,7 @@ public class SeaFlowFileScan extends LeafOperator {
 
   @Override
   protected final TupleBatch fetchNextReady() throws DbException {
-    while ((lineNumber < numRows) && (buffer.numTuples() < TupleBatch.BATCH_SIZE)) {
+    while ((lineNumber < numRows) && (buffer.numTuples() < buffer.getBatchSize())) {
       try {
         /*
          * Every line but the last, including the header, is terminated with a 32-bit unsigned int with the value 10. We

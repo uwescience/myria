@@ -15,9 +15,9 @@ public class UserDefinedAggregator implements Aggregator {
       org.slf4j.LoggerFactory.getLogger(UserDefinedAggregator.class);
 
   /** Evaluators that initialize the state. */
-  private final ScriptEvalInterface initEvaluator;
+  protected final ScriptEvalInterface initEvaluator;
   /** Evaluators that update the {@link #state}. One evaluator for each expression in {@link #updateExpressions}. */
-  private final ScriptEvalInterface updateEvaluator;
+  protected final ScriptEvalInterface updateEvaluator;
   /** The Schema of the tuples produced by this aggregator. */
   private final Schema resultSchema;
   /** The Schema of the state. */
@@ -26,6 +26,8 @@ public class UserDefinedAggregator implements Aggregator {
   /**
    * @param initEvaluator initialize the state
    * @param updateEvaluator updates the state given an input row
+   * @param pyUDFEvaluators for python expression evaluation.
+   * @param emitEvaluators the evaluators that finalize the state
    * @param resultSchema the schema of the tuples produced by this aggregator
    * @param stateSchema the schema of the state
    */
@@ -36,8 +38,8 @@ public class UserDefinedAggregator implements Aggregator {
       final Schema stateSchema) {
     this.initEvaluator = initEvaluator;
     this.updateEvaluator = updateEvaluator;
-    this.stateSchema = stateSchema;
     this.resultSchema = resultSchema;
+    this.stateSchema = stateSchema;
   }
 
   @Override

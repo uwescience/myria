@@ -21,6 +21,7 @@ import edu.washington.escience.myria.expression.MinusExpression;
 import edu.washington.escience.myria.expression.SqrtExpression;
 import edu.washington.escience.myria.expression.TimesExpression;
 import edu.washington.escience.myria.expression.VariableExpression;
+import edu.washington.escience.myria.functions.PythonFunctionRegistrar;
 import edu.washington.escience.myria.operator.agg.PrimitiveAggregator.AggregationOp;
 
 /**
@@ -221,5 +222,11 @@ public class PrimitiveAggregatorFactory implements AggregatorFactory {
       names.add(op.toString().toLowerCase() + "_" + inputSchema.getColumnName(column));
     }
     return Schema.of(types, names);
+  }
+
+  PythonFunctionRegistrar pyFuncReg;
+
+  public void setPyFuncReg(PythonFunctionRegistrar pyFuncReg) {
+    this.pyFuncReg = pyFuncReg;
   }
 }

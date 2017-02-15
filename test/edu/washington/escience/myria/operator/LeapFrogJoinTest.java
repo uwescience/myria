@@ -15,6 +15,7 @@ import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.io.FileSource;
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
+import edu.washington.escience.myria.storage.TupleUtils;
 import edu.washington.escience.myria.util.TestEnvVars;
 
 public class LeapFrogJoinTest {
@@ -30,7 +31,7 @@ public class LeapFrogJoinTest {
       leftTbb.putString(1, "hello world");
     }
 
-    for (int i = 0; i < TupleBatch.BATCH_SIZE + 1; ++i) {
+    for (int i = 0; i < TupleUtils.getBatchSize(Type.DOUBLE_TYPE) + 1; ++i) {
       rightTbb.putLong(0, 0);
       rightTbb.putString(1, "hello world");
     }
@@ -49,7 +50,7 @@ public class LeapFrogJoinTest {
     int[][][] fieldMap = new int[][][] {{{0, 0}, {1, 0}}};
     int[][] outputMap = new int[][] {{0, 0}, {0, 1}, {1, 0}, {1, 1}};
     NAryOperator join = new LeapFrogJoin(children, fieldMap, outputMap, outputColumnNames, null);
-    join.open(null);
+    join.open(TestEnvVars.get());
     TupleBatch tb;
     TupleBatchBuffer batches = new TupleBatchBuffer(outputSchema);
     while (!join.eos()) {
@@ -59,7 +60,7 @@ public class LeapFrogJoinTest {
       }
     }
     join.close();
-    assertEquals(2 * (TupleBatch.BATCH_SIZE + 1), batches.numTuples());
+    assertEquals(2 * (TupleUtils.getBatchSize(Type.DOUBLE_TYPE) + 1), batches.numTuples());
   }
 
   @Test
@@ -102,7 +103,7 @@ public class LeapFrogJoinTest {
             outputMap,
             outputColumnNames,
             new boolean[] {true, true, true});
-    join.open(null);
+    join.open(TestEnvVars.get());
     TupleBatch tb;
     TupleBatchBuffer batches = new TupleBatchBuffer(outputSchema);
     while (!join.eos()) {
@@ -148,7 +149,7 @@ public class LeapFrogJoinTest {
             outputMap,
             outputColumnNames,
             new boolean[] {false, false});
-    join.open(null);
+    join.open(TestEnvVars.get());
     TupleBatch tb;
     TupleBatchBuffer batches = new TupleBatchBuffer(outputSchema);
     while (!join.eos()) {
@@ -203,7 +204,7 @@ public class LeapFrogJoinTest {
             outputMap,
             outputColumnNames,
             new boolean[] {true, true, false});
-    join.open(null);
+    join.open(TestEnvVars.get());
     TupleBatch tb;
     TupleBatchBuffer batches = new TupleBatchBuffer(outputSchema);
     while (!join.eos()) {
@@ -324,7 +325,7 @@ public class LeapFrogJoinTest {
             outputMap,
             outputColumnNames,
             new boolean[] {false, false, false});
-    join.open(null);
+    join.open(TestEnvVars.get());
     TupleBatch tb;
     TupleBatchBuffer batches = new TupleBatchBuffer(outputSchema);
     while (!join.eos()) {
@@ -366,7 +367,7 @@ public class LeapFrogJoinTest {
             outputMap,
             outputColumnNames,
             new boolean[] {false, false, true});
-    join.open(null);
+    join.open(TestEnvVars.get());
     TupleBatch tb;
     TupleBatchBuffer batches = new TupleBatchBuffer(outputSchema);
     while (!join.eos()) {

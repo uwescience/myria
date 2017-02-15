@@ -15,6 +15,7 @@ import edu.washington.escience.myria.column.DoubleColumn;
 import edu.washington.escience.myria.column.mutable.DoubleMutableColumn;
 import edu.washington.escience.myria.proto.DataProto.ColumnMessage;
 import edu.washington.escience.myria.storage.TupleBatch;
+import edu.washington.escience.myria.storage.TupleUtils;
 import edu.washington.escience.myria.util.MyriaUtils;
 
 /**
@@ -32,7 +33,7 @@ public final class DoubleColumnBuilder extends ColumnBuilder<Double> {
 
   /** Constructs an empty column that can hold up to TupleBatch.BATCH_SIZE elements. */
   public DoubleColumnBuilder() {
-    data = DoubleBuffer.allocate(TupleBatch.BATCH_SIZE);
+    data = DoubleBuffer.allocate(TupleUtils.getBatchSize(Type.DOUBLE_TYPE));
   }
 
   /**

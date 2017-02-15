@@ -26,6 +26,7 @@ import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
 import edu.washington.escience.myria.util.TestUtils;
+import edu.washington.escience.myria.util.TestEnvVars;
 
 public class OperatorTest {
 
@@ -91,7 +92,7 @@ public class OperatorTest {
     children[1] = new BatchTupleSource(generateRandomTuples(4200, 2000, false));
     children[2] = new BatchTupleSource(generateRandomTuples(19900, 5000, false));
     UnionAll union = new UnionAll(children);
-    union.open(null);
+    union.open(TestEnvVars.get());
     TupleBatch tb = null;
     int count = 0;
     while (!union.eos()) {
@@ -115,7 +116,7 @@ public class OperatorTest {
     children[1] = new BatchTupleSource(randomTuples[1]);
 
     UnionAll union = new UnionAll(children);
-    union.open(null);
+    union.open(TestEnvVars.get());
     TupleBatch tb;
 
     Multiset<Long> actualCounts = HashMultiset.create();
@@ -161,7 +162,7 @@ public class OperatorTest {
     children[1] = new BatchTupleSource(generateRandomTuples(4200, 2000, true));
     children[2] = new BatchTupleSource(generateRandomTuples(9900, 5000, true));
     NAryOperator merge = new Merge(children, new int[] {0}, new boolean[] {true});
-    merge.open(null);
+    merge.open(TestEnvVars.get());
     TupleBatch tb = null;
     int count = 0;
     while (!merge.eos()) {
@@ -187,7 +188,7 @@ public class OperatorTest {
     children[2] = new BatchTupleSource(randomTuples[2]);
 
     NAryOperator merge = new Merge(children, new int[] {0, 1}, new boolean[] {true, true});
-    merge.open(null);
+    merge.open(TestEnvVars.get());
     TupleBatch tb;
     final ArrayList<Entry<Long, String>> entries = new ArrayList<Entry<Long, String>>();
     while (!merge.eos()) {
@@ -220,7 +221,7 @@ public class OperatorTest {
     int count = 0;
 
     /* Count the dupelim */
-    dupElim.open(null);
+    dupElim.open(TestEnvVars.get());
     while (!dupElim.eos()) {
       TupleBatch tb = dupElim.nextReady();
       if (tb == null) {
@@ -280,7 +281,7 @@ public class OperatorTest {
     BatchTupleSource scan = new BatchTupleSource(input);
     StreamingStateWrapper keepmin =
         new StreamingStateWrapper(scan, new KeepAndSortOnMinValue(new int[] {0}, new int[] {1}));
-    keepmin.open(null);
+    keepmin.open(TestEnvVars.get());
     while (!keepmin.eos()) {
       keepmin.nextReady();
       long lastValue = -1;
@@ -349,7 +350,7 @@ public class OperatorTest {
 
     BinaryOperator join =
         new MergeJoin(children[0], children[1], new int[] {0}, new int[] {0}, new boolean[] {true});
-    join.open(null);
+    join.open(TestEnvVars.get());
     TupleBatch tb;
     final ArrayList<TupleBatch> batches = new ArrayList<TupleBatch>();
     while (!join.eos()) {
@@ -386,7 +387,7 @@ public class OperatorTest {
             new int[] {0},
             new int[] {0},
             new boolean[] {true});
-    join.open(null);
+    join.open(TestEnvVars.get());
     TupleBatch tb;
     final ArrayList<Entry<Long, String>> entries = new ArrayList<Entry<Long, String>>();
     while (!join.eos()) {
@@ -442,7 +443,7 @@ public class OperatorTest {
             new int[] {0},
             new int[] {0},
             new boolean[] {true});
-    join.open(null);
+    join.open(TestEnvVars.get());
     TupleBatch tb = null;
     int count = 0;
     Multiset<Long> left = HashMultiset.create();
@@ -476,7 +477,7 @@ public class OperatorTest {
 
     InMemoryOrderBy order =
         new InMemoryOrderBy(child, new int[] {0, 1}, new boolean[] {true, true});
-    order.open(null);
+    order.open(TestEnvVars.get());
     TupleBatch tb;
     final ArrayList<Entry<Long, String>> entries = new ArrayList<Entry<Long, String>>();
     while (!order.eos()) {
@@ -510,7 +511,7 @@ public class OperatorTest {
     BatchTupleSource child = new BatchTupleSource(randomTuples);
 
     InMemoryOrderBy order = new InMemoryOrderBy(child, new int[] {1}, new boolean[] {false});
-    order.open(null);
+    order.open(TestEnvVars.get());
     TupleBatch tb;
     final ArrayList<String> entries = new ArrayList<String>();
     while (!order.eos()) {
@@ -576,7 +577,7 @@ public class OperatorTest {
 
     BinaryOperator join =
         new MergeJoin(sort0, sort1, new int[] {0}, new int[] {0}, new boolean[] {false});
-    join.open(null);
+    join.open(TestEnvVars.get());
     TupleBatch tb;
     final ArrayList<TupleBatch> batches = new ArrayList<TupleBatch>();
     while (!join.eos()) {
@@ -635,7 +636,7 @@ public class OperatorTest {
             new int[] {0, 1},
             new int[] {0, 1},
             new boolean[] {true, false});
-    join.open(null);
+    join.open(TestEnvVars.get());
     TupleBatch tb;
     final ArrayList<TupleBatch> batches = new ArrayList<TupleBatch>();
     while (!join.eos()) {

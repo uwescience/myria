@@ -15,7 +15,7 @@ public class SymmetricHashJoinEncoding extends BinaryOperatorEncoding<SymmetricH
   public List<String> argColumnNames;
   public boolean argSetSemanticsLeft = false;
   public boolean argSetSemanticsRight = false;
-  public JoinPullOrder argOrder = JoinPullOrder.ALTER;
+  public JoinPullOrder argOrder = JoinPullOrder.ALTERNATE;
 
   @Override
   public SymmetricHashJoin construct(final ConstructArgs args) {

@@ -15,6 +15,7 @@ import edu.washington.escience.myria.column.LongColumn;
 import edu.washington.escience.myria.column.mutable.LongMutableColumn;
 import edu.washington.escience.myria.proto.DataProto.ColumnMessage;
 import edu.washington.escience.myria.storage.TupleBatch;
+import edu.washington.escience.myria.storage.TupleUtils;
 import edu.washington.escience.myria.util.MyriaUtils;
 
 /**
@@ -32,7 +33,7 @@ public final class LongColumnBuilder extends ColumnBuilder<Long> {
 
   /** Constructs an empty column that can hold up to TupleBatch.BATCH_SIZE elements. */
   public LongColumnBuilder() {
-    data = LongBuffer.allocate(TupleBatch.BATCH_SIZE);
+    data = LongBuffer.allocate(TupleUtils.getBatchSize(Type.LONG_TYPE));
   }
 
   /**

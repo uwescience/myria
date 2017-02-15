@@ -1,6 +1,7 @@
 package edu.washington.escience.myria.expression.evaluate;
 
 import edu.washington.escience.myria.Schema;
+import edu.washington.escience.myria.functions.PythonFunctionRegistrar;
 
 /**
  * Object that carries parameters down the expression tree.
@@ -11,7 +12,9 @@ public class ExpressionOperatorParameter {
   /** The schema of the state. */
   private final Schema stateSchema;
   /** The id of the worker that is running the expression. */
-  private final Integer workerID;
+  private Integer workerID = null;
+  /** Python function registrar. */
+  private PythonFunctionRegistrar pyFuncReg = null;
 
   /**
    * Simple constructor.
@@ -19,7 +22,6 @@ public class ExpressionOperatorParameter {
   public ExpressionOperatorParameter() {
     schema = null;
     stateSchema = null;
-    workerID = null;
   }
 
   /**
@@ -28,7 +30,6 @@ public class ExpressionOperatorParameter {
   public ExpressionOperatorParameter(final Schema schema) {
     this.schema = schema;
     stateSchema = null;
-    workerID = null;
   }
 
   /**
@@ -38,7 +39,18 @@ public class ExpressionOperatorParameter {
   public ExpressionOperatorParameter(final Schema schema, final Schema stateSchema) {
     this.schema = schema;
     this.stateSchema = stateSchema;
-    workerID = null;
+  }
+
+  /**
+   * @param schema the input schema
+   * @param stateSchema the state schema
+   * @param pyFuncReg Python function registrar
+   */
+  public ExpressionOperatorParameter(
+      final Schema schema, final Schema stateSchema, final PythonFunctionRegistrar pyFuncReg) {
+    this.schema = schema;
+    this.stateSchema = stateSchema;
+    this.pyFuncReg = pyFuncReg;
   }
 
   /**
@@ -64,6 +76,23 @@ public class ExpressionOperatorParameter {
   }
 
   /**
+   * @param schema the input schema
+   * @param stateSchema the schema of the state
+   * @param workerID id of the worker that is running the expression
+   * @param pyFuncReg Python function registrar
+   */
+  public ExpressionOperatorParameter(
+      final Schema schema,
+      final Schema stateSchema,
+      final int workerID,
+      final PythonFunctionRegistrar pyFuncReg) {
+    this.schema = schema;
+    this.stateSchema = stateSchema;
+    this.workerID = workerID;
+    this.pyFuncReg = pyFuncReg;
+  }
+
+  /**
    * @return the input schema
    */
   public Schema getSchema() {
@@ -82,5 +111,12 @@ public class ExpressionOperatorParameter {
    */
   public int getWorkerId() {
     return workerID;
+  }
+
+  /**
+   * @return the Python function registrar
+   */
+  public PythonFunctionRegistrar getPythonFunctionRegistrar() {
+    return pyFuncReg;
   }
 }

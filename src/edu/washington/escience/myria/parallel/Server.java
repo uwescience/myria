@@ -26,8 +26,6 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -59,6 +57,7 @@ import org.slf4j.LoggerFactory;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Joiner;
+import com.google.common.base.MoreObjects;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -72,6 +71,7 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import edu.washington.escience.myria.CsvTupleWriter;
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
+import edu.washington.escience.myria.MyriaConstants.FunctionLanguage;
 import edu.washington.escience.myria.PostgresBinaryTupleWriter;
 import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.Schema;
@@ -80,6 +80,7 @@ import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.accessmethod.AccessMethod.IndexRef;
 import edu.washington.escience.myria.api.MyriaJsonMapperProvider;
 import edu.washington.escience.myria.api.encoding.DatasetStatus;
+import edu.washington.escience.myria.api.encoding.FunctionStatus;
 import edu.washington.escience.myria.api.encoding.QueryEncoding;
 import edu.washington.escience.myria.coordinator.CatalogException;
 import edu.washington.escience.myria.coordinator.MasterCatalog;
@@ -92,10 +93,10 @@ import edu.washington.escience.myria.io.DataSink;
 import edu.washington.escience.myria.io.UriSink;
 import edu.washington.escience.myria.operator.Apply;
 import edu.washington.escience.myria.operator.CSVFileScanFragment;
+import edu.washington.escience.myria.operator.DbCreateFunction;
 import edu.washington.escience.myria.operator.DbCreateIndex;
 import edu.washington.escience.myria.operator.DbCreateView;
 import edu.washington.escience.myria.operator.DbDelete;
-import edu.washington.escience.myria.operator.DbExecute;
 import edu.washington.escience.myria.operator.DbInsert;
 import edu.washington.escience.myria.operator.DbQueryScan;
 import edu.washington.escience.myria.operator.DuplicateTBGenerator;
@@ -142,8 +143,9 @@ import edu.washington.escience.myria.tools.MyriaWorkerConfigurationModule;
 import edu.washington.escience.myria.util.IPCUtils;
 import edu.washington.escience.myria.util.concurrent.ErrorLoggingTimerTask;
 import edu.washington.escience.myria.util.concurrent.RenamingThreadFactory;
-
-/** The master entrance. */
+/**
+ * The master entrance.
+ */
 public final class Server implements TaskMessageSource, EventHandler<DriverMessage> {
 
   /** Master message processor. */
@@ -676,6 +678,8 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
           MyriaConstants.RESOURCE_PROFILING_SCHEMA,
           workerIds,
           false);
+      addRelationToCatalog(
+          MyriaConstants.PYUDF_RELATION, MyriaConstants.PYUDF_SCHEMA, workerIds, false);
     }
   }
 
@@ -872,54 +876,18 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
       final Set<Integer> workersToIngest,
       final DistributeFunction distributeFunction)
       throws URIException, DbException, InterruptedException {
-    /* Figure out the workers we will use */
-    Set<Integer> actualWorkers = workersToIngest;
     long fileSize = s3Source.getFileSize();
 
-    /* Determine the number of workers to ingest and the partition size */
-    long partitionSize = 0;
-    int[] workersArray;
+    Set<Integer> potentialWorkers = MoreObjects.firstNonNull(workersToIngest, getAliveWorkers());
 
-    if (workersToIngest == null) {
-      int[] allWorkers = Ints.toArray(getAliveWorkers());
-      int totalNumberOfWorkersToIngest = 0;
-      for (int i = allWorkers.length; i >= 1; i--) {
-        totalNumberOfWorkersToIngest = i;
-        long currentPartitionSize = fileSize / i;
-        if (currentPartitionSize > MyriaConstants.PARALLEL_INGEST_WORKER_MINIMUM_PARTITION_SIZE
-            || totalNumberOfWorkersToIngest == 1) {
-          partitionSize = currentPartitionSize;
-          break;
-        }
-      }
-      workersArray = Arrays.copyOfRange(allWorkers, 0, totalNumberOfWorkersToIngest);
-    } else {
-      Preconditions.checkArgument(actualWorkers.size() > 0, "Must use > 0 workers");
-      workersArray = Ints.toArray(actualWorkers);
-      partitionSize = fileSize / workersArray.length;
-    }
+    /* Select a subset of workers */
+    int[] workersArray = parallelIngestComputeNumWorkers(fileSize, potentialWorkers);
+
     Map<Integer, SubQueryPlan> workerPlans = new HashMap<>();
     for (int workerID = 1; workerID <= workersArray.length; workerID++) {
-      boolean isLastWorker = workerID == workersArray.length;
-      long startRange = partitionSize * (workerID - 1);
-      long endRange;
-      if (isLastWorker) {
-        endRange = fileSize - 1;
-      } else {
-        endRange = (partitionSize * workerID) - 1;
-      }
-
       CSVFileScanFragment scanFragment =
           new CSVFileScanFragment(
-              s3Source,
-              schema,
-              startRange,
-              endRange,
-              isLastWorker,
-              delimiter,
-              quote,
-              escape,
-              numberOfSkippedLines);
+              s3Source, schema, workersArray, delimiter, quote, escape, numberOfSkippedLines);
       workerPlans.put(
           workersArray[workerID - 1],
           new SubQueryPlan(new DbInsert(scanFragment, relationKey, true)));
@@ -946,6 +914,33 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
 
     updateHowDistributed(relationKey, new HowDistributed(distributeFunction, workersArray));
     return getDatasetStatus(relationKey);
+  }
+
+  /**
+   *  Helper method for parallel ingest.
+   *
+   * @param fileSize the size of the file to ingest
+   * @param allWorkers all workers considered for ingest
+   */
+  public int[] parallelIngestComputeNumWorkers(long fileSize, Set<Integer> allWorkers) {
+    /* Determine the number of workers to ingest based on partition size */
+    int totalNumberOfWorkersToIngest = 0;
+    for (int i = allWorkers.size(); i >= 1; i--) {
+      totalNumberOfWorkersToIngest = i;
+      long currentPartitionSize = fileSize / i;
+      if (currentPartitionSize > MyriaConstants.PARALLEL_INGEST_WORKER_MINIMUM_PARTITION_SIZE) {
+        break;
+      }
+    }
+    int[] workersArray = new int[allWorkers.size()];
+    int wCounter = 0;
+    for (Integer w : allWorkers) {
+      workersArray[wCounter] = w;
+      wCounter++;
+    }
+    Arrays.sort(workersArray);
+    workersArray = Arrays.copyOfRange(workersArray, 0, totalNumberOfWorkersToIngest);
+    return workersArray;
   }
 
   /**
@@ -1123,70 +1118,97 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
   }
 
   /**
-   * Create a function and register it in the catalog
+   * Create a function and register it in the catalog.
    *
    * @param name the name of the function
-   * @param definition the function definition (must be postgres specific)
+   * @param definition the function definition  - this is postgres specific for postgres and function text for python.
    * @param outputSchema the output schema of the function
+   * @param isMultiValued indicates if the function returns multiple tuples.
+   * @param lang this is the language of the function.
+   * @param binary this is an optional parameter for function for base64 encoded binary for function.
+   * @param workers list of workers on which the function is registered: default is all.
    * @return the status of the function
    */
   public String createFunction(
       final String name,
       final String definition,
-      final String outputSchema,
+      final String outputType,
+      final Boolean isMultiValued,
+      final FunctionLanguage lang,
+      final String binary,
       final Set<Integer> workers)
       throws DbException, InterruptedException {
-    String response = "Created Function";
+
+    String response = "";
     Set<Integer> actualWorkers = workers;
     if (workers == null) {
       actualWorkers = getWorkers().keySet();
     }
+    try {
 
-    /* Postgres specific syntax - Validate the command */
-    Pattern pattern = Pattern.compile("(CREATE FUNCTION)([\\s\\S]*)(LANGUAGE SQL;)");
-    Matcher matcher = pattern.matcher(definition);
-
-    if (matcher.matches()) {
-      /* Add a replace statement */
-      String modifiedReplaceFunction =
-          definition.replace("CREATE FUNCTION", "CREATE OR REPLACE FUNCTION");
-
-      /* Create the function */
-      try {
-        Map<Integer, SubQueryPlan> workerPlans = new HashMap<>();
-        for (Integer workerId : actualWorkers) {
-          workerPlans.put(
-              workerId,
-              new SubQueryPlan(
-                  new DbExecute(
-                      EmptyRelation.of(Schema.EMPTY_SCHEMA), modifiedReplaceFunction, null)));
-        }
-        ListenableFuture<Query> qf =
-            queryManager.submitQuery(
-                "create function",
-                "create function",
-                "create function",
-                new SubQueryPlan(new EmptySink(new EOSSource())),
-                workerPlans);
-        try {
-          qf.get().getQueryId();
-        } catch (ExecutionException e) {
-          throw new DbException("Error executing query", e.getCause());
-        }
-      } catch (CatalogException e) {
-        throw new DbException(e);
+      Map<Integer, SubQueryPlan> workerPlans = new HashMap<>();
+      for (Integer workerId : actualWorkers) {
+        workerPlans.put(
+            workerId,
+            new SubQueryPlan(
+                new DbCreateFunction(
+                    EmptyRelation.of(Schema.EMPTY_SCHEMA),
+                    name,
+                    definition,
+                    outputType,
+                    isMultiValued,
+                    lang,
+                    binary)));
       }
 
-      /* Register the function to the catalog */
+      ListenableFuture<Query> qf =
+          queryManager.submitQuery(
+              "create function",
+              "create function",
+              "create function",
+              new SubQueryPlan(new EmptySink(new EOSSource())),
+              workerPlans);
+
       try {
-        catalog.registerFunction(name, definition, outputSchema);
-      } catch (CatalogException e) {
-        throw new DbException(e);
+        qf.get().getQueryId();
+      } catch (ExecutionException e) {
+        throw new DbException("Error executing query", e.getCause());
       }
-    } else {
-      response = "Function is not valid";
+    } catch (CatalogException e) {
+      throw new DbException(e);
+    }
+    /* Register the function to the catalog don't send the binary. */
+    try {
+      catalog.registerFunction(name, definition, outputType, isMultiValued, lang);
+    } catch (CatalogException e) {
+      throw new DbException(e);
     }
     return response;
+  }
+  /**
+   *
+   * @return list of functions from the catalog
+   * @throws DbException in case of error.
+   */
+  public List<String> getFunctions() throws DbException {
+    try {
+      return catalog.getFunctions();
+    } catch (CatalogException e) {
+      throw new DbException(e);
+    }
+  }
+  /**
+   *
+   * @param functionName : name of the function to retrieve.
+   * @return functiondetails for the function
+   * @throws DbException in case of error.
+   */
+  public FunctionStatus getFunctionDetails(final String functionName) throws DbException {
+    try {
+      return catalog.getFunctionStatus(functionName);
+    } catch (CatalogException e) {
+      throw new DbException(e);
+    }
   }
 
   /**
@@ -1468,7 +1490,7 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
 
     Random r = new Random();
     final TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
-    for (int i = 0; i < TupleBatch.BATCH_SIZE; i++) {
+    for (int i = 0; i < tbb.getBatchSize(); i++) {
       tbb.putLong(0, r.nextLong());
       tbb.putString(1, new java.util.Date().toString());
     }

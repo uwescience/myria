@@ -1,8 +1,14 @@
 package edu.washington.escience.myria.operator.agg;
 
+import java.io.IOException;
 import java.io.Serializable;
+import java.util.List;
 
 import edu.washington.escience.myria.storage.MutableTupleBuffer;
+import edu.washington.escience.myria.DbException;
+import edu.washington.escience.myria.Schema;
+import edu.washington.escience.myria.storage.AppendableTable;
+import edu.washington.escience.myria.storage.ReadableTable;
 import edu.washington.escience.myria.storage.TupleBatch;
 
 /**

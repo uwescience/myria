@@ -6,6 +6,8 @@ package edu.washington.escience.myria.expression;
 import java.io.Serializable;
 import java.util.List;
 
+import javax.annotation.Nonnull;
+
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonSubTypes.Type;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
@@ -30,6 +32,7 @@ import edu.washington.escience.myria.expression.evaluate.ExpressionOperatorParam
   @Type(name = "CAST", value = CastExpression.class),
   @Type(name = "CEIL", value = CeilExpression.class),
   @Type(name = "COS", value = CosExpression.class),
+  @Type(name = "DOWNLOADBLOB", value = DownloadBlobExpression.class),
   @Type(name = "FLOOR", value = FloorExpression.class),
   @Type(name = "LEN", value = LenExpression.class),
   @Type(name = "LOG", value = LogExpression.class),
@@ -63,7 +66,8 @@ import edu.washington.escience.myria.expression.evaluate.ExpressionOperatorParam
   @Type(name = "TIMES", value = TimesExpression.class),
   /* Nary */
   @Type(name = "CONDITION", value = ConditionalExpression.class),
-  @Type(name = "SUBSTR", value = SubstrExpression.class)
+  @Type(name = "SUBSTR", value = SubstrExpression.class),
+  @Type(name = "PYUDF", value = PyUDFExpression.class)
 })
 public abstract class ExpressionOperator implements Serializable {
   /***/
@@ -103,5 +107,6 @@ public abstract class ExpressionOperator implements Serializable {
   /**
    * @return all children
    */
+  @Nonnull
   public abstract List<ExpressionOperator> getChildren();
 }

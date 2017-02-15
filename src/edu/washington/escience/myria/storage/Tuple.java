@@ -1,6 +1,7 @@
 package edu.washington.escience.myria.storage;
 
 import java.io.Serializable;
+import java.nio.ByteBuffer;
 
 import javax.annotation.Nonnull;
 
@@ -94,6 +95,11 @@ public class Tuple implements Cloneable, AppendableTable, ReadableTable, Seriali
   }
 
   @Override
+  public ByteBuffer getBlob(final int column, final int row) {
+    return data.getBlob(column, row);
+  }
+
+  @Override
   public Object getObject(final int column, final int row) {
     return data.getObject(column, row);
   }
@@ -158,6 +164,11 @@ public class Tuple implements Cloneable, AppendableTable, ReadableTable, Seriali
   @Deprecated
   public void putObject(final int column, final @Nonnull Object value) {
     data.putObject(column, value);
+  }
+
+  @Override
+  public void putBlob(final int column, @Nonnull final ByteBuffer value) {
+    data.putBlob(column, value);
   }
 
   @Override

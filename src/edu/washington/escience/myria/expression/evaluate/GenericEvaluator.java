@@ -29,6 +29,7 @@ import edu.washington.escience.myria.storage.ReadableColumn;
 import edu.washington.escience.myria.storage.ReadableTable;
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleBuffer;
+import edu.washington.escience.myria.storage.TupleUtils;
 
 /**
  * An Expression evaluator for generic expressions. Used in {@link Apply}.
@@ -107,6 +108,7 @@ public class GenericEvaluator extends Evaluator {
    * @param stateRow index of the row that should be used for state
    * @param result the table storing the result
    * @param count column storing number of results (null for single-valued expressions)
+   * @throws DbException in case of error.
    */
   public void eval(
       @Nonnull final ReadableTable input,
@@ -114,11 +116,12 @@ public class GenericEvaluator extends Evaluator {
       @Nonnull final ReadableTable state,
       final int stateRow,
       @Nonnull final WritableColumn result,
-      @Nullable final WritableColumn count) {
+      @Nullable final WritableColumn count)
+      throws DbException {
     Preconditions.checkArgument(
         evaluator != null, "Call compile first or copy the data if it is the same in the input.");
     Preconditions.checkArgument(
-        getExpression().isMultivalued() != (count == null),
+        getExpression().isMultiValued() != (count == null),
         "count must be null for a single-valued expression and non-null for a multivalued expression.");
     try {
       evaluator.evaluate(input, inputRow, state, stateRow, result, count);
@@ -146,9 +149,8 @@ public class GenericEvaluator extends Evaluator {
 
     protected EvaluatorResult(
         @Nonnull final TupleBuffer results, @Nonnull final Column<?> resultCounts) {
-      final List<TupleBatch> resultBatches = results.finalResult();
       ImmutableList.Builder<Column<?>> resultColumnsBuilder = ImmutableList.builder();
-      for (final TupleBatch tb : resultBatches) {
+      for (final TupleBatch tb : results.finalResult()) {
         resultColumnsBuilder.add(tb.getDataColumns().get(0));
       }
       this.resultColumns = resultColumnsBuilder.build();
@@ -190,14 +192,17 @@ public class GenericEvaluator extends Evaluator {
    * counts from each tuple. This method cannot take state into consideration.
    *
    * @param tb the tuples to be input to this expression
+   * @param outputSchema the schema that results from this evaluator belongs to, used to determine the tuple batch size
    * @return an {@link EvaluatorResult} containing the results and result counts of evaluating this expression on the
    *         entire TupleBatch
+   * @throws DbException
    */
-  public EvaluatorResult evaluateColumn(final TupleBatch tb) {
+  public EvaluatorResult evaluateColumn(final TupleBatch tb, final Schema outputSchema)
+      throws DbException {
     // Optimization for result counts of single-valued expressions.
     final Column<?> constCounts = new ConstantValueColumn(1, Type.INT_TYPE, tb.numTuples());
     final WritableColumn countsWriter;
-    if (getExpression().isMultivalued()) {
+    if (getExpression().isMultiValued()) {
       countsWriter = ColumnFactory.allocateColumn(Type.INT_TYPE);
     } else {
       // For single-valued expressions, the Java expression will never attempt to write to `countsWriter`.
@@ -212,15 +217,16 @@ public class GenericEvaluator extends Evaluator {
     // For multivalued expressions, we may get more than `TupleBatch.BATCH_SIZE` results,
     // so we need to pass in a `TupleBuffer` rather than a `ColumnBuilder` to `eval()`,
     // and return a `List<Column>` rather than a `Column` of results.
-    final Type type = getOutputType();
     final TupleBuffer resultsBuffer =
-        new TupleBuffer(Schema.ofFields(getExpression().getOutputName(), type));
+        new TupleBuffer(
+            Schema.ofFields(getExpression().getOutputName(), getOutputType()),
+            TupleUtils.getBatchSize(outputSchema));
     final WritableColumn resultsWriter = resultsBuffer.asWritableColumn(0);
     for (int rowIdx = 0; rowIdx < tb.numTuples(); ++rowIdx) {
       eval(tb, rowIdx, tb, rowIdx, resultsWriter, countsWriter);
     }
     final Column<?> resultCounts;
-    if (getExpression().isMultivalued()) {
+    if (getExpression().isMultiValued()) {
       resultCounts = ((ColumnBuilder<?>) countsWriter).build();
     } else {
       resultCounts = constCounts;

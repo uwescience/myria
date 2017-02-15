@@ -5,7 +5,7 @@ import java.util.BitSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
-
+import java.nio.ByteBuffer;
 import org.joda.time.DateTime;
 
 import com.google.common.base.Preconditions;
@@ -42,6 +42,8 @@ public class TupleBatchBuffer implements AppendableTable {
   private long lastPoppedTime;
   /** the total number of tuples in readyTuples. */
   private int readyTuplesNum;
+  /** BatchSize*/
+  private int batchSize;
 
   /**
    * Constructs an empty TupleBatchBuffer to hold tuples matching the specified Schema.
@@ -58,6 +60,11 @@ public class TupleBatchBuffer implements AppendableTable {
     currentInProgressTuples = 0;
     lastPoppedTime = System.nanoTime();
     readyTuplesNum = 0;
+    batchSize = TupleUtils.getBatchSize(schema);
+  }
+
+  public int getBatchSize() {
+    return batchSize;
   }
 
   /**
@@ -113,7 +120,7 @@ public class TupleBatchBuffer implements AppendableTable {
       numColumnsReady = 0;
       columnsReady.clear();
       /* See if the current batch is full and finish it if so. */
-      if (currentInProgressTuples == TupleBatch.BATCH_SIZE) {
+      if (currentInProgressTuples == batchSize) {
         finishBatch();
       }
     }
@@ -341,7 +348,7 @@ public class TupleBatchBuffer implements AppendableTable {
           currentBuildingColumns.get(i + leftAnswerColumns.length));
     }
     currentInProgressTuples++;
-    if (currentInProgressTuples == TupleBatch.BATCH_SIZE) {
+    if (currentInProgressTuples == batchSize) {
       finishBatch();
     }
   }
@@ -389,8 +396,7 @@ public class TupleBatchBuffer implements AppendableTable {
    * @param row the row index.
    */
   public final void append(final MutableTupleBuffer tuples, final int col, final int row) {
-    appendFromColumn(
-        columnsReady.nextClearBit(0), tuples.getColumn(col, row), row % TupleBatch.BATCH_SIZE);
+    appendFromColumn(columnsReady.nextClearBit(0), tuples.getColumn(col, row), row % batchSize);
   }
 
   /**
@@ -459,6 +465,13 @@ public class TupleBatchBuffer implements AppendableTable {
   public final void putString(final int column, final String value) {
     checkPutIndex(column);
     currentBuildingColumns.get(column).appendString(value);
+    columnPut(column);
+  }
+
+  @Override
+  public final void putBlob(final int column, final ByteBuffer value) {
+    checkPutIndex(column);
+    currentBuildingColumns.get(column).appendBlob(value);
     columnPut(column);
   }
 

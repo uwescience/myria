@@ -1,5 +1,6 @@
 package edu.washington.escience.myria.operator.agg;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -16,6 +17,8 @@ import edu.washington.escience.myria.column.Column;
 import edu.washington.escience.myria.expression.Expression;
 import edu.washington.escience.myria.expression.evaluate.ExpressionOperatorParameter;
 import edu.washington.escience.myria.expression.evaluate.GenericEvaluator;
+import edu.washington.escience.myria.expression.evaluate.PythonUDFEvaluator;
+import edu.washington.escience.myria.functions.PythonFunctionRegistrar;
 import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.operator.TupleHashTable;
 import edu.washington.escience.myria.operator.UnaryOperator;
@@ -73,7 +76,7 @@ public class Aggregate extends UnaryOperator {
    * @return result TB.
    */
   @Override
-  protected TupleBatch fetchNextReady() throws DbException {
+  protected TupleBatch fetchNextReady() throws DbException, IOException {
     final Operator child = getChild();
     TupleBatch tb = child.nextReady();
     while (tb != null) {
@@ -120,10 +123,9 @@ public class Aggregate extends UnaryOperator {
       for (AggregatorFactory factory : factories) {
         int stateSize = factory.generateStateSchema(inputSchema).numColumns();
         int emitSize = factory.generateSchema(inputSchema).numColumns();
-        TupleBatch state =
-            tb.selectColumns(MyriaArrayUtils.range(stateOffset, stateOffset + stateSize));
+        TupleBatch state = tb.selectColumns(MyriaArrayUtils.range(stateOffset, stateSize));
         for (GenericEvaluator eval : emitEvals.subList(emitOffset, emitOffset + emitSize)) {
-          columns.addAll(eval.evaluateColumn(state).getResultColumns());
+          columns.add(eval.evaluateColumn(state, getSchema()).getResultColumns().get(0));
         }
         stateOffset += stateSize;
         emitOffset += emitSize;
@@ -163,18 +165,29 @@ public class Aggregate extends UnaryOperator {
     emitEvals = new ArrayList<GenericEvaluator>();
     Schema groupingSchema = inputSchema.getSubSchema(gfields);
     Schema stateSchema = Schema.EMPTY_SCHEMA;
+    PythonFunctionRegistrar pyFuncReg = getPythonFunctionRegistrar();
     for (int i = 0; i < factories.length; ++i) {
+      factories[i].setPyFuncReg(pyFuncReg);
       internalAggs.addAll(factories[i].generateInternalAggs(inputSchema));
       List<Expression> emits = factories[i].generateEmitExpressions(inputSchema);
       Schema newStateSchema = factories[i].generateStateSchema(inputSchema);
       stateSchema = Schema.merge(stateSchema, newStateSchema);
       for (Expression exp : emits) {
-        GenericEvaluator evaluator =
-            new GenericEvaluator(
-                exp, new ExpressionOperatorParameter(newStateSchema, newStateSchema));
-        // if (evaluator.needsCompiling()) {
+        GenericEvaluator evaluator = null;
+        if (exp.isRegisteredPythonUDF()) {
+          evaluator =
+              new PythonUDFEvaluator(
+                  exp,
+                  new ExpressionOperatorParameter(
+                      inputSchema, stateSchema, getPythonFunctionRegistrar()));
+        } else {
+          evaluator =
+              new GenericEvaluator(
+                  exp,
+                  new ExpressionOperatorParameter(
+                      newStateSchema, newStateSchema, getPythonFunctionRegistrar()));
+        }
         evaluator.compile();
-        // }
         emitEvals.add(evaluator);
       }
     }

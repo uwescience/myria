@@ -6,12 +6,14 @@ import java.util.List;
 import javax.annotation.Nonnull;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableMap;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.column.Column;
 import edu.washington.escience.myria.storage.ConcatColumn;
 import edu.washington.escience.myria.storage.TupleBatch;
+import edu.washington.escience.myria.storage.TupleUtils;
 
 /**
  * An abstract class used to make those specialized operators that only consume tuples simpler to implement.
@@ -25,7 +27,7 @@ public abstract class RootOperator extends Operator {
   /** Source of the tuples to be consumed. */
   private Operator child;
   /** The coalescing threshold. 0 or negative means do not coalesce. */
-  private final int threshold;
+  private int threshold;
 
   /**
    * Sets important parameters for successful operation.
@@ -34,18 +36,14 @@ public abstract class RootOperator extends Operator {
    */
   public RootOperator(final Operator child) {
     this.child = child;
-    threshold = 0;
   }
 
   /**
-   * Sets important parameters for successful operation.
-   *
-   * @param child the source of tuples that this Root operator consumes.
-   * @param coalesce if set to a positive integer, will gather ready tuple batches until this many tuples are available.
+   * Set threshold for the root operator, only used by DBInsert and DBIsertTemp operatos.
+   * @param threshold  size of tuplebatch
    */
-  public RootOperator(final Operator child, final int coalesce) {
-    this.child = child;
-    threshold = coalesce;
+  public void setThreshold(int threshold) {
+    this.threshold = threshold;
   }
 
   /**

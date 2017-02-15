@@ -68,6 +68,11 @@ public final class MyriaConstants {
   public static final String EXEC_ENV_VAR_FRAGMENT_RESOURCE_MANAGER = "fragmentResourceManager";
 
   /**
+   * Test mode is true
+   */
+  public static final String EXEC_ENV_VAR_TEST_MODE = "testMode";
+
+  /**
    * Query ID.
    */
   public static final String EXEC_ENV_VAR_QUERY_ID = "queryId";
@@ -320,9 +325,89 @@ public final class MyriaConstants {
     QUERY
   };
 
-  /** Number of bytes per worker partition for parallel ingest - 100MB */
+  /**
+   * python executable name.
+   */
+  public static final String PYTHONEXEC = "python";
+  /**
+   * Python worker module.
+   */
+  public static final String PYTHONWORKER = "MyriaPythonWorker.worker";
+
+  /**
+   * UDF language.
+   */
+  public static enum FunctionLanguage {
+    /** Postgres UDF. */
+    POSTGRES,
+    /** Python UDF. */
+    PYTHON
+  };
+  /**
+   * Python UDF relation: relation for holding python functions on each worker.
+   */
+  public static final RelationKey PYUDF_RELATION = new RelationKey("public", "function", "Python");
+  /**
+   * Python SpecialLenghts: send/received to the python worker.
+   */
+  public static enum PythonSpecialLengths {
+    PYTHON_EXCEPTION(-3), /** python exception returned from python process.*/
+    NULL_LENGTH(-5), /** python function return is null.*/
+    EOS(-4); /** Send EOS to python worker.*/
+    private int val;
+
+    PythonSpecialLengths(final int val) {
+      this.val = val;
+    }
+
+    public int getVal() {
+      return val;
+    }
+  }
+
+  /**
+   * Python type enum.
+   */
+  public static enum PythonType {
+    INT(1),
+    LONG(2),
+    FLOAT(3),
+    DOUBLE(4),
+    BLOB(5);
+    private int val;
+
+    PythonType(final int val) {
+      this.val = val;
+    }
+
+    public int getVal() {
+      return val;
+    }
+  }
+
+  /**
+   * Python UDF schema
+   */
+  public static final Schema PYUDF_SCHEMA =
+      Schema.ofFields(
+          "function_name",
+          Type.STRING_TYPE,
+          "function_description",
+          Type.STRING_TYPE,
+          "function_output_type",
+          Type.STRING_TYPE,
+          "function_isMultiValued",
+          Type.BOOLEAN_TYPE,
+          "function_binary",
+          Type.STRING_TYPE);
+
+  /** Number of bytes per worker partition for parallel ingest - 100MB. */
   public static final long PARALLEL_INGEST_WORKER_MINIMUM_PARTITION_SIZE = 100 * MB;
 
-  /** Byte overlap range for parallel ingest **/
+  /** Byte overlap range for parallel ingest. **/
   public static final long PARALLEL_INGEST_BYTE_OVERLAP = 16 * KB;
+  /**
+   * Flatmapid column name
+   */
+  public static final String FLATMAP_COLUMN_NAME = "flatmapid";
 }

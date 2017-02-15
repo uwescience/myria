@@ -16,6 +16,10 @@ import com.google.common.base.MoreObjects;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.primitives.Floats;
+import java.nio.ByteBuffer;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.Schema;
@@ -23,6 +27,7 @@ import edu.washington.escience.myria.io.DataSource;
 import edu.washington.escience.myria.io.FileSource;
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
+import edu.washington.escience.myria.storage.TupleUtils;
 import edu.washington.escience.myria.util.DateTimeUtils;
 
 /**
@@ -178,7 +183,7 @@ public final class FileScan extends LeafOperator {
     /* Let's assume that the scanner always starts at the beginning of a line. */
     long lineNumberBegin = lineNumber;
 
-    while ((buffer.numTuples() < TupleBatch.BATCH_SIZE)) {
+    while ((buffer.numTuples() < buffer.getBatchSize())) {
       lineNumber++;
       if (parser.isClosed()) {
         break;
@@ -233,6 +238,9 @@ public final class FileScan extends LeafOperator {
             case DATETIME_TYPE:
               buffer.putDateTime(column, DateTimeUtils.parse(cell));
               break;
+            case BLOB_TYPE:
+              buffer.putBlob(column, getFile(cell)); // read filename
+              break;
           }
         } catch (final IllegalArgumentException e) {
           throw new DbException(
@@ -276,5 +284,17 @@ public final class FileScan extends LeafOperator {
     }
 
     lineNumber = 0;
+  }
+
+  protected ByteBuffer getFile(final String filename) throws DbException {
+    Preconditions.checkNotNull(filename, "byte[] filename was null");
+    Path path = Paths.get(filename);
+    byte[] data = null;
+    try {
+      data = Files.readAllBytes(path);
+    } catch (IOException e) {
+      throw new DbException(e);
+    }
+    return ByteBuffer.wrap(data);
   }
 }

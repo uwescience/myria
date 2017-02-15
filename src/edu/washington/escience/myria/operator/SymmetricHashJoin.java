@@ -45,8 +45,9 @@ public final class SymmetricHashJoin extends BinaryOperator {
   private transient TupleBatchBuffer ans;
   /** Whether the last child polled was the left child. */
   private boolean pollLeft = false;
-  /** Join pull order, default: ALTER. */
-  private JoinPullOrder order = JoinPullOrder.ALTER;
+  /** Join pull order, default: ALTERNATE. */
+  private JoinPullOrder order = JoinPullOrder.ALTERNATE;
+
   /** if the hash table of the left child should use set semantics. */
   private boolean setSemanticsLeft = false;
   /** if the hash table of the right child should use set semantics. */
@@ -86,7 +87,7 @@ public final class SymmetricHashJoin extends BinaryOperator {
         false,
         false,
         null,
-        JoinPullOrder.ALTER);
+        JoinPullOrder.ALTERNATE);
   }
 
   /**
@@ -366,8 +367,8 @@ public final class SymmetricHashJoin extends BinaryOperator {
       if (tb != null) {
         processChildTB(tb, pollLeft);
         noDataStreak = 0;
-        /* ALTER: switch to the other child */
-        if (order.equals(JoinPullOrder.ALTER)) {
+        /* ALTERNATE: switch to the other child */
+        if (order.equals(JoinPullOrder.ALTERNATE)) {
           pollLeft = !pollLeft;
         }
         nexttb = ans.popAnyUsingTimeout();
@@ -378,7 +379,7 @@ public final class SymmetricHashJoin extends BinaryOperator {
         /* if current operator is eoi, consume it, check whether it will cause EOI of this operator */
         consumeChildEOI(pollLeft);
         noDataStreak = 0;
-        if (order.equals(JoinPullOrder.ALTER)) {
+        if (order.equals(JoinPullOrder.ALTERNATE)) {
           pollLeft = !pollLeft;
         }
         /* If this operator is ready to emit EOI (reminder that it needs to clear buffer), break to EOI handle part */
@@ -500,7 +501,7 @@ public final class SymmetricHashJoin extends BinaryOperator {
   /** Join pull order options. */
   public enum JoinPullOrder {
     /** Alternatively. */
-    ALTER,
+    ALTERNATE,
     /** Pull from the left child whenever there is data available. */
     LEFT,
     /** Pull from the right child whenever there is data available. */

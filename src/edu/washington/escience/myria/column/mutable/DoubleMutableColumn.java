@@ -5,6 +5,7 @@ import com.google.common.base.Preconditions;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.DoubleColumn;
 import edu.washington.escience.myria.storage.TupleBatch;
+import edu.washington.escience.myria.storage.TupleUtils;
 
 /**
  * A mutable column of Double values.
@@ -26,7 +27,7 @@ public final class DoubleMutableColumn extends MutableColumn<Double> {
    * */
   public DoubleMutableColumn(final double[] data, final int numData) {
     Preconditions.checkNotNull(data);
-    Preconditions.checkArgument(numData <= TupleBatch.BATCH_SIZE);
+    Preconditions.checkArgument(numData <= TupleUtils.getBatchSize(Type.DOUBLE_TYPE));
     this.data = data;
     position = numData;
   }

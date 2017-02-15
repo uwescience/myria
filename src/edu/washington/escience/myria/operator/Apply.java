@@ -1,5 +1,6 @@
 package edu.washington.escience.myria.operator;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -10,8 +11,10 @@ import javax.annotation.Nonnull;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Lists;
 
 import edu.washington.escience.myria.DbException;
+import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.Column;
@@ -20,9 +23,11 @@ import edu.washington.escience.myria.expression.evaluate.ConstantEvaluator;
 import edu.washington.escience.myria.expression.evaluate.ExpressionOperatorParameter;
 import edu.washington.escience.myria.expression.evaluate.GenericEvaluator;
 import edu.washington.escience.myria.expression.evaluate.GenericEvaluator.EvaluatorResult;
+import edu.washington.escience.myria.expression.evaluate.PythonUDFEvaluator;
 import edu.washington.escience.myria.storage.ReadableColumn;
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
+import edu.washington.escience.myria.storage.TupleBuffer;
 
 /**
  * Generic apply operator for single- or multivalued expressions.
@@ -45,6 +50,11 @@ public class Apply extends UnaryOperator {
    * Buffer to hold finished and in-progress TupleBatches.
    */
   private TupleBatchBuffer outputBuffer;
+
+  /**
+   * AddCounter to the returning tuplebatch.
+   */
+  private Boolean addCounter = false;
 
   /**
    * @return the {@link #emitExpressions}
@@ -72,11 +82,37 @@ public class Apply extends UnaryOperator {
    */
   private boolean onlySingleValuedExpressions() {
     for (Expression expr : getEmitExpressions()) {
-      if (expr.isMultivalued()) {
+      if (expr.isMultiValued()) {
         return false;
       }
     }
     return true;
+  }
+
+  /**
+   * @return number of columns that return more than one value for this Apply operator.
+   */
+  private int numberOfMultiValuedExpressions() {
+    int i = 0;
+    for (Expression expr : getEmitExpressions()) {
+      if (expr.isMultiValued()) {
+        i += 1;
+      }
+    }
+    return i;
+  }
+
+  /**
+   * Should a counter be added?
+   *
+   * @return
+   */
+  private boolean getAddCounter() {
+    return (this.addCounter && (numberOfMultiValuedExpressions() == 1));
+  }
+
+  private void setAddCounter(Boolean addCounter) {
+    this.addCounter = addCounter;
   }
 
   /**
@@ -94,6 +130,13 @@ public class Apply extends UnaryOperator {
     setEmitExpressions(emitExpressions);
   }
 
+  public Apply(final Operator child, List<Expression> emitExpressions, Boolean addCounter) {
+    this(child, emitExpressions);
+    if (addCounter != null) {
+      setAddCounter(addCounter);
+    }
+  }
+
   /**
    * @param emitExpressions the emit expressions for each column
    */
@@ -102,41 +145,51 @@ public class Apply extends UnaryOperator {
   }
 
   @Override
-  protected TupleBatch fetchNextReady() throws DbException {
+  protected TupleBatch fetchNextReady() throws DbException, IOException {
     // If there's a batch already finished, return it, otherwise keep reading
     // batches from the child until we have a full batch or the child returns null.
     while (!outputBuffer.hasFilledTB()) {
       TupleBatch inputTuples = getChild().nextReady();
       if (inputTuples != null) {
-        // Evaluate expressions on each column and store counts and results.
-        List<ReadableColumn> resultCountColumns = new ArrayList<>();
-        List<ReadableColumn> resultColumns = new ArrayList<>();
-        List<Column<?>> resultColumnsForTB = new ArrayList<>();
-        for (final GenericEvaluator eval : emitEvaluators) {
-          EvaluatorResult evalResult = eval.evaluateColumn(inputTuples);
-          resultCountColumns.add(evalResult.getResultCounts());
-          resultColumns.add(evalResult.getResults());
-          Preconditions.checkArgument(
-              eval.getExpression().isMultivalued() || (evalResult.getResultColumns().size() == 1),
-              "A single-valued expression cannot have more than one result column.");
-          resultColumnsForTB.add(evalResult.getResultColumns().get(0));
-        }
-        // This is a zero-copy optimization that appends result columns directly to our output buffer
-        // if we don't need to take the Cartesian product. (For expressions which are pure column references,
-        // we elide 2 copies: one in `GenericEvaluator.evaluateColumn()` and one generating the Cartesian product.)
         if (onlySingleValuedExpressions()) {
-          outputBuffer.absorb(
-              new TupleBatch(getSchema(), resultColumnsForTB, inputTuples.numTuples()), true);
+          List<List<Column<?>>> tbs = new ArrayList<List<Column<?>>>();
+          for (final GenericEvaluator eval : emitEvaluators) {
+            EvaluatorResult evalResult = eval.evaluateColumn(inputTuples, getSchema());
+            List<Column<?>> cols = evalResult.getResultColumns();
+            for (int i = 0; i < cols.size(); ++i) {
+              if (tbs.size() <= i) {
+                tbs.add(new ArrayList<Column<?>>());
+              }
+              tbs.get(i).add(cols.get(i));
+            }
+          }
+          for (List<Column<?>> cols : tbs) {
+            outputBuffer.absorb(new TupleBatch(getSchema(), cols), true);
+          }
         } else {
+          // Evaluate expressions on each column and store counts and results.
+          List<ReadableColumn> resultCountColumns = new ArrayList<>();
+          List<ReadableColumn> resultColumns = new ArrayList<>();
+          for (final GenericEvaluator eval : emitEvaluators) {
+            EvaluatorResult evalResult = eval.evaluateColumn(inputTuples, getSchema());
+            resultCountColumns.add(evalResult.getResultCounts());
+            resultColumns.add(evalResult.getResults());
+          }
+
           // Generate the Cartesian product and append to output buffer.
           int[] resultCounts = new int[emitEvaluators.size()];
           int[] cumResultCounts = new int[emitEvaluators.size()];
           int[] lastCumResultCounts = new int[emitEvaluators.size()];
           int[] iteratorIndexes = new int[emitEvaluators.size()];
+          List<Type> types = Lists.newLinkedList();
+          types.add(Type.INT_TYPE);
+          List<String> names = ImmutableList.of(MyriaConstants.FLATMAP_COLUMN_NAME);
+          Schema countIdxSchema = new Schema(types, names);
 
           for (int rowIdx = 0; rowIdx < inputTuples.numTuples(); ++rowIdx) {
             // First, get all result counts for this row.
             boolean emptyProduct = false;
+
             for (int i = 0; i < resultCountColumns.size(); ++i) {
               int resultCount = resultCountColumns.get(i).getInt(rowIdx);
               resultCounts[i] = resultCount;
@@ -151,13 +204,26 @@ public class Apply extends UnaryOperator {
             if (!emptyProduct) {
               // Initialize each iterator to its starting index.
               Arrays.fill(iteratorIndexes, 0);
-              // Iterate over each element of the Cartesian product and append to output.
+              // Iterate over each element of the Cartesian product and append to output
+              TupleBuffer countIdx = null;
+              int iteratorIdx = 0;
+              int resultRowIdx = 0;
+              int flatmapid = -1;
               do {
-                for (int iteratorIdx = 0; iteratorIdx < iteratorIndexes.length; ++iteratorIdx) {
-                  int resultRowIdx =
-                      lastCumResultCounts[iteratorIdx] + iteratorIndexes[iteratorIdx];
+                for (iteratorIdx = 0; iteratorIdx < iteratorIndexes.length; ++iteratorIdx) {
+                  resultRowIdx = lastCumResultCounts[iteratorIdx] + iteratorIndexes[iteratorIdx];
+                  if (getAddCounter() && flatmapid < iteratorIndexes[iteratorIdx]) {
+                    flatmapid = iteratorIndexes[iteratorIdx];
+                  }
                   outputBuffer.appendFromColumn(
                       iteratorIdx, resultColumns.get(iteratorIdx), resultRowIdx);
+                }
+
+                if (getAddCounter()) {
+                  countIdx = new TupleBuffer(countIdxSchema, 1);
+                  countIdx.putInt(0, flatmapid);
+                  flatmapid = 0;
+                  outputBuffer.appendFromColumn(iteratorIdx, countIdx.asColumn(0), 0);
                 }
               } while (!computeNextCombination(resultCounts, iteratorIndexes));
             }
@@ -214,12 +280,15 @@ public class Apply extends UnaryOperator {
 
     List<GenericEvaluator> evals = new ArrayList<>();
     final ExpressionOperatorParameter parameters =
-        new ExpressionOperatorParameter(inputSchema, getNodeID());
+        new ExpressionOperatorParameter(
+            inputSchema, null, getNodeID(), getPythonFunctionRegistrar());
 
     for (Expression expr : emitExpressions) {
       GenericEvaluator evaluator;
       if (expr.isConstant()) {
         evaluator = new ConstantEvaluator(expr, parameters);
+      } else if (expr.isRegisteredPythonUDF()) {
+        evaluator = new PythonUDFEvaluator(expr, parameters);
       } else {
         evaluator = new GenericEvaluator(expr, parameters);
       }
@@ -230,7 +299,8 @@ public class Apply extends UnaryOperator {
       evals.add(evaluator);
     }
     setEmitEvaluators(evals);
-    outputBuffer = new TupleBatchBuffer(getSchema());
+
+    outputBuffer = new TupleBatchBuffer(generateSchema());
   }
 
   @Override
@@ -250,6 +320,10 @@ public class Apply extends UnaryOperator {
     for (Expression expr : emitExpressions) {
       typesBuilder.add(expr.getOutputType(new ExpressionOperatorParameter(inputSchema)));
       namesBuilder.add(expr.getOutputName());
+    }
+    if (getAddCounter()) {
+      typesBuilder.add(Type.INT_TYPE);
+      namesBuilder.add(MyriaConstants.FLATMAP_COLUMN_NAME);
     }
     return new Schema(typesBuilder.build(), namesBuilder.build());
   }

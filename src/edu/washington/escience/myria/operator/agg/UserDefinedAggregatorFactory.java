@@ -12,7 +12,6 @@ import org.codehaus.commons.compiler.IScriptEvaluator;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 
 import edu.washington.escience.myria.DbException;
@@ -22,6 +21,8 @@ import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.expression.Expression;
 import edu.washington.escience.myria.expression.evaluate.ExpressionOperatorParameter;
 import edu.washington.escience.myria.expression.evaluate.GenericEvaluator;
+import edu.washington.escience.myria.expression.evaluate.PythonUDFEvaluator;
+import edu.washington.escience.myria.functions.PythonFunctionRegistrar;
 
 /**
  * Apply operator that has to be initialized and carries a state while new tuples are generated.
@@ -46,6 +47,15 @@ public class UserDefinedAggregatorFactory implements AggregatorFactory {
   private transient ScriptEvalInterface updateEvaluator;
   /** One evaluator for each expression in {@link #emitters}. */
   private transient ArrayList<GenericEvaluator> emitEvaluators;
+  /**
+   * Evaluators for python expressions. One evaluator for each expression in {@link #updaters}.
+   */
+  private transient ArrayList<PythonUDFEvaluator> pyUpdateEvaluators;
+  /**
+   * Does the UDA have a pythonExpression?
+   */
+  private transient boolean bHasPyEval = false;
+
   /** The schema of the result tuples. */
   private transient Schema resultSchema;
 
@@ -67,35 +77,18 @@ public class UserDefinedAggregatorFactory implements AggregatorFactory {
     this.updaters = Objects.requireNonNull(updaters, "updaters");
     this.emitters = Objects.requireNonNull(emitters, "emitters");
     updateEvaluator = null;
+    pyUpdateEvaluators = null;
     emitEvaluators = null;
     resultSchema = null;
   }
 
   @Override
   public List<Expression> generateEmitExpressions(final Schema inputSchema) throws DbException {
-    // for (Expression emit : emitters) {
-    // if (emit.getRootExpressionOperator() instanceof VariableExpression) {
-    // }
-    // }
     return emitters;
   }
 
   @Override
   public List<Aggregator> generateInternalAggs(final Schema inputSchema) throws DbException {
-    Objects.requireNonNull(inputSchema, "inputSchema");
-    Preconditions.checkArgument(
-        initializers.size() == updaters.size(),
-        "must have the same number of aggregate state initializers (%s) and updaters (%s)",
-        initializers.size(),
-        updaters.size());
-    // Verify that initializers and updaters have compatible names
-    for (int i = 0; i < initializers.size(); i++) {
-      Preconditions.checkArgument(
-          Objects.equals(initializers.get(i).getOutputName(), updaters.get(i).getOutputName()),
-          "initializers[i] and updaters[i] have different names (%s) != (%s)",
-          initializers.get(i).getOutputName(),
-          updaters.get(i).getOutputName());
-    }
 
     /* Initialize the state. */
     Schema stateSchema = generateStateSchema(inputSchema);
@@ -104,14 +97,6 @@ public class UserDefinedAggregatorFactory implements AggregatorFactory {
     /* Set up the updaters. */
     updateEvaluator =
         getEvalScript(updaters, new ExpressionOperatorParameter(inputSchema, stateSchema));
-
-    /* Set up the emitters. */
-    // emitEvaluators = new ArrayList<>(emitters.size());
-    // for (Expression expr : emitters) {
-    // GenericEvaluator evaluator = new GenericEvaluator(expr, new ExpressionOperatorParameter(null, stateSchema));
-    // evaluator.compile();
-    // emitEvaluators.add(evaluator);
-    // }
 
     /* Compute the result schema. */
     ExpressionOperatorParameter emitParams = new ExpressionOperatorParameter(null, stateSchema);
@@ -135,6 +120,7 @@ public class UserDefinedAggregatorFactory implements AggregatorFactory {
    * @param expressions one expression for each output column.
    * @param param the inputs that expressions may use, including the {@link Schema} of the expression inputs and
    *        worker-local variables.
+   * @param pyFuncReg python function registrar.
    * @return a compiled object that will run all the expressions and store them into the output.
    * @throws DbException if there is an error compiling the expressions.
    */
@@ -143,8 +129,12 @@ public class UserDefinedAggregatorFactory implements AggregatorFactory {
       throws DbException {
     StringBuilder compute = new StringBuilder();
     StringBuilder output = new StringBuilder();
+
     for (int varCount = 0; varCount < expressions.size(); ++varCount) {
       Expression expr = expressions.get(varCount);
+      if (expr.isRegisteredPythonUDF()) {
+        throw new DbException("Python UDF expression can only be used as emit expressions");
+      }
       Type type = expr.getOutputType(param);
 
       // type valI = expression;
@@ -186,6 +176,7 @@ public class UserDefinedAggregatorFactory implements AggregatorFactory {
             .append(");\n");
       }
     }
+
     String script = compute.append(output).toString();
     LOGGER.debug("Compiling UDA {}", script);
 
@@ -193,25 +184,29 @@ public class UserDefinedAggregatorFactory implements AggregatorFactory {
     try {
       se = CompilerFactoryFactory.getDefaultCompilerFactory().newScriptEvaluator();
     } catch (Exception e) {
-      LOGGER.error("Could not create scriptevaluator", e);
+      LOGGER.debug("Could not create scriptevaluator", e);
       throw new DbException("Could not create scriptevaluator", e);
     }
     se.setDefaultImports(MyriaConstants.DEFAULT_JANINO_IMPORTS);
 
     try {
-      return (ScriptEvalInterface)
-          se.createFastEvaluator(
-              script,
-              ScriptEvalInterface.class,
-              new String[] {
-                Expression.INPUT,
-                Expression.INPUTROW,
-                Expression.STATE,
-                Expression.STATEROW,
-                Expression.STATECOLOFFSET
-              });
+      if (script.length() > 1) {
+        return (ScriptEvalInterface)
+            se.createFastEvaluator(
+                script,
+                ScriptEvalInterface.class,
+                new String[] {
+                  Expression.INPUT,
+                  Expression.INPUTROW,
+                  Expression.STATE,
+                  Expression.STATEROW,
+                  Expression.STATECOLOFFSET
+                });
+      } else {
+        return null;
+      }
     } catch (CompileException e) {
-      LOGGER.error("Error when compiling expression {}: {}", script, e);
+      LOGGER.debug("Error when compiling expression {}: {}", script, e);
       throw new DbException("Error when compiling expression: " + script, e);
     }
   }
@@ -238,5 +233,11 @@ public class UserDefinedAggregatorFactory implements AggregatorFactory {
       namesBuilder.add(expr.getOutputName());
     }
     return Schema.of(typesBuilder.build(), namesBuilder.build());
+  }
+
+  PythonFunctionRegistrar pyFuncReg;
+
+  public void setPyFuncReg(PythonFunctionRegistrar pyFuncReg) {
+    this.pyFuncReg = pyFuncReg;
   }
 }

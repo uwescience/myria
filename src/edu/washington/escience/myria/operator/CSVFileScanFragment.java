@@ -7,6 +7,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.nio.ByteBuffer;
 import java.util.Iterator;
 
 import javax.annotation.Nullable;
@@ -14,6 +15,7 @@ import javax.annotation.Nullable;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.BooleanUtils;
 
 import com.google.common.base.MoreObjects;
@@ -29,6 +31,7 @@ import edu.washington.escience.myria.io.DataSource;
 import edu.washington.escience.myria.io.FileSource;
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
+import edu.washington.escience.myria.storage.TupleUtils;
 import edu.washington.escience.myria.util.DateTimeUtils;
 
 /**
@@ -60,10 +63,10 @@ public class CSVFileScanFragment extends LeafOperator {
   private static final String truncatedQuoteErrorMessage =
       "EOF reached before encapsulated token finished";
 
-  private final boolean isLastWorker;
+  private boolean isLastWorker;
   private final long maxByteRange;
-  private final long partitionStartByteRange;
-  private final long partitionEndByteRange;
+  private long partitionStartByteRange;
+  private long partitionEndByteRange;
 
   private long adjustedStartByteRange;
   private int byteOffsetFromTruncatedRowAtStart = 0;
@@ -72,6 +75,8 @@ public class CSVFileScanFragment extends LeafOperator {
   private boolean onLastRow;
   private boolean finishedReadingLastRow;
   private boolean flagAsIncomplete;
+  private boolean flagAsRangeSelected;
+  private int[] workerIds;
 
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
@@ -177,6 +182,32 @@ public class CSVFileScanFragment extends LeafOperator {
     onLastRow = false;
     finishedReadingLastRow = false;
     flagAsIncomplete = false;
+    flagAsRangeSelected = true;
+  }
+
+  public CSVFileScanFragment(
+      final AmazonS3Source source,
+      final Schema schema,
+      final int[] workerIds,
+      @Nullable final Character delimiter,
+      @Nullable final Character quote,
+      @Nullable final Character escape,
+      @Nullable final Integer numberOfSkippedLines) {
+
+    this.source = Preconditions.checkNotNull(source, "source");
+    this.schema = Preconditions.checkNotNull(schema, "schema");
+    this.workerIds = workerIds;
+
+    this.delimiter = MoreObjects.firstNonNull(delimiter, CSVFormat.DEFAULT.getDelimiter());
+    this.quote = MoreObjects.firstNonNull(quote, CSVFormat.DEFAULT.getQuoteCharacter());
+    this.escape = escape;
+    this.numberOfSkippedLines = MoreObjects.firstNonNull(numberOfSkippedLines, 0);
+
+    maxByteRange = source.getFileSize();
+    onLastRow = false;
+    finishedReadingLastRow = false;
+    flagAsIncomplete = false;
+    flagAsRangeSelected = false;
   }
 
   @Override
@@ -184,7 +215,7 @@ public class CSVFileScanFragment extends LeafOperator {
     long lineNumberBegin = lineNumber;
     boolean nextRecordTruncated = false;
 
-    while ((buffer.numTuples() < TupleBatch.BATCH_SIZE) && !flagAsIncomplete) {
+    while ((buffer.numTuples() < buffer.getBatchSize()) && !flagAsIncomplete) {
       lineNumber++;
       if (parser.isClosed()) {
         break;
@@ -331,6 +362,9 @@ public class CSVFileScanFragment extends LeafOperator {
               case DATETIME_TYPE:
                 buffer.putDateTime(column, DateTimeUtils.parse(cell));
                 break;
+              case BLOB_TYPE:
+                throw new DbException(
+                    "Ingesting BLOB via csv isn't supported. Use DownloadBlob expression.");
             }
           } catch (final IllegalArgumentException e) {
             throw new DbException(
@@ -373,6 +407,31 @@ public class CSVFileScanFragment extends LeafOperator {
   @Override
   protected void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
     buffer = new TupleBatchBuffer(getSchema());
+
+    if (!flagAsRangeSelected) {
+      int workerID = getNodeID();
+      long fileSize = source.getFileSize();
+      long currentPartitionSize = fileSize / workerIds.length;
+      int workerIndex = 0;
+      for (int i = 0; i < workerIds.length; i++) {
+        if (workerID == workerIds[i]) {
+          workerIndex = i;
+        }
+      }
+      boolean isLastWorker = workerIndex == workerIds.length - 1;
+      long startByteRange = currentPartitionSize * workerIndex;
+      long endByteRange;
+
+      if (isLastWorker) {
+        endByteRange = fileSize - 1;
+      } else {
+        endByteRange = (currentPartitionSize * (workerIndex + 1)) - 1;
+      }
+      this.partitionStartByteRange = startByteRange;
+      this.partitionEndByteRange = endByteRange;
+      this.isLastWorker = isLastWorker;
+    }
+
     try {
 
       adjustedStartByteRange = partitionStartByteRange;

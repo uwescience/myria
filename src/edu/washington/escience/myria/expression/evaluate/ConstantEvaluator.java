@@ -9,6 +9,7 @@ import com.google.common.base.Preconditions;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
+import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.ConstantValueColumn;
 import edu.washington.escience.myria.column.builder.WritableColumn;
@@ -18,6 +19,7 @@ import edu.washington.escience.myria.expression.VariableExpression;
 import edu.washington.escience.myria.operator.StatefulApply;
 import edu.washington.escience.myria.storage.ReadableTable;
 import edu.washington.escience.myria.storage.TupleBatch;
+import edu.washington.escience.myria.storage.TupleUtils;
 
 /**
  * An Expression evaluator for generic expressions that produces a constant such as the initial state in
@@ -101,14 +103,18 @@ public final class ConstantEvaluator extends GenericEvaluator {
       final int stateRow,
       final WritableColumn result,
       final WritableColumn count) {
-    throw new UnsupportedOperationException(
-        "Should not be here. Should be using evaluateColumn() instead");
+    result.appendObject(count);
+    count.appendInt(1);
   }
 
   @Override
-  public EvaluatorResult evaluateColumn(final TupleBatch tb) {
-    return new EvaluatorResult(
-        new ConstantValueColumn((Comparable<?>) value, type, tb.numTuples()),
-        new ConstantValueColumn(1, Type.INT_TYPE, tb.numTuples()));
+  public EvaluatorResult evaluateColumn(final TupleBatch tb, final Schema outputSchema)
+      throws DbException {
+    if (TupleUtils.getBatchSize(outputSchema) == tb.getBatchSize()) {
+      return new EvaluatorResult(
+          new ConstantValueColumn((Comparable<?>) value, type, tb.numTuples()),
+          new ConstantValueColumn(1, Type.INT_TYPE, tb.numTuples()));
+    }
+    return super.evaluateColumn(tb, outputSchema);
   }
 }

@@ -15,9 +15,7 @@ import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.expression.evaluate.ExpressionOperatorParameter;
 
 /**
- *
  * @author dominik
- *
  */
 public abstract class NAryExpression extends ExpressionOperator {
 
@@ -33,7 +31,7 @@ public abstract class NAryExpression extends ExpressionOperator {
    * This is not really unused, it's used automagically by Jackson deserialization.
    */
   protected NAryExpression() {
-    children = null;
+    children = ImmutableList.of();
   }
 
   /**

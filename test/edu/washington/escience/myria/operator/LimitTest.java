@@ -11,8 +11,10 @@ import org.junit.Test;
 import com.google.common.collect.ImmutableList;
 
 import edu.washington.escience.myria.DbException;
+import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
+import edu.washington.escience.myria.storage.TupleUtils;
 import edu.washington.escience.myria.util.TestEnvVars;
 import edu.washington.escience.myria.util.TestUtils;
 
@@ -20,7 +22,7 @@ public class LimitTest {
 
   @Test
   public void testWithinBatchSizeLimit() throws DbException {
-    final int total = TupleBatch.BATCH_SIZE;
+    final int total = TupleUtils.getBatchSize(Type.DOUBLE_TYPE);
     final long limit = 100;
     assertTrue(limit < total);
     BatchTupleSource source = new BatchTupleSource(TestUtils.range(total));
@@ -37,7 +39,7 @@ public class LimitTest {
 
   @Test
   public void testLimitZero() throws DbException {
-    final int total = 2 * TupleBatch.BATCH_SIZE + 2;
+    final int total = 2 * TupleUtils.getBatchSize(Type.DOUBLE_TYPE) + 2;
     final long limit = 0;
     assertTrue(limit < total);
     BatchTupleSource source = new BatchTupleSource(TestUtils.range(total));
@@ -70,8 +72,8 @@ public class LimitTest {
 
   @Test
   public void testSimplePrefix() throws DbException {
-    final int total = 2 * TupleBatch.BATCH_SIZE + 2;
-    final long limit = TupleBatch.BATCH_SIZE + 3;
+    final int total = 2 * TupleUtils.getBatchSize(Type.DOUBLE_TYPE) + 2;
+    final long limit = TupleUtils.getBatchSize(Type.DOUBLE_TYPE) + 3;
     assertTrue(limit < total);
     BatchTupleSource source = new BatchTupleSource(TestUtils.range(total));
     Limit limiter = new Limit(limit, source);

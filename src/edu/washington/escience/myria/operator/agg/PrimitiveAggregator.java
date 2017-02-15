@@ -85,4 +85,9 @@ public abstract class PrimitiveAggregator implements Aggregator, Serializable {
   public void initState(final MutableTupleBuffer state, final int offset) {
     appendInitValue(state, offset);
   }
+
+  // @Override
+  // public void add(final List<TupleBatch> from) throws DbException {
+  // throw new DbException(" method not implemented");
+  // }
 }

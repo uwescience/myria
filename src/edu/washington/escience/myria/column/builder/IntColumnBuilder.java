@@ -16,6 +16,7 @@ import edu.washington.escience.myria.column.IntProtoColumn;
 import edu.washington.escience.myria.column.mutable.IntMutableColumn;
 import edu.washington.escience.myria.proto.DataProto.ColumnMessage;
 import edu.washington.escience.myria.storage.TupleBatch;
+import edu.washington.escience.myria.storage.TupleUtils;
 import edu.washington.escience.myria.util.MyriaUtils;
 
 /**
@@ -33,7 +34,7 @@ public final class IntColumnBuilder extends ColumnBuilder<Integer> {
 
   /** Constructs an empty column that can hold up to TupleBatch.BATCH_SIZE elements. */
   public IntColumnBuilder() {
-    data = IntBuffer.allocate(TupleBatch.BATCH_SIZE);
+    data = IntBuffer.allocate(TupleUtils.getBatchSize(Type.INT_TYPE));
   }
 
   /**

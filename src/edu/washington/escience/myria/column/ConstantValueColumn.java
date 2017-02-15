@@ -2,7 +2,7 @@ package edu.washington.escience.myria.column;
 
 import java.util.BitSet;
 import java.util.Objects;
-
+import java.nio.ByteBuffer;
 import org.joda.time.DateTime;
 
 import edu.washington.escience.myria.Type;
@@ -21,6 +21,8 @@ public class ConstantValueColumn extends Column<Comparable<?>> {
   private boolean booleanValue;
   /** If this is a DateTime column, the DateTime value of the column. */
   private DateTime dateTimeValue;
+  /** If this is a Blob column, the primitive byte value of the column. */
+  private ByteBuffer blobValue;
   /** If this is a Double column, the primitive double value of the column. */
   private double doubleValue;
   /** If this is a Float column, the primitive float value of the column. */
@@ -67,6 +69,9 @@ public class ConstantValueColumn extends Column<Comparable<?>> {
         break;
       case STRING_TYPE:
         stringValue = (String) value;
+        break;
+      case BLOB_TYPE:
+        blobValue = (ByteBuffer) value;
         break;
     }
   }
@@ -128,6 +133,14 @@ public class ConstantValueColumn extends Column<Comparable<?>> {
   public String getString(final int row) {
     if (type == Type.STRING_TYPE) {
       return stringValue;
+    }
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public ByteBuffer getBlob(final int row) {
+    if (type == Type.BLOB_TYPE) {
+      return blobValue;
     }
     throw new UnsupportedOperationException();
   }
