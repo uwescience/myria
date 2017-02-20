@@ -81,6 +81,8 @@ public class AmazonS3Source implements DataSource, Serializable {
       String propertyName = "fs.s3a.aws.credentials.provider";
       String className = conf.getTrimmed(propertyName);
       if (className == null) {
+        LOGGER.warn(
+            "No AWS credentials provider property found in Hadoop configuration file. Instantiating the AmazonS3Client with anonymous credentials.");
         credentials = new AnonymousAWSCredentialsProvider();
       }
       try {
