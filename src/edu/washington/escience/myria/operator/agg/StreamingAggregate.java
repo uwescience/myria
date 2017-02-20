@@ -1,7 +1,7 @@
 package edu.washington.escience.myria.operator.agg;
 
 import java.io.IOException;
-import java.util.Objects;
+import java.util.List;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -9,6 +9,7 @@ import javax.annotation.Nullable;
 import com.gs.collections.api.iterator.IntIterator;
 
 import edu.washington.escience.myria.DbException;
+import edu.washington.escience.myria.column.Column;
 import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.storage.TupleBatch;
 
@@ -82,5 +83,10 @@ public class StreamingAggregate extends Aggregate {
       return resultBuffer.popAny();
     }
     return null;
+  }
+
+  @Override
+  protected void addToResult(List<Column<?>> columns) {
+    resultBuffer.absorb(new TupleBatch(getSchema(), columns), false);
   }
 }

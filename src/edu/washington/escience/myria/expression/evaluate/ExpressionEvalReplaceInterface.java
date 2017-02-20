@@ -1,16 +1,16 @@
-package edu.washington.escience.myria.operator.agg;
+package edu.washington.escience.myria.expression.evaluate;
 
 import edu.washington.escience.myria.storage.MutableTupleBuffer;
 import edu.washington.escience.myria.storage.ReadableTable;
 
 /**
- * Interface for evaluators that take multiple expressions and may write multiple columns.
+ * Interface for evaluating a single {@link edu.washington.escience.myria.expression.Expression} and appending the
+ * results to a column, along with a count of results.
  */
-public interface ScriptEvalInterface {
+public interface ExpressionEvalReplaceInterface extends ExpressionEvalInterface {
   /**
-   * The interface for applying expressions. The variables will be fetched from the tuple buffer using the rowId
-   * provided in {@link edu.washington.escience.myria.expression.VariableExpression} or
-   * {@link edu.washington.escience.myria.expression.StateExpression}.
+   * The interface evaluating a single {@link edu.washington.escience.myria.expression.Expression} and replace old
+   * values in a state column with the results.
    *
    * @param input the input tuple batch
    * @param inputRow row index of the input tuple batch

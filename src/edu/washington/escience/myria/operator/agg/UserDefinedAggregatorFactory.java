@@ -6,7 +6,6 @@ import java.util.Objects;
 
 import javax.annotation.Nonnull;
 
-import org.codehaus.commons.compiler.CompileException;
 import org.codehaus.commons.compiler.CompilerFactoryFactory;
 import org.codehaus.commons.compiler.IScriptEvaluator;
 
@@ -40,24 +39,12 @@ public class UserDefinedAggregatorFactory implements AggregatorFactory {
   @JsonProperty private final List<Expression> updaters;
   /** Expressions that emit the final aggregation result from the state. */
   @JsonProperty private final List<Expression> emitters;
-
   /** Evaluators that initialize the {@link #state}. */
-  private transient ScriptEvalInterface initEvaluator;
+  private List<GenericEvaluator> initEvaluators;
   /** Evaluators that update the {@link #state}. One evaluator for each expression in {@link #updaters}. */
-  private transient ScriptEvalInterface updateEvaluator;
-  /** One evaluator for each expression in {@link #emitters}. */
-  private transient ArrayList<GenericEvaluator> emitEvaluators;
-  /**
-   * Evaluators for python expressions. One evaluator for each expression in {@link #updaters}.
-   */
-  private transient ArrayList<PythonUDFEvaluator> pyUpdateEvaluators;
-  /**
-   * Does the UDA have a pythonExpression?
-   */
-  private transient boolean bHasPyEval = false;
-
+  private List<GenericEvaluator> updateEvaluators;
   /** The schema of the result tuples. */
-  private transient Schema resultSchema;
+  private Schema resultSchema;
 
   /**
    * Construct a new user-defined aggregate. The initializers set the initial state of the aggregate; the updaters
@@ -76,10 +63,9 @@ public class UserDefinedAggregatorFactory implements AggregatorFactory {
     this.initializers = Objects.requireNonNull(initializers, "initializers");
     this.updaters = Objects.requireNonNull(updaters, "updaters");
     this.emitters = Objects.requireNonNull(emitters, "emitters");
-    updateEvaluator = null;
-    pyUpdateEvaluators = null;
-    emitEvaluators = null;
     resultSchema = null;
+    updateEvaluators = new ArrayList<GenericEvaluator>();
+    initEvaluators = new ArrayList<GenericEvaluator>();
   }
 
   @Override
@@ -89,14 +75,23 @@ public class UserDefinedAggregatorFactory implements AggregatorFactory {
 
   @Override
   public List<Aggregator> generateInternalAggs(final Schema inputSchema) throws DbException {
-
     /* Initialize the state. */
-    Schema stateSchema = generateStateSchema(inputSchema);
-    initEvaluator = getEvalScript(initializers, new ExpressionOperatorParameter(inputSchema));
+    for (int i = 0; i < initializers.size(); ++i) {
+      initEvaluators.add(
+          getEvaluator(initializers.get(i), new ExpressionOperatorParameter(inputSchema), i));
+    }
 
     /* Set up the updaters. */
-    updateEvaluator =
-        getEvalScript(updaters, new ExpressionOperatorParameter(inputSchema, stateSchema));
+    Schema stateSchema = generateStateSchema(inputSchema);
+    ExpressionOperatorParameter para =
+        new ExpressionOperatorParameter(inputSchema, stateSchema, pyFuncReg);
+    for (int i = 0; i < updaters.size(); ++i) {
+      if (updaters.get(i).isRegisteredPythonUDF()) {
+        updateEvaluators.add(new PythonUDFEvaluator(updaters.get(i), para));
+      } else {
+        updateEvaluators.add(getEvaluator(updaters.get(i), para, i));
+      }
+    }
 
     /* Compute the result schema. */
     ExpressionOperatorParameter emitParams = new ExpressionOperatorParameter(null, stateSchema);
@@ -108,77 +103,70 @@ public class UserDefinedAggregatorFactory implements AggregatorFactory {
     }
     resultSchema = new Schema(types, names);
     return ImmutableList.of(
-        new UserDefinedAggregator(initEvaluator, updateEvaluator, resultSchema, stateSchema));
+        new UserDefinedAggregator(initEvaluators, updateEvaluators, resultSchema, stateSchema));
   }
 
   /**
-   * Produce a {@link ScriptEvalInterface} from {@link Expression}s and {@link ExpressionOperatorParameter}s. This
-   * function produces the code for a Java script that executes all expressions in turn and appends the calculated
-   * values to the result. The values to be output are calculated completely before they are stored to the output, thus
-   * it is safe to pass the same object as input and output, e.g., in the case of updating state in an Aggregate.
+   * Produce a {@link GenericEvaluator} from {@link Expression} and {@link ExpressionOperatorParameter}s. This function
+   * produces the code for a Java script that executes all expressions in turn and appends the calculated values to the
+   * result. The values to be output are calculated completely before they are stored to the output, thus it is safe to
+   * pass the same object as input and output, e.g., in the case of updating state in an Aggregate.
    *
    * @param expressions one expression for each output column.
    * @param param the inputs that expressions may use, including the {@link Schema} of the expression inputs and
    *        worker-local variables.
-   * @param pyFuncReg python function registrar.
+   * @param col the column index of the expression.
    * @return a compiled object that will run all the expressions and store them into the output.
    * @throws DbException if there is an error compiling the expressions.
    */
-  private ScriptEvalInterface getEvalScript(
-      @Nonnull final List<Expression> expressions, @Nonnull final ExpressionOperatorParameter param)
+  private GenericEvaluator getEvaluator(
+      @Nonnull final Expression expr,
+      @Nonnull final ExpressionOperatorParameter param,
+      final int col)
       throws DbException {
-
     StringBuilder compute = new StringBuilder();
-    StringBuilder output = new StringBuilder();
 
-    for (int varCount = 0; varCount < expressions.size(); ++varCount) {
-      Expression expr = expressions.get(varCount);
-      if (expr.isRegisteredPythonUDF()) {
-        throw new DbException("Python UDF expression can only be used as emit expressions");
-      }
-      Type type = expr.getOutputType(param);
+    Type type = expr.getOutputType(param);
+    // type valI = expression;
+    compute
+        .append(type.toJavaType().getName())
+        .append(" val")
+        .append(col)
+        .append(" = ")
+        .append(expr.getJavaExpression(param))
+        .append(";\n");
 
-      // type valI = expression;
+    if (param.getStateSchema() == null) {
+      // state.putType(I, valI);
       compute
-          .append(type.toJavaType().getName())
-          .append(" val")
-          .append(varCount)
-          .append(" = ")
-          .append(expr.getJavaExpression(param))
-          .append(";\n");
-
-      if (param.getStateSchema() == null) {
-        // state.putType(I, valI);
-        output
-            .append(Expression.STATE)
-            .append(".put")
-            .append(type.toJavaObjectType().getSimpleName())
-            .append("(")
-            .append(varCount)
-            .append("+")
-            .append(Expression.STATECOLOFFSET)
-            .append(", val")
-            .append(varCount)
-            .append(");\n");
-      } else {
-        // state.replaceType(I, stateRow, valI);
-        output
-            .append(Expression.STATE)
-            .append(".replace")
-            .append(type.toJavaObjectType().getSimpleName())
-            .append("(")
-            .append(varCount)
-            .append("+")
-            .append(Expression.STATECOLOFFSET)
-            .append(", ")
-            .append(Expression.STATEROW)
-            .append(", val")
-            .append(varCount)
-            .append(");\n");
-      }
+          .append(Expression.STATE)
+          .append(".put")
+          .append(type == Type.BLOB_TYPE ? "Blob" : type.toJavaObjectType().getSimpleName())
+          .append("(")
+          .append(col)
+          .append("+")
+          .append(Expression.STATECOLOFFSET)
+          .append(", val")
+          .append(col)
+          .append(");\n");
+    } else {
+      // state.replaceType(I, stateRow, valI);
+      compute
+          .append(Expression.STATE)
+          .append(".replace")
+          .append(type == Type.BLOB_TYPE ? "Blob" : type.toJavaObjectType().getSimpleName())
+          .append("(")
+          .append(col)
+          .append("+")
+          .append(Expression.STATECOLOFFSET)
+          .append(", ")
+          .append(Expression.STATEROW)
+          .append(", val")
+          .append(col)
+          .append(");\n");
     }
 
-    String script = compute.append(output).toString();
+    String script = compute.toString();
     LOGGER.debug("Compiling UDA {}", script);
 
     IScriptEvaluator se;
@@ -189,27 +177,9 @@ public class UserDefinedAggregatorFactory implements AggregatorFactory {
       throw new DbException("Could not create scriptevaluator", e);
     }
     se.setDefaultImports(MyriaConstants.DEFAULT_JANINO_IMPORTS);
-
-    try {
-      if (script.length() > 1) {
-        return (ScriptEvalInterface)
-            se.createFastEvaluator(
-                script,
-                ScriptEvalInterface.class,
-                new String[] {
-                  Expression.INPUT,
-                  Expression.INPUTROW,
-                  Expression.STATE,
-                  Expression.STATEROW,
-                  Expression.STATECOLOFFSET
-                });
-      } else {
-        return null;
-      }
-    } catch (CompileException e) {
-      LOGGER.debug("Error when compiling expression {}: {}", script, e);
-      throw new DbException("Error when compiling expression: " + script, e);
-    }
+    GenericEvaluator eval = new GenericEvaluator(expr, script, param);
+    eval.compile();
+    return eval;
   }
 
   @Override

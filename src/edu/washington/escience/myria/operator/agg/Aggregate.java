@@ -1,6 +1,5 @@
 package edu.washington.escience.myria.operator.agg;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -76,7 +75,7 @@ public class Aggregate extends UnaryOperator {
    * @return result TB.
    */
   @Override
-  protected TupleBatch fetchNextReady() throws DbException, IOException {
+  protected TupleBatch fetchNextReady() throws DbException {
     final Operator child = getChild();
     TupleBatch tb = child.nextReady();
     while (tb != null) {
@@ -114,31 +113,43 @@ public class Aggregate extends UnaryOperator {
    * @throws DbException if there is an error.
    */
   protected void generateResult() throws DbException {
+    if (groupStates.numTuples() == 0) {
+      return;
+    }
+    int stateOffset = gfields.length;
+    for (Aggregator agg : internalAggs) {
+      if (agg instanceof UserDefinedAggregator) {
+        ((UserDefinedAggregator) agg).finalizePythonUpdaters(groupStates.getData(), stateOffset);
+      }
+      stateOffset += agg.getStateSize();
+    }
     Schema inputSchema = getChild().getSchema();
     for (TupleBatch tb : groupStates.getData().getAll()) {
       List<Column<?>> columns = new ArrayList<Column<?>>();
       columns.addAll(tb.getDataColumns().subList(0, gfields.length));
-      int stateOffset = gfields.length;
+      stateOffset = gfields.length;
       int emitOffset = 0;
       for (AggregatorFactory factory : factories) {
         int stateSize = factory.generateStateSchema(inputSchema).numColumns();
         int emitSize = factory.generateSchema(inputSchema).numColumns();
         TupleBatch state = tb.selectColumns(MyriaArrayUtils.range(stateOffset, stateSize));
         for (GenericEvaluator eval : emitEvals.subList(emitOffset, emitOffset + emitSize)) {
-          columns.add(eval.evaluateColumn(state, getSchema()).getResultColumns().get(0));
+          columns.add(eval.evalTupleBatch(state, getSchema()).getResultColumns().get(0));
         }
         stateOffset += stateSize;
         emitOffset += emitSize;
       }
-      if (this instanceof StreamingAggregate) {
-        resultBuffer.absorb(new TupleBatch(getSchema(), columns), false);
-      } else {
-        resultBuffer.absorb(new TupleBatch(getSchema(), columns), true);
-      }
+      addToResult(columns);
     }
     groupStates.cleanup();
   }
 
+  /**
+   * @param columns result columns.
+   */
+  protected void addToResult(List<Column<?>> columns) {
+    resultBuffer.absorb(new TupleBatch(getSchema(), columns), true);
+  }
   /**
    * The schema of the aggregate output. Grouping fields first and then aggregate fields. The aggregate
    *
@@ -166,11 +177,11 @@ public class Aggregate extends UnaryOperator {
     Schema groupingSchema = inputSchema.getSubSchema(gfields);
     Schema stateSchema = Schema.EMPTY_SCHEMA;
     PythonFunctionRegistrar pyFuncReg = getPythonFunctionRegistrar();
-    for (int i = 0; i < factories.length; ++i) {
-      factories[i].setPyFuncReg(pyFuncReg);
-      internalAggs.addAll(factories[i].generateInternalAggs(inputSchema));
-      List<Expression> emits = factories[i].generateEmitExpressions(inputSchema);
-      Schema newStateSchema = factories[i].generateStateSchema(inputSchema);
+    for (AggregatorFactory factory : factories) {
+      factory.setPyFuncReg(pyFuncReg);
+      internalAggs.addAll(factory.generateInternalAggs(inputSchema));
+      List<Expression> emits = factory.generateEmitExpressions(inputSchema);
+      Schema newStateSchema = factory.generateStateSchema(inputSchema);
       stateSchema = Schema.merge(stateSchema, newStateSchema);
       for (Expression exp : emits) {
         GenericEvaluator evaluator = null;

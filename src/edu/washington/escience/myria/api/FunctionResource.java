@@ -36,7 +36,6 @@ import edu.washington.escience.myria.parallel.Server;
  */
 /**
  * This is the class that handles API calls to create or fetch functions.
- *
  */
 @Consumes(MediaType.APPLICATION_JSON)
 @Produces(MyriaApiConstants.JSON_UTF_8)
@@ -51,7 +50,6 @@ public class FunctionResource {
   protected static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(FunctionResource.class);
 
   /**
-   *
    * @return a list of function, names only.
    * @throws DbException if there is an error accessing the Catalog.
    */
@@ -74,7 +72,7 @@ public class FunctionResource {
               encoding.binary,
               encoding.workers);
     } catch (Exception e) {
-      throw new DbException();
+      throw new DbException(e);
     }
     /* Build the response to return the queryId */
     ResponseBuilder response = Response.ok();
@@ -82,7 +80,7 @@ public class FunctionResource {
   }
 
   /**
-   * @param name  function name
+   * @param name function name
    * @return details of a registered function.
    * @throws DbException if there is an error accessing the Catalog.
    */

@@ -28,23 +28,22 @@ import edu.washington.escience.myria.Type;
 public class PythonWorker {
   /***/
   private static final long serialVersionUID = 1L;
-  /** logger*/
+  /** logger */
   private static final org.slf4j.Logger LOGGER =
       org.slf4j.LoggerFactory.getLogger(PythonWorker.class);
 
-  /** server socket for python worker.*/
+  /** server socket for python worker. */
   private ServerSocket serverSocket = null;
-  /** client sock for python worker.*/
+  /** client sock for python worker. */
   private Socket clientSock = null;
-  /** python worker process.*/
+  /** python worker process. */
   private Process worker = null;
-  /** output stream from python worker.*/
+  /** output stream from python worker. */
   private DataOutputStream dOut;
-  /**input stream from python worker.*/
+  /** input stream from python worker. */
   private DataInputStream dIn;
 
   /**
-   *
    * @throws DbException
    */
   public PythonWorker() throws DbException {
@@ -59,7 +58,6 @@ public class PythonWorker {
   }
 
   /**
-   *
    * @param pyCodeString - python function string
    * @param numColumns number fo columns to be written to python process.
    * @param outputType output type of the python function.
@@ -73,7 +71,6 @@ public class PythonWorker {
       final Boolean isFlatMap)
       throws DbException {
     Preconditions.checkNotNull(pyCodeString);
-
     try {
       if (pyCodeString.length() > 0 && dOut != null) {
         byte[] bytes = pyCodeString.getBytes(StandardCharsets.UTF_8);
@@ -87,32 +84,30 @@ public class PythonWorker {
           dOut.writeInt(0);
         }
         dOut.flush();
-
       } else {
         throw new DbException("Can't write Python Code to worker!");
       }
-    } catch (Exception e) {
+    } catch (IOException e) {
       LOGGER.debug("failed to send python code pickle");
       throw new DbException(e);
     }
   }
+
   /**
-   *
-   * @param numTuples: number of tuples to be sent to python function.
+   * @param numTuples number of tuples to be sent to python function.
    * @throws IOException
    * @throws DbException
    */
-  public void sendNumTuples(final int numTuples) throws IOException, DbException {
+  public void sendNumTuples(final int numTuples) throws DbException {
     Preconditions.checkArgument(numTuples > 0, "number of tuples: %s", numTuples);
     try {
       dOut.writeInt(numTuples);
-    } catch (Exception e) {
+    } catch (IOException e) {
       throw new DbException(e);
     }
   }
 
   /**
-   *
    * @return dataoutput stream for the python worker.
    */
   public DataOutputStream getDataOutputStream() {
@@ -121,7 +116,6 @@ public class PythonWorker {
   }
 
   /**
-   *
    * @return dataInputStream for the python worker.
    */
   public DataInputStream getDataInputStream() {
@@ -130,7 +124,6 @@ public class PythonWorker {
   }
 
   /**
-   *
    * @throws IOException
    */
   public void close() throws IOException {
@@ -148,7 +141,6 @@ public class PythonWorker {
   }
 
   /**
-   *
    * @throws UnknownHostException
    * @throws IOException
    */
@@ -157,7 +149,6 @@ public class PythonWorker {
   }
 
   /**
-   *
    * @throws IOException in case of error.
    */
   private void startPythonWorker() throws IOException {
@@ -181,7 +172,6 @@ public class PythonWorker {
   }
 
   /**
-   *
    * @param outputType : output type for python function
    * @throws IOException in case of error.
    * @throws DbException in case of error.
@@ -209,25 +199,12 @@ public class PythonWorker {
   }
 
   /**
-   *
    * @throws IOException in case of error.
    */
   private void setupStreams() throws IOException {
     if (clientSock != null) {
       dOut = new DataOutputStream(clientSock.getOutputStream());
       dIn = new DataInputStream(clientSock.getInputStream());
-    }
-  }
-  /**
-   * @param eos Send end of stream to cleanly close the python process.
-   * @throws DbException in case of error.
-   */
-  public void sendEos(final int eos) throws DbException {
-    try {
-      dOut.writeInt(eos);
-      close();
-    } catch (Exception e) {
-      throw new DbException(e);
     }
   }
 }

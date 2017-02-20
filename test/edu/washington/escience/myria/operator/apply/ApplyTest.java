@@ -193,7 +193,6 @@ public class ApplyTest {
       Expression expr = new Expression("copy", vara);
 
       GenericEvaluator eval = new GenericEvaluator(expr, parameters);
-      assertTrue(!eval.needsCompiling());
       Expressions.add(expr);
     }
 
@@ -202,7 +201,6 @@ public class ApplyTest {
       Expression expr = new Expression("constant5", new ConstantExpression(5));
 
       GenericEvaluator eval = new ConstantEvaluator(expr, parameters);
-      assertTrue(!eval.needsCompiling());
       Expressions.add(expr);
     }
 
@@ -211,7 +209,6 @@ public class ApplyTest {
       Expression expr = new Expression("constant5f", new ConstantExpression(5.0f));
 
       GenericEvaluator eval = new ConstantEvaluator(expr, parameters);
-      assertTrue(!eval.needsCompiling());
       Expressions.add(expr);
     }
 
@@ -220,7 +217,6 @@ public class ApplyTest {
       Expression expr = new Expression("constant5d", new ConstantExpression(5d));
 
       GenericEvaluator eval = new ConstantEvaluator(expr, parameters);
-      assertTrue(!eval.needsCompiling());
       Expressions.add(expr);
     }
 
@@ -229,7 +225,6 @@ public class ApplyTest {
       Expression expr = new Expression("random", new RandomExpression());
 
       GenericEvaluator eval = new GenericEvaluator(expr, parameters);
-      assertTrue(eval.needsCompiling());
       Expressions.add(expr);
     }
 
@@ -240,7 +235,6 @@ public class ApplyTest {
               "modulo", new ModuloExpression(new VariableExpression(2), new VariableExpression(1)));
 
       GenericEvaluator eval = new GenericEvaluator(expr, parameters);
-      assertTrue(eval.needsCompiling());
       Expressions.add(expr);
     }
 
@@ -253,7 +247,6 @@ public class ApplyTest {
                   new VariableExpression(4), new VariableExpression(0), new VariableExpression(2)));
 
       GenericEvaluator eval = new GenericEvaluator(expr, parameters);
-      assertTrue(eval.needsCompiling());
       Expressions.add(expr);
     }
 
@@ -274,7 +267,6 @@ public class ApplyTest {
                   new VariableExpression(2)));
 
       GenericEvaluator eval = new GenericEvaluator(expr, parameters);
-      assertTrue(eval.needsCompiling());
       Expressions.add(expr);
     }
 
@@ -284,8 +276,7 @@ public class ApplyTest {
 
       GenericEvaluator eval =
           new ConstantEvaluator(expr, new ExpressionOperatorParameter(tbb.getSchema(), 42));
-      assertTrue(!eval.needsCompiling());
-      assertEquals(eval.getJavaExpressionWithAppend(), "result.appendInt(42);");
+      assertEquals(eval.getScript(), "result.appendInt(42);");
       Expressions.add(expr);
     }
 

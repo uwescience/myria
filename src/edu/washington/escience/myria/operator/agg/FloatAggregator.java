@@ -30,27 +30,27 @@ public final class FloatAggregator extends PrimitiveAggregator {
       final int offset) {
     ReadableColumn fromCol = from.asColumn(column);
     ReplaceableColumn toCol = to.getColumn(offset, toRow);
-    final int inColumRow = to.getInColumnIndex(toRow);
+    final int inColumnRow = to.getInColumnIndex(toRow);
     switch (aggOp) {
       case COUNT:
-        toCol.replaceLong(toCol.getLong(inColumRow) + 1, inColumRow);
+        toCol.replaceLong(toCol.getLong(inColumnRow) + 1, inColumnRow);
         break;
       case MAX:
         toCol.replaceFloat(
-            Math.max(fromCol.getFloat(fromRow), toCol.getFloat(inColumRow)), inColumRow);
+            Math.max(fromCol.getFloat(fromRow), toCol.getFloat(inColumnRow)), inColumnRow);
         break;
       case MIN:
         toCol.replaceFloat(
-            Math.min(fromCol.getFloat(fromRow), toCol.getFloat(inColumRow)), inColumRow);
+            Math.min(fromCol.getFloat(fromRow), toCol.getFloat(inColumnRow)), inColumnRow);
         break;
       case SUM:
-        toCol.replaceDouble(fromCol.getFloat(fromRow) + toCol.getDouble(inColumRow), inColumRow);
+        toCol.replaceDouble(fromCol.getFloat(fromRow) + toCol.getDouble(inColumnRow), inColumnRow);
         break;
       case SUM_SQUARED:
         toCol.replaceDouble(
             (double) fromCol.getFloat(fromRow) * fromCol.getFloat(fromRow)
-                + toCol.getDouble(inColumRow),
-            inColumRow);
+                + toCol.getDouble(inColumnRow),
+            inColumnRow);
         break;
       default:
         throw new IllegalArgumentException(aggOp + " is invalid");

@@ -155,7 +155,7 @@ public class Apply extends UnaryOperator {
         if (onlySingleValuedExpressions()) {
           List<List<Column<?>>> tbs = new ArrayList<List<Column<?>>>();
           for (final GenericEvaluator eval : emitEvaluators) {
-            EvaluatorResult evalResult = eval.evaluateColumn(inputTuples, getSchema());
+            EvaluatorResult evalResult = eval.evalTupleBatch(inputTuples, getSchema());
             List<Column<?>> cols = evalResult.getResultColumns();
             for (int i = 0; i < cols.size(); ++i) {
               if (tbs.size() <= i) {
@@ -164,15 +164,15 @@ public class Apply extends UnaryOperator {
               tbs.get(i).add(cols.get(i));
             }
           }
-          for (List<Column<?>> cols : tbs) {
-            outputBuffer.absorb(new TupleBatch(getSchema(), cols), true);
+          for (List<Column<?>> tb : tbs) {
+            outputBuffer.absorb(new TupleBatch(getSchema(), tb), true);
           }
         } else {
           // Evaluate expressions on each column and store counts and results.
           List<ReadableColumn> resultCountColumns = new ArrayList<>();
           List<ReadableColumn> resultColumns = new ArrayList<>();
           for (final GenericEvaluator eval : emitEvaluators) {
-            EvaluatorResult evalResult = eval.evaluateColumn(inputTuples, getSchema());
+            EvaluatorResult evalResult = eval.evalTupleBatch(inputTuples, getSchema());
             resultCountColumns.add(evalResult.getResultCounts());
             resultColumns.add(evalResult.getResults());
           }
@@ -293,9 +293,7 @@ public class Apply extends UnaryOperator {
       } else {
         evaluator = new GenericEvaluator(expr, parameters);
       }
-      if (evaluator.needsCompiling()) {
-        evaluator.compile();
-      }
+      evaluator.compile();
       Preconditions.checkArgument(!evaluator.needsState());
       evals.add(evaluator);
     }

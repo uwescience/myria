@@ -78,15 +78,6 @@ public final class ConstantEvaluator extends GenericEvaluator {
   private final ExpressionEvaluator evaluator;
 
   /**
-   * Creates an {@link ExpressionEvaluator} from the {@link #javaExpression}. This does not really compile the
-   * expression and is thus faster.
-   */
-  @Override
-  public void compile() {
-    /* Do nothing! */
-  }
-
-  /**
    * Evaluates the {@link #getJavaExpressionWithAppend()} using the {@link #evaluator}.
    *
    * @return the result from the evaluation
@@ -103,18 +94,18 @@ public final class ConstantEvaluator extends GenericEvaluator {
       final int stateRow,
       final WritableColumn result,
       final WritableColumn count) {
-    result.appendObject(count);
+    result.appendObject(value);
     count.appendInt(1);
   }
 
   @Override
-  public EvaluatorResult evaluateColumn(final TupleBatch tb, final Schema outputSchema)
+  public EvaluatorResult evalTupleBatch(final TupleBatch tb, final Schema outputSchema)
       throws DbException {
     if (TupleUtils.getBatchSize(outputSchema) == tb.getBatchSize()) {
       return new EvaluatorResult(
           new ConstantValueColumn((Comparable<?>) value, type, tb.numTuples()),
           new ConstantValueColumn(1, Type.INT_TYPE, tb.numTuples()));
     }
-    return super.evaluateColumn(tb, outputSchema);
+    return super.evalTupleBatch(tb, outputSchema);
   }
 }

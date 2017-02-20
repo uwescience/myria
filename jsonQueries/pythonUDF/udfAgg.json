@@ -10,7 +10,7 @@
             "opId":3
          },
          {
-            "opType":"MultiGroupByAggregate",
+            "opType":"Aggregate",
             "argGroupFields":[1,2],
             "aggregators":[
                {

@@ -19,8 +19,8 @@ import edu.washington.escience.myria.expression.GreaterThanExpression;
 import edu.washington.escience.myria.expression.PlusExpression;
 import edu.washington.escience.myria.expression.StateExpression;
 import edu.washington.escience.myria.expression.VariableExpression;
-import edu.washington.escience.myria.operator.agg.AggregatorFactory;
 import edu.washington.escience.myria.operator.agg.Aggregate;
+import edu.washington.escience.myria.operator.agg.AggregatorFactory;
 import edu.washington.escience.myria.operator.agg.UserDefinedAggregatorFactory;
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
@@ -197,7 +197,7 @@ public class UserDefinedAggregatorTest {
         assertEquals(2, result.numColumns());
         assertEquals(Type.LONG_TYPE, result.getSchema().getColumnType(0));
         assertEquals(Type.STRING_TYPE, result.getSchema().getColumnType(1));
-        assertEquals(9999, result.getLong(0, 0));
+        assertEquals(10000, result.getLong(0, 0));
         assertEquals("Foo9999", result.getString(1, 0));
         resultSize += result.numTuples();
       }

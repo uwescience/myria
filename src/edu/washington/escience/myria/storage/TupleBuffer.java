@@ -1,12 +1,13 @@
 package edu.washington.escience.myria.storage;
 
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.List;
 import java.util.Objects;
 
 import org.joda.time.DateTime;
-import java.nio.ByteBuffer;
+
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 
@@ -44,9 +45,12 @@ public class TupleBuffer implements ReadableTable, AppendableTable {
   private ImmutableList<TupleBatch> finalBatches;
   /** The number of tuples in this buffer. */
   private int numTuples;
-  /** BatchSize.*/
+  /** Batch size. */
   private int batchSize;
 
+  /**
+   * @return the size of the batches.
+   */
   public int getBatchSize() {
     return batchSize;
   }
@@ -69,6 +73,7 @@ public class TupleBuffer implements ReadableTable, AppendableTable {
     numTuples = 0;
     batchSize = TupleUtils.getBatchSize(schema);
   }
+
   /**
    * Constructs an empty TupleBuffer to hold tuples matching the specified Schema.
    *
@@ -81,7 +86,6 @@ public class TupleBuffer implements ReadableTable, AppendableTable {
 
   /**
    * Makes a batch of any tuples in the buffer and appends it to the internal list.
-   *
    */
   private void finishBatch() {
     Preconditions.checkState(

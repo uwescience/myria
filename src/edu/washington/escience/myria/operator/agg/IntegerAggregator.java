@@ -31,28 +31,28 @@ public final class IntegerAggregator extends PrimitiveAggregator {
       final int offset) {
     ReadableColumn fromCol = from.asColumn(column);
     ReplaceableColumn toCol = to.getColumn(offset, toRow);
-    final int inColumRow = to.getInColumnIndex(toRow);
+    final int inColumnRow = to.getInColumnIndex(toRow);
     switch (aggOp) {
       case COUNT:
-        toCol.replaceLong(toCol.getLong(inColumRow) + 1, inColumRow);
+        toCol.replaceLong(toCol.getLong(inColumnRow) + 1, inColumnRow);
         break;
       case MAX:
-        toCol.replaceInt(Math.max(fromCol.getInt(fromRow), toCol.getInt(inColumRow)), inColumRow);
+        toCol.replaceInt(Math.max(fromCol.getInt(fromRow), toCol.getInt(inColumnRow)), inColumnRow);
         break;
       case MIN:
-        toCol.replaceInt(Math.min(fromCol.getInt(fromRow), toCol.getInt(inColumRow)), inColumRow);
+        toCol.replaceInt(Math.min(fromCol.getInt(fromRow), toCol.getInt(inColumnRow)), inColumnRow);
         break;
       case SUM:
         toCol.replaceLong(
-            LongMath.checkedAdd((long) fromCol.getInt(fromRow), toCol.getLong(inColumRow)),
-            inColumRow);
+            LongMath.checkedAdd((long) fromCol.getInt(fromRow), toCol.getLong(inColumnRow)),
+            inColumnRow);
         break;
       case SUM_SQUARED:
         toCol.replaceLong(
             LongMath.checkedAdd(
                 LongMath.checkedMultiply((long) fromCol.getInt(fromRow), fromCol.getInt(fromRow)),
-                toCol.getLong(inColumRow)),
-            inColumRow);
+                toCol.getLong(inColumnRow)),
+            inColumnRow);
         break;
       default:
         throw new IllegalArgumentException(aggOp + " is invalid");

@@ -36,24 +36,24 @@ public final class DateTimeAggregator extends PrimitiveAggregator {
     Objects.requireNonNull(from, "from");
     ReadableColumn fromCol = from.asColumn(column);
     ReplaceableColumn toCol = to.getColumn(offset, toRow);
-    final int inColumRow = to.getInColumnIndex(toRow);
+    final int inColumnRow = to.getInColumnIndex(toRow);
     switch (aggOp) {
       case COUNT:
-        toCol.replaceLong(toCol.getLong(inColumRow) + 1, inColumRow);
+        toCol.replaceLong(toCol.getLong(inColumnRow) + 1, inColumnRow);
         break;
       case MAX:
         {
           DateTime value = fromCol.getDateTime(fromRow);
-          if (value.compareTo(toCol.getDateTime(inColumRow)) > 0) {
-            toCol.replaceDateTime(value, inColumRow);
+          if (value.compareTo(toCol.getDateTime(inColumnRow)) > 0) {
+            toCol.replaceDateTime(value, inColumnRow);
           }
           break;
         }
       case MIN:
         {
           DateTime value = fromCol.getDateTime(fromRow);
-          if (value.compareTo(toCol.getDateTime(inColumRow)) < 0) {
-            toCol.replaceDateTime(value, inColumRow);
+          if (value.compareTo(toCol.getDateTime(inColumnRow)) < 0) {
+            toCol.replaceDateTime(value, inColumnRow);
           }
           break;
         }

@@ -16,7 +16,7 @@ import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
 
 /**
- *This class sets and gets python functions on a postgres instance on a worker.
+ * This class sets and gets python functions on a postgres instance on a worker.
  */
 public class PythonFunctionRegistrar {
 
@@ -28,14 +28,13 @@ public class PythonFunctionRegistrar {
   private JdbcAccessMethod accessMethod;
   /** Buffer for UDFs registered. */
   private final TupleBatchBuffer pyFunctions;
-  /** connection information for reconnection if connection is closed.*/
+  /** connection information for reconnection if connection is closed. */
   private final ConnectionInfo connectionInfo;
 
   /**
    * Default constructor.
    *
    * @param connectionInfo connection information
-   *
    * @throws DbException if any error occurs
    */
   public PythonFunctionRegistrar(final ConnectionInfo connectionInfo) throws DbException {
@@ -52,6 +51,7 @@ public class PythonFunctionRegistrar {
 
     pyFunctions = new TupleBatchBuffer(MyriaConstants.PYUDF_SCHEMA);
   }
+
   /** Helper function to connect for storing and retrieving UDFs. */
   private void connect() throws DbException {
     /* open the database connection */
@@ -63,7 +63,7 @@ public class PythonFunctionRegistrar {
    * Add function to current worker.
    *
    * @param name function name
-   * @param description  of function
+   * @param description of function
    * @param outputType of function
    * @param isMultiValued does function return multiple tuples.
    * @param binary binary function
@@ -121,35 +121,27 @@ public class PythonFunctionRegistrar {
     sb.append(" where function_name='");
     sb.append(pyFunctionName);
     sb.append("'");
-    try {
-      Iterator<TupleBatch> tuples =
-          accessMethod.tupleBatchIteratorFromQuery(sb.toString(), MyriaConstants.PYUDF_SCHEMA);
+    Iterator<TupleBatch> tuples =
+        accessMethod.tupleBatchIteratorFromQuery(sb.toString(), MyriaConstants.PYUDF_SCHEMA);
 
-      if (tuples.hasNext()) {
-
-        final TupleBatch tb = tuples.next();
-        if (tb.numTuples() > 0) {
-
-          FunctionStatus fs =
-              new FunctionStatus(
-                  pyFunctionName,
-                  tb.getString(1, 0),
-                  tb.getString(2, 0),
-                  tb.getBoolean(3, 0),
-                  FunctionLanguage.PYTHON,
-                  tb.getString(4, 0));
-
-          return fs;
-        }
+    if (tuples.hasNext()) {
+      final TupleBatch tb = tuples.next();
+      if (tb.numTuples() > 0) {
+        FunctionStatus fs =
+            new FunctionStatus(
+                pyFunctionName,
+                tb.getString(1, 0),
+                tb.getString(2, 0),
+                tb.getBoolean(3, 0),
+                FunctionLanguage.PYTHON,
+                tb.getString(4, 0));
+        return fs;
       }
-    } catch (Exception e) {
-      throw new DbException(e);
     }
     return null;
   };
 
   /**
-   *
    * @return {@code true} if the current JDBC connection is active.
    */
   public boolean isValid() {

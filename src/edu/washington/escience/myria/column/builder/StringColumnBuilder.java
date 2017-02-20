@@ -16,26 +16,24 @@ import edu.washington.escience.myria.column.StringColumn;
 import edu.washington.escience.myria.column.mutable.StringMutableColumn;
 import edu.washington.escience.myria.proto.DataProto.ColumnMessage;
 import edu.washington.escience.myria.proto.DataProto.StringColumnMessage;
-import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleUtils;
 import edu.washington.escience.myria.util.MyriaUtils;
 
 /**
  * A column of String values.
- *
  */
 public final class StringColumnBuilder extends ColumnBuilder<String> {
 
   /**
    * The internal representation of the data.
-   * */
+   */
   private final String[] data;
   /** Number of elements in this column. */
   private int numStrings;
 
   /**
    * If the builder has built the column.
-   * */
+   */
   private boolean built = false;
 
   /** Constructs an empty column that can hold up to TupleBatch.BATCH_SIZE elements. */
@@ -49,7 +47,7 @@ public final class StringColumnBuilder extends ColumnBuilder<String> {
    *
    * @param numStrings the actual num strings in the data
    * @param data the underlying data
-   * */
+   */
   private StringColumnBuilder(final String[] data, final int numStrings) {
     this.numStrings = numStrings;
     this.data = data;
@@ -84,7 +82,6 @@ public final class StringColumnBuilder extends ColumnBuilder<String> {
   public StringColumnBuilder appendString(final String value) throws BufferOverflowException {
     Preconditions.checkState(
         !built, "No further changes are allowed after the builder has built the column.");
-    Objects.requireNonNull(value, "value");
     if (numStrings >= TupleUtils.getBatchSize(Type.STRING_TYPE)) {
       throw new BufferOverflowException();
     }

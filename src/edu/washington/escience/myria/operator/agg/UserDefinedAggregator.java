@@ -1,6 +1,11 @@
 package edu.washington.escience.myria.operator.agg;
 
+import java.util.List;
+
+import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.Schema;
+import edu.washington.escience.myria.expression.evaluate.GenericEvaluator;
+import edu.washington.escience.myria.expression.evaluate.PythonUDFEvaluator;
 import edu.washington.escience.myria.storage.MutableTupleBuffer;
 import edu.washington.escience.myria.storage.TupleBatch;
 
@@ -15,30 +20,27 @@ public class UserDefinedAggregator implements Aggregator {
       org.slf4j.LoggerFactory.getLogger(UserDefinedAggregator.class);
 
   /** Evaluators that initialize the state. */
-  protected final ScriptEvalInterface initEvaluator;
+  protected final List<GenericEvaluator> initEvaluators;
   /** Evaluators that update the {@link #state}. One evaluator for each expression in {@link #updateExpressions}. */
-  protected final ScriptEvalInterface updateEvaluator;
-  /** The Schema of the tuples produced by this aggregator. */
-  private final Schema resultSchema;
+  protected final List<GenericEvaluator> updateEvaluators;
   /** The Schema of the state. */
   private final Schema stateSchema;
 
   /**
-   * @param initEvaluator initialize the state
-   * @param updateEvaluator updates the state given an input row
-   * @param pyUDFEvaluators for python expression evaluation.
+   * @param initEvaluators initialize the state
+   * @param updateEvaluators updates the state given an input row
+   * @param pyUpdateEvaluators for python expression evaluation.
    * @param emitEvaluators the evaluators that finalize the state
    * @param resultSchema the schema of the tuples produced by this aggregator
    * @param stateSchema the schema of the state
    */
   public UserDefinedAggregator(
-      final ScriptEvalInterface initEvaluator,
-      final ScriptEvalInterface updateEvaluator,
+      final List<GenericEvaluator> initEvaluators,
+      final List<GenericEvaluator> updateEvaluators,
       final Schema resultSchema,
       final Schema stateSchema) {
-    this.initEvaluator = initEvaluator;
-    this.updateEvaluator = updateEvaluator;
-    this.resultSchema = resultSchema;
+    this.initEvaluators = initEvaluators;
+    this.updateEvaluators = updateEvaluators;
     this.stateSchema = stateSchema;
   }
 
@@ -49,12 +51,32 @@ public class UserDefinedAggregator implements Aggregator {
 
   @Override
   public void addRow(
-      TupleBatch input, int inputRow, MutableTupleBuffer state, int stateRow, final int offset) {
-    updateEvaluator.evaluate(input, inputRow, state, stateRow, offset);
+      TupleBatch input, int inputRow, MutableTupleBuffer state, int stateRow, final int offset)
+      throws DbException {
+    for (GenericEvaluator eval : updateEvaluators) {
+      eval.updateState(input, inputRow, state, stateRow, offset);
+    }
   }
 
   @Override
-  public void initState(final MutableTupleBuffer state, final int offset) {
-    initEvaluator.evaluate(null, 0, state, 0, offset);
+  public void initState(final MutableTupleBuffer state, final int offset) throws DbException {
+    for (GenericEvaluator eval : initEvaluators) {
+      eval.updateState(null, 0, state, 0, offset);
+    }
+  }
+
+  /**
+   * @param tb
+   * @param offset
+   * @throws DbException
+   */
+  public void finalizePythonUpdaters(final MutableTupleBuffer tb, final int offset)
+      throws DbException {
+    for (int i = 0; i < updateEvaluators.size(); ++i) {
+      GenericEvaluator eval = updateEvaluators.get(i);
+      if (eval instanceof PythonUDFEvaluator) {
+        ((PythonUDFEvaluator) eval).evalGroups(tb, offset + i);
+      }
+    }
   }
 }

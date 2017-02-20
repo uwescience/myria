@@ -29,10 +29,10 @@ public final class BooleanAggregator extends PrimitiveAggregator {
       final int offset) {
     Objects.requireNonNull(from, "from");
     ReplaceableColumn toCol = to.getColumn(offset, toRow);
-    final int inColumRow = to.getInColumnIndex(toRow);
+    final int inColumnRow = to.getInColumnIndex(toRow);
     switch (aggOp) {
       case COUNT:
-        toCol.replaceLong(toCol.getLong(inColumRow) + 1, inColumRow);
+        toCol.replaceLong(toCol.getLong(inColumnRow) + 1, inColumnRow);
         break;
       default:
         throw new IllegalArgumentException(aggOp + " is invalid");

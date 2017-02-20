@@ -31,29 +31,29 @@ public final class LongAggregator extends PrimitiveAggregator {
       final int offset) {
     ReadableColumn fromCol = from.asColumn(column);
     ReplaceableColumn toCol = to.getColumn(offset, toRow);
-    final int inColumRow = to.getInColumnIndex(toRow);
+    final int inColumnRow = to.getInColumnIndex(toRow);
     switch (aggOp) {
       case COUNT:
-        toCol.replaceLong(toCol.getLong(inColumRow) + 1, inColumRow);
+        toCol.replaceLong(toCol.getLong(inColumnRow) + 1, inColumnRow);
         break;
       case MAX:
         toCol.replaceLong(
-            Math.max(fromCol.getLong(fromRow), toCol.getLong(inColumRow)), inColumRow);
+            Math.max(fromCol.getLong(fromRow), toCol.getLong(inColumnRow)), inColumnRow);
         break;
       case MIN:
         toCol.replaceLong(
-            Math.min(fromCol.getLong(fromRow), toCol.getLong(inColumRow)), inColumRow);
+            Math.min(fromCol.getLong(fromRow), toCol.getLong(inColumnRow)), inColumnRow);
         break;
       case SUM:
         toCol.replaceLong(
-            LongMath.checkedAdd(fromCol.getLong(fromRow), toCol.getLong(inColumRow)), inColumRow);
+            LongMath.checkedAdd(fromCol.getLong(fromRow), toCol.getLong(inColumnRow)), inColumnRow);
         break;
       case SUM_SQUARED:
         toCol.replaceLong(
             LongMath.checkedAdd(
                 LongMath.checkedMultiply(fromCol.getLong(fromRow), fromCol.getLong(fromRow)),
-                toCol.getLong(inColumRow)),
-            inColumRow);
+                toCol.getLong(inColumnRow)),
+            inColumnRow);
         break;
       default:
         throw new IllegalArgumentException(aggOp + " is invalid");

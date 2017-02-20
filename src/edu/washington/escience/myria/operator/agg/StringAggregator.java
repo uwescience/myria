@@ -22,7 +22,7 @@ public final class StringAggregator extends PrimitiveAggregator {
   private static final long serialVersionUID = 1L;
 
   /** Placeholder as MIN/MAX value of String. */
-  private static final String STRING_INIT_VALUE = "NULL";
+  private static final String STRING_INIT_VALUE = null;
 
   @Override
   public void addRow(
@@ -33,24 +33,24 @@ public final class StringAggregator extends PrimitiveAggregator {
       final int offset) {
     ReadableColumn fromCol = from.asColumn(column);
     ReplaceableColumn toCol = to.getColumn(offset, toRow);
-    final int inColumRow = to.getInColumnIndex(toRow);
+    final int inColumnRow = to.getInColumnIndex(toRow);
     switch (aggOp) {
       case COUNT:
-        toCol.replaceLong(toCol.getLong(inColumRow) + 1, inColumRow);
+        toCol.replaceLong(toCol.getLong(inColumnRow) + 1, inColumnRow);
         break;
       case MAX:
         {
-          String value = toCol.getString(inColumRow);
-          if (value.equals(STRING_INIT_VALUE) || value.compareTo(fromCol.getString(fromRow)) < 0) {
-            toCol.replaceString(fromCol.getString(fromRow), inColumRow);
+          String value = toCol.getString(inColumnRow);
+          if (value == null || value.compareTo(fromCol.getString(fromRow)) < 0) {
+            toCol.replaceString(fromCol.getString(fromRow), inColumnRow);
           }
           break;
         }
       case MIN:
         {
-          String value = toCol.getString(inColumRow);
-          if (value.equals(STRING_INIT_VALUE) || value.compareTo(fromCol.getString(fromRow)) > 0) {
-            toCol.replaceString(fromCol.getString(fromRow), inColumRow);
+          String value = toCol.getString(inColumnRow);
+          if (value == null || value.compareTo(fromCol.getString(fromRow)) > 0) {
+            toCol.replaceString(fromCol.getString(fromRow), inColumnRow);
           }
           break;
         }

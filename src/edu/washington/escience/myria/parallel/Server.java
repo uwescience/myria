@@ -143,6 +143,7 @@ import edu.washington.escience.myria.tools.MyriaWorkerConfigurationModule;
 import edu.washington.escience.myria.util.IPCUtils;
 import edu.washington.escience.myria.util.concurrent.ErrorLoggingTimerTask;
 import edu.washington.escience.myria.util.concurrent.RenamingThreadFactory;
+
 /**
  * The master entrance.
  */
@@ -917,7 +918,7 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
   }
 
   /**
-   *  Helper method for parallel ingest.
+   * Helper method for parallel ingest.
    *
    * @param fileSize the size of the file to ingest
    * @param allWorkers all workers considered for ingest
@@ -1121,7 +1122,7 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
    * Create a function and register it in the catalog.
    *
    * @param name the name of the function
-   * @param definition the function definition  - this is postgres specific for postgres and function text for python.
+   * @param definition the function definition - this is postgres specific for postgres and function text for python.
    * @param outputSchema the output schema of the function
    * @param isMultiValued indicates if the function returns multiple tuples.
    * @param lang this is the language of the function.
@@ -1172,7 +1173,7 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
       try {
         qf.get().getQueryId();
       } catch (ExecutionException e) {
-        throw new DbException("Error executing query", e.getCause());
+        throw new DbException("Error executing query", e);
       }
     } catch (CatalogException e) {
       throw new DbException(e);
@@ -1185,8 +1186,8 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
     }
     return response;
   }
+
   /**
-   *
    * @return list of functions from the catalog
    * @throws DbException in case of error.
    */
@@ -1197,8 +1198,8 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
       throw new DbException(e);
     }
   }
+
   /**
-   *
    * @param functionName : name of the function to retrieve.
    * @return functiondetails for the function
    * @throws DbException in case of error.

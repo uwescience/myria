@@ -61,29 +61,29 @@ public final class SymmetricHashJoin extends BinaryOperator {
    *        copied from the children.
    * @param left the left child.
    * @param right the right child.
-   * @param compareIndx1 the columns of the left child to be compared with the right. Order matters.
-   * @param compareIndx2 the columns of the right child to be compared with the left. Order matters.
-   * @param answerColumns1 the columns of the left child to be returned. Order matters.
-   * @param answerColumns2 the columns of the right child to be returned. Order matters. * @param setSemanticsLeft if
-   *        the hash table of the left child should use set semantics.
+   * @param leftCompareColumns the columns of the left child to be compared with the right. Order matters.
+   * @param rightCompareColumns the columns of the right child to be compared with the left. Order matters.
+   * @param leftAnswerColumns the columns of the left child to be returned. Order matters.
+   * @param rightAnswerColumns the columns of the right child to be returned. Order matters. * @param setSemanticsLeft
+   *        if the hash table of the left child should use set semantics.
    * @throw IllegalArgumentException if there are duplicated column names in <tt>outputColumns</tt>, or if
    *        <tt>outputColumns</tt> does not have the correct number of columns and column types.
    */
   public SymmetricHashJoin(
       final Operator left,
       final Operator right,
-      final int[] compareIndx1,
-      final int[] compareIndx2,
-      final int[] answerColumns1,
-      final int[] answerColumns2) {
+      final int[] leftCompareColumns,
+      final int[] rightCompareColumns,
+      final int[] leftAnswerColumns,
+      final int[] rightAnswerColumns) {
     /* Only used by tests */
     this(
         left,
         right,
-        compareIndx1,
-        compareIndx2,
-        answerColumns1,
-        answerColumns2,
+        leftCompareColumns,
+        rightCompareColumns,
+        leftAnswerColumns,
+        rightAnswerColumns,
         false,
         false,
         null,
@@ -98,32 +98,32 @@ public final class SymmetricHashJoin extends BinaryOperator {
    *        copied from the children.
    * @param left the left child.
    * @param right the right child.
-   * @param compareIndx1 the columns of the left child to be compared with the right. Order matters.
-   * @param compareIndx2 the columns of the right child to be compared with the left. Order matters.
-   * @param answerColumns1 the columns of the left child to be returned. Order matters.
-   * @param answerColumns2 the columns of the right child to be returned. Order matters.
+   * @param leftCompareColumns the columns of the left child to be compared with the right. Order matters.
+   * @param rightCompareColumns the columns of the right child to be compared with the left. Order matters.
+   * @param leftAnswerColumns the columns of the left child to be returned. Order matters.
+   * @param rightAnswerColumns the columns of the right child to be returned. Order matters.
    * @param setSemanticsLeft if the hash table of the left child should use set semantics.
    * @param setSemanticsRight if the hash table of the right child should use set semantics.
-   * @param pullOrder the join pull order policy.
+   * @param order the join pull order policy.
    * @throw IllegalArgumentException if there are duplicated column names in <tt>outputColumns</tt>, or if
    *        <tt>outputColumns</tt> does not have the correct number of columns and column types.
    */
   public SymmetricHashJoin(
       final Operator left,
       final Operator right,
-      final int[] compareIndx1,
-      final int[] compareIndx2,
-      final int[] answerColumns1,
-      final int[] answerColumns2,
+      final int[] leftCompareColumns,
+      final int[] rightCompareColumns,
+      final int[] leftAnswerColumns,
+      final int[] rightAnswerColumns,
       final boolean setSemanticsLeft,
       final boolean setSemanticsRight,
       final List<String> outputColumns,
-      final JoinPullOrder pullOrder) {
+      final JoinPullOrder order) {
     super(left, right);
-    Preconditions.checkArgument(compareIndx1.length == compareIndx2.length);
+    Preconditions.checkArgument(leftCompareColumns.length == rightCompareColumns.length);
     if (outputColumns != null) {
       Preconditions.checkArgument(
-          outputColumns.size() == answerColumns1.length + answerColumns2.length,
+          outputColumns.size() == leftAnswerColumns.length + rightAnswerColumns.length,
           "length mismatch between output column names and columns selected for output");
       Preconditions.checkArgument(
           ImmutableSet.copyOf(outputColumns).size() == outputColumns.size(),
@@ -132,10 +132,10 @@ public final class SymmetricHashJoin extends BinaryOperator {
     } else {
       this.outputColumns = null;
     }
-    leftCompareColumns = MyriaArrayUtils.warnIfNotSet(compareIndx1);
-    rightCompareColumns = MyriaArrayUtils.warnIfNotSet(compareIndx2);
-    leftAnswerColumns = MyriaArrayUtils.warnIfNotSet(answerColumns1);
-    rightAnswerColumns = MyriaArrayUtils.warnIfNotSet(answerColumns2);
+    this.leftCompareColumns = MyriaArrayUtils.warnIfNotSet(leftCompareColumns);
+    this.rightCompareColumns = MyriaArrayUtils.warnIfNotSet(rightCompareColumns);
+    this.leftAnswerColumns = MyriaArrayUtils.warnIfNotSet(leftAnswerColumns);
+    this.rightAnswerColumns = MyriaArrayUtils.warnIfNotSet(rightAnswerColumns);
     this.setSemanticsLeft = setSemanticsLeft;
     this.setSemanticsRight = setSemanticsRight;
     this.order = order;
@@ -511,11 +511,4 @@ public final class SymmetricHashJoin extends BinaryOperator {
     /** Pull from the right child until it reaches EOS. */
     RIGHT_EOS
   }
-
-  /**
-   * Set the pull order.
-   *
-   * @param order the pull order.
-   */
-  public void setPullOrder(final JoinPullOrder order) {}
 }

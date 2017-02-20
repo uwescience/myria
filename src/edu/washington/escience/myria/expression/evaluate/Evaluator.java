@@ -112,16 +112,6 @@ public abstract class Evaluator {
   }
 
   /**
-   * An expression does not have to be compiled when it only renames or copies a column. This is an optimization to
-   * avoid evaluating the expression and avoid autoboxing values.
-   *
-   * @return true if the expression does not have to be compiled.
-   */
-  public boolean needsCompiling() {
-    return !(isCopyFromInput() || isConstant() || isRegisteredUDF());
-  }
-
-  /**
    * @return true if the expression evaluates to a constant
    */
   public boolean isConstant() {
@@ -134,6 +124,7 @@ public abstract class Evaluator {
   public boolean needsState() {
     return needsState;
   }
+
   /**
    * @return true if the expression is a contains a python UDF expression.
    */

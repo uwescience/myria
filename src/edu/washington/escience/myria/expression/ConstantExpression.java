@@ -95,6 +95,7 @@ public class ConstantExpression extends ZeroaryExpression {
   public ConstantExpression(final String value) {
     this(Type.STRING_TYPE, value);
   }
+
   /**
    * Construct Blob constant.
    *

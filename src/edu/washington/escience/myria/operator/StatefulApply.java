@@ -1,7 +1,6 @@
 package edu.washington.escience.myria.operator;
 
 import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -123,7 +122,7 @@ public class StatefulApply extends Apply {
           !evaluator.getExpression().isMultiValued(),
           "A multivalued expression cannot be used in StatefulApply.");
       if (!evaluator.needsState() || evaluator.isCopyFromInput()) {
-        output.set(columnIdx, evaluator.evaluateColumn(tb, getSchema()).getResultColumns().get(0));
+        output.set(columnIdx, evaluator.evalTupleBatch(tb, getSchema()).getResultColumns().get(0));
       } else {
         needState.add(columnIdx);
       }
@@ -186,9 +185,7 @@ public class StatefulApply extends Apply {
             new GenericEvaluator(
                 expr, new ExpressionOperatorParameter(inputSchema, getStateSchema(), getNodeID()));
       }
-      if (evaluator.needsCompiling()) {
-        evaluator.compile();
-      }
+      evaluator.compile();
       evaluators.add(evaluator);
     }
     setEmitEvaluators(evaluators);
