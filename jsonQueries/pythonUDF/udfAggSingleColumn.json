@@ -90,7 +90,7 @@
                   }
                ],
                "argChild":2,
-               "argGroupFields":[0],
+               "argGroupFields":[1],
                "opType":"Aggregate",
                "opId":3
             },
