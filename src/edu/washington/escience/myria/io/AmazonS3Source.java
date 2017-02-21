@@ -14,6 +14,7 @@ import javax.ws.rs.core.Response.Status;
 
 import org.apache.commons.httpclient.URIException;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.s3a.AnonymousAWSCredentialsProvider;
 
 import com.amazonaws.ClientConfiguration;
 import com.amazonaws.auth.AWSCredentialsProvider;
@@ -80,7 +81,9 @@ public class AmazonS3Source implements DataSource, Serializable {
       String propertyName = "fs.s3a.aws.credentials.provider";
       String className = conf.getTrimmed(propertyName);
       if (className == null) {
-        throw new MyriaApiException(Status.INTERNAL_SERVER_ERROR, propertyName + " does not exist");
+        LOGGER.warn(
+            "No AWS credentials provider property found in Hadoop configuration file. Instantiating the AmazonS3Client with anonymous credentials.");
+        credentials = new AnonymousAWSCredentialsProvider();
       }
       try {
         Class<?> credentialClass = Class.forName(className);
