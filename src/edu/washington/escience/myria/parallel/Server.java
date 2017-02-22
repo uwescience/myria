@@ -1123,14 +1123,14 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
    *
    * @param name the name of the function
    * @param definition the function definition - this is postgres specific for postgres and function text for python.
-   * @param outputSchema the output schema of the function
+   * @param outputType the output schema of the function
    * @param isMultiValued indicates if the function returns multiple tuples.
    * @param lang this is the language of the function.
    * @param binary this is an optional parameter for function for base64 encoded binary for function.
    * @param workers list of workers on which the function is registered: default is all.
    * @return the status of the function
    */
-  public String createFunction(
+  public long createFunction(
       final String name,
       final String definition,
       final String outputType,
@@ -1139,8 +1139,8 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
       final String binary,
       final Set<Integer> workers)
       throws DbException, InterruptedException {
+    long queryID = 0;
 
-    String response = "";
     Set<Integer> actualWorkers = workers;
     if (workers == null) {
       actualWorkers = getWorkers().keySet();
@@ -1171,7 +1171,7 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
               workerPlans);
 
       try {
-        qf.get().getQueryId();
+        queryID = qf.get().getQueryId();
       } catch (ExecutionException e) {
         throw new DbException("Error executing query", e);
       }
@@ -1184,7 +1184,7 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
     } catch (CatalogException e) {
       throw new DbException(e);
     }
-    return response;
+    return queryID;
   }
 
   /**

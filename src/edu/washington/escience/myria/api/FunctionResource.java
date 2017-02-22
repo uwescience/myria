@@ -60,7 +60,7 @@ public class FunctionResource {
 
   @POST
   public Response createFunction(final CreateFunctionEncoding encoding) throws DbException {
-    String functionCreationResponse;
+    long functionCreationResponse;
     try {
       functionCreationResponse =
           server.createFunction(
