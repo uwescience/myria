@@ -16,6 +16,8 @@ script:
 - ./myriadeploy/launch_local_cluster &
 - sleep 60
 - python ~/myria-web/appengine/myria_web_main.py &
+- sleep 60
+- lsof -i :8080
 - ./integration_tests.py
 after_success:
 - ./gradlew jacocoTestReport coveralls
