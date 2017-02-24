@@ -11,12 +11,7 @@ addons:
 before_install:
 - sh travis/before_install.sh
 - export TERM=dumb
-- pip install myria-python
-script: ./gradlew jacocoTestReport coveralls
-after_success:
-- ./myriadeploy/launch_local_cluster
-- sleep 60
-- ./integration_tests.py
+script: ./gradlew jacocoTestReport coveralls && ./myriadeploy/launch_local_cluster && sleep 60 && python myria-web/appengine/myria_web_main.py && ./integration_tests.py
 cache:
   directories:
   - $HOME/.gradle/caches
