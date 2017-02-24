@@ -1,16 +1,22 @@
+# sudo: required
+sudo: false
+dist: trusty
 language: java
 jdk:
 - oraclejdk8
+python:
+- "2.7"
 addons:
-  postgresql: 9.3
+  postgresql: 9.4
 before_install:
 - sh travis/before_install.sh
 - export TERM=dumb
+- pip install myria-python
+script: ./gradlew jacocoTestReport coveralls
 after_success:
-- ./gradlew jacocoTestReport coveralls
-
-sudo: false
-
+- ./myriadeploy/launch_local_cluster
+- sleep 60
+- ./integration_tests.py
 cache:
   directories:
   - $HOME/.gradle/caches
