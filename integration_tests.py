@@ -6,7 +6,7 @@ from myria import MyriaConnection, MyriaRelation
 
 class MyriaTestBase(unittest.TestCase):
     def setUp(self):
-        self.connection = MyriaConnection(hostname='localhost', port=8753, execution_url="http://localhost:8080")
+        self.connection = MyriaConnection(hostname='localhost', port=8753, execution_url="http://127.0.0.1:8080")
 
 
 class DoWhileTest(MyriaTestBase):
