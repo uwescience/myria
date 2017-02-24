@@ -47,6 +47,10 @@ public class DbInsertTemp extends AbstractDbInsert {
   /** The DistributeFunction used to distribute the table across workers. */
   private final DistributeFunction distributeFunction;
 
+  /** The logger for debug, trace, etc. messages in this class. */
+  private static final org.slf4j.Logger LOGGER =
+      org.slf4j.LoggerFactory.getLogger(DbInsertTemp.class);
+
   /** Constructs a temporary insertion operator to store the tuples from the specified child into the specified
    * relation. If the table does not exist, it will be created. If <code>overwriteTable</code> is <code>true</code>, any
    * existing data will be dropped.
@@ -195,6 +199,7 @@ public class DbInsertTemp extends AbstractDbInsert {
     if (connectionInfo instanceof SQLiteInfo) {
       /* Set WAL in the beginning. */
       final File dbFile = new File(((SQLiteInfo) connectionInfo).getDatabaseFilename());
+      LOGGER.info("Opening SQLite database {}", dbFile.getAbsolutePath());
       SQLiteConnection conn = new SQLiteConnection(dbFile);
       try {
         conn.open(true);
