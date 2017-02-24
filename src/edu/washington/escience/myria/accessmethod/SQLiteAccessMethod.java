@@ -97,11 +97,41 @@ public final class SQLiteAccessMethod extends AccessMethod {
         sqliteConnection = new SQLiteConnection(new File(sqliteInfo.getDatabaseFilename()));
         sqliteConnection.openReadonly();
         sqliteConnection.setBusyTimeout(SQLiteAccessMethod.DEFAULT_BUSY_TIMEOUT);
+        setJournalMode(sqliteConnection);
       } else {
         sqliteQueue = new SQLiteQueue(new File(sqliteInfo.getDatabaseFilename())).start();
+        setJournalModeAsync(sqliteQueue);
       }
     } catch (final SQLiteException e) {
       LOGGER.error(e.getMessage(), e);
+      throw new DbException(e);
+    }
+  }
+
+  private static void setJournalMode(SQLiteConnection sqliteConnection) throws DbException {
+    Objects.requireNonNull(sqliteConnection);
+    try {
+      sqliteConnection.exec("PRAGMA journal_mode=WAL;");
+    } catch (final SQLiteException e) {
+      LOGGER.error(e.getMessage());
+      throw new DbException(e);
+    }
+  }
+
+  private static void setJournalModeAsync(SQLiteQueue sqliteQueue) throws DbException {
+    Objects.requireNonNull(sqliteQueue);
+    try {
+      sqliteQueue
+          .execute(
+              new SQLiteJob<Object>() {
+                @Override
+                protected Object job(final SQLiteConnection sqliteConnection) throws DbException {
+                  setJournalMode(sqliteConnection);
+                  return null;
+                }
+              })
+          .get();
+    } catch (InterruptedException | ExecutionException e) {
       throw new DbException(e);
     }
   }

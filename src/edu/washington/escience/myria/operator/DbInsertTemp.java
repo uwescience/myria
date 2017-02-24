@@ -192,19 +192,6 @@ public class DbInsertTemp extends AbstractDbInsert {
       throw new DbException("Unknown connection information.");
     }
 
-    if (connectionInfo instanceof SQLiteInfo) {
-      /* Set WAL in the beginning. */
-      final File dbFile = new File(((SQLiteInfo) connectionInfo).getDatabaseFilename());
-      SQLiteConnection conn = new SQLiteConnection(dbFile);
-      try {
-        conn.open(true);
-        conn.exec("PRAGMA journal_mode=WAL;");
-      } catch (SQLiteException e) {
-        e.printStackTrace();
-      }
-      conn.dispose();
-    }
-
     // Open the database connection.
     accessMethod = AccessMethod.of(connectionInfo.getDbms(), connectionInfo, false);
   }

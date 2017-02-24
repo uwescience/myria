@@ -206,19 +206,6 @@ public class DbInsert extends AbstractDbInsert {
       throw new DbException("Unable to instantiate DbInsert: connection information unknown");
     }
 
-    if (connectionInfo instanceof SQLiteInfo) {
-      /* Set WAL in the beginning. */
-      final File dbFile = new File(((SQLiteInfo) connectionInfo).getDatabaseFilename());
-      SQLiteConnection conn = new SQLiteConnection(dbFile);
-      try {
-        conn.open(true);
-        conn.exec("PRAGMA journal_mode=WAL;");
-      } catch (SQLiteException e) {
-        e.printStackTrace();
-      }
-      conn.dispose();
-    }
-
     /* open the database connection */
     accessMethod = AccessMethod.of(connectionInfo.getDbms(), connectionInfo, false);
 
