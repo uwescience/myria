@@ -13,12 +13,14 @@ before_install:
 - export TERM=dumb
 # script: ./gradlew jacocoTestReport coveralls && ./myriadeploy/launch_local_cluster && sleep 60 && python myria-web/appengine/myria_web_main.py && ./integration_tests.py
 script:
-- ./gradlew jacocoTestReport coveralls
+- ./gradlew shadowJar check
 - ls -l $(git rev-parse --show-toplevel)/build/libs/myria-0.1-all.jar
 - ./myriadeploy/launch_local_cluster
 - sleep 60
 - python ~/myria-web/appengine/myria_web_main.py
 - ./integration_tests.py
+after_success:
+- ./gradlew jacocoTestReport coveralls
 cache:
   directories:
   - $HOME/.gradle/caches
