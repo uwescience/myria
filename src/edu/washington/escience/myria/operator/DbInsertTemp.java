@@ -27,6 +27,12 @@ import edu.washington.escience.myria.parallel.RelationWriteMetadata;
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleUtils;
 
+import java.nio.file.Files;
+import java.nio.file.attribute.PosixFileAttributes;
+import java.nio.file.attribute.PosixFileAttributeView;
+import java.nio.file.attribute.PosixFilePermissions;
+import java.io.IOException;
+
 /** A temporary relation that is inserted into the database. */
 public class DbInsertTemp extends AbstractDbInsert {
 
@@ -201,7 +207,18 @@ public class DbInsertTemp extends AbstractDbInsert {
         conn.exec("PRAGMA journal_mode=WAL;");
       } catch (SQLiteException e) {
         System.err.println("SQLite database file: " + dbFile.getAbsolutePath());
+        PosixFileAttributes attrs;
+        try {
+          attrs = Files.getFileAttributeView(dbFile.toPath(),
+              PosixFileAttributeView.class).readAttributes();
+        } catch (IOException ioe) {
+          throw new DbException(ioe);
+        }
+        System.err.println("SQLite database file permissions:");
+        System.err.format("%s %s%n", attrs.owner().getName(),
+            PosixFilePermissions.toString(attrs.permissions()));
         e.printStackTrace();
+        // why are we swallowing this and not rethrowing it as a DbException?
       }
       conn.dispose();
     }
