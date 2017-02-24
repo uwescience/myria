@@ -198,33 +198,6 @@ public class DbInsertTemp extends AbstractDbInsert {
       throw new DbException("Unknown connection information.");
     }
 
-    if (connectionInfo instanceof SQLiteInfo) {
-      /* Set WAL in the beginning. */
-      final File dbFile = new File(((SQLiteInfo) connectionInfo).getDatabaseFilename());
-      SQLiteConnection conn = new SQLiteConnection(dbFile);
-      try {
-        conn.open(true);
-        conn.exec("PRAGMA journal_mode=WAL;");
-      } catch (SQLiteException e) {
-        System.err.println("SQLite database file: " + dbFile.getAbsolutePath());
-        PosixFileAttributes attrs;
-        try {
-          attrs =
-              Files.getFileAttributeView(dbFile.toPath(), PosixFileAttributeView.class)
-                  .readAttributes();
-        } catch (IOException ioe) {
-          ioe.printStackTrace();
-          throw new DbException(ioe);
-        }
-        System.err.println("SQLite database file permissions:");
-        System.err.format(
-            "%s %s%n", attrs.owner().getName(), PosixFilePermissions.toString(attrs.permissions()));
-        e.printStackTrace();
-        // why are we swallowing this and not rethrowing it as a DbException?
-      }
-      conn.dispose();
-    }
-
     // Open the database connection.
     accessMethod = AccessMethod.of(connectionInfo.getDbms(), connectionInfo, false);
   }
