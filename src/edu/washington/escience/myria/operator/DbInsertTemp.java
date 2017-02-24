@@ -213,6 +213,7 @@ public class DbInsertTemp extends AbstractDbInsert {
               Files.getFileAttributeView(dbFile.toPath(), PosixFileAttributeView.class)
                   .readAttributes();
         } catch (IOException ioe) {
+          ioe.printStackTrace();
           throw new DbException(ioe);
         }
         System.err.println("SQLite database file permissions:");
