@@ -19,6 +19,7 @@ script:
 - sleep 60
 - lsof -i :8080
 - ./integration_tests.py
+- find . -name '*.stderr' | xargs cat
 after_success:
 - ./gradlew jacocoTestReport coveralls
 cache:
