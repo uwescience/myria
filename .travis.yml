@@ -17,8 +17,9 @@ script:
 - ./gradlew shadowJar check
 - ls -l $(git rev-parse --show-toplevel)/build/libs/myria-0.1-all.jar
 - ./myriadeploy/launch_local_cluster
+- find . -name '*.stderr' | xargs cat
 - sleep 60
-- python ~/myria-web/appengine/myria_web_main.py
+- python ~/myria-web/appengine/myria_web_main.py &
 - ./integration_tests.py
 after_success:
 - ./gradlew jacocoTestReport coveralls
