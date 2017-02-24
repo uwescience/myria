@@ -12,6 +12,7 @@ echo "IdentityFile ~/id_rsa_localhost" >> ~/.ssh/config
 
 # Set up myria-web
 pip install paste
+pip install webapp2
 cd ~
 git clone https://github.com/uwescience/myria-web.git
 cd ~/myria-web
