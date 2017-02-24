@@ -1,6 +1,6 @@
 # sudo: required
 # sudo: false
-sudo: true
+sudo: required
 dist: trusty
 language: java
 jdk:
