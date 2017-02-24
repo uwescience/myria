@@ -209,14 +209,15 @@ public class DbInsertTemp extends AbstractDbInsert {
         System.err.println("SQLite database file: " + dbFile.getAbsolutePath());
         PosixFileAttributes attrs;
         try {
-          attrs = Files.getFileAttributeView(dbFile.toPath(),
-              PosixFileAttributeView.class).readAttributes();
+          attrs =
+              Files.getFileAttributeView(dbFile.toPath(), PosixFileAttributeView.class)
+                  .readAttributes();
         } catch (IOException ioe) {
           throw new DbException(ioe);
         }
         System.err.println("SQLite database file permissions:");
-        System.err.format("%s %s%n", attrs.owner().getName(),
-            PosixFilePermissions.toString(attrs.permissions()));
+        System.err.format(
+            "%s %s%n", attrs.owner().getName(), PosixFilePermissions.toString(attrs.permissions()));
         e.printStackTrace();
         // why are we swallowing this and not rethrowing it as a DbException?
       }
