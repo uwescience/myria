@@ -114,7 +114,7 @@ public abstract class Operator implements Serializable {
    */
   public PythonFunctionRegistrar getPythonFunctionRegistrar() throws DbException {
     PythonFunctionRegistrar pyFuncRegistrar = null;
-    if (!execEnvVars.containsKey(MyriaConstants.EXEC_ENV_VAR_TEST_MODE)) {
+    if (execEnvVars == null || !execEnvVars.containsKey(MyriaConstants.EXEC_ENV_VAR_TEST_MODE)) {
       if (getLocalSubQuery() instanceof WorkerSubQuery) {
         pyFuncRegistrar =
             ((WorkerSubQuery) getLocalSubQuery()).getWorker().getPythonFunctionRegistrar();
