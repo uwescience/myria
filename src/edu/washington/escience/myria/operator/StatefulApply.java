@@ -188,7 +188,6 @@ public class StatefulApply extends Apply {
             new GenericEvaluator(
                 expr, new ExpressionOperatorParameter(inputSchema, getStateSchema(), getNodeID()));
       }
-      evaluator.compile();
       evaluators.add(evaluator);
     }
     setEmitEvaluators(evaluators);

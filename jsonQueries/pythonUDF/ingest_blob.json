@@ -10,7 +10,7 @@
   },
   "source" : {
     "dataType" : "URI",
-    "uri" : "https://s3-us-west-2.amazonaws.com/imagedb-data/dmridatasample.csv"
+    "uri" : "s3://imagedb-data/dmridatasample.csv"
   },
   "delimiter": ","
  }

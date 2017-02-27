@@ -51,30 +51,35 @@ public class GenericEvaluator extends Evaluator {
    *
    * @param expression the expression for the evaluator
    * @param parameters parameters that are passed to the expression
+   * @throws DbException if the compilation failed
    */
-  public GenericEvaluator(
-      final Expression expression, final ExpressionOperatorParameter parameters) {
+  public GenericEvaluator(final Expression expression, final ExpressionOperatorParameter parameters)
+      throws DbException {
     super(expression, parameters);
     this.script = getExpression().getJavaExpressionWithAppend(getParameters());
+    compile();
   }
 
   /**
    * @param expression
    * @param script
    * @param parameters
+   * @throws DbException if the compilation failed
    */
   public GenericEvaluator(
       final Expression expression,
       final String script,
-      final ExpressionOperatorParameter parameters) {
+      final ExpressionOperatorParameter parameters)
+      throws DbException {
     super(expression, parameters);
     this.script = script;
+    compile();
   }
 
   /**
    * Compiles the {@link #javaExpression}.
    *
-   * @throws DbException compilation failed
+   * @throws DbException if the compilation failed
    */
   @Override
   public void compile() throws DbException {
@@ -251,7 +256,7 @@ public class GenericEvaluator extends Evaluator {
         new TupleBuffer(
             Schema.ofFields(getExpression().getOutputName(), getOutputType()), batchSize);
     final WritableColumn resultsWriter = resultsBuffer.asWritableColumn(0);
-    // For single-valued expressions, the Java expression will never attempt to Usite to `countsWriter`.
+    // For single-valued expressions, the Java expression will never attempt to write to `countsWriter`.
     WritableColumn countsWriter = null;
     if (getExpression().isMultiValued()) {
       countsWriter = ColumnFactory.allocateColumn(Type.INT_TYPE);

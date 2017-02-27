@@ -83,13 +83,13 @@ public class UserDefinedAggregatorFactory implements AggregatorFactory {
 
     /* Set up the updaters. */
     Schema stateSchema = generateStateSchema(inputSchema);
-    ExpressionOperatorParameter para =
+    ExpressionOperatorParameter param =
         new ExpressionOperatorParameter(inputSchema, stateSchema, pyFuncReg);
     for (int i = 0; i < updaters.size(); ++i) {
       if (updaters.get(i).isRegisteredPythonUDF()) {
-        updateEvaluators.add(new PythonUDFEvaluator(updaters.get(i), para));
+        updateEvaluators.add(new PythonUDFEvaluator(updaters.get(i), param));
       } else {
-        updateEvaluators.add(getEvaluator(updaters.get(i), para, i));
+        updateEvaluators.add(getEvaluator(updaters.get(i), param, i));
       }
     }
 
@@ -127,7 +127,7 @@ public class UserDefinedAggregatorFactory implements AggregatorFactory {
     StringBuilder compute = new StringBuilder();
 
     Type type = expr.getOutputType(param);
-    // type valI = expression;
+    // <TYPE> val<I> = <EXPRESSION>;
     compute
         .append(type.toJavaType().getName())
         .append(" val")
@@ -137,7 +137,7 @@ public class UserDefinedAggregatorFactory implements AggregatorFactory {
         .append(";\n");
 
     if (param.getStateSchema() == null) {
-      // state.putType(I, valI);
+      // state.put<TYPE>(<I>, val<I>);
       compute
           .append(Expression.STATE)
           .append(".put")
@@ -150,7 +150,7 @@ public class UserDefinedAggregatorFactory implements AggregatorFactory {
           .append(col)
           .append(");\n");
     } else {
-      // state.replaceType(I, stateRow, valI);
+      // state.replace<TYPE>(<I> + stateColOffset, stateRow, val<I>);
       compute
           .append(Expression.STATE)
           .append(".replace")
@@ -178,7 +178,6 @@ public class UserDefinedAggregatorFactory implements AggregatorFactory {
     }
     se.setDefaultImports(MyriaConstants.DEFAULT_JANINO_IMPORTS);
     GenericEvaluator eval = new GenericEvaluator(expr, script, param);
-    eval.compile();
     return eval;
   }
 

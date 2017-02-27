@@ -194,12 +194,12 @@ public class PrimitiveAggregatorFactory implements AggregatorFactory {
         if (input == Type.FLOAT_TYPE || input == Type.DOUBLE_TYPE) {
           return Type.DOUBLE_TYPE;
         }
-        throw new IllegalArgumentException("SUM_SQUARED on " + op + " is invalid");
+        throw new IllegalArgumentException(op + " on " + input + " is invalid");
       case AVG:
       case STDEV:
         return Type.DOUBLE_TYPE;
       default:
-        throw new IllegalArgumentException(op + " is invalid");
+        throw new IllegalArgumentException(op + " on " + input + " is invalid");
     }
   }
 

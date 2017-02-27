@@ -107,9 +107,9 @@ public class PythonUDFEvaluator extends GenericEvaluator {
     String pyFunctionName = op.getName();
     FunctionStatus fs = pyFuncRegistrar.getFunctionStatus(pyFunctionName);
     if (fs == null) {
-      throw new DbException("No Python UDf with given name registered.");
+      throw new DbException("No Python UDF with name " + pyFunctionName + " is registered.");
     }
-    isMultiValued = fs.getIsMultivalued();
+    isMultiValued = fs.getIsMultiValued();
     pyWorker = new PythonWorker();
     pyWorker.sendCodePickle(fs.getBinary(), columnIdxs.length, outputType, isMultiValued);
     buffer = new IntObjectHashMap<TupleBatchBuffer>();
@@ -150,7 +150,7 @@ public class PythonUDFEvaluator extends GenericEvaluator {
       final int inputRow,
       @Nonnull final MutableTupleBuffer state,
       final int stateRow,
-      final int stateColoffset)
+      final int stateColOffset)
       throws DbException {
     if (!buffer.containsKey(stateRow)) {
       buffer.put(stateRow, new TupleBatchBuffer(stateSchema));
@@ -158,7 +158,7 @@ public class PythonUDFEvaluator extends GenericEvaluator {
     TupleBatchBuffer tb = buffer.get(stateRow);
     for (int i = 0; i < columnIdxs.length; ++i) {
       if (stateColumns.contains(i)) {
-        tb.appendFromColumn(i, state.asColumn(columnIdxs[i] + stateColoffset), stateRow);
+        tb.appendFromColumn(i, state.asColumn(columnIdxs[i] + stateColOffset), stateRow);
       } else {
         tb.appendFromColumn(i, input.asColumn(columnIdxs[i]), inputRow);
       }
@@ -200,7 +200,6 @@ public class PythonUDFEvaluator extends GenericEvaluator {
    * @param result writable column
    * @param result2 appendable table
    * @param resultColIdx id of the result column.
-   * @return Object output from python process.
    * @throws DbException in case of error.
    */
   public void readFromStream(final WritableColumn count, final WritableColumn result)
@@ -262,7 +261,7 @@ public class PythonUDFEvaluator extends GenericEvaluator {
    * @param columnIdx - column to be written to the py process.
    * @throws DbException in case of error.
    */
-  private void writeToStream(final ReadableTable tb, final int row, final int columnIdx)
+  private void writeToStream(@Nonnull final ReadableTable tb, final int row, final int columnIdx)
       throws DbException {
     DataOutputStream dOut = pyWorker.getDataOutputStream();
     Preconditions.checkNotNull(tb, "input tuple cannot be null");

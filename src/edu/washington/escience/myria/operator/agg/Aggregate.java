@@ -198,7 +198,6 @@ public class Aggregate extends UnaryOperator {
                   new ExpressionOperatorParameter(
                       newStateSchema, newStateSchema, getPythonFunctionRegistrar()));
         }
-        evaluator.compile();
         emitEvals.add(evaluator);
       }
     }

@@ -65,7 +65,7 @@ public class FunctionResource {
       functionCreationResponse =
           server.createFunction(
               encoding.name,
-              (encoding.description==null)?"":encoding.description,
+              (encoding.description == null) ? "" : encoding.description,
               encoding.outputType,
               encoding.isMultiValued,
               encoding.lang,

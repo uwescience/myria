@@ -2,6 +2,8 @@ package edu.washington.escience.myria.operator.agg;
 
 import java.io.Serializable;
 
+import javax.annotation.Nonnull;
+
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.storage.MutableTupleBuffer;
 import edu.washington.escience.myria.storage.TupleBatch;
@@ -18,12 +20,13 @@ public interface Aggregator extends Serializable {
    * @param fromRow the row index of the source tuple.
    * @param to the MutableTupleBuffer containing the state.
    * @param toRow the row index of the state.
+   * @param offset the column index offset.
    * @throws DbException
    */
   public abstract void addRow(
-      final TupleBatch from,
+      @Nonnull final TupleBatch from,
       final int fromRow,
-      final MutableTupleBuffer to,
+      @Nonnull final MutableTupleBuffer to,
       final int toRow,
       final int offset)
       throws DbException;
@@ -40,5 +43,5 @@ public interface Aggregator extends Serializable {
    * @param offset the column index of state to start from
    * @throws DbException
    */
-  void initState(final MutableTupleBuffer state, final int offset) throws DbException;
+  void initState(@Nonnull final MutableTupleBuffer state, final int offset) throws DbException;
 }

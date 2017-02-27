@@ -75,7 +75,7 @@ public class FunctionStatus {
   /**
    * @return get if function is multivalued.
    */
-  public Boolean getIsMultivalued() {
+  public Boolean getIsMultiValued() {
     return isMultiValued;
   }
   /**

@@ -156,7 +156,8 @@ public final class HashUtils {
       case STRING_TYPE:
         return hasher.putObject(column.getString(row), TypeFunnel.INSTANCE);
       default:
-        throw new UnsupportedOperationException("Hashing a column of type " + column.getType());
+        throw new UnsupportedOperationException(
+            "Hashing a column of type " + column.getType() + " is unsupported");
     }
   }
 }

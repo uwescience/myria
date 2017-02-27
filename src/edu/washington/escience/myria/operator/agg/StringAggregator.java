@@ -13,16 +13,12 @@ import edu.washington.escience.myria.storage.TupleBatch;
  * Knows how to compute some aggregate over a StringColumn.
  */
 public final class StringAggregator extends PrimitiveAggregator {
+  /** Required for Java serialization. */
+  private static final long serialVersionUID = 1L;
 
   protected StringAggregator(final String inputName, final int column, final AggregationOp aggOp) {
     super(inputName, column, aggOp);
   }
-
-  /** Required for Java serialization. */
-  private static final long serialVersionUID = 1L;
-
-  /** Placeholder as MIN/MAX value of String. */
-  private static final String STRING_INIT_VALUE = null;
 
   @Override
   public void addRow(
@@ -86,7 +82,7 @@ public final class StringAggregator extends PrimitiveAggregator {
         break;
       case MIN:
       case MAX:
-        data.putString(column, STRING_INIT_VALUE);
+        data.putString(column, null);
         break;
       default:
         throw new IllegalArgumentException("Type " + aggOp + " is invalid");

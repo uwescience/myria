@@ -1,5 +1,8 @@
 package edu.washington.escience.myria.expression.evaluate;
 
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+
 import edu.washington.escience.myria.column.builder.WritableColumn;
 import edu.washington.escience.myria.storage.ReadableTable;
 
@@ -14,16 +17,16 @@ public interface ExpressionEvalAppendInterface extends ExpressionEvalInterface {
    *
    * @param input the input tuple batch
    * @param inputRow row index of the input tuple batch
-   * @param state optional state that is passed during evaluation
+   * @param state state that is passed during evaluation
    * @param stateRow row index of the state
    * @param result a table storing evaluation results
    * @param count a column storing the number of results returned from this row
    */
   void evaluate(
-      final ReadableTable input,
+      @Nullable final ReadableTable input,
       final int inputRow,
-      final ReadableTable state,
+      @Nullable final ReadableTable state,
       final int stateRow,
-      final WritableColumn result,
-      final WritableColumn count);
+      @Nonnull final WritableColumn result,
+      @Nullable final WritableColumn count);
 }

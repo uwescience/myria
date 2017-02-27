@@ -293,7 +293,6 @@ public class Apply extends UnaryOperator {
       } else {
         evaluator = new GenericEvaluator(expr, parameters);
       }
-      evaluator.compile();
       Preconditions.checkArgument(!evaluator.needsState());
       evals.add(evaluator);
     }

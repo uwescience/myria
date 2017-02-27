@@ -8,6 +8,7 @@ import com.gs.collections.impl.map.mutable.primitive.IntObjectHashMap;
 
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.storage.MutableTupleBuffer;
+import edu.washington.escience.myria.storage.ReadableTable;
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleUtils;
 import edu.washington.escience.myria.util.HashUtils;
@@ -51,7 +52,7 @@ public final class TupleHashTable implements Serializable {
    * @param row the row index of the tuple
    * @return the indices
    */
-  public IntArrayList getIndices(final TupleBatch tb, final int[] key, final int row) {
+  public IntArrayList getIndices(final ReadableTable tb, final int[] key, final int row) {
     IntArrayList ret = new IntArrayList();
     IntArrayList indices = keyHashCodesToIndices.get(HashUtils.hashSubRow(tb, key, row));
     if (indices != null) {
@@ -95,7 +96,7 @@ public final class TupleHashTable implements Serializable {
    * @param keyOnly only add keyColumns
    */
   public void addTuple(
-      final TupleBatch tb, final int[] keyColumns, final int row, final boolean keyOnly) {
+      final ReadableTable tb, final int[] keyColumns, final int row, final boolean keyOnly) {
     int hashcode = HashUtils.hashSubRow(tb, keyColumns, row);
     IntArrayList indices = keyHashCodesToIndices.get(hashcode);
     if (indices == null) {
@@ -105,11 +106,11 @@ public final class TupleHashTable implements Serializable {
     indices.add(numTuples());
     if (keyOnly) {
       for (int i = 0; i < keyColumns.length; ++i) {
-        data.put(i, tb.getDataColumns().get(keyColumns[i]), row);
+        data.put(i, tb.asColumn(keyColumns[i]), row);
       }
     } else {
       for (int i = 0; i < data.numColumns(); ++i) {
-        data.put(i, tb.getDataColumns().get(i), row);
+        data.put(i, tb.asColumn(i), row);
       }
     }
   }
