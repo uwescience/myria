@@ -50,9 +50,17 @@ import edu.washington.escience.myria.util.Tuple;
 public class AggregateTest {
 
   /**
-   * Ensure that the given Schema matches the expected numeric aggregate types for the given Type. All numeric aggs, in
-   * order: COUNT, MIN, MAX, SUM, AVG, STDEV MIN,MAX match the input type SUM is the largest type compatible with the
-   * input type (int->long and float->double) COUNT is always long AVG and STDEV are always double
+   * Ensure that the given Schema matches the expected numeric aggregate types for the given Type.
+   *
+   * All numeric aggs, in order: COUNT, MIN, MAX, SUM, AVG, STDEV
+   *
+   * MIN,MAX match the input type
+   *
+   * SUM is the big form (int->long) and (float->double) of the input type
+   *
+   * COUNT is always long
+   *
+   * AVG and STDEV are always double
    *
    * @param schema the schema
    * @param type the type being aggregated
