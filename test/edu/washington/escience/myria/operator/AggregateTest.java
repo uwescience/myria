@@ -56,7 +56,7 @@ public class AggregateTest {
    *
    * MIN,MAX match the input type
    *
-   * SUM is the big form (int->long) and (float->double) of the input type
+   * SUM is the largest type compatible with the input type (int->long and float->double)
    *
    * COUNT is always long
    *
