@@ -65,7 +65,14 @@ public final class MyriaDriverLauncher {
    */
   public static void main(final String[] args) throws Exception {
     LauncherStatus status = run(args);
-    LOGGER.info("Exit with status " + status);
+    LOGGER.info("Driver launcher exiting with status " + status);
+    if (status == LauncherStatus.FAILED) {
+      System.exit(1);
+    } else if (status == LauncherStatus.FORCE_CLOSED) {
+      System.exit(2);
+    } else {
+      System.exit(0);
+    }
   }
 
   private final REEF reef;
@@ -347,7 +354,6 @@ public final class MyriaDriverLauncher {
     try {
       LOGGER.info("Submitting Myria driver to REEF...");
       reef.submit(driverConf);
-
       synchronized (this) {
         while (!status.isDone()) {
           try {
@@ -363,7 +369,6 @@ public final class MyriaDriverLauncher {
           }
         }
       }
-
       return status;
     } finally {
       reef.close();
