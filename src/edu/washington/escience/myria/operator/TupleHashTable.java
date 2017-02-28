@@ -123,13 +123,6 @@ public final class TupleHashTable implements Serializable {
   }
 
   /**
-   * @return the mapping
-   */
-  public IntObjectHashMap<IntArrayList> getHashCodeToIndices() {
-    return keyHashCodesToIndices;
-  }
-
-  /**
    * Clean up the hash table.
    */
   public void cleanup() {
