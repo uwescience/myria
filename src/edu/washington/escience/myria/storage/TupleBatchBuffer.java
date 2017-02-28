@@ -21,8 +21,6 @@ import edu.washington.escience.myria.util.MyriaUtils;
 /**
  * Used for creating TupleBatch objects on the fly. A helper class used in, e.g., the Scatter operator. Currently it
  * doesn't support random access to a specific cell. Use TupleBuffer instead.
- *
- *
  */
 public class TupleBatchBuffer implements AppendableTable {
   /** Format of the emitted tuples. */
@@ -75,10 +73,8 @@ public class TupleBatchBuffer implements AppendableTable {
    * @param tb the TB.
    */
   public final void appendTB(final TupleBatch tb) {
-    /*
-     * If we're currently building a batch, we better finish it before we append this one to the list. Otherwise
-     * reordering will happen.
-     */
+    /* If we're currently building a batch, we better finish it before we append this one to the list. Otherwise
+     * reordering will happen. */
     finishBatch();
 
     readyTuplesNum += tb.numTuples();
@@ -331,7 +327,6 @@ public class TupleBatchBuffer implements AppendableTable {
    * @param rightTb the right tuple batch
    * @param rightIdx the index of the right tuple in the tuple batch
    * @param rightAnswerColumns an array that specifies which columns from the right tuple batch
-   *
    */
   public final void put(
       final TupleBatch leftTb,
@@ -493,9 +488,10 @@ public class TupleBatchBuffer implements AppendableTable {
    * size of the TupleBatch because it is a full copy.
    *
    * @param tupleBatch the tuple data to be added to this buffer.
+   * @param shallowCopy shallow or deep copy of tupleBatch elements.
    */
-  public void absorb(final TupleBatch tupleBatch) {
-    if (currentInProgressTuples == 0) {
+  public void absorb(final TupleBatch tupleBatch, final boolean shallowCopy) {
+    if (shallowCopy) {
       appendTB(tupleBatch);
     } else {
       tupleBatch.compactInto(this);

@@ -9,8 +9,8 @@ import com.google.common.base.Preconditions;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
+import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
-import edu.washington.escience.myria.column.Column;
 import edu.washington.escience.myria.column.ConstantValueColumn;
 import edu.washington.escience.myria.column.builder.WritableColumn;
 import edu.washington.escience.myria.expression.Expression;
@@ -19,6 +19,7 @@ import edu.washington.escience.myria.expression.VariableExpression;
 import edu.washington.escience.myria.operator.StatefulApply;
 import edu.washington.escience.myria.storage.ReadableTable;
 import edu.washington.escience.myria.storage.TupleBatch;
+import edu.washington.escience.myria.storage.TupleUtils;
 
 /**
  * An Expression evaluator for generic expressions that produces a constant such as the initial state in
@@ -77,15 +78,6 @@ public final class ConstantEvaluator extends GenericEvaluator {
   private final ExpressionEvaluator evaluator;
 
   /**
-   * Creates an {@link ExpressionEvaluator} from the {@link #javaExpression}. This does not really compile the
-   * expression and is thus faster.
-   */
-  @Override
-  public void compile() {
-    /* Do nothing! */
-  }
-
-  /**
    * Evaluates the {@link #getJavaExpressionWithAppend()} using the {@link #evaluator}.
    *
    * @return the result from the evaluation
@@ -96,19 +88,24 @@ public final class ConstantEvaluator extends GenericEvaluator {
 
   @Override
   public void eval(
-      final ReadableTable tb,
-      final int rowIdx,
-      final WritableColumn count,
+      final ReadableTable input,
+      final int inputRow,
+      final ReadableTable state,
+      final int stateRow,
       final WritableColumn result,
-      final ReadableTable state) {
-    throw new UnsupportedOperationException(
-        "Should not be here. Should be using evaluateColumn() instead");
+      final WritableColumn count) {
+    result.appendObject(value);
+    count.appendInt(1);
   }
 
   @Override
-  public EvaluatorResult evaluateColumn(final TupleBatch tb) {
-    return new EvaluatorResult(
-        new ConstantValueColumn((Comparable<?>) value, type, tb.numTuples()),
-        new ConstantValueColumn(1, Type.INT_TYPE, tb.numTuples()));
+  public EvaluatorResult evalTupleBatch(final TupleBatch tb, final Schema outputSchema)
+      throws DbException {
+    if (TupleUtils.getBatchSize(outputSchema) == tb.getBatchSize()) {
+      return new EvaluatorResult(
+          new ConstantValueColumn((Comparable<?>) value, type, tb.numTuples()),
+          new ConstantValueColumn(1, Type.INT_TYPE, tb.numTuples()));
+    }
+    return super.evalTupleBatch(tb, outputSchema);
   }
 }

@@ -1,6 +1,7 @@
 package edu.washington.escience.myria.column.builder;
 
 import java.nio.BufferOverflowException;
+import java.nio.ByteBuffer;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
@@ -11,6 +12,7 @@ import java.nio.ByteBuffer;
 import com.almworks.sqlite4java.SQLiteException;
 import com.almworks.sqlite4java.SQLiteStatement;
 
+import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.Column;
 import edu.washington.escience.myria.column.mutable.MutableColumn;
 import edu.washington.escience.myria.storage.ReadableColumn;
@@ -18,7 +20,6 @@ import edu.washington.escience.myria.storage.ReplaceableColumn;
 
 /**
  * @param <T> type of the objects in this column.
- *
  */
 public abstract class ColumnBuilder<T extends Comparable<?>>
     implements ReadableColumn, WritableColumn, ReplaceableColumn {
@@ -191,6 +192,31 @@ public abstract class ColumnBuilder<T extends Comparable<?>>
   @Override
   public void replaceString(@Nonnull final String value, final int row) {
     throw new UnsupportedOperationException(getClass().getName());
+  }
+
+  /**
+   * @param type the type of the column to be returned.
+   * @return a new empty column of the specified type.
+   */
+  public static ColumnBuilder<?> of(final Type type) {
+    switch (type) {
+      case BOOLEAN_TYPE:
+        return new BooleanColumnBuilder();
+      case DATETIME_TYPE:
+        return new DateTimeColumnBuilder();
+      case DOUBLE_TYPE:
+        return new DoubleColumnBuilder();
+      case FLOAT_TYPE:
+        return new FloatColumnBuilder();
+      case INT_TYPE:
+        return new IntColumnBuilder();
+      case LONG_TYPE:
+        return new LongColumnBuilder();
+      case STRING_TYPE:
+        return new StringColumnBuilder();
+      default:
+        throw new IllegalArgumentException("Type " + type + " is invalid");
+    }
   }
 
   @Override

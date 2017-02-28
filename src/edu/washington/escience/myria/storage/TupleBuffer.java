@@ -1,12 +1,13 @@
 package edu.washington.escience.myria.storage;
 
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.List;
 import java.util.Objects;
 
 import org.joda.time.DateTime;
-import java.nio.ByteBuffer;
+
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 
@@ -44,9 +45,12 @@ public class TupleBuffer implements ReadableTable, AppendableTable {
   private ImmutableList<TupleBatch> finalBatches;
   /** The number of tuples in this buffer. */
   private int numTuples;
-  /** BatchSize.*/
+  /** Batch size. */
   private int batchSize;
 
+  /**
+   * @return the size of the batches.
+   */
   public int getBatchSize() {
     return batchSize;
   }
@@ -69,6 +73,7 @@ public class TupleBuffer implements ReadableTable, AppendableTable {
     numTuples = 0;
     batchSize = TupleUtils.getBatchSize(schema);
   }
+
   /**
    * Constructs an empty TupleBuffer to hold tuples matching the specified Schema.
    *
@@ -81,7 +86,6 @@ public class TupleBuffer implements ReadableTable, AppendableTable {
 
   /**
    * Makes a batch of any tuples in the buffer and appends it to the internal list.
-   *
    */
   private void finishBatch() {
     Preconditions.checkState(
@@ -344,5 +348,19 @@ public class TupleBuffer implements ReadableTable, AppendableTable {
   @Override
   public WritableColumn asWritableColumn(final int column) {
     return new WritableSubColumn(this, column);
+  }
+
+  /**
+   * Append the specified value to the specified destination column in this TupleBuffer from the source column.
+   *
+   * @param destColumn which column in this TB the value will be inserted.
+   * @param sourceColumn the column from which data will be retrieved.
+   * @param sourceRow the row in the source column from which data will be retrieved.
+   */
+  public final void put(
+      final int destColumn, final ReadableColumn sourceColumn, final int sourceRow) {
+    checkPutIndex(destColumn);
+    TupleUtils.copyValue(sourceColumn, sourceRow, this, destColumn);
+    columnPut(destColumn);
   }
 }

@@ -41,7 +41,6 @@ public class ApplyDownloadBlobTest {
 
     ImmutableList.Builder<Expression> Expressions = ImmutableList.builder();
     ExpressionOperator filename = new VariableExpression(0);
-    ;
 
     ExpressionOperator db = new DownloadBlobExpression(filename);
     Expression expr = new Expression("blobs", db);
@@ -61,7 +60,6 @@ public class ApplyDownloadBlobTest {
         assertEquals(expectedResultSchema, result.getSchema());
       }
     }
-
     apply.close();
   }
 }

@@ -102,15 +102,15 @@ class PickleSerializer(object):
 
     def read_item(self, stream, itemType, length):
         obj = None
-        if(itemType == DataType.INT):
+        if itemType == DataType.INT:
             obj = read_int(stream)
-        elif(itemType == DataType.LONG):
+        elif itemType == DataType.LONG:
             obj = read_long(stream)
-        elif(itemType == DataType.FLOAT):
+        elif itemType == DataType.FLOAT:
             obj = read_float(stream)
-        elif(itemType == DataType.DOUBLE):
+        elif itemType == DataType.DOUBLE:
             obj = read_double(stream)
-        elif(itemType == DataType.BLOB):
+        elif itemType == DataType.BLOB:
             obj = self.loads(stream.read(length))
         return obj
 
@@ -122,10 +122,10 @@ class PickleSerializer(object):
             # Second read the length
             length = read_int(stream)
 
-            if (length == SpecialLengths.NULL):
+            if length == SpecialLengths.NULL or length == 0:
                 datalist.append(0)
-            # length is >0, read the item now
-            elif (length > 0):
+            # length is > 0, read the item now
+            elif length > 0:
                 obj = self.read_item(stream, elementType, length)
                 datalist.append(obj)
 

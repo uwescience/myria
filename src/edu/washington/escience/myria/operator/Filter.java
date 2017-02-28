@@ -22,7 +22,7 @@ public final class Filter extends UnaryOperator {
   private static final long serialVersionUID = 1L;
   /**
    * The operator.
-   * */
+   */
   private final Expression predicate;
 
   /**
@@ -70,16 +70,11 @@ public final class Filter extends UnaryOperator {
   @Override
   protected void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
     Preconditions.checkNotNull(predicate);
-
     Schema inputSchema = getChild().getSchema();
-
     final ExpressionOperatorParameter parameters =
         new ExpressionOperatorParameter(inputSchema, getNodeID());
-
     evaluator = new BooleanEvaluator(predicate, parameters);
-    if (evaluator.needsCompiling()) {
-      evaluator.compile();
-    }
+    evaluator.compile();
   }
 
   @Override

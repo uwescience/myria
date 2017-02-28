@@ -18,15 +18,15 @@ import edu.washington.escience.myria.proto.DataProto.BlobColumnMessage;
 import edu.washington.escience.myria.proto.DataProto.ColumnMessage;
 import edu.washington.escience.myria.storage.TupleUtils;
 import edu.washington.escience.myria.util.MyriaUtils;
+
 /**
  * A column of Blob values.
- *
  */
 public final class BlobColumnBuilder extends ColumnBuilder<ByteBuffer> {
 
   /**
    * The internal representation of the data.
-   * */
+   */
   private final ByteBuffer[] data;
 
   /** Number of elements in this column. */
@@ -34,7 +34,7 @@ public final class BlobColumnBuilder extends ColumnBuilder<ByteBuffer> {
 
   /**
    * If the builder has built the column.
-   * */
+   */
   private boolean built = false;
 
   /** Constructs an empty column that can hold up to TupleBatch.BATCH_SIZE elements. */
@@ -48,21 +48,16 @@ public final class BlobColumnBuilder extends ColumnBuilder<ByteBuffer> {
    *
    * @param numDates the actual num strings in the data
    * @param data the underlying data
-   * */
+   */
   private BlobColumnBuilder(final ByteBuffer[] data, final int numBB) {
     this.numBB = numBB;
     this.data = data;
   }
 
-  /*
-   * Constructs a BlobColumn by deserializing the given ColumnMessage.
-   *
+  /* Constructs a BlobColumn by deserializing the given ColumnMessage.
    * @param message a ColumnMessage containing the contents of this column.
-   *
    * @param numTuples num tuples in the column message
-   *
-   * @return the built column
-   */
+   * @return the built column */
   public static BlobColumn buildFromProtobuf(final ColumnMessage message, final int numTuples) {
     Preconditions.checkArgument(
         message.getType().ordinal() == ColumnMessage.Type.BLOB_VALUE,
@@ -86,9 +81,12 @@ public final class BlobColumnBuilder extends ColumnBuilder<ByteBuffer> {
   }
 
   @Override
-  public BlobColumnBuilder appendBlob(final ByteBuffer value) throws BufferOverflowException {
+  public BlobColumnBuilder appendBlob(ByteBuffer value) throws BufferOverflowException {
     Preconditions.checkState(
         !built, "No further changes are allowed after the builder has built the column.");
+    if (value == null) {
+      value = ByteBuffer.allocate(0);
+    }
     Objects.requireNonNull(value, "value");
     if (numBB >= TupleUtils.getBatchSize(Type.BLOB_TYPE)) {
       throw new BufferOverflowException();

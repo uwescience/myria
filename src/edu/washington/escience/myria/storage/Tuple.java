@@ -1,19 +1,17 @@
 package edu.washington.escience.myria.storage;
 
 import java.io.Serializable;
-import java.util.List;
+import java.nio.ByteBuffer;
 
 import javax.annotation.Nonnull;
 
 import org.joda.time.DateTime;
-import java.nio.ByteBuffer;
+
 import com.google.common.base.Preconditions;
-import com.google.common.collect.Lists;
 
 import edu.washington.escience.myria.Schema;
-import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.builder.WritableColumn;
-import edu.washington.escience.myria.util.MyriaUtils;
+import edu.washington.escience.myria.util.MyriaArrayUtils;
 
 /**
  * A single row relation.
@@ -30,16 +28,26 @@ public class Tuple implements Cloneable, AppendableTable, ReadableTable, Seriali
   /**
    * The data of the tuple.
    */
-  private final List<Field<?>> data;
+  private final MutableTupleBuffer data;
 
   /**
    * @param schema the schema of the tuple
    */
   public Tuple(final Schema schema) {
+    data = new MutableTupleBuffer(schema);
     this.schema = schema;
-    data = Lists.newArrayListWithCapacity(numColumns());
-    for (int i = 0; i < numColumns(); i++) {
-      data.add(new Field<>());
+  }
+
+  /**
+   * @param data
+   * @param row
+   * @param cols
+   */
+  public Tuple(final ReadableTable data, final int row, final int[] cols) {
+    this.schema = data.getSchema().getSubSchema(cols);
+    this.data = new MutableTupleBuffer(schema);
+    for (int i = 0; i < cols.length; ++i) {
+      this.data.put(i, data.asColumn(cols[i]), row);
     }
   }
 
@@ -51,70 +59,49 @@ public class Tuple implements Cloneable, AppendableTable, ReadableTable, Seriali
     return schema;
   }
 
-  /**
-   * Returns a value and checks arguments.
-   *
-   * @param column the column index.
-   * @param row the row index.
-   * @return the value at the desired position.
-   */
-  private Object getValue(final int column, final int row) {
-    Preconditions.checkArgument(row == 0);
-    Preconditions.checkElementIndex(column, numColumns());
-    return data.get(column).getObject();
-  }
-
   @Override
   public boolean getBoolean(final int column, final int row) {
-    Preconditions.checkArgument(getSchema().getColumnType(column) == Type.BOOLEAN_TYPE);
-    return (boolean) getValue(column, row);
+    return data.getBoolean(column, row);
   }
 
   @Override
   public double getDouble(final int column, final int row) {
-    Preconditions.checkArgument(getSchema().getColumnType(column) == Type.DOUBLE_TYPE);
-    return (double) getValue(column, row);
+    return data.getDouble(column, row);
   }
 
   @Override
   public float getFloat(final int column, final int row) {
-    Preconditions.checkArgument(getSchema().getColumnType(column) == Type.FLOAT_TYPE);
-    return (float) getValue(column, row);
+    return data.getFloat(column, row);
   }
 
   @Override
   public int getInt(final int column, final int row) {
-    Preconditions.checkArgument(getSchema().getColumnType(column) == Type.INT_TYPE);
-    return (int) getValue(column, row);
+    return data.getInt(column, row);
   }
 
   @Override
   public long getLong(final int column, final int row) {
-    Preconditions.checkArgument(getSchema().getColumnType(column) == Type.LONG_TYPE);
-    return (long) getValue(column, row);
+    return data.getLong(column, row);
   }
 
   @Override
   public String getString(final int column, final int row) {
-    Preconditions.checkArgument(getSchema().getColumnType(column) == Type.STRING_TYPE);
-    return (String) getValue(column, row);
+    return data.getString(column, row);
   }
 
   @Override
   public DateTime getDateTime(final int column, final int row) {
-    Preconditions.checkArgument(getSchema().getColumnType(column) == Type.DATETIME_TYPE);
-    return (DateTime) getValue(column, row);
+    return data.getDateTime(column, row);
   }
 
   @Override
   public ByteBuffer getBlob(final int column, final int row) {
-    Preconditions.checkArgument(getSchema().getColumnType(column) == Type.BLOB_TYPE);
-    return (ByteBuffer) getValue(column, row);
+    return data.getBlob(column, row);
   }
 
   @Override
   public Object getObject(final int column, final int row) {
-    return getValue(column, row);
+    return data.getObject(column, row);
   }
 
   @Override
@@ -127,24 +114,6 @@ public class Tuple implements Cloneable, AppendableTable, ReadableTable, Seriali
     return 1;
   }
 
-  /**
-   * @param columnIdx the column index
-   * @return the field at the index
-   */
-  public Field<?> getColumn(final int columnIdx) {
-    return data.get(columnIdx);
-  }
-
-  /**
-   * Set value.
-   *
-   * @param columnIdx the column index
-   * @param value the value to set
-   */
-  public void set(final int columnIdx, final Object value) {
-    getColumn(columnIdx).appendObject(MyriaUtils.ensureObjectIsValidType(value));
-  }
-
   @Override
   public ReadableColumn asColumn(final int column) {
     return new ReadableSubColumn(
@@ -153,60 +122,62 @@ public class Tuple implements Cloneable, AppendableTable, ReadableTable, Seriali
 
   @Override
   public Tuple clone() {
-    Tuple t = new Tuple(getSchema());
-    for (int i = 0; i < numColumns(); ++i) {
-      t.set(i, getObject(i, 0));
-    }
-    return t;
+    return new Tuple(data.clone(), 0, MyriaArrayUtils.range(0, numColumns()));
   }
 
   @Override
   public void putBoolean(final int column, final boolean value) {
-    set(column, value);
+    data.putBoolean(column, value);
   }
 
   @Override
   public void putDateTime(final int column, @Nonnull final DateTime value) {
-    set(column, value);
+    data.putDateTime(column, value);
   }
 
   @Override
   public void putDouble(final int column, final double value) {
-    set(column, value);
+    data.putDouble(column, value);
   }
 
   @Override
   public void putFloat(final int column, final float value) {
-    set(column, value);
+    data.putFloat(column, value);
   }
 
   @Override
   public void putInt(final int column, final int value) {
-    set(column, value);
+    data.putInt(column, value);
   }
 
   @Override
   public void putLong(final int column, final long value) {
-    set(column, value);
+    data.putLong(column, value);
   }
 
   @Override
   public void putString(final int column, final @Nonnull String value) {
-    set(column, value);
+    data.putString(column, value);
   }
 
   @Override
+  @Deprecated
   public void putObject(final int column, final @Nonnull Object value) {
-    set(column, value);
+    data.putObject(column, value);
   }
 
   @Override
   public void putBlob(final int column, @Nonnull final ByteBuffer value) {
-    set(column, value);
+    data.putBlob(column, value);
   }
 
   @Override
   public WritableColumn asWritableColumn(final int column) {
-    return data.get(column);
+    return data.asWritableColumn(column);
+  }
+
+  @Override
+  public final String toString() {
+    return data.getAll().get(0).toString();
   }
 }

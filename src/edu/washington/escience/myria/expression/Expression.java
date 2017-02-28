@@ -33,26 +33,20 @@ public class Expression implements Serializable {
    */
   @JsonProperty private final ExpressionOperator rootExpressionOperator;
 
-  /**
-   * Variable name of result.
-   */
-  public static final String RESULT = "result";
-  /**
-   * Variable name of result count.
-   */
-  public static final String COUNT = "count";
-  /**
-   * Variable name of input tuple batch.
-   */
-  public static final String TB = "tb";
-  /**
-   * Variable name of row index.
-   */
-  public static final String ROW = "row";
-  /**
-   * Variable name of state.
-   */
+  /** Variable name of input tuple batch. */
+  public static final String INPUT = "input";
+  /** Variable name of row index of input. */
+  public static final String INPUTROW = "inputRow";
+  /** Variable name of state. */
   public static final String STATE = "state";
+  /** Variable name of row index of state. */
+  public static final String STATEROW = "stateRow";
+  /** Variable name of result. */
+  public static final String RESULT = "result";
+  /** Variable name of result count. */
+  public static final String COUNT = "count";
+  /** Variable name of column offset of state. */
+  public static final String STATECOLOFFSET = "stateColOffset";
 
   /**
    * This is not really unused, it's used automagically by Jackson deserialization.
@@ -192,7 +186,7 @@ public class Expression implements Serializable {
    *
    * @return if this expression contains a python UDF.
    */
-  public boolean isRegisteredUDF() {
+  public boolean isRegisteredPythonUDF() {
     return hasOperator(PyUDFExpression.class);
   }
 

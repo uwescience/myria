@@ -90,8 +90,8 @@
                   }
                ],
                "argChild":2,
-               "argGroupField":1,
-               "opType":"SingleGroupByAggregate",
+               "argGroupFields":[1],
+               "opType":"Aggregate",
                "opId":3
             },
             {

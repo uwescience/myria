@@ -18,6 +18,7 @@ import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
+import edu.washington.escience.myria.column.Column;
 import edu.washington.escience.myria.expression.Expression;
 import edu.washington.escience.myria.expression.evaluate.ConstantEvaluator;
 import edu.washington.escience.myria.expression.evaluate.ExpressionOperatorParameter;
@@ -55,6 +56,7 @@ public class Apply extends UnaryOperator {
    * AddCounter to the returning tuplebatch.
    */
   private Boolean addCounter = false;
+
   /**
    * @return the {@link #emitExpressions}
    */
@@ -89,8 +91,7 @@ public class Apply extends UnaryOperator {
   }
 
   /**
-   * @return number of columns that return more than one value for this
-   * Apply operator.
+   * @return number of columns that return more than one value for this Apply operator.
    */
   private int numberOfMultiValuedExpressions() {
     int i = 0;
@@ -101,8 +102,10 @@ public class Apply extends UnaryOperator {
     }
     return i;
   }
+
   /**
    * Should a counter be added?
+   *
    * @return
    */
   private boolean getAddCounter() {
@@ -119,7 +122,6 @@ public class Apply extends UnaryOperator {
   private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(Apply.class);
 
   /**
-   *
    * @param child child operator that data is fetched from
    * @param emitExpressions expression that created the output
    */
@@ -150,23 +152,31 @@ public class Apply extends UnaryOperator {
     while (!outputBuffer.hasFilledTB()) {
       TupleBatch inputTuples = getChild().nextReady();
       if (inputTuples != null) {
-        // Evaluate expressions on each column and store counts and results.
-        List<ReadableColumn> resultCountColumns = new ArrayList<>();
-        List<ReadableColumn> resultColumns = new ArrayList<>();
-        for (final GenericEvaluator eval : emitEvaluators) {
-          EvaluatorResult evalResult = eval.evaluateColumn(inputTuples);
-          resultCountColumns.add(evalResult.getResultCounts());
-          resultColumns.add(evalResult.getResults());
-        }
         if (onlySingleValuedExpressions()) {
-          int[] iteratorIndexes = new int[emitEvaluators.size()];
-          Arrays.fill(iteratorIndexes, 0);
-          for (int rowIdx = 0; rowIdx < inputTuples.numTuples(); ++rowIdx) {
-            for (int i = 0; i < iteratorIndexes.length; ++i) {
-              outputBuffer.appendFromColumn(i, resultColumns.get(i), rowIdx);
+          List<List<Column<?>>> tbs = new ArrayList<List<Column<?>>>();
+          for (final GenericEvaluator eval : emitEvaluators) {
+            EvaluatorResult evalResult = eval.evalTupleBatch(inputTuples, getSchema());
+            List<Column<?>> cols = evalResult.getResultColumns();
+            for (int i = 0; i < cols.size(); ++i) {
+              if (tbs.size() <= i) {
+                tbs.add(new ArrayList<Column<?>>());
+              }
+              tbs.get(i).add(cols.get(i));
             }
           }
+          for (List<Column<?>> tb : tbs) {
+            outputBuffer.absorb(new TupleBatch(getSchema(), tb), true);
+          }
         } else {
+          // Evaluate expressions on each column and store counts and results.
+          List<ReadableColumn> resultCountColumns = new ArrayList<>();
+          List<ReadableColumn> resultColumns = new ArrayList<>();
+          for (final GenericEvaluator eval : emitEvaluators) {
+            EvaluatorResult evalResult = eval.evalTupleBatch(inputTuples, getSchema());
+            resultCountColumns.add(evalResult.getResultCounts());
+            resultColumns.add(evalResult.getResults());
+          }
+
           // Generate the Cartesian product and append to output buffer.
           int[] resultCounts = new int[emitEvaluators.size()];
           int[] cumResultCounts = new int[emitEvaluators.size()];
@@ -235,7 +245,7 @@ public class Apply extends UnaryOperator {
    * returns false.
    *
    * @param upperBounds an immutable array of elements representing the sets we are forming the Cartesian product of,
-   *          where each set is of the form [0, i), where i is an element of {@link upperBounds}
+   *        where each set is of the form [0, i), where i is an element of {@link upperBounds}
    * @param iteratorIndexes a mutable array of elements representing the current element of the Cartesian product
    * @return if we have exhausted all elements of the Cartesian product
    */
@@ -271,19 +281,17 @@ public class Apply extends UnaryOperator {
 
     List<GenericEvaluator> evals = new ArrayList<>();
     final ExpressionOperatorParameter parameters =
-        new ExpressionOperatorParameter(inputSchema, getNodeID());
+        new ExpressionOperatorParameter(
+            inputSchema, null, getNodeID(), getPythonFunctionRegistrar());
 
     for (Expression expr : emitExpressions) {
       GenericEvaluator evaluator;
       if (expr.isConstant()) {
         evaluator = new ConstantEvaluator(expr, parameters);
-      } else if (expr.isRegisteredUDF()) {
-        evaluator = new PythonUDFEvaluator(expr, parameters, getPythonFunctionRegistrar());
+      } else if (expr.isRegisteredPythonUDF()) {
+        evaluator = new PythonUDFEvaluator(expr, parameters);
       } else {
         evaluator = new GenericEvaluator(expr, parameters);
-      }
-      if (evaluator.needsCompiling()) {
-        evaluator.compile();
       }
       Preconditions.checkArgument(!evaluator.needsState());
       evals.add(evaluator);

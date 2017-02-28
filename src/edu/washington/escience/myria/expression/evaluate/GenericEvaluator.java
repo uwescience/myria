@@ -1,7 +1,5 @@
 package edu.washington.escience.myria.expression.evaluate;
 
-import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
 import java.util.List;
 
 import javax.annotation.Nonnull;
@@ -27,10 +25,12 @@ import edu.washington.escience.myria.expression.Expression;
 import edu.washington.escience.myria.expression.ExpressionOperator;
 import edu.washington.escience.myria.expression.VariableExpression;
 import edu.washington.escience.myria.operator.Apply;
+import edu.washington.escience.myria.storage.MutableTupleBuffer;
 import edu.washington.escience.myria.storage.ReadableColumn;
 import edu.washington.escience.myria.storage.ReadableTable;
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleBuffer;
+import edu.washington.escience.myria.storage.TupleUtils;
 
 /**
  * An Expression evaluator for generic expressions. Used in {@link Apply}.
@@ -41,34 +41,48 @@ public class GenericEvaluator extends Evaluator {
   private static final org.slf4j.Logger LOGGER =
       org.slf4j.LoggerFactory.getLogger(GenericEvaluator.class);
 
-  /**
-   * Expression evaluator.
-   */
+  /** Expression evaluator. */
   private ExpressionEvalInterface evaluator;
+  /** The script. */
+  private String script;
 
   /**
    * Default constructor.
    *
    * @param expression the expression for the evaluator
    * @param parameters parameters that are passed to the expression
+   * @throws DbException if the compilation failed
+   */
+  public GenericEvaluator(final Expression expression, final ExpressionOperatorParameter parameters)
+      throws DbException {
+    super(expression, parameters);
+    this.script = getExpression().getJavaExpressionWithAppend(getParameters());
+    compile();
+  }
+
+  /**
+   * @param expression
+   * @param script
+   * @param parameters
+   * @throws DbException if the compilation failed
    */
   public GenericEvaluator(
-      final Expression expression, final ExpressionOperatorParameter parameters) {
+      final Expression expression,
+      final String script,
+      final ExpressionOperatorParameter parameters)
+      throws DbException {
     super(expression, parameters);
+    this.script = script;
+    compile();
   }
 
   /**
    * Compiles the {@link #javaExpression}.
    *
-   * @throws DbException compilation failed
+   * @throws DbException if the compilation failed
    */
   @Override
   public void compile() throws DbException {
-    Preconditions.checkArgument(
-        needsCompiling() || (getStateSchema() != null),
-        "This expression does not need to be compiled.");
-
-    String javaExpression = getJavaExpressionWithAppend();
     IScriptEvaluator se;
     try {
       se = CompilerFactoryFactory.getDefaultCompilerFactory().newScriptEvaluator();
@@ -76,25 +90,39 @@ public class GenericEvaluator extends Evaluator {
       LOGGER.error("Could not create expression evaluator", e);
       throw new DbException("Could not create expression evaluator", e);
     }
-
     se.setDefaultImports(MyriaConstants.DEFAULT_JANINO_IMPORTS);
-
     try {
-      evaluator =
-          (ExpressionEvalInterface)
-              se.createFastEvaluator(
-                  javaExpression,
-                  ExpressionEvalInterface.class,
-                  new String[] {
-                    Expression.TB,
-                    Expression.ROW,
-                    Expression.COUNT,
-                    Expression.RESULT,
-                    Expression.STATE
-                  });
+      if (script.contains("append")) {
+        evaluator =
+            (ExpressionEvalAppendInterface)
+                se.createFastEvaluator(
+                    script,
+                    ExpressionEvalAppendInterface.class,
+                    new String[] {
+                      Expression.INPUT,
+                      Expression.INPUTROW,
+                      Expression.STATE,
+                      Expression.STATEROW,
+                      Expression.RESULT,
+                      Expression.COUNT
+                    });
+      } else {
+        evaluator =
+            (ExpressionEvalReplaceInterface)
+                se.createFastEvaluator(
+                    script,
+                    ExpressionEvalReplaceInterface.class,
+                    new String[] {
+                      Expression.INPUT,
+                      Expression.INPUTROW,
+                      Expression.STATE,
+                      Expression.STATEROW,
+                      Expression.STATECOLOFFSET
+                    });
+      }
     } catch (CompileException e) {
-      LOGGER.error("Error when compiling expression {}: {}", javaExpression, e);
-      throw new DbException("Error when compiling expression: " + javaExpression, e);
+      LOGGER.error("Error when compiling expression {}: {}", script, e);
+      throw new DbException("Error when compiling expression: " + script, e);
     }
   }
 
@@ -102,40 +130,56 @@ public class GenericEvaluator extends Evaluator {
    * Evaluates the {@link #getJavaExpressionWithAppend()} using the {@link #evaluator}. Prefer to use
    * {@link #evaluateColumn(TupleBatch)} since it can evaluate an entire TupleBatch at a time for better locality.
    *
-   * @param tb a tuple batch
-   * @param rowIdx index of the row that should be used for input data
-   * @param count column storing number of results (null for single-valued expressions)
-   * @param result the table storing the result
+   * @param input a tuple batch
+   * @param inputRow index of the row that should be used for input data
    * @param state additional state that affects the computation
-   * @throws InvocationTargetException exception thrown from janino.
+   * @param stateRow index of the row that should be used for state
+   * @param stateColOffset the column offset of the state
+   * @throws DbException in case of error.
+   */
+  public void updateState(
+      @Nonnull final ReadableTable input,
+      final int inputRow,
+      @Nonnull final MutableTupleBuffer state,
+      final int stateRow,
+      final int stateColOffset)
+      throws DbException {
+    ((ExpressionEvalReplaceInterface) evaluator)
+        .evaluate(input, inputRow, state, stateRow, stateColOffset);
+  }
+
+  /**
+   * Evaluates the {@link #getJavaExpressionWithAppend()} using the {@link #evaluator}. Prefer to use
+   * {@link #evaluateColumn(TupleBatch)} since it can evaluate an entire TupleBatch at a time for better locality.
+   *
+   * @param input a tuple batch
+   * @param inputRow index of the row that should be used for input data
+   * @param state additional state that affects the computation
+   * @param stateRow index of the row that should be used for state
+   * @param result the table storing the result
+   * @param count column storing number of results (null for single-valued expressions)
    * @throws DbException in case of error.
    */
   public void eval(
-      @Nonnull final ReadableTable tb,
-      final int rowIdx,
-      @Nullable final WritableColumn count,
+      @Nullable final ReadableTable input,
+      final int inputRow,
+      @Nullable final ReadableTable state,
+      final int stateRow,
       @Nonnull final WritableColumn result,
-      @Nullable final ReadableTable state)
-      throws InvocationTargetException, DbException {
+      @Nullable final WritableColumn count)
+      throws DbException {
     Preconditions.checkArgument(
         evaluator != null, "Call compile first or copy the data if it is the same in the input.");
     Preconditions.checkArgument(
         getExpression().isMultiValued() != (count == null),
         "count must be null for a single-valued expression and non-null for a multivalued expression.");
     try {
-      evaluator.evaluate(tb, rowIdx, count, result, state);
+      ((ExpressionEvalAppendInterface) evaluator)
+          .evaluate(input, inputRow, state, stateRow, result, count);
     } catch (Exception e) {
-      LOGGER.error(getJavaExpressionWithAppend(), e);
+      LOGGER.error(script, e);
       throw e;
     }
-  }
-
-  /**
-   * @return the Java form of this expression.
-   */
-  @Override
-  public String getJavaExpressionWithAppend() {
-    return getExpression().getJavaExpressionWithAppend(getParameters());
   }
 
   /**
@@ -148,9 +192,8 @@ public class GenericEvaluator extends Evaluator {
 
     protected EvaluatorResult(
         @Nonnull final TupleBuffer results, @Nonnull final Column<?> resultCounts) {
-      final List<TupleBatch> resultBatches = results.finalResult();
       ImmutableList.Builder<Column<?>> resultColumnsBuilder = ImmutableList.builder();
-      for (final TupleBatch tb : resultBatches) {
+      for (final TupleBatch tb : results.finalResult()) {
         resultColumnsBuilder.add(tb.getDataColumns().get(0));
       }
       this.resultColumns = resultColumnsBuilder.build();
@@ -188,40 +231,39 @@ public class GenericEvaluator extends Evaluator {
   }
 
   /**
-   * Evaluate an expression over an entire TupleBatch and return the column(s) of results, along with a column of result counts from each tuple. This method cannot take state
-   * into consideration.
+   * Evaluate an expression over an entire TupleBatch and return the column(s) of results, along with a column of result
+   * counts from each tuple. This method cannot take state into consideration.
    *
    * @param tb the tuples to be input to this expression
-   * @return an {@link EvaluatorResult} containing the results and result counts of evaluating this expression on the entire TupleBatch
-   * @throws InvocationTargetException exception thrown from janino
+   * @param outputSchema the schema that results from this evaluator belongs to, used to determine the tuple batch size
+   * @return an {@link EvaluatorResult} containing the results and result counts of evaluating this expression on the
+   *         entire TupleBatch
    * @throws DbException
    */
-  public EvaluatorResult evaluateColumn(final TupleBatch tb)
-      throws InvocationTargetException, DbException {
-    // Optimization for result counts of single-valued expressions.
+  public EvaluatorResult evalTupleBatch(final TupleBatch tb, final Schema outputSchema)
+      throws DbException {
     final Column<?> constCounts = new ConstantValueColumn(1, Type.INT_TYPE, tb.numTuples());
-    final WritableColumn countsWriter;
-    if (getExpression().isMultiValued()) {
-      countsWriter = ColumnFactory.allocateColumn(Type.INT_TYPE);
-    } else {
-      // For single-valued expressions, the Java expression will never attempt to write to `countsWriter`.
-      countsWriter = null;
-    }
-    ExpressionOperator op = getExpression().getRootExpressionOperator();
+    int batchSize = TupleUtils.getBatchSize(outputSchema);
     // Critical optimization: return a zero-copy reference to a column referenced by a pure `VariableExpression`.
-    if (isCopyFromInput()) {
+    if (isCopyFromInput() && batchSize >= tb.numTuples()) {
+      ExpressionOperator op = getExpression().getRootExpressionOperator();
       return new EvaluatorResult(
           tb.getDataColumns().get(((VariableExpression) op).getColumnIdx()), constCounts);
     }
-    // For multivalued expressions, we may get more than `TupleBatch.BATCH_SIZE` results,
-    // so we need to pass in a `TupleBuffer` rather than a `ColumnBuilder` to `eval()`,
-    // and return a `List<Column>` rather than a `Column` of results.
-    final Type type = getOutputType();
+    /* For multivalued expressions, we may get more than batchSize results, so we need to pass in a `TupleBuffer` rather
+     * than a `ColumnBuilder` to `eval()`, and return a `List<Column>` rather than a `Column` of results. */
     final TupleBuffer resultsBuffer =
-        new TupleBuffer(Schema.ofFields(getExpression().getOutputName(), type));
+        new TupleBuffer(
+            Schema.ofFields(getExpression().getOutputName(), getOutputType()), batchSize);
     final WritableColumn resultsWriter = resultsBuffer.asWritableColumn(0);
+    // For single-valued expressions, the Java expression will never attempt to write to `countsWriter`.
+    WritableColumn countsWriter = null;
+    if (getExpression().isMultiValued()) {
+      countsWriter = ColumnFactory.allocateColumn(Type.INT_TYPE);
+    }
     for (int rowIdx = 0; rowIdx < tb.numTuples(); ++rowIdx) {
-      eval(tb, rowIdx, countsWriter, resultsWriter, null);
+      /* Hack, tb is either Expression.INPUT or Expression.STATE */
+      eval(tb, rowIdx, tb, rowIdx, resultsWriter, countsWriter);
     }
     final Column<?> resultCounts;
     if (getExpression().isMultiValued()) {
@@ -230,5 +272,12 @@ public class GenericEvaluator extends Evaluator {
       resultCounts = constCounts;
     }
     return new EvaluatorResult(resultsBuffer, resultCounts);
+  }
+
+  /**
+   * @return the script
+   */
+  public String getScript() {
+    return script;
   }
 }

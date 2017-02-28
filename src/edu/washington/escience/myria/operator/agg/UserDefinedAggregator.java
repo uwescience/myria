@@ -1,17 +1,12 @@
 package edu.washington.escience.myria.operator.agg;
 
-import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
 import java.util.List;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.expression.evaluate.GenericEvaluator;
 import edu.washington.escience.myria.expression.evaluate.PythonUDFEvaluator;
-import edu.washington.escience.myria.expression.evaluate.ScriptEvalInterface;
-import edu.washington.escience.myria.storage.AppendableTable;
-import edu.washington.escience.myria.storage.ReadableTable;
-import edu.washington.escience.myria.storage.Tuple;
+import edu.washington.escience.myria.storage.MutableTupleBuffer;
 import edu.washington.escience.myria.storage.TupleBatch;
 
 /**
@@ -24,100 +19,64 @@ public class UserDefinedAggregator implements Aggregator {
   private static final org.slf4j.Logger LOGGER =
       org.slf4j.LoggerFactory.getLogger(UserDefinedAggregator.class);
 
-  /**
-   * The state of the aggregate variables.
-   */
-  protected final Tuple initialState;
-  /**
-   * Evaluators that update the {@link #state}. One evaluator for each expression in {@link #updateExpressions}.
-   */
-  protected final ScriptEvalInterface updateEvaluator;
-  /**
-   * One evaluator for each expression in {@link #emitExpressions}.
-   */
-  protected final List<GenericEvaluator> emitEvaluators;
-  /**
-   * One evaluator for each python expression.
-   */
-  protected final List<PythonUDFEvaluator> pyUDFEvaluators;
+  /** Evaluators that initialize the state. */
+  protected final List<GenericEvaluator> initEvaluators;
+  /** Evaluators that update the {@link #state}. One evaluator for each expression in {@link #updateExpressions}. */
+  protected final List<GenericEvaluator> updateEvaluators;
+  /** The Schema of the state. */
+  private final Schema stateSchema;
 
   /**
-   * The Schema of the tuples produced by this aggregator.
-   */
-  protected final Schema resultSchema;
-
-  /**
-   * @param state the initialized state of the tuple
-   * @param updateEvaluator updates the state given an input row
-   * @param pyUDFEvaluators for python expression evaluation.
+   * @param initEvaluators initialize the state
+   * @param updateEvaluators updates the state given an input row
+   * @param pyUpdateEvaluators for python expression evaluation.
    * @param emitEvaluators the evaluators that finalize the state
    * @param resultSchema the schema of the tuples produced by this aggregator
+   * @param stateSchema the schema of the state
    */
   public UserDefinedAggregator(
-      final Tuple state,
-      final ScriptEvalInterface updateEvaluator,
-      final List<PythonUDFEvaluator> pyUDFEvaluators,
-      final List<GenericEvaluator> emitEvaluators,
-      final Schema resultSchema) {
-    initialState = state;
-    this.updateEvaluator = updateEvaluator;
-    this.emitEvaluators = emitEvaluators;
-    this.pyUDFEvaluators = pyUDFEvaluators;
-    this.resultSchema = resultSchema;
+      final List<GenericEvaluator> initEvaluators,
+      final List<GenericEvaluator> updateEvaluators,
+      final Schema resultSchema,
+      final Schema stateSchema) {
+    this.initEvaluators = initEvaluators;
+    this.updateEvaluators = updateEvaluators;
+    this.stateSchema = stateSchema;
   }
 
   @Override
-  public void add(final ReadableTable from, final Object state) throws DbException {
-    for (int row = 0; row < from.numTuples(); ++row) {
-      addRow(from, row, state);
-    }
+  public int getStateSize() {
+    return stateSchema.numColumns();
   }
 
   @Override
-  public void addRow(final ReadableTable from, final int row, final Object state)
+  public void addRow(
+      TupleBatch input, int inputRow, MutableTupleBuffer state, int stateRow, final int offset)
       throws DbException {
-    if (pyUDFEvaluators.size() > 0) {
-      throw new DbException("this aggregate has python UDF, StatefulAggreagte should be called!");
-    }
-    Tuple stateTuple = (Tuple) state;
-
-    try {
-      if (updateEvaluator != null) {
-        updateEvaluator.evaluate(from, row, stateTuple, stateTuple);
-      }
-
-    } catch (Exception e) {
-      throw new DbException("Error updating UDA state", e);
+    for (GenericEvaluator eval : updateEvaluators) {
+      eval.updateState(input, inputRow, state, stateRow, offset);
     }
   }
 
   @Override
-  public void getResult(final AppendableTable dest, final int destColumn, final Object state)
+  public void initState(final MutableTupleBuffer state, final int offset) throws DbException {
+    for (GenericEvaluator eval : initEvaluators) {
+      eval.updateState(null, 0, state, 0, offset);
+    }
+  }
+
+  /**
+   * @param tb
+   * @param offset
+   * @throws DbException
+   */
+  public void finalizePythonUpdaters(final MutableTupleBuffer tb, final int offset)
       throws DbException {
-    Tuple stateTuple = (Tuple) state;
-    for (int index = 0; index < emitEvaluators.size(); index++) {
-      final GenericEvaluator evaluator = emitEvaluators.get(index);
-      try {
-        evaluator.eval(null, 0, null, dest.asWritableColumn(destColumn + index), stateTuple);
-      } catch (InvocationTargetException e) {
-        throw new DbException("Error finalizing aggregate", e);
+    for (int i = 0; i < updateEvaluators.size(); ++i) {
+      GenericEvaluator eval = updateEvaluators.get(i);
+      if (eval instanceof PythonUDFEvaluator) {
+        ((PythonUDFEvaluator) eval).evalGroups(tb, offset + i);
       }
     }
-  }
-
-  @Override
-  public Schema getResultSchema() {
-    return resultSchema;
-  }
-
-  @Override
-  public Object getInitialState() {
-
-    return initialState.clone();
-  }
-
-  @Override
-  public void add(final List<TupleBatch> from) throws DbException {
-    throw new DbException(" method not implemented");
   }
 }

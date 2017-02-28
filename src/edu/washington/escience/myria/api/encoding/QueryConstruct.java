@@ -39,9 +39,9 @@ import edu.washington.escience.myria.operator.IDBController;
 import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.operator.RootOperator;
 import edu.washington.escience.myria.operator.UpdateCatalog;
-import edu.washington.escience.myria.operator.agg.MultiGroupByAggregate;
+import edu.washington.escience.myria.operator.agg.Aggregate;
 import edu.washington.escience.myria.operator.agg.PrimitiveAggregator.AggregationOp;
-import edu.washington.escience.myria.operator.agg.SingleColumnAggregatorFactory;
+import edu.washington.escience.myria.operator.agg.PrimitiveAggregatorFactory;
 import edu.washington.escience.myria.operator.network.CollectProducer;
 import edu.washington.escience.myria.operator.network.Consumer;
 import edu.washington.escience.myria.operator.network.EOSController;
@@ -663,9 +663,9 @@ public class QueryConstruct {
 
     /* Master plan: collect, sum, insert the updates. */
     Consumer consumer = new Consumer(schema, collectId, workerPlans.keySet());
-    MultiGroupByAggregate aggCounts =
-        new MultiGroupByAggregate(
-            consumer, new int[] {0, 1, 2}, new SingleColumnAggregatorFactory(3, AggregationOp.SUM));
+    Aggregate aggCounts =
+        new Aggregate(
+            consumer, new int[] {0, 1, 2}, new PrimitiveAggregatorFactory(3, AggregationOp.SUM));
     UpdateCatalog catalog = new UpdateCatalog(aggCounts, server);
     SubQueryPlan masterPlan = new SubQueryPlan(catalog);
 

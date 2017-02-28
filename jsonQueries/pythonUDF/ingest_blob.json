@@ -8,10 +8,9 @@
     "columnTypes" : ["LONG_TYPE", "LONG_TYPE","LONG_TYPE","STRING_TYPE"],
     "columnNames" : ["id", "subjid","imgid" ,"image"]
   },
-  "s3Source" : {
-    "dataType" : "S3",
-    "s3Uri" : "s3://imagedb-data/dmridatasample.csv"
+  "source" : {
+    "dataType" : "URI",
+    "uri" : "s3://imagedb-data/dmridatasample.csv"
   },
-  "delimiter": ",",
-   "workers": [1,2]
+  "delimiter": ","
  }

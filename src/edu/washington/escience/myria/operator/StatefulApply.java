@@ -1,7 +1,6 @@
 package edu.washington.escience.myria.operator;
 
 import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -99,7 +98,7 @@ public class StatefulApply extends Apply {
   }
 
   @Override
-  protected TupleBatch fetchNextReady() throws DbException, InvocationTargetException, IOException {
+  protected TupleBatch fetchNextReady() throws DbException, IOException {
     Operator child = getChild();
 
     if (child.eoi() || getChild().eos()) {
@@ -123,7 +122,7 @@ public class StatefulApply extends Apply {
           !evaluator.getExpression().isMultiValued(),
           "A multivalued expression cannot be used in StatefulApply.");
       if (!evaluator.needsState() || evaluator.isCopyFromInput()) {
-        output.set(columnIdx, evaluator.evaluateColumn(tb).getResultColumns().get(0));
+        output.set(columnIdx, evaluator.evalTupleBatch(tb, getSchema()).getResultColumns().get(0));
       } else {
         needState.add(columnIdx);
       }
@@ -144,14 +143,14 @@ public class StatefulApply extends Apply {
 
         updateEvaluators
             .get(columnIdx)
-            .eval(tb, rowIdx, null, newState.getColumn(columnIdx), state);
+            .eval(tb, rowIdx, state, 0, newState.asWritableColumn(columnIdx), null);
       }
       state = newState;
       // apply expression
       for (int index = 0; index < needState.size(); index++) {
         final GenericEvaluator evaluator = getEmitEvaluators().get(needState.get(index));
         // TODO: optimize the case where the state is copied directly
-        evaluator.eval(tb, rowIdx, null, columnBuilders.get(index), state);
+        evaluator.eval(tb, rowIdx, state, 0, columnBuilders.get(index), null);
       }
     }
 
@@ -175,20 +174,19 @@ public class StatefulApply extends Apply {
     // these can only be generic or python expressions.
     for (Expression expr : getEmitExpressions()) {
       GenericEvaluator evaluator;
-      if (expr.isRegisteredUDF()) {
+      if (expr.isConstant()) {
+        evaluator =
+            new ConstantEvaluator(expr, new ExpressionOperatorParameter(inputSchema, getNodeID()));
+      } else if (expr.isRegisteredPythonUDF()) {
         evaluator =
             new PythonUDFEvaluator(
                 expr,
-                new ExpressionOperatorParameter(inputSchema, getStateSchema(), getNodeID()),
-                getPythonFunctionRegistrar());
-
+                new ExpressionOperatorParameter(
+                    inputSchema, getStateSchema(), getNodeID(), getPythonFunctionRegistrar()));
       } else {
         evaluator =
             new GenericEvaluator(
                 expr, new ExpressionOperatorParameter(inputSchema, getStateSchema(), getNodeID()));
-      }
-      if (evaluator.needsCompiling()) {
-        evaluator.compile();
       }
       evaluators.add(evaluator);
     }
@@ -205,25 +203,23 @@ public class StatefulApply extends Apply {
       ConstantEvaluator evaluator =
           new ConstantEvaluator(expr, new ExpressionOperatorParameter(inputSchema, getNodeID()));
       evaluator.compile();
-      state.set(columnIdx, evaluator.eval());
+      state.putObject(columnIdx, evaluator.eval());
     }
     // initialize update evaluators -- these can be generic or python evaluators
 
     for (Expression expr : updateExpressions) {
       GenericEvaluator evaluator;
-      if (expr.isRegisteredUDF()) {
+      if (expr.isRegisteredPythonUDF()) {
         evaluator =
             new PythonUDFEvaluator(
                 expr,
-                new ExpressionOperatorParameter(inputSchema, getStateSchema(), getNodeID()),
-                getPythonFunctionRegistrar());
-
+                new ExpressionOperatorParameter(
+                    inputSchema, getStateSchema(), getNodeID(), getPythonFunctionRegistrar()));
       } else {
         evaluator =
             new GenericEvaluator(
                 expr, new ExpressionOperatorParameter(inputSchema, getStateSchema(), getNodeID()));
       }
-
       evaluator.compile();
       updateEvaluators.add(evaluator);
     }

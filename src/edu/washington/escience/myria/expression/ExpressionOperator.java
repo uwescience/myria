@@ -6,6 +6,8 @@ package edu.washington.escience.myria.expression;
 import java.io.Serializable;
 import java.util.List;
 
+import javax.annotation.Nonnull;
+
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonSubTypes.Type;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
@@ -105,5 +107,6 @@ public abstract class ExpressionOperator implements Serializable {
   /**
    * @return all children
    */
+  @Nonnull
   public abstract List<ExpressionOperator> getChildren();
 }

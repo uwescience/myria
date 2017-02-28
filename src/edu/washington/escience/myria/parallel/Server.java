@@ -107,10 +107,8 @@ import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.operator.RootOperator;
 import edu.washington.escience.myria.operator.TupleSink;
 import edu.washington.escience.myria.operator.agg.Aggregate;
-import edu.washington.escience.myria.operator.agg.MultiGroupByAggregate;
 import edu.washington.escience.myria.operator.agg.PrimitiveAggregator.AggregationOp;
-import edu.washington.escience.myria.operator.agg.SingleColumnAggregatorFactory;
-import edu.washington.escience.myria.operator.agg.SingleGroupByAggregate;
+import edu.washington.escience.myria.operator.agg.PrimitiveAggregatorFactory;
 import edu.washington.escience.myria.operator.network.CollectProducer;
 import edu.washington.escience.myria.operator.network.Consumer;
 import edu.washington.escience.myria.operator.network.GenericShuffleProducer;
@@ -145,6 +143,7 @@ import edu.washington.escience.myria.tools.MyriaWorkerConfigurationModule;
 import edu.washington.escience.myria.util.IPCUtils;
 import edu.washington.escience.myria.util.concurrent.ErrorLoggingTimerTask;
 import edu.washington.escience.myria.util.concurrent.RenamingThreadFactory;
+
 /**
  * The master entrance.
  */
@@ -919,7 +918,7 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
   }
 
   /**
-   *  Helper method for parallel ingest.
+   * Helper method for parallel ingest.
    *
    * @param fileSize the size of the file to ingest
    * @param allWorkers all workers considered for ingest
@@ -1123,15 +1122,15 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
    * Create a function and register it in the catalog.
    *
    * @param name the name of the function
-   * @param definition the function definition  - this is postgres specific for postgres and function text for python.
-   * @param outputSchema the output schema of the function
+   * @param definition the function definition - this is postgres specific for postgres and function text for python.
+   * @param outputType the output schema of the function
    * @param isMultiValued indicates if the function returns multiple tuples.
    * @param lang this is the language of the function.
    * @param binary this is an optional parameter for function for base64 encoded binary for function.
    * @param workers list of workers on which the function is registered: default is all.
    * @return the status of the function
    */
-  public String createFunction(
+  public long createFunction(
       final String name,
       final String definition,
       final String outputType,
@@ -1140,8 +1139,8 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
       final String binary,
       final Set<Integer> workers)
       throws DbException, InterruptedException {
+    long queryID = 0;
 
-    String response = "";
     Set<Integer> actualWorkers = workers;
     if (workers == null) {
       actualWorkers = getWorkers().keySet();
@@ -1172,9 +1171,9 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
               workerPlans);
 
       try {
-        qf.get().getQueryId();
+        queryID = qf.get().getQueryId();
       } catch (ExecutionException e) {
-        throw new DbException("Error executing query", e.getCause());
+        throw new DbException("Error executing query", e);
       }
     } catch (CatalogException e) {
       throw new DbException(e);
@@ -1185,10 +1184,10 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
     } catch (CatalogException e) {
       throw new DbException(e);
     }
-    return response;
+    return queryID;
   }
+
   /**
-   *
    * @return list of functions from the catalog
    * @throws DbException in case of error.
    */
@@ -1199,8 +1198,8 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
       throw new DbException(e);
     }
   }
+
   /**
-   *
    * @param functionName : name of the function to retrieve.
    * @return functiondetails for the function
    * @throws DbException in case of error.
@@ -1591,9 +1590,9 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
     final Consumer consumer =
         new Consumer(addWorkerId.getSchema(), operatorId, ImmutableSet.copyOf(actualWorkers));
 
-    final MultiGroupByAggregate aggregate =
-        new MultiGroupByAggregate(
-            consumer, new int[] {0, 1, 2}, new SingleColumnAggregatorFactory(3, AggregationOp.SUM));
+    final Aggregate aggregate =
+        new Aggregate(
+            consumer, new int[] {0, 1, 2}, new PrimitiveAggregatorFactory(3, AggregationOp.SUM));
 
     // rename columns
     ImmutableList.Builder<Expression> renameExpressions = ImmutableList.builder();
@@ -1733,13 +1732,13 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
     final Consumer consumer =
         new Consumer(scan.getSchema(), operatorId, ImmutableSet.copyOf(actualWorkers));
 
-    final SingleGroupByAggregate aggregate =
-        new SingleGroupByAggregate(
+    final Aggregate aggregate =
+        new Aggregate(
             consumer,
-            0,
-            new SingleColumnAggregatorFactory(1, AggregationOp.SUM),
-            new SingleColumnAggregatorFactory(2, AggregationOp.MIN),
-            new SingleColumnAggregatorFactory(3, AggregationOp.MAX));
+            new int[] {0},
+            new PrimitiveAggregatorFactory(1, AggregationOp.SUM),
+            new PrimitiveAggregatorFactory(2, AggregationOp.MIN),
+            new PrimitiveAggregatorFactory(3, AggregationOp.MAX));
 
     // rename columns
     ImmutableList.Builder<Expression> renameExpressions = ImmutableList.builder();
@@ -1988,9 +1987,9 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
         new Consumer(scan.getSchema(), operatorId, ImmutableSet.copyOf(actualWorkers));
 
     // sum up the number of workers working
-    final MultiGroupByAggregate sumAggregate =
-        new MultiGroupByAggregate(
-            consumer, new int[] {0, 1}, new SingleColumnAggregatorFactory(1, AggregationOp.COUNT));
+    final Aggregate sumAggregate =
+        new Aggregate(
+            consumer, new int[] {0, 1}, new PrimitiveAggregatorFactory(1, AggregationOp.COUNT));
     // rename columns
     ImmutableList.Builder<Expression> renameExpressions = ImmutableList.builder();
     renameExpressions.add(new Expression("opId", new VariableExpression(0)));
@@ -2072,8 +2071,9 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
     final Aggregate sumAggregate =
         new Aggregate(
             consumer,
-            new SingleColumnAggregatorFactory(0, AggregationOp.MIN),
-            new SingleColumnAggregatorFactory(1, AggregationOp.MAX));
+            new int[] {},
+            new PrimitiveAggregatorFactory(0, AggregationOp.MIN),
+            new PrimitiveAggregatorFactory(1, AggregationOp.MAX));
 
     TupleSink output = new TupleSink(sumAggregate, writer, dataSink);
     final SubQueryPlan masterPlan = new SubQueryPlan(output);
@@ -2148,9 +2148,9 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
         new Consumer(scan.getSchema(), operatorId, ImmutableSet.copyOf(actualWorkers));
 
     // sum up contributions
-    final SingleGroupByAggregate sumAggregate =
-        new SingleGroupByAggregate(
-            consumer, 0, new SingleColumnAggregatorFactory(1, AggregationOp.AVG));
+    final Aggregate sumAggregate =
+        new Aggregate(
+            consumer, new int[] {0}, new PrimitiveAggregatorFactory(1, AggregationOp.AVG));
 
     // rename columns
     ImmutableList.Builder<Expression> renameExpressions = ImmutableList.builder();

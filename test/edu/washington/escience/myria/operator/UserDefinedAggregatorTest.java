@@ -68,7 +68,7 @@ public class UserDefinedAggregatorTest {
         new UserDefinedAggregatorFactory(Initializers.build(), Updaters.build(), Emitters.build());
     factory = reader.readValue(writer.writeValueAsString(factory));
 
-    Aggregate agg = new Aggregate(new BatchTupleSource(tbb), factory);
+    Aggregate agg = new Aggregate(new BatchTupleSource(tbb), new int[] {}, factory);
     agg.open(TestEnvVars.get());
     TupleBatch result;
     int resultSize = 0;
@@ -121,7 +121,7 @@ public class UserDefinedAggregatorTest {
         new UserDefinedAggregatorFactory(Initializers.build(), Updaters.build(), Emitters.build());
     factory = reader.readValue(writer.writeValueAsString(factory));
 
-    Aggregate agg = new Aggregate(new BatchTupleSource(tbb), factory);
+    Aggregate agg = new Aggregate(new BatchTupleSource(tbb), new int[] {}, factory);
     agg.open(TestEnvVars.get());
     TupleBatch result;
     int resultSize = 0;
@@ -186,7 +186,7 @@ public class UserDefinedAggregatorTest {
         new UserDefinedAggregatorFactory(Initializers.build(), Updaters.build(), Emitters.build());
     factory = reader.readValue(writer.writeValueAsString(factory));
 
-    Aggregate agg = new Aggregate(new BatchTupleSource(tbb), factory);
+    Aggregate agg = new Aggregate(new BatchTupleSource(tbb), new int[] {}, factory);
     agg.open(TestEnvVars.get());
     TupleBatch result;
     int resultSize = 0;
@@ -197,7 +197,7 @@ public class UserDefinedAggregatorTest {
         assertEquals(2, result.numColumns());
         assertEquals(Type.LONG_TYPE, result.getSchema().getColumnType(0));
         assertEquals(Type.STRING_TYPE, result.getSchema().getColumnType(1));
-        assertEquals(9999, result.getLong(0, 0));
+        assertEquals(10000, result.getLong(0, 0));
         assertEquals("Foo9999", result.getString(1, 0));
         resultSize += result.numTuples();
       }

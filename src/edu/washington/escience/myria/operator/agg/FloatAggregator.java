@@ -1,165 +1,110 @@
 package edu.washington.escience.myria.operator.agg;
 
-import java.util.Objects;
-import java.util.Set;
-
 import com.google.common.collect.ImmutableSet;
-import com.google.common.math.LongMath;
 
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.storage.AppendableTable;
-import edu.washington.escience.myria.storage.ReadableTable;
+import edu.washington.escience.myria.storage.MutableTupleBuffer;
+import edu.washington.escience.myria.storage.ReadableColumn;
+import edu.washington.escience.myria.storage.ReplaceableColumn;
+import edu.washington.escience.myria.storage.TupleBatch;
 
 /**
  * Knows how to compute some aggregates over a FloatColumn.
  */
 public final class FloatAggregator extends PrimitiveAggregator {
 
+  protected FloatAggregator(final String inputName, final int column, final AggregationOp aggOp) {
+    super(inputName, column, aggOp);
+  }
+
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
-  /** Which column of the input this aggregator operates over. */
-  private final int fromColumn;
-
-  /**
-   * Aggregate operations applicable for float columns.
-   */
-  public static final Set<AggregationOp> AVAILABLE_AGG =
-      ImmutableSet.of(
-          AggregationOp.COUNT,
-          AggregationOp.SUM,
-          AggregationOp.MAX,
-          AggregationOp.MIN,
-          AggregationOp.AVG,
-          AggregationOp.STDEV);
-
-  /**
-   * @param aFieldName aggregate field name for use in output schema.
-   * @param aggOps the aggregate operation to simultaneously compute.
-   * @param column the column being aggregated over.
-   */
-  public FloatAggregator(final String aFieldName, final AggregationOp[] aggOps, final int column) {
-    super(aFieldName, aggOps);
-    fromColumn = column;
-  }
 
   @Override
-  public void add(final ReadableTable from, final Object state) {
-    Objects.requireNonNull(from, "from");
-    FloatAggState f = (FloatAggState) state;
-    final int numTuples = from.numTuples();
-    if (numTuples == 0) {
-      return;
-    }
-
-    if (needsCount) {
-      f.count = LongMath.checkedAdd(f.count, numTuples);
-    }
-
-    if (!needsStats) {
-      return;
-    }
-    for (int i = 0; i < numTuples; i++) {
-      addFloatStats(from.getFloat(fromColumn, i), f);
+  public void addRow(
+      final TupleBatch from,
+      final int fromRow,
+      final MutableTupleBuffer to,
+      final int toRow,
+      final int offset) {
+    ReadableColumn fromCol = from.asColumn(column);
+    ReplaceableColumn toCol = to.getColumn(offset, toRow);
+    final int inColumnRow = to.getInColumnIndex(toRow);
+    switch (aggOp) {
+      case COUNT:
+        toCol.replaceLong(toCol.getLong(inColumnRow) + 1, inColumnRow);
+        break;
+      case MAX:
+        toCol.replaceFloat(
+            Math.max(fromCol.getFloat(fromRow), toCol.getFloat(inColumnRow)), inColumnRow);
+        break;
+      case MIN:
+        toCol.replaceFloat(
+            Math.min(fromCol.getFloat(fromRow), toCol.getFloat(inColumnRow)), inColumnRow);
+        break;
+      case SUM:
+        toCol.replaceDouble(fromCol.getFloat(fromRow) + toCol.getDouble(inColumnRow), inColumnRow);
+        break;
+      case SUM_SQUARED:
+        toCol.replaceDouble(
+            (double) fromCol.getFloat(fromRow) * fromCol.getFloat(fromRow)
+                + toCol.getDouble(inColumnRow),
+            inColumnRow);
+        break;
+      default:
+        throw new IllegalArgumentException(aggOp + " is invalid");
     }
   }
 
   @Override
-  public void addRow(final ReadableTable table, final int row, final Object state) {
-    Objects.requireNonNull(table, "table");
-    FloatAggState f = (FloatAggState) state;
-    if (needsCount) {
-      f.count = LongMath.checkedAdd(f.count, 1);
-    }
-    if (needsStats) {
-      addFloatStats(table.getFloat(fromColumn, row), f);
-    }
-  }
-
-  /**
-   * Helper function to add value to this aggregator. Note this does NOT update count.
-   *
-   * @param value the value to be added
-   * @param state the state of the aggregate, which will be mutated.
-   */
-  private void addFloatStats(final float value, final FloatAggState state) {
-    if (needsSum) {
-      state.sum += value;
-    }
-    if (needsSumSq) {
-      state.sumSquared += value * value;
-    }
-    if (needsMin) {
-      state.min = Math.min(state.min, value);
-    }
-    if (needsMax) {
-      state.max = Math.max(state.max, value);
-    }
+  protected boolean isSupported(final AggregationOp aggOp) {
+    return ImmutableSet.of(
+            AggregationOp.COUNT,
+            AggregationOp.MIN,
+            AggregationOp.MAX,
+            AggregationOp.SUM,
+            AggregationOp.AVG,
+            AggregationOp.STDEV,
+            AggregationOp.SUM_SQUARED)
+        .contains(aggOp);
   }
 
   @Override
-  public void getResult(final AppendableTable dest, final int destColumn, final Object state) {
-    Objects.requireNonNull(dest, "dest");
-    FloatAggState f = (FloatAggState) state;
-    int idx = destColumn;
-    for (AggregationOp op : aggOps) {
-      switch (op) {
-        case AVG:
-          dest.putDouble(idx, f.sum * 1.0 / f.count);
-          break;
-        case COUNT:
-          dest.putLong(idx, f.count);
-          break;
-        case MAX:
-          dest.putFloat(idx, f.max);
-          break;
-        case MIN:
-          dest.putFloat(idx, f.min);
-          break;
-        case STDEV:
-          double first = f.sumSquared / f.count;
-          double second = f.sum / f.count;
-          double stdev = Math.sqrt(first - second * second);
-          dest.putDouble(idx, stdev);
-          break;
-        case SUM:
-          dest.putDouble(idx, f.sum);
-          break;
-      }
-      idx++;
+  protected Type getOutputType() {
+    switch (aggOp) {
+      case COUNT:
+        return Type.LONG_TYPE;
+      case MAX:
+      case MIN:
+        return Type.FLOAT_TYPE;
+      case SUM:
+      case AVG:
+      case STDEV:
+        return Type.DOUBLE_TYPE;
+      default:
+        throw new IllegalArgumentException("Type " + aggOp + " is invalid");
     }
-  }
+  };
 
   @Override
-  public Type getType() {
-    return Type.FLOAT_TYPE;
-  }
-
-  @Override
-  protected Type getSumType() {
-    return Type.DOUBLE_TYPE;
-  }
-
-  @Override
-  protected Set<AggregationOp> getAvailableAgg() {
-    return AVAILABLE_AGG;
-  }
-
-  @Override
-  public Object getInitialState() {
-    return new FloatAggState();
-  }
-
-  /** Private internal class that wraps the state required by this Aggregator as an object. */
-  private final class FloatAggState {
-    /** The number of tuples seen so far. */
-    private long count = 0;
-    /** The minimum value in the aggregated column. */
-    private float min = Float.MAX_VALUE;
-    /** The maximum value in the aggregated column. */
-    private float max = Float.MIN_VALUE;
-    /** The sum of values in the aggregated column. */
-    private double sum = 0;
-    /** private temp variables for computing stdev. */
-    private double sumSquared = 0;
+  public void appendInitValue(AppendableTable data, final int column) {
+    switch (aggOp) {
+      case COUNT:
+        data.putLong(column, 0);
+        break;
+      case SUM:
+      case SUM_SQUARED:
+        data.putDouble(column, 0);
+        break;
+      case MAX:
+        data.putFloat(column, Float.MIN_VALUE);
+        break;
+      case MIN:
+        data.putFloat(column, Float.MAX_VALUE);
+        break;
+      default:
+        throw new IllegalArgumentException("Type " + aggOp + " is invalid");
+    }
   }
 }

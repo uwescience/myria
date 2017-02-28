@@ -1,67 +1,47 @@
 package edu.washington.escience.myria.operator.agg;
 
-import java.io.IOException;
 import java.io.Serializable;
-import java.util.List;
+
+import javax.annotation.Nonnull;
 
 import edu.washington.escience.myria.DbException;
-import edu.washington.escience.myria.Schema;
-import edu.washington.escience.myria.storage.AppendableTable;
-import edu.washington.escience.myria.storage.ReadableTable;
+import edu.washington.escience.myria.storage.MutableTupleBuffer;
 import edu.washington.escience.myria.storage.TupleBatch;
 
 /**
- * The interface for any aggregation.
+ * The interface for any aggregator.
  */
 public interface Aggregator extends Serializable {
 
   /**
-   * Update this aggregate using all rows of the specified table.
+   * Update the aggregate state using the specified row of the specified table.
    *
-   * @param from the source {@link ReadableTable}.
-   * @param state the initial state of the aggregate, which will be mutated.
-   * @throws DbException if there is an error.
+   * @param from the MutableTupleBuffer containing the source tuple.
+   * @param fromRow the row index of the source tuple.
+   * @param to the MutableTupleBuffer containing the state.
+   * @param toRow the row index of the state.
+   * @param offset the column index offset.
+   * @throws DbException
    */
-  void add(ReadableTable from, Object state) throws DbException;
+  public abstract void addRow(
+      @Nonnull final TupleBatch from,
+      final int fromRow,
+      @Nonnull final MutableTupleBuffer to,
+      final int toRow,
+      final int offset)
+      throws DbException;
 
   /**
-   * Update this aggregate using the specified row of the specified table.
-   *
-   * @param from the source {@link ReadableTable}.
-   * @param row the specified row.
-   * @param state the initial state of the aggregate, which will be mutated.
-   * @throws DbException if there is an error.
+   * @return the size of the state schema
    */
-  void addRow(ReadableTable from, int row, Object state) throws DbException;
+  int getStateSize();
 
   /**
-   * Append the aggregate result(s) to the given table starting from the given column.
+   * Initialize a new state by appending initial values to a new row.
    *
-   * @param dest where to store the aggregate result.
-   * @param destColumn the starting index into which aggregates will be output.
-   * @param state the initial state of the aggregate, which will be mutated.
-   * @throws DbException if there is an error.
-   * @throws IOException in case of error.
+   * @param state the table containing internal states
+   * @param offset the column index of state to start from
+   * @throws DbException
    */
-  void getResult(AppendableTable dest, int destColumn, Object state) throws DbException;
-
-  /**
-   * Compute and return the initial state tuple for instances of this {@link Aggregator}.
-   *
-   * @return the initial state tuple for instances of this {@link Aggregator}.
-   */
-  Object getInitialState();
-
-  /**
-   * Compute and return the schema of the outputs of this {@link Aggregator}.
-   *
-   * @return the schema of the outputs of this {@link Aggregator}.
-   */
-  Schema getResultSchema();
-  /**
-   * @param from list of tuple batch to aggregate.
-   * @param state object to which state is written.
-   * @throws DbException in case of error.
-   */
-  void add(List<TupleBatch> from) throws DbException;
+  void initState(@Nonnull final MutableTupleBuffer state, final int offset) throws DbException;
 }

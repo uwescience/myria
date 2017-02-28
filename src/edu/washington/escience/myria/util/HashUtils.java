@@ -155,9 +155,9 @@ public final class HashUtils {
         return hasher.putLong(column.getLong(row));
       case STRING_TYPE:
         return hasher.putObject(column.getString(row), TypeFunnel.INSTANCE);
-      case BLOB_TYPE:
-        return hasher.putObject(column.getBlob(row), TypeFunnel.INSTANCE);
+      default:
+        throw new UnsupportedOperationException(
+            "Hashing a column of type " + column.getType() + " is unsupported");
     }
-    throw new UnsupportedOperationException("Hashing a column of type " + column.getType());
   }
 }
