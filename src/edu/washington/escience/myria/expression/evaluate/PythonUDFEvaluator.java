@@ -18,6 +18,7 @@ import org.codehaus.janino.ExpressionEvaluator;
 
 import com.google.common.base.Preconditions;
 import com.gs.collections.api.iterator.IntIterator;
+import com.gs.collections.impl.list.mutable.primitive.IntArrayList;
 import com.gs.collections.impl.map.mutable.primitive.IntObjectHashMap;
 
 import edu.washington.escience.myria.DbException;
@@ -37,10 +38,9 @@ import edu.washington.escience.myria.functions.PythonFunctionRegistrar;
 import edu.washington.escience.myria.functions.PythonWorker;
 import edu.washington.escience.myria.operator.Apply;
 import edu.washington.escience.myria.operator.StatefulApply;
+import edu.washington.escience.myria.operator.TupleHashTable;
 import edu.washington.escience.myria.storage.MutableTupleBuffer;
 import edu.washington.escience.myria.storage.ReadableTable;
-import edu.washington.escience.myria.storage.TupleBatch;
-import edu.washington.escience.myria.storage.TupleBatchBuffer;
 
 /**
  * An Expression evaluator for Python UDFs. Used in {@link Apply} and {@link StatefulApply}.
@@ -63,7 +63,7 @@ public class PythonUDFEvaluator extends GenericEvaluator {
   /** is expression a flatmap? */
   private Boolean isMultiValued = false;
   /** Tuple buffers for each group key. */
-  private IntObjectHashMap<TupleBatchBuffer> buffer;
+  private TupleHashTable buffer;
   /** The internal state schema. */
   private Schema stateSchema;
 
@@ -112,7 +112,7 @@ public class PythonUDFEvaluator extends GenericEvaluator {
     isMultiValued = fs.getIsMultiValued();
     pyWorker = new PythonWorker();
     pyWorker.sendCodePickle(fs.getBinary(), columnIdxs.length, outputType, isMultiValued);
-    buffer = new IntObjectHashMap<TupleBatchBuffer>();
+    buffer = new TupleHashTable(stateSchema, new int[] {});
   }
 
   /**
@@ -152,17 +152,20 @@ public class PythonUDFEvaluator extends GenericEvaluator {
       final int stateRow,
       final int stateColOffset)
       throws DbException {
-    if (!buffer.containsKey(stateRow)) {
-      buffer.put(stateRow, new TupleBatchBuffer(stateSchema));
+    IntObjectHashMap<IntArrayList> mapping = buffer.getHashCodeToIndices();
+    if (!mapping.containsKey(stateRow)) {
+      mapping.put(stateRow, new IntArrayList());
     }
-    TupleBatchBuffer tb = buffer.get(stateRow);
+    MutableTupleBuffer tb = buffer.getData();
     for (int i = 0; i < columnIdxs.length; ++i) {
       if (stateColumns.contains(i)) {
-        tb.appendFromColumn(i, state.asColumn(columnIdxs[i] + stateColOffset), stateRow);
+        tb.put(i, state.asColumn(columnIdxs[i] + stateColOffset), stateRow);
       } else {
-        tb.appendFromColumn(i, input.asColumn(columnIdxs[i]), inputRow);
+        tb.put(i, input.asColumn(columnIdxs[i]), inputRow);
       }
     }
+    IntArrayList indices = mapping.get(stateRow);
+    indices.add(buffer.numTuples() - 1);
   };
 
   /**
@@ -171,15 +174,17 @@ public class PythonUDFEvaluator extends GenericEvaluator {
    * @throws DbException in case of error
    */
   public void evalGroups(final MutableTupleBuffer state, final int col) throws DbException {
-    IntIterator iter = buffer.keySet().intIterator();
-    while (iter.hasNext()) {
-      int key = iter.next();
-      pyWorker.sendNumTuples(buffer.get(key).numTuples());
-      for (TupleBatch tb : buffer.get(key).getAll()) {
-        for (int tup = 0; tup < tb.numTuples(); tup++) {
-          for (int i = 0; i < tb.numColumns(); ++i) {
-            writeToStream(tb, tup, i);
-          }
+    IntObjectHashMap<IntArrayList> mapping = buffer.getHashCodeToIndices();
+    MutableTupleBuffer data = buffer.getData();
+    IntIterator keyIter = mapping.keySet().intIterator();
+    while (keyIter.hasNext()) {
+      int key = keyIter.next();
+      pyWorker.sendNumTuples(mapping.get(key).size());
+      IntIterator rowIter = mapping.get(key).intIterator();
+      while (rowIter.hasNext()) {
+        int row = rowIter.next();
+        for (int i = 0; i < data.numColumns(); ++i) {
+          writeToStream(data, row, i);
         }
       }
       ColumnBuilder<?> output = ColumnFactory.allocateColumn(outputType);
