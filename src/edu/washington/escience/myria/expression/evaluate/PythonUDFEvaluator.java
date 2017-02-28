@@ -38,9 +38,9 @@ import edu.washington.escience.myria.functions.PythonFunctionRegistrar;
 import edu.washington.escience.myria.functions.PythonWorker;
 import edu.washington.escience.myria.operator.Apply;
 import edu.washington.escience.myria.operator.StatefulApply;
-import edu.washington.escience.myria.operator.TupleHashTable;
 import edu.washington.escience.myria.storage.MutableTupleBuffer;
 import edu.washington.escience.myria.storage.ReadableTable;
+import edu.washington.escience.myria.storage.TupleBuffer;
 
 /**
  * An Expression evaluator for Python UDFs. Used in {@link Apply} and {@link StatefulApply}.
@@ -63,7 +63,9 @@ public class PythonUDFEvaluator extends GenericEvaluator {
   /** is expression a flatmap? */
   private Boolean isMultiValued = false;
   /** Tuple buffers for each group key. */
-  private TupleHashTable buffer;
+  private TupleBuffer buffer;
+  /** Mapping from row indices of state to rows in {@link PythonUDFEvaluator#buffer}. */
+  private IntObjectHashMap<IntArrayList> groups;
   /** The internal state schema. */
   private Schema stateSchema;
 
@@ -112,7 +114,7 @@ public class PythonUDFEvaluator extends GenericEvaluator {
     isMultiValued = fs.getIsMultiValued();
     pyWorker = new PythonWorker();
     pyWorker.sendCodePickle(fs.getBinary(), columnIdxs.length, outputType, isMultiValued);
-    buffer = new TupleHashTable(stateSchema, new int[] {});
+    buffer = new TupleBuffer(stateSchema);
   }
 
   /**
@@ -152,19 +154,17 @@ public class PythonUDFEvaluator extends GenericEvaluator {
       final int stateRow,
       final int stateColOffset)
       throws DbException {
-    IntObjectHashMap<IntArrayList> mapping = buffer.getHashCodeToIndices();
-    if (!mapping.containsKey(stateRow)) {
-      mapping.put(stateRow, new IntArrayList());
+    if (!groups.containsKey(stateRow)) {
+      groups.put(stateRow, new IntArrayList());
     }
-    MutableTupleBuffer tb = buffer.getData();
     for (int i = 0; i < columnIdxs.length; ++i) {
       if (stateColumns.contains(i)) {
-        tb.put(i, state.asColumn(columnIdxs[i] + stateColOffset), stateRow);
+        buffer.put(i, state.asColumn(columnIdxs[i] + stateColOffset), stateRow);
       } else {
-        tb.put(i, input.asColumn(columnIdxs[i]), inputRow);
+        buffer.put(i, input.asColumn(columnIdxs[i]), inputRow);
       }
     }
-    IntArrayList indices = mapping.get(stateRow);
+    IntArrayList indices = groups.get(stateRow);
     indices.add(buffer.numTuples() - 1);
   };
 
@@ -174,17 +174,15 @@ public class PythonUDFEvaluator extends GenericEvaluator {
    * @throws DbException in case of error
    */
   public void evalGroups(final MutableTupleBuffer state, final int col) throws DbException {
-    IntObjectHashMap<IntArrayList> mapping = buffer.getHashCodeToIndices();
-    MutableTupleBuffer data = buffer.getData();
-    IntIterator keyIter = mapping.keySet().intIterator();
+    IntIterator keyIter = groups.keySet().intIterator();
     while (keyIter.hasNext()) {
       int key = keyIter.next();
-      pyWorker.sendNumTuples(mapping.get(key).size());
-      IntIterator rowIter = mapping.get(key).intIterator();
+      pyWorker.sendNumTuples(groups.get(key).size());
+      IntIterator rowIter = groups.get(key).intIterator();
       while (rowIter.hasNext()) {
         int row = rowIter.next();
-        for (int i = 0; i < data.numColumns(); ++i) {
-          writeToStream(data, row, i);
+        for (int i = 0; i < buffer.numColumns(); ++i) {
+          writeToStream(buffer, row, i);
         }
       }
       ColumnBuilder<?> output = ColumnFactory.allocateColumn(outputType);

@@ -349,4 +349,18 @@ public class TupleBuffer implements ReadableTable, AppendableTable {
   public WritableColumn asWritableColumn(final int column) {
     return new WritableSubColumn(this, column);
   }
+
+  /**
+   * Append the specified value to the specified destination column in this TupleBuffer from the source column.
+   *
+   * @param destColumn which column in this TB the value will be inserted.
+   * @param sourceColumn the column from which data will be retrieved.
+   * @param sourceRow the row in the source column from which data will be retrieved.
+   */
+  public final void put(
+      final int destColumn, final ReadableColumn sourceColumn, final int sourceRow) {
+    checkPutIndex(destColumn);
+    TupleUtils.copyValue(sourceColumn, sourceRow, this, destColumn);
+    columnPut(destColumn);
+  }
 }
