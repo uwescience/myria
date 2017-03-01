@@ -1,3 +1,4 @@
+# sudo: false
 # FIXME: Java compiler dies with OOM if run in container
 sudo: required
 dist: trusty
