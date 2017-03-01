@@ -12,8 +12,10 @@ addons:
 before_install:
 - sh travis/before_install.sh
 - export TERM=dumb
-script: ./gradlew shadowJar check && ./myriadeploy/launch_local_cluster & MYRIA_PID=$! && sleep 60 && python ~/myria-web/appengine/myria_web_main.py & MYRIA_WEB_PID=$! && sleep 60 && ./integration_tests.py && kill -0 $MYRIA_PID && kill -0 $MYRIA_WEB_PID
+script: ./gradlew shadowJar check && ./myriadeploy/launch_local_cluster > ./myria.log 2>&1 & MYRIA_PID=$! && sleep 60 && python ~/myria-web/appengine/myria_web_main.py > ./myria-web.log 2>&1 & MYRIA_WEB_PID=$! && sleep 60 && ./integration_tests.py && kill -0 $MYRIA_PID && kill -0 $MYRIA_WEB_PID
 after_failure:
+cat ./myria.log
+cat ./myria-web.log
 - find . -name '*.stderr' | xargs cat
 after_success:
 - ./gradlew jacocoTestReport coveralls
