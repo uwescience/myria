@@ -81,7 +81,7 @@ store(CC, CC_output);
             cc_input.write('%d,%d\n' % (edge[0], edge[1]))
         cc_input.close()
 
-        self.execute(self.get_program(cc_input.name))
+self.execute(self.get_program(cc_input.name))
         relation = MyriaRelation('public:adhoc:CC_output')
         results = relation.to_dict()
         print edges
@@ -93,10 +93,8 @@ store(CC, CC_output);
 
 class IngestEmptyQueryTest(MyriaTestBase):
     def test(self):
-        # Create empty file
-        with NamedTemporaryFile() as f:
-            #TODO change URL to local file
-            program = """
+        #TODO change URL to local file
+        program = """
 emptyrelation = load('https://s3-us-west-2.amazonaws.com/bhaynestemp/emptyrelation', csv(schema(foo:string, bar:int)));
 store(emptyrelation, emptyrelation);
 """
@@ -108,35 +106,45 @@ store(emptyrelation, emptyrelation);
 
 class UploadAndReplaceDataTest(MyriaTestBase):
     def test(self):
-        with NamedTemporaryFile() as f:
-            data = "foo,3242\n" \
-                   "bar,321\n"\
-                   "baz,104"
-            f.write(data)
-            #TODO change URL to local file
-            program = """
+        data = "foo,3242\n" \
+               "bar,321\n"\
+               "baz,104"
+        #TODO change URL to local file
+        program = """
 uploaddatatest = load('https://s3-us-west-2.amazonaws.com/bhaynestemp/uploaddatatest', csv(schema(s:string, i:int)));
 store(uploaddatatest, uploaddatatest);
 """
-            expected = [{u's': u'foo', u'i': 3242},
-                        {u's': u'bar', u'i': 321},
-                        {u's': u'baz', u'i': 104}]
-            query = MyriaQuery.submit(program)
-            self.assertEqual(query.status, 'SUCCESS')
-            self.assertListOfDictsEqual(query.to_dict(), expected)
+        expected = [{u's': u'foo', u'i': 3242},
+                    {u's': u'bar', u'i': 321},
+                    {u's': u'baz', u'i': 104}]
+        query = MyriaQuery.submit(program)
+        self.assertEqual(query.status, 'SUCCESS')
+        self.assertListOfDictsEqual(query.to_dict(), expected)
 
-            # Now replace with another relation
-            program = """
+        # Now replace with another relation
+        program = """
 uploaddatatest = load('https://s3-us-west-2.amazonaws.com/bhaynestemp/uploaddatatest2',
                        csv(schema(s:string, i:int), delimiter='\\t'));
 store(uploaddatatest, uploaddatatest);
 """
-            expected = [{u's': u'mexico', u'i': 42},
-                        {u's': u'poland', u'i': 12342},
-                        {u's': u'belize', u'i': 802304}]
-            query = MyriaQuery.submit(program)
-            self.assertEqual(query.status, 'SUCCESS')
-            self.assertListOfDictsEqual(query.to_dict(), expected)
+        expected = [{u's': u'mexico', u'i': 42},
+                    {u's': u'poland', u'i': 12342},
+                    {u's': u'belize', u'i': 802304}]
+        query = MyriaQuery.submit(program)
+        self.assertEqual(query.status, 'SUCCESS')
+        self.assertListOfDictsEqual(query.to_dict(), expected)
+
+
+class BadDelimiterTest(MyriaTestBase):
+    def test(self):
+        #TODO change URL to local file
+        program = """
+r = load('https://s3-us-west-2.amazonaws.com/bhaynestemp/simple_two_col_int.txt',
+                      csv(schema(x:int, y:int), delimiter=' '));
+store(r, r);
+"""
+        query = MyriaQuery.submit(program)
+        self.assertEqual(query.status, 'ERROR')
 
 
 if __name__ == '__main__':
