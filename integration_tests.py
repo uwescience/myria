@@ -27,7 +27,7 @@ store(x, powersOfTwo);
         relation = MyriaRelation('public:adhoc:powersOfTwo')
         results = relation.to_dict()
         expected = [{'val': 32, 'exp': 5}]
-        assertEqual(results, expected)
+        self.assertEqual(results, expected)
 
 
 if __name__ == '__main__':
