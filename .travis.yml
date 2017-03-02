@@ -34,7 +34,7 @@ after_success:
 - echo "MYRIA_WEB_PID $MYRIA_WEB_PID"
 - cat ./myria.log
 - cat ./myria-web.log
-- find . -name '*.stderr' | xargs cat
+- find . -name '*.stdout' | xargs cat
 - ./gradlew jacocoTestReport coveralls
 cache:
   directories:
