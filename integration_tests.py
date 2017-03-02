@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import unittest
-from myria import MyriaConnection, MyriaRelation
+from myria import MyriaConnection, MyriaRelation, MyriaQuery, MyriaError
 
 
 class MyriaTestBase(unittest.TestCase):
@@ -9,9 +9,6 @@ class MyriaTestBase(unittest.TestCase):
         connection = MyriaConnection(hostname='localhost', port=8753, execution_url="http://127.0.0.1:8080")
         MyriaRelation.DefaultConnection = connection
         self.connection = connection
-
-    def execute(self, program):
-        self.connection.execute_program(program=program)
 
 
 class DoWhileTest(MyriaTestBase):
@@ -23,9 +20,7 @@ do
 while [from x emit max(exp) < 5];
 store(x, powersOfTwo);
 """
-        self.execute(program)
-        relation = MyriaRelation('public:adhoc:powersOfTwo')
-        results = relation.to_dict()
+        results = MyriaQuery.submit(program).to_dict()
         expected = [{'val': 32, 'exp': 5}]
         self.assertEqual(results, expected)
 
