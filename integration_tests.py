@@ -20,9 +20,11 @@ do
 while [from x emit max(exp) < 5];
 store(x, powersOfTwo);
 """
-        results = MyriaQuery.submit(program).to_dict()
+        query = MyriaQuery.submit(program)
         expected = [{'val': 32, 'exp': 5}]
-        self.assertEqual(results, expected)
+
+        self.assertEqual(query.status, 'SUCCESS')
+        self.assertEqual(query.to_dict(), expected)
 
 
 class IngestEmptyQueryTest(MyriaTestBase):
@@ -35,7 +37,9 @@ emptyrelation = load('https://s3-us-west-2.amazonaws.com/bhaynestemp/emptyrelati
 store(emptyrelation, emptyrelation);
 """
         expected = []
-        self.assertEqual(MyriaQuery.submit(program).to_dict(), expected)
+        query = MyriaQuery.submit(program)
+        self.assertEqual(query.status, 'SUCCESS')
+        self.assertEqual(query.to_dict(), expected)
 
 
 if __name__ == '__main__':
