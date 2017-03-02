@@ -23,7 +23,7 @@ do
 while [from x emit max(exp) < 5];
 store(x, powersOfTwo);
 """
-        execute(program)
+        self.execute(program)
         relation = MyriaRelation('public:adhoc:powersOfTwo')
         results = relation.to_dict()
         expected = [{'val': 32, 'exp': 5}]
