@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import unittest
+from tempfile import NamedTemporaryFile
 from myria import MyriaConnection, MyriaRelation, MyriaQuery, MyriaError
 
 
@@ -9,7 +10,6 @@ class MyriaTestBase(unittest.TestCase):
         connection = MyriaConnection(hostname='localhost', port=8753, execution_url="http://127.0.0.1:8080")
         MyriaRelation.DefaultConnection = connection
         self.connection = connection
-
 
 class DoWhileTest(MyriaTestBase):
     def test(self):
@@ -23,6 +23,19 @@ store(x, powersOfTwo);
         results = MyriaQuery.submit(program).to_dict()
         expected = [{'val': 32, 'exp': 5}]
         self.assertEqual(results, expected)
+
+
+class IngestEmptyQueryTest(MyriaTestBase):
+    def test(self):
+        # Create empty file
+        with NamedTemporaryFile() as f:
+            #TODO change URL to local file
+            program = """
+emptyrelation = load('https://s3-us-west-2.amazonaws.com/bhaynestemp/emptyrelation', csv(schema(foo:string, bar:int)));
+store(emptyrelation, emptyrelation);
+"""
+        expected = []
+        self.assertEqual(MyriaQuery.submit(program).to_dict(), expected)
 
 
 if __name__ == '__main__':
