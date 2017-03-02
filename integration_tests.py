@@ -2,6 +2,7 @@
 
 import unittest
 from collections import Counter
+import random
 from tempfile import NamedTemporaryFile
 from myria import MyriaConnection, MyriaRelation, MyriaQuery, MyriaError
 
@@ -12,9 +13,13 @@ class MyriaTestBase(unittest.TestCase):
         MyriaRelation.DefaultConnection = connection
         self.connection = connection
 
+    def execute(self, program):
+        self.connection.execute_program(program=program)
+
     def assertListOfDictsEqual(self, left, right):
         self.assertEqual(Counter([kv for d in left for kv in d.items()]),
                          Counter([kv for d in right for kv in d.items()]))
+
 
 class DoWhileTest(MyriaTestBase):
     def test(self):
@@ -30,6 +35,60 @@ store(x, powersOfTwo);
 
         self.assertEqual(query.status, 'SUCCESS')
         self.assertListOfDictsEqual(query.to_dict(), expected)
+
+
+class ConnectedComponentTest(MyriaTestBase):
+    MAXN = 10
+
+    def get_program(self, inputfile):
+        return """
+T1 = load("file://%s", csv(schema(src:int, dst:int), skip=0));
+store(T1, CC_input);
+E = scan(CC_input);
+V = [from E emit src as x] + [from E emit dst as x];
+V = select distinct x from V;
+do
+  CC = [nid, MIN(cid) as cid] <-
+    [from V emit V.x as nid, V.x as cid] +
+    [from E, CC where E.src = CC.nid emit E.dst as nid, CC.cid];
+until convergence pull_idb;
+store(CC, CC_output);
+""" % inputfile
+
+    def get_expected(self, edges):
+        ans = {}
+        for edge in edges:
+            ans[edge[0]] = edge[0]
+            ans[edge[1]] = edge[1]
+        while True:
+            changed = False
+            for edge in edges:
+                if ans[edge[0]] < ans[edge[1]]:
+                    changed = True
+                    ans[edge[1]] = ans[edge[0]]
+            if not changed: break
+        return [{'nid':k, 'cid':ans[k]} for k in ans]
+
+    def test(self):
+        edges = []
+            data = "foo,3242\n" \
+        for i in range(self.MAXN):
+            src = random.randint(0, self.MAXN)
+            dst = random.randint(0, self.MAXN)
+            edges.append((src, dst))
+        cc_input = tempfile.NamedTemporaryFile(suffix='.csv', delete=False)
+        for edge in edges:
+            cc_input.write('%d,%d\n' % (edge[0], edge[1]))
+        cc_input.close()
+
+        self.execute(self.get_program(cc_input.name))
+        relation = MyriaRelation('public:adhoc:CC_output')
+        results = relation.to_dict()
+        print edges
+        results.sort()
+        print results
+        print 'expected', self.get_expected(edges)
+        self.assertEqual(results, self.get_expected(edges))
 
 
 class IngestEmptyQueryTest(MyriaTestBase):
@@ -78,8 +137,6 @@ store(uploaddatatest, uploaddatatest);
             query = MyriaQuery.submit(program)
             self.assertEqual(query.status, 'SUCCESS')
             self.assertListOfDictsEqual(query.to_dict(), expected)
-
-
 
 
 if __name__ == '__main__':
