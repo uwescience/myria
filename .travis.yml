@@ -22,6 +22,7 @@ script:
 - MYRIA_WEB_PID=$!
 - sleep 60
 - ./integration_tests.py
+- kill $MYRIA_WEB_PID
 after_failure:
 - echo "MYRIA_PID $MYRIA_PID"
 - echo "MYRIA_WEB_PID $MYRIA_WEB_PID"
