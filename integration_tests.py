@@ -9,7 +9,7 @@ from myria import MyriaConnection, MyriaRelation, MyriaQuery, MyriaError
 
 class MyriaTestBase(unittest.TestCase):
     def setUp(self):
-        connection = MyriaConnection(hostname='localhost', port=8753, execution_url="http://127.0.0.1:8080")
+        connection = MyriaConnection(hostname='demo.myria.cs.washington.edu', port=8753, execution_url="http://demo.myria.cs.washington.edu")
         MyriaRelation.DefaultConnection = connection
         self.connection = connection
 
@@ -141,6 +141,22 @@ store(r, r);
         query = MyriaQuery.submit(program)
         self.assertEqual(query.status, 'ERROR')
 
+class DbDeleteTest(MyriaTestBase):
+    def test(self):
+        program = """
+        T1 = load("s3://uwdb/sampleData/TwitterK.csv",csv(schema(a:int,b:int)));
+        store(T1, public:adhoc:twitterDelete);
+        """
+        query = MyriaQuery.submit(program)
+        self.assertEqual(query.status, 'SUCCESS')
+
+        relation = MyriaRelation('public:adhoc:twitterDelete')
+        self.assertEqual(relation.is_persisted, True)
+
+        # delete relation and check the catalog
+        relation.delete()
+
+        self.assertRaises(MyriaError,self.connection.dataset,relation.qualified_name) 
 
 if __name__ == '__main__':
     unittest.main()
