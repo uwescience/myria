@@ -39,7 +39,7 @@ class ConnectedComponentTest(MyriaTestBase):
     MAXN = 50
     MAXM = MAXN * 10
 
-    def get_program(self, inputfile):
+    def get_program(self, inputfile, sync_mode=''):
         return """
 E = load("file://%s", csv(schema(src:int, dst:int), skip=0));
 V = [from E emit src as x] + [from E emit dst as x];
@@ -48,9 +48,9 @@ do
   CC = [nid, MIN(cid) as cid] <-
     [from V emit V.x as nid, V.x as cid] +
     [from E, CC where E.src = CC.nid emit E.dst as nid, CC.cid];
-until convergence pull_idb;
+until convergence %s pull_idb;
 store(CC, CC_output);
-""" % inputfile
+""" % (inputfile, sync_mode)
 
     def get_expected(self, edges):
         ans = {}
@@ -77,6 +77,10 @@ store(CC, CC_output);
                 cc_input.write('%d,%d\n' % (edge[0], edge[1]))
             cc_input.flush()
             query = MyriaQuery.submit(self.get_program(cc_input.name))
+            self.assertEqual(query.status, 'SUCCESS')
+            results = MyriaRelation('public:adhoc:CC_output').to_dict()
+            self.assertListOfDictsEqual(results, self.get_expected(edges))
+            query = MyriaQuery.submit(self.get_program(cc_input.name, 'sync'))
             self.assertEqual(query.status, 'SUCCESS')
             results = MyriaRelation('public:adhoc:CC_output').to_dict()
             self.assertListOfDictsEqual(results, self.get_expected(edges))
