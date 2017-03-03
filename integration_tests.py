@@ -19,6 +19,10 @@ class MyriaTestBase(unittest.TestCase):
         self.assertEqual(Counter([tuple(sorted(d.items())) for d in left]),
                          Counter([tuple(sorted(d.items())) for d in right]))
 
+    def assertListOfDictsNotEqual(self, left, right):
+        self.assertNotEqual(Counter([tuple(sorted(d.items())) for d in left]),
+                            Counter([tuple(sorted(d.items())) for d in right]))
+
 
 class ListOfDictsEqualTest(MyriaTestBase):
     def test(self):
@@ -32,11 +36,11 @@ class ListOfDictsEqualTest(MyriaTestBase):
 
         left, right = ([{'a': 2, 'b': 1}, {'a': 2, 'b': 1}],
                        [{'a': 1, 'b': 2}, {'a': 2, 'b': 1}])
-        self.assertRaises(self.assertListOfDictsEqual(left, right))
+        self.assertListOfDictsNotEqual(left, right)
 
         left, right = ([{'a': 1, 'b': 2, 'c': 3}, {'a': 2, 'b': 1}],
                        [{'a': 1, 'b': 2}, {'a': 2, 'b': 1}])
-        self.assertListOfDictsEqual(left, right)
+        self.assertListOfDictsNotEqual(left, right)
 
 
 class DoWhileTest(MyriaTestBase):
@@ -152,7 +156,7 @@ store(CC, CC_output);
             self.assertListOfDictsEqual(results, self.get_expected(edges))
 
 
-class JoinChainTest(MyriaTestBase):
+class JoinChainAndCircleTest(MyriaTestBase):
     # TODO: add failure injector and prioritization
     MAXN = 20
     MAXM = 40
@@ -177,6 +181,25 @@ until convergence;
 store(C, joinChain);
 """ % (R, A0, B0, C0)
 
+    def get_join_circle_program(self, A0, B0, C0):
+        return """
+A0 = load("file://%s", csv(schema(src:int, dst:int), skip=0));
+B0 = load("file://%s", csv(schema(src:int, dst:int), skip=0));
+C0 = load("file://%s", csv(schema(src:int, dst:int), skip=0));
+do
+  A = [src, dst] <-
+    [from A0 emit src, dst] +
+    [from C, A where C.dst = A.src emit C.src, A.dst];
+  B = [src, dst] <-
+    [from B0 emit src, dst] +
+    [from A, B where A.dst = B.src emit A.src, B.dst];
+  C = [src, dst] <-
+    [from C0 emit src, dst] +
+    [from B, C where B.dst = C.src emit B.src, C.dst];
+until convergence;
+store(C, joinCircle);
+""" % (A0, B0, C0)
+
     def get_join_chain_expected(self, R, A0, B0, C0):
 	A = Set(A0)
 	B = Set(B0)
@@ -187,6 +210,27 @@ store(C, joinChain);
 	        for j in range(self.MAXN):
 	            for k in range(self.MAXN):
                         if (j, i) in R and (i, k) in A and (j, k) not in A:
+                            change = True
+                            A.add((j, k))
+                        if (j, i) in A and (i, k) in B and (j, k) not in B:
+                            change = True
+                            B.add((j, k))
+                        if (j, i) in B and (i, k) in C and (j, k) not in C:
+                            change = True
+                            C.add((j, k))
+            if not change: break
+        return [{'src':x, 'dst':y} for x, y in C]
+
+    def get_join_circle_expected(self, A0, B0, C0):
+	A = Set(A0)
+	B = Set(B0)
+	C = Set(C0)
+        while True:
+            change = False
+	    for i in range(self.MAXN):
+	        for j in range(self.MAXN):
+	            for k in range(self.MAXN):
+                        if (j, i) in C and (i, k) in A and (j, k) not in A:
                             change = True
                             A.add((j, k))
                         if (j, i) in A and (i, k) in B and (j, k) not in B:
@@ -212,14 +256,17 @@ store(C, joinChain);
         with NamedTemporaryFile(suffix='.csv') as R, NamedTemporaryFile(suffix='.csv') as A0, NamedTemporaryFile(suffix='.csv') as B0, NamedTemporaryFile(suffix='.csv') as C0:
             R_data = self.genData(R)
             A0_data = self.genData(A0)
-        """
             B0_data = self.genData(B0)
             C0_data = self.genData(C0)
             query = MyriaQuery.submit(self.get_join_chain_program(R.name, A0.name, B0.name, C0.name))
             self.assertEqual(query.status, 'SUCCESS')
-
             results = MyriaRelation('public:adhoc:joinChain').to_dict()
             self.assertListOfDictsEqual(results, self.get_join_chain_expected(R_data, A0_data, B0_data, C0_data))
+            query = MyriaQuery.submit(self.get_join_circle_program(A0.name, B0.name, C0.name))
+            self.assertEqual(query.status, 'SUCCESS')
+            results = MyriaRelation('public:adhoc:joinCircle').to_dict()
+            self.assertListOfDictsEqual(results, self.get_join_circle_expected(A0_data, B0_data, C0_data))
+             
 
 
 class IncorrectDelimiterTest(MyriaTestBase):
