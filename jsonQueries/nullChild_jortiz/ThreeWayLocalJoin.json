@@ -9,7 +9,7 @@
                 "operators": [
                     {
                         "opName": "V0", 
-                        "opType": "SinkRoot", 
+                        "opType": "EmptySink",
                         "opId": 0, 
                         "argChild": 200
                     },

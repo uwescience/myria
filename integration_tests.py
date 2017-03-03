@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import unittest
+import json
 from collections import Counter
 import random
 from tempfile import NamedTemporaryFile
@@ -9,7 +10,7 @@ from myria import MyriaConnection, MyriaRelation, MyriaQuery, MyriaError
 
 class MyriaTestBase(unittest.TestCase):
     def setUp(self):
-        connection = MyriaConnection(hostname='demo.myria.cs.washington.edu', port=8753, execution_url="http://demo.myria.cs.washington.edu")
+        connection = MyriaConnection(hostname='localhost', port=8753, execution_url="http://127.0.0.1:8080")
         MyriaRelation.DefaultConnection = connection
         self.connection = connection
 
@@ -130,16 +131,31 @@ store(uploaddatatest, uploaddatatest);
         self.assertListOfDictsEqual(query.to_dict(), expected)
 
 
-class BadDelimiterTest(MyriaTestBase):
+class IncorrectDelimiterTest(MyriaTestBase):
     def test(self):
         #TODO change URL to local file
         program = """
 r = load('https://s3-us-west-2.amazonaws.com/bhaynestemp/simple_two_col_int.txt',
-                      csv(schema(x:int, y:int), delimiter=' '));
+                      csv(schema(x:int, y:int), delimiter=','));
 store(r, r);
 """
         query = MyriaQuery.submit(program)
         self.assertEqual(query.status, 'ERROR')
+
+
+class NonNullChildTest(MyriaTestBase):
+    def test(self):
+        program = """
+r = load('https://s3-us-west-2.amazonaws.com/bhaynestemp/simple_two_col_int.txt',
+                      csv(schema(follower:int, followee:int), delimiter=' '));
+store(r, jwang:global_join:smallTable);
+"""
+        ingest_query = MyriaQuery.submit(program)
+        self.assertEqual(ingest_query.status, 'SUCCESS')
+        join_json = json.loads(open('jsonQueries/nullChild_jortiz/ThreeWayLocalJoin.json').read())
+        join_query = MyriaQuery.submit_plan(join_json).wait_for_completion()
+        self.assertEqual(join_query.status, 'SUCCESS')
+
 
 class DbDeleteTest(MyriaTestBase):
     def test(self):
@@ -157,6 +173,7 @@ class DbDeleteTest(MyriaTestBase):
         relation.delete()
 
         self.assertRaises(MyriaError,self.connection.dataset,relation.qualified_name) 
+
 
 if __name__ == '__main__':
     unittest.main()
