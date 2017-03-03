@@ -49,7 +49,7 @@ while [from x emit max(exp) < 5];
 store(x, powersOfTwo);
 """
         query = MyriaQuery.submit(program)
-        expected = [{'val': 32, 'exp': 5}]
+        expected = [{'exp': 5, 'val': 32}]
 
         self.assertEqual(query.status, 'SUCCESS')
         self.assertListOfDictsEqual(query.to_dict(), expected)
@@ -178,10 +178,6 @@ store(C, joinChain);
 """ % (R, A0, B0, C0)
 
     def get_join_chain_expected(self, R, A0, B0, C0):
-        print 'R', R
-        print 'A0', A0
-        print 'B0', B0
-        print 'C0', C0
 	A = Set(A0)
 	B = Set(B0)
 	C = Set(C0)
@@ -219,7 +215,6 @@ store(C, joinChain);
         """
             B0_data = self.genData(B0)
             C0_data = self.genData(C0)
-
             query = MyriaQuery.submit(self.get_join_chain_program(R.name, A0.name, B0.name, C0.name))
             self.assertEqual(query.status, 'SUCCESS')
 
