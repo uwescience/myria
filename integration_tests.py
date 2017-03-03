@@ -73,10 +73,10 @@ store(CC, CC_output);
             src = random.randint(0, self.MAXN)
             dst = random.randint(0, self.MAXN)
             edges.append((src, dst))
-        with NamedTemporaryFile(suffix='.csv', delete=False) as cc_input:
+        with NamedTemporaryFile(suffix='.csv') as cc_input:
             for edge in edges:
                 cc_input.write('%d,%d\n' % (edge[0], edge[1]))
-            cc_input.close()
+            cc_input.flush()
             query = MyriaQuery.submit(self.get_program(cc_input.name))
             self.assertEqual(query.status, 'SUCCESS')
             results = MyriaRelation('public:adhoc:CC_output').to_dict()
