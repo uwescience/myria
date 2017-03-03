@@ -34,7 +34,6 @@ store(x, powersOfTwo);
         self.assertListOfDictsEqual(query.to_dict(), expected)
 
 
-
 class ConnectedComponentTest(MyriaTestBase):
     MAXN = 50
     MAXM = MAXN * 10
