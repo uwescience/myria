@@ -35,14 +35,13 @@ store(x, powersOfTwo);
 
 
 class ConnectedComponentTest(MyriaTestBase):
+    # TODO: add failure injector and prioritization
     MAXN = 50
     MAXM = MAXN * 10
 
     def get_program(self, inputfile):
         return """
-T1 = load("file://%s", csv(schema(src:int, dst:int), skip=0));
-store(T1, CC_input);
-E = scan(CC_input);
+E = load("file://%s", csv(schema(src:int, dst:int), skip=0));
 V = [from E emit src as x] + [from E emit dst as x];
 V = select distinct x from V;
 do
