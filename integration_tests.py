@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 
-import unittest
-import json
-from collections import Counter
 import random
+import json
+import unittest
 from tempfile import NamedTemporaryFile
+from collections import Counter
 from myria import MyriaConnection, MyriaRelation, MyriaQuery, MyriaError
 
 
@@ -15,8 +15,8 @@ class MyriaTestBase(unittest.TestCase):
         self.connection = connection
 
     def assertListOfDictsEqual(self, left, right):
-        self.assertEqual(Counter([kv for d in left for kv in d.items()]),
-                         Counter([kv for d in right for kv in d.items()]))
+        self.assertEqual(Counter([tuple(d.items()) for d in left]),
+                         Counter([tuple(d.items()) for d in right]))
 
 
 class DoWhileTest(MyriaTestBase):
@@ -152,6 +152,7 @@ store(r, jwang:global_join:smallTable);
 """
         ingest_query = MyriaQuery.submit(program)
         self.assertEqual(ingest_query.status, 'SUCCESS')
+
         join_json = json.loads(open('jsonQueries/nullChild_jortiz/ThreeWayLocalJoin.json').read())
         join_query = MyriaQuery.submit_plan(join_json).wait_for_completion()
         self.assertEqual(join_query.status, 'SUCCESS')
