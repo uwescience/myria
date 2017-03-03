@@ -16,8 +16,27 @@ class MyriaTestBase(unittest.TestCase):
         self.connection = connection
 
     def assertListOfDictsEqual(self, left, right):
-        self.assertEqual(Counter([tuple(d.items()) for d in left]),
-                         Counter([tuple(d.items()) for d in right]))
+        self.assertEqual(Counter([tuple(sorted(d.items())) for d in left]),
+                         Counter([tuple(sorted(d.items())) for d in right]))
+
+
+class ListOfDictsEqualTest(MyriaTestBase):
+    def test(self):
+        left, right = ([{'a': 1, 'b': 2}, {'a': 2, 'b': 1}],
+                       [{'a': 1, 'b': 2}, {'a': 2, 'b': 1}])
+        self.assertListOfDictsEqual(left, right)
+
+        left, right = ([{'a': 1, 'b': 1}, {'a': 1, 'b': 1}],
+                       [{'a': 1, 'b': 1}, {'a': 1, 'b': 1}])
+        self.assertListOfDictsEqual(left, right)
+
+        left, right = ([{'a': 2, 'b': 1}, {'a': 2, 'b': 1}],
+                       [{'a': 1, 'b': 2}, {'a': 2, 'b': 1}])
+        self.assertRaises(self.assertListOfDictsEqual(left, right))
+
+        left, right = ([{'a': 1, 'b': 2, 'c': 3}, {'a': 2, 'b': 1}],
+                       [{'a': 1, 'b': 2}, {'a': 2, 'b': 1}])
+        self.assertListOfDictsEqual(left, right)
 
 
 class DoWhileTest(MyriaTestBase):
@@ -217,7 +236,7 @@ r = load('https://s3-us-west-2.amazonaws.com/bhaynestemp/simple_two_col_int.txt'
 store(r, r);
 """
         query = MyriaQuery.submit(program)
-        self.assertEqual(query.status, 'ERROR'
+        self.assertEqual(query.status, 'ERROR')
 
 
 class NonNullChildTest(MyriaTestBase):
@@ -250,6 +269,21 @@ class DbDeleteTest(MyriaTestBase):
         # delete relation and check the catalog
         relation.delete()
          self.assertRaises(MyriaError,self.connection.dataset,relation.qualified_name)
+
+
+class RoundRobinAggregateTest(MyriaTestBase):
+    def test(self):
+        program = """
+r = load('https://s3-us-west-2.amazonaws.com/bhaynestemp/simple_two_col_int.txt',
+                      csv(schema(follower:int, followee:int), delimiter=' '));
+store(r, jwang:global_join:smallTable);
+"""
+        ingest_query = MyriaQuery.submit(program)
+        self.assertEqual(ingest_query.status, 'SUCCESS')
+
+        join_json = json.loads(open('jsonQueries/nullChild_jortiz/ThreeWayLocalJoin.json').read())
+        join_query = MyriaQuery.submit_plan(join_json).wait_for_completion()
+        self.assertEqual(join_query.status, 'SUCCESS')
 
 
 if __name__ == '__main__':
