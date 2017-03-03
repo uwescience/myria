@@ -13,9 +13,6 @@ class MyriaTestBase(unittest.TestCase):
         MyriaRelation.DefaultConnection = connection
         self.connection = connection
 
-    def execute(self, program):
-        self.connection.execute_program(program=program)
-
     def assertListOfDictsEqual(self, left, right):
         self.assertEqual(Counter([kv for d in left for kv in d.items()]),
                          Counter([kv for d in right for kv in d.items()]))
@@ -37,8 +34,10 @@ store(x, powersOfTwo);
         self.assertListOfDictsEqual(query.to_dict(), expected)
 
 
+
 class ConnectedComponentTest(MyriaTestBase):
-    MAXN = 10
+    MAXN = 50
+    MAXM = MAXN * 10
 
     def get_program(self, inputfile):
         return """
@@ -71,24 +70,18 @@ store(CC, CC_output);
 
     def test(self):
         edges = []
-            data = "foo,3242\n" \
-        for i in range(self.MAXN):
+        for i in range(self.MAXM):
             src = random.randint(0, self.MAXN)
             dst = random.randint(0, self.MAXN)
             edges.append((src, dst))
-        cc_input = tempfile.NamedTemporaryFile(suffix='.csv', delete=False)
-        for edge in edges:
-            cc_input.write('%d,%d\n' % (edge[0], edge[1]))
-        cc_input.close()
-
-self.execute(self.get_program(cc_input.name))
-        relation = MyriaRelation('public:adhoc:CC_output')
-        results = relation.to_dict()
-        print edges
-        results.sort()
-        print results
-        print 'expected', self.get_expected(edges)
-        self.assertEqual(results, self.get_expected(edges))
+        with NamedTemporaryFile(suffix='.csv', delete=False) as cc_input:
+            for edge in edges:
+                cc_input.write('%d,%d\n' % (edge[0], edge[1]))
+            cc_input.close()
+            query = MyriaQuery.submit(self.get_program(cc_input.name))
+            self.assertEqual(query.status, 'SUCCESS')
+            results = MyriaRelation('public:adhoc:CC_output').to_dict()
+            self.assertListOfDictsEqual(results, self.get_expected(edges))
 
 
 class IngestEmptyQueryTest(MyriaTestBase):
