@@ -79,6 +79,23 @@ store(uploaddatatest, uploaddatatest);
             self.assertEqual(query.status, 'SUCCESS')
             self.assertListOfDictsEqual(query.to_dict(), expected)
 
+class KillQueryTest(MyriaTestBase):
+    def test(self):
+        # This is a long-running program
+        program = """
+x = [0 as exp, 1 as val];
+do
+  x = [from x emit exp+1 as exp, 2*val as val];
+while [from x emit max(exp) < 1000];
+store(x, powersOfTwo);
+"""
+        plan = self.connection.compile_program(program)
+        # We submit with submit_plan so as to not block
+        query = MyriaQuery.submit_plan(plan)
+
+        # We kill the query and make sure it was killed
+        query.kill()
+        self.assertEqual(query.status, 'KILLED')
 
 
 
