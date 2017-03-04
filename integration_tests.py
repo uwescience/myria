@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import os
 import random
 import json
 import unittest
@@ -14,6 +15,10 @@ class MyriaTestBase(unittest.TestCase):
         connection = MyriaConnection(hostname='localhost', port=8753, execution_url="http://127.0.0.1:8080")
         MyriaRelation.DefaultConnection = connection
         self.connection = connection
+
+    @staticmethod
+    def get_test_file_url(relative_filename):
+        return 'file:///{}'.format(os.path.join(os.getcwd(), relative_filename))
 
     def assertListOfDictsEqual(self, left, right):
         self.assertEqual(Counter([tuple(sorted(d.items())) for d in left]),
@@ -64,9 +69,9 @@ class IngestEmptyQueryTest(MyriaTestBase):
         # Create empty file
         #TODO change URL to local file
         program = """
-emptyrelation = load('https://s3-us-west-2.amazonaws.com/bhaynestemp/emptyrelation', csv(schema(foo:string, bar:int)));
+emptyrelation = load('{}', csv(schema(foo:string, bar:int)));
 store(emptyrelation, emptyrelation);
-"""
+""".format(self.get_test_file_url('filescan/empty.txt'))
         expected = []
         query = MyriaQuery.submit(program)
         self.assertEqual(query.status, 'SUCCESS')
