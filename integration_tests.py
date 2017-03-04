@@ -100,7 +100,7 @@ store(uploaddatatest, uploaddatatest);
         program = """
 uploaddatatest = load('{}', csv(schema(s:string, i:int), delimiter='\\t'));
 store(uploaddatatest, uploaddatatest);
-""".format(self.get_file_url('testdata/filescan/uploaddatatest.txt'))
+""".format(self.get_file_url('testdata/filescan/uploaddatatest2.txt'))
         expected = [{u's': u'mexico', u'i': 42},
                     {u's': u'poland', u'i': 12342},
                     {u's': u'belize', u'i': 802304}]
