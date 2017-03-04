@@ -86,9 +86,9 @@ class UploadAndReplaceDataTest(MyriaTestBase):
                "baz,104"
         #TODO change URL to local file
         program = """
-uploaddatatest = load('https://s3-us-west-2.amazonaws.com/bhaynestemp/uploaddatatest', csv(schema(s:string, i:int)));
+uploaddatatest = load('{}', csv(schema(s:string, i:int)));
 store(uploaddatatest, uploaddatatest);
-"""
+""".format(self.get_file_url('testdata/filescan/uploaddatatest.txt'))
         expected = [{u's': u'foo', u'i': 3242},
                     {u's': u'bar', u'i': 321},
                     {u's': u'baz', u'i': 104}]
@@ -98,10 +98,9 @@ store(uploaddatatest, uploaddatatest);
 
         # Now replace with another relation
         program = """
-uploaddatatest = load('https://s3-us-west-2.amazonaws.com/bhaynestemp/uploaddatatest2',
-                       csv(schema(s:string, i:int), delimiter='\\t'));
+uploaddatatest = load('{}}', csv(schema(s:string, i:int), delimiter='\\t'));
 store(uploaddatatest, uploaddatatest);
-"""
+""".format(self.get_file_url('testdata/filescan/uploaddatatest.txt'))
         expected = [{u's': u'mexico', u'i': 42},
                     {u's': u'poland', u'i': 12342},
                     {u's': u'belize', u'i': 802304}]
@@ -279,10 +278,9 @@ class IncorrectDelimiterTest(MyriaTestBase):
     def test(self):
         #TODO change URL to local file
         program = """
-r = load('https://s3-us-west-2.amazonaws.com/bhaynestemp/simple_two_col_int.txt',
-                      csv(schema(x:int, y:int), delimiter=','));
+r = load('{}', csv(schema(x:int, y:int), delimiter=','));
 store(r, r);
-"""
+""".format(self.get_file_url('testdata/filescan/simple_two_col_int.txt'))
         query = MyriaQuery.submit(program)
         self.assertEqual(query.status, 'ERROR')
 
@@ -290,10 +288,9 @@ store(r, r);
 class NonNullChildTest(MyriaTestBase):
     def test(self):
         program = """
-r = load('https://s3-us-west-2.amazonaws.com/bhaynestemp/simple_two_col_int.txt',
-                      csv(schema(follower:int, followee:int), delimiter=' '));
+r = load('{}}', csv(schema(follower:int, followee:int), delimiter=' '));
 store(r, jwang:global_join:smallTable);
-"""
+""".format(self.get_file_url('testdata/filescan/simple_two_col_int.txt'))
         ingest_query = MyriaQuery.submit(program)
         self.assertEqual(ingest_query.status, 'SUCCESS')
 
@@ -305,9 +302,9 @@ store(r, jwang:global_join:smallTable);
 class DbDeleteTest(MyriaTestBase):
     def test(self):
         program = """
-        T1 = load("s3://uwdb/sampleData/TwitterK.csv",csv(schema(a:int,b:int)));
+        T1 = load("{}",csv(schema(a:int,b:int)));
         store(T1, public:adhoc:twitterDelete);
-        """
+        """.format(self.get_file_url('testdata/twitter/TwitterK.csv'))
         query = MyriaQuery.submit(program)
         self.assertEqual(query.status, 'SUCCESS')
 
@@ -322,10 +319,9 @@ class DbDeleteTest(MyriaTestBase):
 class RoundRobinAggregateTest(MyriaTestBase):
     def test(self):
         program = """
-r = load('https://s3-us-west-2.amazonaws.com/bhaynestemp/simple_two_col_int.txt',
-                      csv(schema(follower:int, followee:int), delimiter=' '));
+r = load('{}', csv(schema(follower:int, followee:int), delimiter=' '));
 store(r, jwang:global_join:smallTable);
-"""
+""".format(self.get_file_url('testdata/filescan/simple_two_col_int.txt'))
         ingest_query = MyriaQuery.submit(program)
         self.assertEqual(ingest_query.status, 'SUCCESS')
 
