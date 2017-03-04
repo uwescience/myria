@@ -98,7 +98,7 @@ store(uploaddatatest, uploaddatatest);
 
         # Now replace with another relation
         program = """
-uploaddatatest = load('{}}', csv(schema(s:string, i:int), delimiter='\\t'));
+uploaddatatest = load('{}', csv(schema(s:string, i:int), delimiter='\\t'));
 store(uploaddatatest, uploaddatatest);
 """.format(self.get_file_url('testdata/filescan/uploaddatatest.txt'))
         expected = [{u's': u'mexico', u'i': 42},
@@ -288,7 +288,7 @@ store(r, r);
 class NonNullChildTest(MyriaTestBase):
     def test(self):
         program = """
-r = load('{}}', csv(schema(follower:int, followee:int), delimiter=' '));
+r = load('{}', csv(schema(follower:int, followee:int), delimiter=' '));
 store(r, jwang:global_join:smallTable);
 """.format(self.get_file_url('testdata/filescan/simple_two_col_int.txt'))
         ingest_query = MyriaQuery.submit(program)
