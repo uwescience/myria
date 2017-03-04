@@ -18,7 +18,7 @@ class MyriaTestBase(unittest.TestCase):
 
     @staticmethod
     def get_test_file_url(relative_filename):
-        return 'file:///{}'.format(os.path.join(os.getcwd(), relative_filename))
+        return 'file://{}'.format(os.path.join(os.getcwd(), relative_filename))
 
     def assertListOfDictsEqual(self, left, right):
         self.assertEqual(Counter([tuple(sorted(d.items())) for d in left]),
@@ -72,6 +72,7 @@ class IngestEmptyQueryTest(MyriaTestBase):
 emptyrelation = load('{}', csv(schema(foo:string, bar:int)));
 store(emptyrelation, emptyrelation);
 """.format(self.get_test_file_url('filescan/empty.txt'))
+        print program
         expected = []
         query = MyriaQuery.submit(program)
         self.assertEqual(query.status, 'SUCCESS')
