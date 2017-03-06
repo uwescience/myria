@@ -329,6 +329,40 @@ store(r, jwang:global_join:smallTable);
         join_query = MyriaQuery.submit_plan(join_json).wait_for_completion()
         self.assertEqual(join_query.status, 'SUCCESS')
 
+class BroadcastTest(MyriaTestBase):
+    def test(self):
+	twitterData = self.get_file_url('testdata/twitter/TwitterK.csv')
+	loadData="""
+        T1 = load('{}',csv(schema(a:int,b:int)));
+	T2 = [from T1 as t emit *];
+	store(T2, twitterOriginal);
+
+	T1 = load('{}',csv(schema(a:int,b:int)));
+        T2 = [from T1 as t where t.a = 17 emit *];
+        store(T2, twitterSubsetNotBroadcast);
+
+	T1 = load('{}',csv(schema(a:int,b:int)));
+        T2 = [from T1 as t where t.a = 17 emit *];
+        store(T2, twitterSubsetBroadcast, broadcast());
+        """.format(twitterData, twitterData, twitterData)
+
+	MyriaQuery.submit(loadData)
+
+        notBroadcastJoin = """
+        T1 = [from scan(twitterOriginal) as t1, scan(twitterSubsetNotBroadcast) as t2
+		where t1.a = t2.a emit *];
+        store(T1, finalNotBroadcast);
+        """
+        originalResult = MyriaQuery.submit(notBroadcastJoin)
+
+	broadcastJoin = """
+        T1 = [from scan(twitterOriginal) as t1, scan(twitterSubsetBroadcast) as t2
+                where t1.a = t2.a emit *];
+        store(T1, finalBroadcast);
+        """
+        broadcastResult = MyriaQuery.submit(broadcastJoin)
+
+        self.assertListOfDictsEqual(originalResult.to_dict(), broadcastResult.to_dict())
 
 if __name__ == '__main__':
     unittest.main()
