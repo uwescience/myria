@@ -104,8 +104,7 @@ public final class PerfEnforceResource {
   @POST
   @Path("/recordRealRuntime")
   @Consumes(MediaType.TEXT_PLAIN)
-  public Response recordRealRuntime(final Double queryRuntime)
-      throws PerfEnforceException {
+  public Response recordRealRuntime(final Double queryRuntime) throws PerfEnforceException {
     server.getPerfEnforceDriver().recordRealRuntime(queryRuntime);
     return Response.noContent().build();
   }
