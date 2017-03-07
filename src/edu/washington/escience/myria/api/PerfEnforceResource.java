@@ -6,6 +6,7 @@ import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
@@ -88,10 +89,10 @@ public final class PerfEnforceResource {
    *
    * @param querySQL the query from the user
    */
-  @POST
+  @GET
   @Path("/findSLA")
   @Consumes(MediaType.TEXT_PLAIN)
-  public Response findSLA(final String querySQL) throws Exception {
+  public Response findSLA(@QueryParam("querySQL") final String querySQL) throws Exception {
     server.getPerfEnforceDriver().findSLA(querySQL);
     return Response.noContent().build();
   }
