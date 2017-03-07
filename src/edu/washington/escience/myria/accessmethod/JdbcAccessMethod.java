@@ -454,7 +454,7 @@ public final class JdbcAccessMethod extends AccessMethod {
         execute("RENAME TABLE " + newName + " TO " + oldName);
         break;
       case MyriaConstants.STORAGE_SYSTEM_POSTGRESQL:
-        dropTableIfExists(oldRelation);
+        dropTableIfExistsCascade(oldRelation);
         execute("ALTER TABLE " + newName + " RENAME TO " + oldName);
         break;
       default:
@@ -634,6 +634,17 @@ public final class JdbcAccessMethod extends AccessMethod {
     }
   }
 
+  @Override
+  public void createMaterializedView(final String viewName, final String viewDefinition)
+      throws DbException {
+    if (jdbcInfo.getDbms().equals(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL)) {
+      createMaterializedViewPostgres(viewName, viewDefinition);
+    } else {
+      throw new UnsupportedOperationException(
+          "create materialized view is not supported in " + jdbcInfo.getDbms() + ", implement me");
+    }
+  }
+
   /**
    * Create a view in postgres if no view with the same name exists
    *
@@ -645,6 +656,20 @@ public final class JdbcAccessMethod extends AccessMethod {
       throws DbException {
     String statement =
         Joiner.on(' ').join("CREATE OR REPLACE VIEW", viewName, "AS", viewDefinition, ";");
+    execute(statement);
+  }
+
+  /**
+   * Create a materialized view in postgres if no view with the same name exists
+   *
+   * @param viewName the name of the views
+   * @param viewDefinition the view to be created
+   * @throws DbException if there is an error in the DBMS.
+   */
+  public void createMaterializedViewPostgres(final String viewName, final String viewDefinition)
+      throws DbException {
+    String statement =
+        Joiner.on(' ').join("CREATE MATERIALIZED VIEW", viewName, "AS", viewDefinition, ";");
     execute(statement);
   }
 

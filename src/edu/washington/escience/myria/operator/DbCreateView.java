@@ -25,16 +25,19 @@ public class DbCreateView extends RootOperator {
 
   private final String viewName;
   private final String viewQuery;
+  private final boolean isMaterialized;
 
   public DbCreateView(
       final Operator child,
       final String viewName,
       final String viewQuery,
+      final boolean isMaterialized,
       final ConnectionInfo connectionInfo) {
     super(child);
     this.connectionInfo = connectionInfo;
     this.viewName = viewName;
     this.viewQuery = viewQuery;
+    this.isMaterialized = isMaterialized;
   }
 
   @Override
@@ -48,7 +51,11 @@ public class DbCreateView extends RootOperator {
     accessMethod = AccessMethod.of(connectionInfo.getDbms(), connectionInfo, false);
 
     /* Add the indexes to the relation */
-    accessMethod.createView(viewName, viewQuery);
+    if (isMaterialized) {
+      accessMethod.createMaterializedView(viewName, viewQuery);
+    } else {
+      accessMethod.createView(viewName, viewQuery);
+    }
   }
 
   @Override

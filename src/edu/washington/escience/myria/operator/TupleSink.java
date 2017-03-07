@@ -25,6 +25,16 @@ public final class TupleSink extends RootOperator {
   /** Whether this object has finished. */
   private boolean done = false;
 
+  private boolean includeColumnHeader = true;
+
+  public TupleSink(
+      final Operator child,
+      final TupleWriter tupleWriter,
+      final DataSink dataSink,
+      boolean includeColumnHeader) {
+    this(child, tupleWriter, dataSink);
+    this.includeColumnHeader = includeColumnHeader;
+  }
   /**
    * Instantiate a new DataOutput operator, which will stream its tuples to the specified {@link TupleWriter}.
    *
@@ -66,7 +76,9 @@ public final class TupleSink extends RootOperator {
   protected void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
     try {
       tupleWriter.open(dataSink.getOutputStream());
-      tupleWriter.writeColumnHeaders(getChild().getSchema().getColumnNames());
+      if (includeColumnHeader) {
+        tupleWriter.writeColumnHeaders(getChild().getSchema().getColumnNames());
+      }
     } catch (IOException e) {
       throw new DbException(e);
     }

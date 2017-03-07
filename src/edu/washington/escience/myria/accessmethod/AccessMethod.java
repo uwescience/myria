@@ -198,6 +198,16 @@ public abstract class AccessMethod {
   public abstract void createView(String viewName, String viewDefinition) throws DbException;
 
   /**
+   * Creates a materialized view
+   *
+   * @param viewName
+   * @param viewDefinition
+   * @throws DbException
+   */
+  public abstract void createMaterializedView(String viewName, String viewDefinition)
+      throws DbException;
+
+  /**
    * Executes a command on the underlying database
    *
    * @param command
