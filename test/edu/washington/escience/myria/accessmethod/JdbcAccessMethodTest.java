@@ -1,5 +1,5 @@
 /**
- * 
+ *
  */
 package edu.washington.escience.myria.accessmethod;
 
@@ -18,17 +18,18 @@ import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
+import edu.washington.escience.myria.operator.BatchTupleSource;
 import edu.washington.escience.myria.operator.DbInsert;
 import edu.washington.escience.myria.operator.DbQueryScan;
 import edu.washington.escience.myria.operator.LeafOperator;
 import edu.washington.escience.myria.operator.TupleRangeSource;
-import edu.washington.escience.myria.operator.BatchTupleSource;
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
+import edu.washington.escience.myria.util.TestEnvVars;
 import edu.washington.escience.myria.util.TestUtils;
 
 /**
- * 
+ *
  */
 public class JdbcAccessMethodTest {
   /** The logger for this class. */
@@ -41,8 +42,14 @@ public class JdbcAccessMethodTest {
   private JdbcInfo getJdbcInfo(final String dbms) {
     Verify.verify(TestUtils.inTravis(), "This test should only run in Travis");
     /* Return localhost using Travis' default credentials. */
-    return JdbcInfo.of(POSTGRES_DRIVER_CLASS, MyriaConstants.STORAGE_SYSTEM_POSTGRESQL, "localhost", POSTGRES_PORT,
-        POSTGRES_DATABASE_NAME, "postgres", "");
+    return JdbcInfo.of(
+        POSTGRES_DRIVER_CLASS,
+        MyriaConstants.STORAGE_SYSTEM_POSTGRESQL,
+        "localhost",
+        POSTGRES_PORT,
+        POSTGRES_DATABASE_NAME,
+        "postgres",
+        "");
   }
 
   private void testInsertTuplesAndCountThem(final String dbms) throws DbException {
@@ -54,7 +61,8 @@ public class JdbcAccessMethodTest {
   private void testInsertTuplesAndCountThemWithNull(final String dbms) throws DbException {
     final int expectedNumResults = 250;
     TupleBatchBuffer data =
-        new TupleBatchBuffer(Schema.of(ImmutableList.of(Type.STRING_TYPE), ImmutableList.of("value")));
+        new TupleBatchBuffer(
+            Schema.of(ImmutableList.of(Type.STRING_TYPE), ImmutableList.of("value")));
     for (int i = 0; i < expectedNumResults; i++) {
       if (i % 2 == 0) {
         data.putString(0, "");
@@ -66,7 +74,8 @@ public class JdbcAccessMethodTest {
     doInsert(dbms, source, expectedNumResults);
   }
 
-  private void doInsert(final String dbms, final LeafOperator source, final int expectedNumResults) throws DbException {
+  private void doInsert(final String dbms, final LeafOperator source, final int expectedNumResults)
+      throws DbException {
     Objects.requireNonNull(dbms, "dbms");
 
     /* Connection information */

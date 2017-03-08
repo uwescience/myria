@@ -79,6 +79,7 @@ public final class SQLiteAccessMethod extends AccessMethod {
           if (parent != null && !parent.exists()) {
             dbFile.getParentFile().mkdirs();
           }
+          System.err.println("About to create new database file");
           dbFile.createNewFile();
         } catch (IOException e) {
           throw new DbException("Could not create database file" + dbFile.getAbsolutePath(), e);

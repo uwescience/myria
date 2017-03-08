@@ -27,6 +27,12 @@ import edu.washington.escience.myria.parallel.RelationWriteMetadata;
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleUtils;
 
+import java.nio.file.Files;
+import java.nio.file.attribute.PosixFileAttributes;
+import java.nio.file.attribute.PosixFileAttributeView;
+import java.nio.file.attribute.PosixFilePermissions;
+import java.io.IOException;
+
 /** A temporary relation that is inserted into the database. */
 public class DbInsertTemp extends AbstractDbInsert {
 

@@ -282,6 +282,8 @@ shadowJar {
   /* Some of our deps conflict with old versions in Hadoop distro */
   relocate 'com.google.common', 'myriadeps.com.google.common'
   relocate 'javax.ws.rs', 'myriadeps.javax.ws.rs'
+  relocate 'com.fasterxml.jackson', 'myriadeps.com.fasterxml.jackson'
+  relocate 'org.glassfish.jersey', 'myriadeps.org.glassfish.jersey'
 }
 
 /* Coveralls */

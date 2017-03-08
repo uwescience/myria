@@ -454,11 +454,15 @@ public final class SymmetricHashJoin extends BinaryOperator {
       buildCompareColumns = rightCompareColumns;
     }
     for (int row = 0; row < tb.numTuples(); ++row) {
-      IntIterator iter = probeHashTable.getIndices(tb, buildCompareColumns, row).intIterator();
-      while (iter.hasNext()) {
-        addToAns(tb, row, probeHashTable.getData(), iter.next(), fromLeft);
+      if (probeHashTable != null) {
+        IntIterator iter = probeHashTable.getIndices(tb, buildCompareColumns, row).intIterator();
+        while (iter.hasNext()) {
+          addToAns(tb, row, probeHashTable.getData(), iter.next(), fromLeft);
+        }
       }
-      addToHashTable(tb, buildCompareColumns, row, buildHashTable, useSetSemantics);
+      if (buildHashTable != null) {
+        addToHashTable(tb, buildCompareColumns, row, buildHashTable, useSetSemantics);
+      }
     }
   }
 
