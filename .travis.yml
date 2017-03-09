@@ -25,6 +25,7 @@ after_failure:
 - find . -name '*.stderr' | xargs cat
 after_success:
 - ./gradlew jacocoTestReport coveralls
+- flake8 ./integration_tests.py
 cache:
   directories:
   - $HOME/.gradle/caches

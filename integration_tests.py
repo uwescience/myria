@@ -12,7 +12,8 @@ from sets import Set
 
 class MyriaTestBase(unittest.TestCase):
     def setUp(self):
-        connection = MyriaConnection(hostname='localhost', port=8753, execution_url="http://127.0.0.1:8080")
+        connection = MyriaConnection(hostname='localhost', port=8753,
+                                     execution_url="http://127.0.0.1:8080")
         MyriaRelation.DefaultConnection = connection
         self.connection = connection
 
@@ -67,7 +68,6 @@ store(x, powersOfTwo);
 class IngestEmptyQueryTest(MyriaTestBase):
     def test(self):
         # Create empty file
-        #TODO change URL to local file
         program = """
 emptyrelation = load('{}', csv(schema(foo:string, bar:int)));
 store(emptyrelation, emptyrelation);
@@ -80,10 +80,6 @@ store(emptyrelation, emptyrelation);
 
 class UploadAndReplaceDataTest(MyriaTestBase):
     def test(self):
-        data = "foo,3242\n" \
-               "bar,321\n"\
-               "baz,104"
-        #TODO change URL to local file
         program = """
 uploaddatatest = load('{}', csv(schema(s:string, i:int)));
 store(uploaddatatest, uploaddatatest);
@@ -137,8 +133,9 @@ store(CC, CC_output);
                 if ans[edge[0]] < ans[edge[1]]:
                     changed = True
                     ans[edge[1]] = ans[edge[0]]
-            if not changed: break
-        return [{'nid':k, 'cid':ans[k]} for k in ans]
+            if not changed:
+                break
+        return [{'nid': k, 'cid': ans[k]} for k in ans]
 
     def test(self):
         edges = []
@@ -246,7 +243,7 @@ store(C, joinCircle);
                             C.add((j, k))
             if not change:
                 break
-        return [{'src':x, 'dst':y} for x, y in C]
+        return [{'src': x, 'dst': y} for x, y in C]
 
     def genData(self, fin):
         edges = []
@@ -267,19 +264,24 @@ store(C, joinCircle);
             A0_data = self.genData(A0)
             B0_data = self.genData(B0)
             C0_data = self.genData(C0)
-            query = MyriaQuery.submit(self.get_join_chain_program(R.name, A0.name, B0.name, C0.name))
+            query = MyriaQuery.submit(
+                self.get_join_chain_program(R.name, A0.name, B0.name, C0.name))
             self.assertEqual(query.status, 'SUCCESS')
             results = MyriaRelation('public:adhoc:joinChain').to_dict()
-            self.assertListOfDictsEqual(results, self.get_join_chain_expected(R_data, A0_data, B0_data, C0_data))
-            query = MyriaQuery.submit(self.get_join_circle_program(A0.name, B0.name, C0.name))
+            self.assertListOfDictsEqual(
+                results, self.get_join_chain_expected(
+                    R_data, A0_data, B0_data, C0_data))
+            query = MyriaQuery.submit(
+                self.get_join_circle_program(A0.name, B0.name, C0.name))
             self.assertEqual(query.status, 'SUCCESS')
             results = MyriaRelation('public:adhoc:joinCircle').to_dict()
-            self.assertListOfDictsEqual(results, self.get_join_circle_expected(A0_data, B0_data, C0_data))
+            self.assertListOfDictsEqual(
+                results, self.get_join_circle_expected(
+                    A0_data, B0_data, C0_data))
 
 
 class IncorrectDelimiterTest(MyriaTestBase):
     def test(self):
-        #TODO change URL to local file
         program = """
 r = load('{}', csv(schema(x:int, y:int), delimiter=','));
 store(r, r);
@@ -297,7 +299,8 @@ store(r, jwang:global_join:smallTable);
         ingest_query = MyriaQuery.submit(program)
         self.assertEqual(ingest_query.status, 'SUCCESS')
 
-        join_json = json.loads(open('jsonQueries/nullChild_jortiz/ThreeWayLocalJoin.json').read())
+        join_json = json.loads(
+            open('jsonQueries/nullChild_jortiz/ThreeWayLocalJoin.json').read())
         join_query = MyriaQuery.submit_plan(join_json).wait_for_completion()
         self.assertEqual(join_query.status, 'SUCCESS')
 
@@ -316,7 +319,8 @@ class DbDeleteTest(MyriaTestBase):
 
         # delete relation and check the catalog
         relation.delete()
-        self.assertRaises(MyriaError, self.connection.dataset, relation.qualified_name)
+        self.assertRaises(
+            MyriaError, self.connection.dataset, relation.qualified_name)
 
 
 class RoundRobinAggregateTest(MyriaTestBase):
@@ -328,7 +332,8 @@ store(r, jwang:global_join:smallTable);
         ingest_query = MyriaQuery.submit(program)
         self.assertEqual(ingest_query.status, 'SUCCESS')
 
-        join_json = json.loads(open('jsonQueries/nullChild_jortiz/ThreeWayLocalJoin.json').read())
+        join_json = json.loads(
+            open('jsonQueries/nullChild_jortiz/ThreeWayLocalJoin.json').read())
         join_query = MyriaQuery.submit_plan(join_json).wait_for_completion()
         self.assertEqual(join_query.status, 'SUCCESS')
 
