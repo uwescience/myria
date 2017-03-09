@@ -26,3 +26,6 @@ python setup.py install
 
 # Set up myria-python
 pip install myria-python
+
+# Install flake for style check
+pip install flake8
