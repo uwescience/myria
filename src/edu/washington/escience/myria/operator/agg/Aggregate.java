@@ -124,9 +124,6 @@ public class Aggregate extends UnaryOperator {
       stateOffset += agg.getStateSize();
     }
     Schema inputSchema = getChild().getSchema();
-    if (inputSchema == null) {
-      return null;
-    }
     for (TupleBatch tb : groupStates.getData().getAll()) {
       List<Column<?>> columns = new ArrayList<Column<?>>();
       columns.addAll(tb.getDataColumns().subList(0, gfields.length));
@@ -164,6 +161,9 @@ public class Aggregate extends UnaryOperator {
       return null;
     }
     Schema inputSchema = getChild().getSchema();
+    if (inputSchema == null) {
+      return null;
+    }
     Schema aggSchema = Schema.EMPTY_SCHEMA;
     for (int i = 0; i < factories.length; ++i) {
       aggSchema = Schema.merge(aggSchema, factories[i].generateSchema(inputSchema));
