@@ -1,0 +1,17 @@
+{
+  "relationKey" : {
+    "userName" : "mhsaul",
+    "programName" : "square",
+    "relationName" : "smallTable"
+  },
+  "schema" : {
+    "columnTypes" : ["INT_TYPE", "INT_TYPE"],
+    "columnNames" : ["col1", "col2"]
+  },
+  "source" : {
+    "dataType" : "File",
+    "filename" : "/home/miles/Myria/myria/jsonQueries/javaUDF/smallTable"
+  },
+  "overwrite" : true,
+  "delimiter": ","
+}

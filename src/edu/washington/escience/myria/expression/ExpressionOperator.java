@@ -67,7 +67,8 @@ import edu.washington.escience.myria.expression.evaluate.ExpressionOperatorParam
   /* Nary */
   @Type(name = "CONDITION", value = ConditionalExpression.class),
   @Type(name = "SUBSTR", value = SubstrExpression.class),
-  @Type(name = "PYUDF", value = PyUDFExpression.class)
+  @Type(name = "PYUDF", value = PyUDFExpression.class),
+  @Type(name = "JAVAUDF", value = JavaUDFExpression.class)
 })
 public abstract class ExpressionOperator implements Serializable {
   /***/

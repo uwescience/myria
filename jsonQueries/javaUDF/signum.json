@@ -1,0 +1,59 @@
+{
+    "logicalRa": "Store(mhsaul:square:Signum)[Apply(x=JAVAUDF($0))[Scan(mhsaul:square:smallTable)]]",
+    "language": "myrial",
+    "ftMode": "NONE",
+    "profilingMode": [],
+    "plan": {
+        "type": "SubQuery",
+        "fragments": [
+        {
+            "operators": [
+            {
+                "opType": "TableScan",
+                "opId": 0,
+                "relationKey": {
+                    "programName": "square",
+                    "relationName": "smallTable",
+                    "userName": "mhsaul"
+                },
+                "debroadcast": false,
+                "opName": "MyriaScan(mhsaul:square:smallTable)"
+            },
+            {
+                "opType": "Apply",
+                "opId": 1, "emitExpressions": [
+                {
+                    "rootExpressionOperator": {
+                        "type": "SIGNUM",
+                        "operand": {
+                            "type":"VARIABLE",
+                            "columnIdx": 0
+                        }
+                    },
+                    "outputName": "x"
+                }
+                ],
+                "argChild": 0,
+                "opName": "MyriaApply(x=JAVAUDF($0))"
+            },
+            {
+                "opType": "DbInsert",
+                "argOverwriteTable": true,
+                "opName": "MyriaStore(mhsaul:square:Signum)",
+                "opId": 2,
+                "relationKey": {
+                    "programName": "square",
+                    "relationName": "Signum",
+                    "userName": "mhsaul"
+                },
+                "argChild": 1,
+                "distributeFunction": {
+                    "type": "RoundRobin"
+                }
+            }
+            ]
+        }
+        ]
+    },
+    "rawQuery": "T1 = scan(smallTable);\nT2 = [from T1 emit javaUDF.JavaFunctions.square($0) as x];\nstore(T2, Signum);"
+}
