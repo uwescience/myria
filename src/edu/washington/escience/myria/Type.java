@@ -594,6 +594,27 @@ public enum Type implements Serializable {
     return false;
   }
 
+  public static Type fromJavaType(Class<?> c) {
+    if (c.equals(Integer.class) || c.equals(int.class)) {
+      return INT_TYPE;
+    } else if (c.equals(Float.class) || c.equals(float.class)) {
+      return FLOAT_TYPE;
+    } else if (c.equals(Double.class) || c.equals(double.class)) {
+      return DOUBLE_TYPE;
+    } else if (c.equals(Boolean.class) || c.equals(boolean.class)) {
+      return BOOLEAN_TYPE;
+    } else if (c.equals(String.class)) {
+      return STRING_TYPE;
+    } else if (c.equals(Long.class) || c.equals(long.class)) {
+      return LONG_TYPE;
+    } else if (c.equals(ByteBuffer.class)) {
+      return BLOB_TYPE;
+    } else if (c.equals(DateTime.class)) {
+      return DATETIME_TYPE;
+    } else {
+      return null;
+    }
+  }
   /**
    * @return the java type
    */
