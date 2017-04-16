@@ -189,6 +189,18 @@ dependencies {
   testCompile "com.carrotsearch:junit-benchmarks:0.7.2"
 }
 
+/* If Java 8 is the default JDK but Java 7 is installed, do a proper cross-compile. */
+tasks.withType(JavaCompile) {
+  doFirst {
+    if (sourceCompatibility == '1.7' && System.env.JAVA7_HOME != null) {
+      options.fork = true
+      options.bootClasspath = "$System.env.JAVA7_HOME/jre/lib/rt.jar"
+      options.bootClasspath += "$File.pathSeparator$System.env.JAVA7_HOME/jre/lib/jsse.jar"
+      // use the line above as an example to add jce.jar and other specific JDK jars
+    }
+  }
+}
+
 /* Tell Java to emit all compiler warnings. */
 tasks.withType(JavaCompile) {
   options.compilerArgs << "-Xlint"
