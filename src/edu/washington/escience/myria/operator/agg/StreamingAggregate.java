@@ -6,8 +6,6 @@ import java.util.List;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
-import com.gs.collections.api.iterator.IntIterator;
-
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.column.Column;
 import edu.washington.escience.myria.operator.Operator;
@@ -51,9 +49,8 @@ public class StreamingAggregate extends Aggregate {
     TupleBatch tb = child.nextReady();
     while (tb != null) {
       for (int row = 0; row < tb.numTuples(); ++row) {
-        IntIterator iter = groupStates.getIndices(tb, gfields, row).intIterator();
-        int index;
-        if (!iter.hasNext()) {
+        int index = groupStates.getIndex(tb, gfields, row);
+        if (index == -1) {
           /* A new group is encountered. Since input tuples are sorted on the grouping key, the previous group must be
            * finished so we can add its state to the result. */
           generateResult();
@@ -63,9 +60,7 @@ public class StreamingAggregate extends Aggregate {
             agg.initState(groupStates.getData(), offset);
             offset += agg.getStateSize();
           }
-          index = groupStates.getData().numTuples() - 1;
-        } else {
-          index = iter.next();
+          index = groupStates.numTuples() - 1;
         }
         int offset = gfields.length;
         for (Aggregator agg : internalAggs) {

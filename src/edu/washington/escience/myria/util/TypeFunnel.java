@@ -1,5 +1,7 @@
 package edu.washington.escience.myria.util;
 
+import org.joda.time.DateTime;
+
 import com.google.common.hash.Funnel;
 import com.google.common.hash.PrimitiveSink;
 
@@ -26,6 +28,11 @@ public enum TypeFunnel implements Funnel<Object> {
       into.putLong((Long) o);
     } else if (o instanceof String) {
       into.putUnencodedChars((String) o);
+    } else if (o instanceof DateTime) {
+      into.putLong(((DateTime) o).getMillis());
+    } else {
+      throw new IllegalArgumentException(
+          "Don't know how to hash type " + o.getClass().getSimpleName());
     }
   }
 }
