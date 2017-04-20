@@ -23,12 +23,15 @@ import edu.washington.escience.myria.util.HashUtils;
 public final class UniqueTupleHashTable implements Serializable {
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
-
-  // We store this value instead of a valid index to indicate
-  // that a given hash code is mapped to multiple indexes.
+  /**
+   * We store this value instead of a valid index to indicate
+   * that a given hash code is mapped to multiple indexes.
+   */
   private static final int COLLIDING_KEY = -1;
-  // We return this value from getIfAbsent() to indicate absence,
-  // since 0 and -1 are already legitimate values.
+  /**
+   * We return this value from getIfAbsent() to indicate absence,
+   * since 0 and -1 are already legitimate values.
+   */
   private static final int ABSENT_VALUE = -2;
 
   /** Map from unique hash codes to indexes. */
@@ -130,7 +133,7 @@ public final class UniqueTupleHashTable implements Serializable {
       collidingIndexes.add(numTuples());
     } else {
       LOGGER.warn("Collision detected with {} elements in table!", numTuples());
-      IntArrayList collidingIndexes = new IntArrayList(index, numTuples());
+      IntArrayList collidingIndexes = IntArrayList.newListWith(index, numTuples());
       Preconditions.checkState(!collidingKeyHashCodesToIndexes.containsKey(hashcode));
       collidingKeyHashCodesToIndexes.put(hashcode, collidingIndexes);
       keyHashCodesToIndexes.put(hashcode, COLLIDING_KEY);
