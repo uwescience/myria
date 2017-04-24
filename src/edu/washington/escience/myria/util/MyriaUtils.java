@@ -248,4 +248,11 @@ public final class MyriaUtils {
     }
     return uri;
   }
+
+  public static boolean isTrue(Boolean b) {
+    if (b != null && b) {
+      return true;
+    }
+    return false;
+  }
 }

@@ -91,7 +91,7 @@ public final class MyriaSystemConfigKeys {
 
   public static final String SSL = "ssl";
 
-  public static final String DEBUG = "DEBUG";
+  public static final String DEBUG = "debug";
 
   public static final String JVM_OPTIONS = "jvm.options";
 
@@ -100,4 +100,6 @@ public final class MyriaSystemConfigKeys {
   public static final String GANGLIA_MASTER_PORT = "ganglia.master.port";
 
   public static final String PERSIST_URI = "persist_uri";
+
+  public static final String ELASTIC_MODE = "elastic_mode";
 }

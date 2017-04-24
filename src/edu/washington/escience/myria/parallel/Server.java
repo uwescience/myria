@@ -134,6 +134,7 @@ import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
 import edu.washington.escience.myria.storage.TupleBuffer;
 import edu.washington.escience.myria.tools.MyriaGlobalConfigurationModule.DefaultInstancePath;
+import edu.washington.escience.myria.tools.MyriaGlobalConfigurationModule.EnableElasticMode;
 import edu.washington.escience.myria.tools.MyriaGlobalConfigurationModule.FlowControlWriteBufferHighMarkBytes;
 import edu.washington.escience.myria.tools.MyriaGlobalConfigurationModule.FlowControlWriteBufferLowMarkBytes;
 import edu.washington.escience.myria.tools.MyriaGlobalConfigurationModule.MasterHost;
@@ -475,6 +476,7 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
       @Parameter(OperatorInputBufferCapacity.class) final int inputBufferCapacity,
       @Parameter(OperatorInputBufferRecoverTrigger.class) final int inputBufferRecoverTrigger,
       @Parameter(PersistUri.class) final String persistURI,
+      @Parameter(EnableElasticMode.class) final boolean enableElasticMode,
       final Injector injector) {
 
     this.instancePath = instancePath;
@@ -495,6 +497,7 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
     execEnvVars.put(MyriaConstants.EXEC_ENV_VAR_NODE_ID, MyriaConstants.MASTER_ID);
     execEnvVars.put(MyriaConstants.EXEC_ENV_VAR_EXECUTION_MODE, getExecutionMode());
     execEnvVars.put(MyriaConstants.EXEC_ENV_VAR_DATABASE_SYSTEM, databaseSystem);
+    execEnvVars.put(MyriaConstants.EXEC_ENV_VAR_ELASTIC_MODE, enableElasticMode);
 
     aliveWorkers = Sets.newConcurrentHashSet();
     messageQueue = new LinkedBlockingQueue<>();
@@ -1307,11 +1310,11 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
       for (Integer workerId : getWorkersForRelation(relationKey)) {
         String partitionName =
             String.format(
-                persistURI + "/myria-system/partition-%s/%s/%s/%s",
-                workerId,
+                persistURI + "/%s/%s/%s/%d",
                 relationKey.getUserName(),
                 relationKey.getProgramName(),
-                relationKey.getRelationName());
+                relationKey.getRelationName(),
+                workerId);
         DataSink workerSink = new UriSink(partitionName);
         workerPlans.put(
             workerId,

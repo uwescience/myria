@@ -219,6 +219,11 @@ public final class MyriaConfigurationParser {
             conf,
             MyriaGlobalConfigurationModule.TCP_RECEIVE_BUFFER_SIZE_BYTES,
             getOptional(parser, "deployment", MyriaSystemConfigKeys.TCP_RECEIVE_BUFFER_SIZE_BYTES));
+    conf =
+        setOptional(
+            conf,
+            MyriaGlobalConfigurationModule.ENABLE_ELASTIC_MODE,
+            getOptional(parser, "deployment", MyriaSystemConfigKeys.ELASTIC_MODE));
 
     return conf;
   }

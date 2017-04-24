@@ -3,13 +3,10 @@
  */
 package edu.washington.escience.myria.operator;
 
-import java.io.File;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-import com.almworks.sqlite4java.SQLiteConnection;
-import com.almworks.sqlite4java.SQLiteException;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -21,11 +18,12 @@ import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.accessmethod.AccessMethod;
 import edu.washington.escience.myria.accessmethod.AccessMethod.IndexRef;
 import edu.washington.escience.myria.operator.network.distribute.DistributeFunction;
+import edu.washington.escience.myria.operator.network.distribute.HashDistributeFunction;
 import edu.washington.escience.myria.accessmethod.ConnectionInfo;
-import edu.washington.escience.myria.accessmethod.SQLiteInfo;
 import edu.washington.escience.myria.parallel.RelationWriteMetadata;
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleUtils;
+import edu.washington.escience.myria.util.MyriaUtils;
 
 /** @author valmeida */
 public class DbInsert extends AbstractDbInsert {
@@ -130,7 +128,7 @@ public class DbInsert extends AbstractDbInsert {
    * @param connectionInfo the parameters of the database connection.
    * @param overwriteTable whether to overwrite a table that already exists.
    * @param indexes the indexes to be created on the table. Each entry is a list of columns.
-   * @param partitionFunction the PartitionFunction used to partition the table across workers. */
+   * @param distributeFunction the DistributeFunction used to distribute partitions of the table across workers. */
   public DbInsert(
       final Operator child,
       final RelationKey relationKey,
@@ -139,6 +137,7 @@ public class DbInsert extends AbstractDbInsert {
       final List<List<IndexRef>> indexes,
       final DistributeFunction distributeFunction) {
     super(child);
+    Objects.requireNonNull(relationKey, "relationKey");
     Objects.requireNonNull(relationKey, "relationKey");
     this.connectionInfo = connectionInfo;
     this.relationKey = relationKey;
@@ -195,6 +194,18 @@ public class DbInsert extends AbstractDbInsert {
   protected void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
 
     setThreshold(TupleUtils.getBatchSize(getSchema()));
+
+    /* check that our DistributeFunction is compatible with elastic mode if enabled */
+    boolean enableElasticMode = false;
+    if (getExecEnvVars() != null) {
+      enableElasticMode =
+          MyriaUtils.isTrue(
+              (Boolean) getExecEnvVars().get(MyriaConstants.EXEC_ENV_VAR_ELASTIC_MODE));
+    }
+    Preconditions.checkArgument(
+        !enableElasticMode
+            || (distributeFunction != null
+                && distributeFunction instanceof HashDistributeFunction));
 
     /* retrieve connection information from the environment variables, if not already set */
     if (connectionInfo == null && execEnvVars != null) {

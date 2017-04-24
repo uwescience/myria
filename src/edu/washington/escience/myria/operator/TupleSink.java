@@ -10,7 +10,7 @@ import edu.washington.escience.myria.io.DataSink;
 import edu.washington.escience.myria.storage.TupleBatch;
 
 /**
- * DataOutput is a {@link RootOperator} that can be used to serialize data in a streaming fashion. It consumes
+ * TupleSink is a {@link RootOperator} that can be used to serialize data in a streaming fashion. It consumes
  * {@link TupleBatch}es from its child and passes them to a {@link TupleWriter}.
  *
  *
@@ -36,7 +36,7 @@ public final class TupleSink extends RootOperator {
     this.includeColumnHeader = includeColumnHeader;
   }
   /**
-   * Instantiate a new DataOutput operator, which will stream its tuples to the specified {@link TupleWriter}.
+   * Instantiate a new TupleSink operator, which will stream its tuples to the specified {@link TupleWriter}.
    *
    * @param child the source of tuples to be streamed.
    * @param writer the {@link TupleWriter} which will serialize the tuples.

@@ -74,6 +74,7 @@ public final class MyriaGlobalConfigurationModule extends ConfigurationModuleBui
   public static final RequiredParameter<String> MASTER_HOST = new RequiredParameter<>();
   public static final RequiredParameter<Integer> MASTER_RPC_PORT = new RequiredParameter<>();
   public static final RequiredParameter<String> PERSIST_URI = new RequiredParameter<>();
+  public static final OptionalParameter<Boolean> ENABLE_ELASTIC_MODE = new OptionalParameter<>();
 
   public static final ConfigurationModule CONF =
       new MyriaGlobalConfigurationModule()
@@ -115,6 +116,7 @@ public final class MyriaGlobalConfigurationModule extends ConfigurationModuleBui
           .bindNamedParameter(MasterHost.class, MASTER_HOST)
           .bindNamedParameter(MasterRpcPort.class, MASTER_RPC_PORT)
           .bindNamedParameter(PersistUri.class, PERSIST_URI)
+          .bindNamedParameter(EnableElasticMode.class, ENABLE_ELASTIC_MODE)
           .build();
 
   @NamedParameter
@@ -221,4 +223,7 @@ public final class MyriaGlobalConfigurationModule extends ConfigurationModuleBui
 
   @NamedParameter
   public class PersistUri implements Name<String> {}
+
+  @NamedParameter(default_value = "false")
+  public class EnableElasticMode implements Name<Boolean> {}
 }
