@@ -30,8 +30,8 @@ def get_deployment(path, coordinator_hostname, worker_hostnames, persist_uri,
 
 
 def _get_header(path, name='myria', rest_port=8753, database_type='postgresql',
-                database_port=5432, debug=False,
-                database_username=None, database_password=None):
+                database_port=5432, database_username=None,
+                database_password=None, debug=False, elastic_mode=False):
     """ Generates the header section of a Myria deployment file """
     header = ('[deployment]\n'
               'name = {name}\n'
@@ -155,7 +155,6 @@ def main(argv):
     parser.add_argument(
         '--coordinator-port', dest='coordinator_port', type=int,
         default=8001, help='Port for coordinator communication')
-
     parser.add_argument(
         '--worker-ports', dest='worker_ports', type=int, nargs='*',
         default=None, help='One or more ports for worker communication')
