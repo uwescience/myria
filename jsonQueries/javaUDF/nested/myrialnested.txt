@@ -1,0 +1,7 @@
+create function square as 'JavaFunctions.javaUDF.square';
+create function triple as 'JavaFunctions.javaUDF.triple';
+create function negate as 'JavaFunctions.javaUDF.negate';
+
+T1 = scan(smallTable);
+T2 = [from T1 emit square(triple($0) - negate($1)) as x];
+store(T2, Nested);

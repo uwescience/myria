@@ -335,7 +335,7 @@ public final class MyriaDriverLauncher {
                   driverJobSubmissionDirectory,
                   driverHostName,
                   driverMemoryMB,
-                  new String[] {javaLibPath},
+                  javaLibPath.split(";"),
                   new String[] {nativeLibPath}),
               globalConfWrapper);
 

@@ -44,10 +44,40 @@ public class JavaUDFExpression extends NAryExpression {
     this.outputType = outputType;
   }
 
+  // Returns true if c1 can be implicitly cast as c2
+  private static boolean castable(Class<?> c1, Class<?> c2) {
+    if (c2.equals(c1)) {
+      return true;
+    } else if (c2.equals(boolean.class) || c2.equals(Boolean.class)) {
+      if (c1.equals(Boolean.class)) {
+        return true;
+      }
+    } else if (c2.equals(int.class) || c2.equals(Integer.class)) {
+      if (c1.equals(Integer.class)) {
+        return true;
+      }
+    } else if (c2.equals(long.class) || c2.equals(Long.class)) {
+      if (c1.equals(Integer.class) || c1.equals(Long.class)) {
+        return true;
+      }
+    } else if (c2.equals(float.class) || c2.equals(Float.class)) {
+      if (c1.equals(Integer.class) || c1.equals(Long.class) || c1.equals(Float.class)) {
+        return true;
+      }
+    } else if (c2.equals(double.class) || c2.equals(Double.class)) {
+      if (c1.equals(Integer.class)
+          || c1.equals(Long.class)
+          || c1.equals(Float.class)
+          || c1.equals(Double.class)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   private static boolean compareTypes(Class<?>[] parameterTypes, Type[] childrenTypes) {
     for (int i = 0; i < parameterTypes.length; i++) {
-      if (!parameterTypes[i].equals(childrenTypes[i].toJavaType())
-          && !parameterTypes[i].equals(childrenTypes[i].toJavaObjectType())) {
+      if (!castable(childrenTypes[i].toJavaObjectType(), parameterTypes[i])) {
         return false;
       }
     }
@@ -66,7 +96,7 @@ public class JavaUDFExpression extends NAryExpression {
     String className = this.name.substring(0, index);
     String methodName = this.name.substring(index + 1);
 
-    int childrenSize = getChildren().size();
+    int childrenSize = getChildren() != null ? getChildren().size() : 0;
 
     Type[] childrenTypes = new Type[childrenSize];
     for (int i = 0; i < childrenSize; i++) {
@@ -116,7 +146,7 @@ public class JavaUDFExpression extends NAryExpression {
     }
 
     signature.append(")");
-    throw new IllegalArgumentException("No method found with signature" + signature.toString());
+    throw new IllegalArgumentException("No method found with signature " + signature.toString());
   }
 
   /**

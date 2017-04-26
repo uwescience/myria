@@ -1,0 +1,82 @@
+{
+    "ftMode": "NONE",
+    "language": "myrial",
+    "logicalRa": "Store(mhsaul:square:Squared)[Apply(x=JAVAUDF($0))[Scan(mhsaul:square:smallTable)]]",
+    "plan": {
+        "fragments": [
+            {
+                "operators": [
+                    {
+                        "debroadcast": false,
+                        "opId": 0,
+                        "opName": "MyriaScan(mhsaul:square:smallTable)",
+                        "opType": "TableScan",
+                        "relationKey": {
+                            "programName": "square",
+                            "relationName": "smallTable",
+                            "userName": "mhsaul"
+                        }
+                    },
+                    {
+                        "argChild": 0,
+                        "emitExpressions": [
+                            {
+                                "outputName": "x",
+                                "rootExpressionOperator": {
+                                    "children": [
+                                        {
+                                            "left": {
+                                                "children": [
+                                                    {
+                                                        "columnIdx": "0",
+                                                        "type": "VARIABLE"
+                                                    }
+                                                ],
+                                                "name": "javaUDF.JavaFunctions.triple",
+                                                "type": "JAVAUDF"
+                                            },
+                                            "right": {
+                                                "children": [
+                                                    {
+                                                        "columnIdx": "1",
+                                                        "type": "VARIABLE"
+                                                    }
+                                                ],
+                                                "name": "javaUDF.JavaFunctions.negate",
+                                                "type": "JAVAUDF"
+                                            },
+                                            "type": "MINUS"
+                                        }
+                                    ],
+                                    "name": "javaUDF.JavaFunctions.square",
+                                    "type": "JAVAUDF"
+                                }
+                            }
+                        ],
+                        "opId": 1,
+                        "opName": "MyriaApply(x=JAVAUDF($0))",
+                        "opType": "Apply"
+                    },
+                    {
+                        "argChild": 1,
+                        "argOverwriteTable": true,
+                        "distributeFunction": {
+                            "type": "RoundRobin"
+                        },
+                        "opId": 2,
+                        "opName": "MyriaStore(mhsaul:square:Squared)",
+                        "opType": "DbInsert",
+                        "relationKey": {
+                            "programName": "square",
+                            "relationName": "Nested",
+                            "userName": "mhsaul"
+                        }
+                    }
+                ]
+            }
+        ],
+        "type": "SubQuery"
+    },
+    "profilingMode": [],
+    "rawQuery": "T1 = scan(smallTable);\nT2 = [from T1 emit javaUDF.JavaFunctions.square($0) as x];\nstore(T2, Squared);"
+}

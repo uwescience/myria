@@ -32,8 +32,7 @@
                             "columnIdx": 0
                         }
                         ],
-                        "name": "Math.sin",
-                        "outputType": "DOUBLE_TYPE"
+                        "name": "java.lang.Math.signum"
                     },
                     "outputName": "x"
                 }

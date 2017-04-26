@@ -1,10 +1,17 @@
 package edu.washington.escience.myria.operator;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.FileOutputStream;
+import java.net.URISyntaxException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import com.google.common.collect.ImmutableMap;
+
+import org.apache.commons.io.IOUtils;
+import org.apache.commons.io.FilenameUtils;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
@@ -14,6 +21,7 @@ import edu.washington.escience.myria.accessmethod.ConnectionInfo;
 import edu.washington.escience.myria.expression.evaluate.GenericEvaluator;
 import edu.washington.escience.myria.functions.PythonFunctionRegistrar;
 import edu.washington.escience.myria.storage.TupleBatch;
+import edu.washington.escience.myria.io.UriSource;
 /**
  *
  *Class for creating user defined functions.
@@ -30,8 +38,12 @@ public class DbCreateFunction extends RootOperator {
   private ConnectionInfo connectionInfo;
   /** function name.*/
   private final String name;
+  /** function alias.*/
+  private final String shortName;
   /** function body.*/
   private final String binary;
+  /** Uri of jar file with java location **/
+  private final String binaryUri;
   /** function description or text.*/
   private final String description;
   /** does function return multiple tuples.*/
@@ -58,23 +70,27 @@ public class DbCreateFunction extends RootOperator {
   public DbCreateFunction(
       final Operator child,
       final String name,
+      final String shortName,
       final String description,
       final String outputType,
       final Boolean isMultiValued,
       final FunctionLanguage lang,
-      final String binary) {
+      final String binary,
+      final String binaryUri) {
     super(child);
     this.name = name;
+    this.shortName = shortName != null ? shortName : name;
     this.description = description;
     this.outputType = outputType;
     this.isMultiValued = isMultiValued;
     this.lang = lang;
     this.binary = binary;
+    this.binaryUri = binaryUri;
   }
 
   @Override
   protected void init(final ImmutableMap<String, Object> execEnvVars)
-      throws DbException, IOException {
+      throws DbException, IOException, URISyntaxException {
     /* Retrieve connection information from the environment variables, if not already set */
     if (connectionInfo == null && execEnvVars != null) {
       connectionInfo =
@@ -103,6 +119,19 @@ public class DbCreateFunction extends RootOperator {
           pyFunc.addFunction(name, description, outputType, isMultiValued, binary);
         } else {
           throw new DbException("Cannot register python UDF without binary.");
+        }
+        break;
+      case JAVA:
+        if (binaryUri != null) {
+          UriSource uriSource = new UriSource(binaryUri);
+          InputStream in = uriSource.getInputStream();
+          OutputStream out =
+              new FileOutputStream(
+                  System.getenv("REPO_ROOT") + "/JavaUDF/" + FilenameUtils.getName(binaryUri),
+                  false);
+          IOUtils.copy(in, out);
+          in.close();
+          out.close();
         }
         break;
       default:

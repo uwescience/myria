@@ -1190,11 +1190,13 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
    */
   public long createFunction(
       final String name,
+      final String shortName,
       final String definition,
       final String outputType,
       final Boolean isMultiValued,
       final FunctionLanguage lang,
       final String binary,
+      final String binaryUri,
       final Set<Integer> workers)
       throws DbException, InterruptedException {
     long queryID = 0;
@@ -1213,11 +1215,13 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
                 new DbCreateFunction(
                     EmptyRelation.of(Schema.EMPTY_SCHEMA),
                     name,
+                    shortName,
                     definition,
                     outputType,
                     isMultiValued,
                     lang,
-                    binary)));
+                    binary,
+                    binaryUri)));
       }
 
       ListenableFuture<Query> qf =

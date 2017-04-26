@@ -65,11 +65,13 @@ public class FunctionResource {
       functionCreationResponse =
           server.createFunction(
               encoding.name,
+              encoding.shortName,
               (encoding.description == null) ? "" : encoding.description,
               encoding.outputType,
               encoding.isMultiValued,
               encoding.lang,
               encoding.binary,
+              encoding.binaryUri,
               encoding.workers);
     } catch (Exception e) {
       throw new DbException(e);

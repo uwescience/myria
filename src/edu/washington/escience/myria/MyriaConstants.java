@@ -341,7 +341,9 @@ public final class MyriaConstants {
     /** Postgres UDF. */
     POSTGRES,
     /** Python UDF. */
-    PYTHON
+    PYTHON,
+    /** Java UDF. */
+    JAVA
   };
   /**
    * Python UDF relation: relation for holding python functions on each worker.
