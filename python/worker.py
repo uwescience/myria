@@ -1,12 +1,11 @@
 from __future__ import print_function
 import os
 import sys
-import time
 import socket
 import traceback
-import struct
 
-from MyriaPythonWorker.serializers import read_int, write_int, SpecialLengths, write_with_length, PickleSerializer
+from serializers import (
+    read_int, write_int, SpecialLengths, write_with_length, PickleSerializer)
 
 pickleSer = PickleSerializer()
 
