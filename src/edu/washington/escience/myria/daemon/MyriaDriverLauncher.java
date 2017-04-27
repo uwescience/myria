@@ -304,7 +304,8 @@ public final class MyriaDriverLauncher {
             DriverJobSubmissionDirectory.class,
             ConfigPath.class,
             JavaLibPath.class,
-            NativeLibPath.class
+            NativeLibPath.class,
+            PythonLibPath.class
           };
       final Configuration commandLineConf =
           CommandLine.parseToConfiguration(args, commandLineClasses);
@@ -321,6 +322,7 @@ public final class MyriaDriverLauncher {
       final String configPath = commandLineInjector.getNamedInstance(ConfigPath.class);
       final String javaLibPath = commandLineInjector.getNamedInstance(JavaLibPath.class);
       final String nativeLibPath = commandLineInjector.getNamedInstance(NativeLibPath.class);
+      final String pythonLibPath = commandLineInjector.getNamedInstance(PythonLibPath.class);
       final Configuration globalConf = getMyriaGlobalConf(configPath);
       final String serializedGlobalConf = new AvroConfigurationSerializer().toString(globalConf);
       final Configuration globalConfWrapper =
@@ -336,7 +338,7 @@ public final class MyriaDriverLauncher {
                   driverHostName,
                   driverMemoryMB,
                   new String[] {javaLibPath},
-                  new String[] {nativeLibPath}),
+                  new String[] {nativeLibPath, pythonLibPath}),
               globalConfWrapper);
 
       return tang.newInjector(getRuntimeConf(runtimeClassName), getClientConf())
@@ -423,6 +425,12 @@ public final class MyriaDriverLauncher {
    */
   @NamedParameter(doc = "local native shared library directory", short_name = "nativeLibPath")
   public static final class NativeLibPath implements Name<String> {}
+
+  /**
+   * Command line parameter: directory containing Python modules on driver launch host.
+   */
+  @NamedParameter(doc = "local Python module directory", short_name = "pythonLibPath")
+  public static final class PythonLibPath implements Name<String> {}
 
   /**
    * Serialized Myria global configuration (which itself contains serialized configuration for each worker).
