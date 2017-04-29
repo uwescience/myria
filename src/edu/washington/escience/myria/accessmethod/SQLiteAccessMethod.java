@@ -2,6 +2,7 @@ package edu.washington.escience.myria.accessmethod;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
@@ -224,6 +225,12 @@ public final class SQLiteAccessMethod extends AccessMethod {
     } catch (InterruptedException | ExecutionException e) {
       throw new DbException(e);
     }
+  }
+
+  @Override
+  public long insertFromStream(final RelationKey relationKey, final InputStream binaryInput)
+      throws DbException {
+    throw new UnsupportedOperationException();
   }
 
   /** How many times to try to open a database before we give up. Normal is 2-3, outside is 10 to 20. */

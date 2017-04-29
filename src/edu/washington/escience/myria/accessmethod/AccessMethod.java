@@ -3,6 +3,7 @@
  */
 package edu.washington.escience.myria.accessmethod;
 
+import java.io.InputStream;
 import java.io.Serializable;
 import java.util.Iterator;
 import java.util.List;
@@ -76,6 +77,18 @@ public abstract class AccessMethod {
    */
   public abstract void tupleBatchInsert(final RelationKey relationKey, final TupleBatch tupleBatch)
       throws DbException;
+
+  /**
+   * Insert tuples from an InputStream in the database's native binary format.
+   *
+   * @param relationKey the table to insert into
+   * @param schema the schema of the relation
+   * @param binaryInput the InputStream containing tuples in native format
+   * @return the number of tuples inserted
+   * @throws DbException if there is an error inserting the tuples.
+   */
+  public abstract long insertFromStream(
+      final RelationKey relationKey, final InputStream binaryInput) throws DbException;
 
   /**
    * Runs a query and expose the results as an Iterator<TupleBatch>.

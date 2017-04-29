@@ -1,6 +1,7 @@
 package edu.washington.escience.myria.accessmethod;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -116,8 +117,7 @@ public final class JdbcAccessMethod extends AccessMethod {
    * @param tupleBatch the tuples to be inserted.
    * @throws DbException if there is an error.
    */
-  private void postgresCopyInsert(
-      final RelationKey relationKey, final Schema schema, final TupleBatch tupleBatch)
+  private void postgresCopyInsert(final RelationKey relationKey, final TupleBatch tupleBatch)
       throws DbException {
     // Use the postgres COPY command which is much faster
     try {
@@ -149,6 +149,30 @@ public final class JdbcAccessMethod extends AccessMethod {
   }
 
   @Override
+  public long insertFromStream(final RelationKey relationKey, final InputStream binaryInput)
+      throws DbException {
+    if (jdbcInfo.getDbms().equals(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL)) {
+      try {
+        CopyManager cpManager = ((PGConnection) jdbcConnection).getCopyAPI();
+        StringBuilder copyString =
+            new StringBuilder()
+                .append("COPY ")
+                .append(quote(relationKey))
+                .append(" FROM STDIN WITH BINARY");
+        // TODO: benchmark non-default values for bufferSize arg in copyIn() overload
+        return cpManager.copyIn(copyString.toString(), binaryInput);
+      } catch (final SQLException e) {
+        throw ErrorUtils.mergeSQLException(e);
+      } catch (final IOException e) {
+        LOGGER.error(e.getMessage(), e);
+        throw new DbException(e);
+      }
+    } else {
+      throw new UnsupportedOperationException("Only PostgreSQL supports this operation.");
+    }
+  }
+
+  @Override
   public void tupleBatchInsert(final RelationKey relationKey, final TupleBatch tupleBatch)
       throws DbException {
     LOGGER.debug("Inserting batch of size {}", tupleBatch.numTuples());
@@ -163,7 +187,7 @@ public final class JdbcAccessMethod extends AccessMethod {
        * uwescience/myria-web#48
        */
       try {
-        postgresCopyInsert(relationKey, schema, tupleBatch);
+        postgresCopyInsert(relationKey, tupleBatch);
         writeSucceeds = true;
       } catch (DbException e) {
         LOGGER.error("Error inserting batch via PostgreSQL COPY", e);
