@@ -158,7 +158,7 @@ public class PythonWorker {
 
     env.put("PYTHONUNBUFFERED", "YES");
     env.put("PYTHON_EGG_CACHE", "/tmp/.python-eggs");
-    
+
     pb.redirectError(Redirect.INHERIT);
     pb.redirectOutput(Redirect.INHERIT);
 
