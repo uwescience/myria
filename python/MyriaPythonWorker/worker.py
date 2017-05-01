@@ -11,6 +11,7 @@ pickleSer = PickleSerializer()
 
 
 def main(infile, outfile):
+    #os.environ['PYTHON_EGG_CACHE'] = '/tmp'
     try:
         func = pickleSer.read_command(infile)
         tupleSize = read_int(infile)
