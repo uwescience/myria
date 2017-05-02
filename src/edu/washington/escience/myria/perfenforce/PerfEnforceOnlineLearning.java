@@ -13,6 +13,7 @@ import java.io.PrintWriter;
 import java.nio.channels.FileChannel;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import org.slf4j.LoggerFactory;
@@ -247,6 +248,8 @@ public class PerfEnforceOnlineLearning {
     try {
       PrintWriter outputWriter = new PrintWriter(modifiedTrainingFileName);
       outputWriter.close();
+      PrintWriter predictionWriter = new PrintWriter(predictionsFileName);
+      predictionWriter.close();
 
       // copy training file to new file
       FileChannel src = new FileInputStream(trainingFileName).getChannel();
@@ -329,7 +332,7 @@ public class PerfEnforceOnlineLearning {
       String result = featureReader.readLine();
       if (queryRuntime != 0) {
         String[] parts = result.split(",");
-        result = Joiner.on(",").join(parts);
+        result = Joiner.on(",").join(Arrays.copyOfRange(parts, 0, parts.length - 1));
         result += "," + queryRuntime;
       }
 
