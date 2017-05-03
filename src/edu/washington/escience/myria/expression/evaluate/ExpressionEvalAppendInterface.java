@@ -27,6 +27,7 @@ public interface ExpressionEvalAppendInterface extends ExpressionEvalInterface {
       final int inputRow,
       @Nullable final ReadableTable state,
       final int stateRow,
+      final int stateColOffset,
       @Nonnull final WritableColumn result,
       @Nullable final WritableColumn count);
 }
