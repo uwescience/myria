@@ -21,6 +21,7 @@ import edu.washington.escience.myria.functions.PythonFunctionRegistrar;
 import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.operator.TupleHashTable;
 import edu.washington.escience.myria.operator.UnaryOperator;
+import edu.washington.escience.myria.operator.agg.PrimitiveAggregator.AggregationOp;
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
 import edu.washington.escience.myria.util.MyriaArrayUtils;
@@ -46,6 +47,8 @@ public class Aggregate extends UnaryOperator {
   protected final int[] gfields;
   /** Buffer for restoring results. */
   protected TupleBatchBuffer resultBuffer;
+  /** If we have outputted 0 as the count for count(*) on an empty relation. */
+  private boolean COUNTALL_ON_EMPTY;
 
   /**
    * Groups the input tuples according to the specified grouping fields, then produces the specified aggregates.
@@ -102,6 +105,16 @@ public class Aggregate extends UnaryOperator {
       tb = child.nextReady();
     }
     if (child.eos()) {
+      if (!COUNTALL_ON_EMPTY
+          && gfields.length == 0
+          && groupStates.numTuples() == 0
+          && internalAggs.size() == 1
+          && internalAggs.get(0) instanceof PrimitiveAggregator
+          && ((PrimitiveAggregator) (internalAggs.get(0))).aggOp == AggregationOp.COUNT) {
+        /** Special check for count(*) on an empty relation: emit 0. Do it only when count(*) is the only aggregate and with no group by. */
+        COUNTALL_ON_EMPTY = true;
+        resultBuffer.putLong(0, 0);
+      }
       generateResult();
       return resultBuffer.popAny();
     }
