@@ -46,8 +46,6 @@ public class Aggregate extends UnaryOperator {
   protected final int[] gfields;
   /** Buffer for restoring results. */
   protected TupleBatchBuffer resultBuffer;
-  /** If we have outputted 0 as the count for count(*) on an empty relation. */
-  private boolean COUNTALL_ON_EMPTY;
 
   /**
    * Groups the input tuples according to the specified grouping fields, then produces the specified aggregates.
@@ -102,13 +100,7 @@ public class Aggregate extends UnaryOperator {
     }
     if (child.eos()) {
       /* Special check for count(*) as the only aggregate on an empty relation: emit 0. */
-          && gfields.length == 0
       if (getNumOutputTuples() == 0 && groupStates.numTuples() == 0 && isCountAllOnlyAggregate()) {
-          && internalAggs.size() == 1
-          && internalAggs.get(0) instanceof PrimitiveAggregator
-          && ((PrimitiveAggregator) (internalAggs.get(0))).aggOp == AggregationOp.COUNT) {
-        /* Special check for count(*) on an empty relation: emit 0. Do it only when count(*) is the only aggregate and with no group by. */
-        COUNTALL_ON_EMPTY = true;
         resultBuffer.putLong(0, 0);
       }
       generateResult();
