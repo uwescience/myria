@@ -111,7 +111,7 @@ public class Aggregate extends UnaryOperator {
           && internalAggs.size() == 1
           && internalAggs.get(0) instanceof PrimitiveAggregator
           && ((PrimitiveAggregator) (internalAggs.get(0))).aggOp == AggregationOp.COUNT) {
-        /** Special check for count(*) on an empty relation: emit 0. Do it only when count(*) is the only aggregate and with no group by. */
+        /* Special check for count(*) on an empty relation: emit 0. Do it only when count(*) is the only aggregate and with no group by. */
         COUNTALL_ON_EMPTY = true;
         resultBuffer.putLong(0, 0);
       }
