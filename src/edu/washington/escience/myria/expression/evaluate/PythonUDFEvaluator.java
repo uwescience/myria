@@ -115,6 +115,7 @@ public class PythonUDFEvaluator extends GenericEvaluator {
     pyWorker = new PythonWorker();
     pyWorker.sendCodePickle(fs.getBinary(), columnIdxs.length, outputType, isMultiValued);
     buffer = new TupleBuffer(stateSchema);
+    groups = new IntObjectHashMap<IntArrayList>();
   }
 
   /**
