@@ -103,6 +103,7 @@ public class GenericEvaluator extends Evaluator {
                       Expression.INPUTROW,
                       Expression.STATE,
                       Expression.STATEROW,
+                      Expression.STATECOLOFFSET,
                       Expression.RESULT,
                       Expression.COUNT
                     });
@@ -175,7 +176,7 @@ public class GenericEvaluator extends Evaluator {
         "count must be null for a single-valued expression and non-null for a multivalued expression.");
     try {
       ((ExpressionEvalAppendInterface) evaluator)
-          .evaluate(input, inputRow, state, stateRow, result, count);
+          .evaluate(input, inputRow, state, stateRow, 0, result, count);
     } catch (Exception e) {
       LOGGER.error(script, e);
       throw e;

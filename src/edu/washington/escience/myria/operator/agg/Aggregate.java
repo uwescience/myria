@@ -21,6 +21,7 @@ import edu.washington.escience.myria.functions.PythonFunctionRegistrar;
 import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.operator.TupleHashTable;
 import edu.washington.escience.myria.operator.UnaryOperator;
+import edu.washington.escience.myria.operator.agg.PrimitiveAggregator.AggregationOp;
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
 import edu.washington.escience.myria.util.MyriaArrayUtils;
@@ -102,10 +103,24 @@ public class Aggregate extends UnaryOperator {
       tb = child.nextReady();
     }
     if (child.eos()) {
+      /* Special check for count(*) as the only aggregate on an empty relation: emit 0. */
+      if (getNumOutputTuples() == 0 && groupStates.numTuples() == 0 && isCountAllOnlyAggregate()) {
+        resultBuffer.putLong(0, 0);
+      }
       generateResult();
       return resultBuffer.popAny();
     }
     return null;
+  }
+
+  /**
+   * Check if count(*) is the only aggregate with no group by.
+   * */
+  private boolean isCountAllOnlyAggregate() {
+    return gfields.length == 0
+        && internalAggs.size() == 1
+        && internalAggs.get(0) instanceof PrimitiveAggregator
+        && ((PrimitiveAggregator) (internalAggs.get(0))).aggOp == AggregationOp.COUNT;
   }
 
   /**

@@ -361,6 +361,5 @@ public class TupleBuffer implements ReadableTable, AppendableTable {
       final int destColumn, final ReadableColumn sourceColumn, final int sourceRow) {
     checkPutIndex(destColumn);
     TupleUtils.copyValue(sourceColumn, sourceRow, this, destColumn);
-    columnPut(destColumn);
   }
 }

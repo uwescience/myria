@@ -47,7 +47,7 @@ public class StateExpression extends ZeroaryExpression {
         .append(".get")
         .append(getOutputType(parameters).getName())
         .append("(")
-        .append(getColumnIdx())
+        .append(getColumnIdx() + "+" + Expression.STATECOLOFFSET)
         .append(",")
         .append(Expression.STATEROW)
         .append(")")

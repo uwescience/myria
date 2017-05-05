@@ -371,5 +371,20 @@ store(T1, finalBroadcast);
             originalResult.to_dict(), broadcastResult.to_dict())
 
 
+class UDACounterTest(MyriaTestBase):
+    def test(self):
+        twitterData = self.get_file_url('testdata/twitter/TwitterK.csv')
+        query_uda = """
+uda counter() {{[0 AS c]; [c + 1];  c;}}; T1 = load('{}',csv(schema(a:int,b:int))); T2 = [from T1 emit a, counter() as c]; store(T2, out_degree_uda);
+""".format(twitterData)
+        uda_result = MyriaQuery.submit(query_uda)
+        query_count = """
+T1 = load('{}',csv(schema(a:int,b:int))); T2 = [from T1 emit a, count(*) as c]; store(T2, out_degree_count);
+""".format(twitterData)
+        count_result = MyriaQuery.submit(query_count)
+        self.assertListOfDictsEqual(
+            count_result.to_dict(), uda_result.to_dict())
+
+
 if __name__ == '__main__':
     unittest.main()
