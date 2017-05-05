@@ -183,6 +183,7 @@ public class PerfEnforceDataPreparation {
         previousWorkerRange = currentWorkerRange;
         previousRelationKey = currentConfigRelationKey;
       }
+      Collections.sort(PerfEnforceDriver.configurations);
       return factTableRelationMapper;
     } catch (Exception e) {
       throw new PerfEnforceException("Error while ingesting fact table");

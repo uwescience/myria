@@ -1,9 +1,7 @@
 from __future__ import print_function
 import sys
-import types
 import struct
 import cPickle
-import itertools
 import base64
 
 
@@ -75,13 +73,13 @@ def write_with_length(obj, stream, outputType, serialiser):
         write_int(obj, stream)
     elif(outputType == DataType.LONG):
         write_int(DataType.LONG, stream)
-        write_long(obj,stream)
+        write_long(obj, stream)
     elif(outputType == DataType.FLOAT):
         write_int(DataType.FLOAT, stream)
         write_float(obj, stream)
     elif(outputType == DataType.DOUBLE):
         write_int(DataType.DOUBLE, stream)
-        write_double(obj,stream)
+        write_double(obj, stream)
     elif(outputType == DataType.BLOB):
         write_int(DataType.BLOB, stream)
         serialiser.write_with_length(obj, stream)

@@ -34,19 +34,22 @@ def udfAgg(dt):
     import numpy as np
     tuplist = dt
     state = None
+    n = len(tuplist)
     for i in tuplist:
-        imgid = i[2]
-        subjid = i[1]
-        img = np.asarray(i[3])
-        shape = img.shape + (5,)
+        imgid = i[1]
+        subjid = i[0]
+        img = np.asarray(i[2])
         if state is None:
+            shape = img.shape + (5,)
             state = np.empty(shape)
             state[:,:,:,imgid]=img
         else:
             state[:,:,:,imgid]=img
     return (state)
 
-connection.create_function("udfAgg","function text",outType, py,False, udfAgg)
+
+MyriaPythonFunction(udfAgg, outType).register()
+
 
 
 def pyAdd(dt):
@@ -54,18 +57,20 @@ def pyAdd(dt):
     retval = None
     for i in tuplist:
         if retval is None:
-           retval = i[1]
+            retval = i[0]
         else:
-           retval = retval+i[1]
+            retval = retval+i[0]
     return retval
 
-connection.create_function("pyAdd","function text",outType, py,False, pyAdd)
+
+MyriaPythonFunction(pyAdd, outType).register()
+
 
 def pyMean(dt):
     print dt
     return dt[0][0]/dt[0][1]
 
-connection.create_function("pyMean","function text",outType, py,False, pyMean)
+MyriaPythonFunction(pyMean, outType).register()
 
 
 outType= "LONG_TYPE"
