@@ -118,6 +118,83 @@ public final class HashUtils {
   }
 
   /**
+   * Compute the hash code of all the values in the specified row, in column order.
+   *
+   * @param table the table containing the values
+   * @param row the row to be hashed
+   * @return the hash code of all the values in the specified row, in column order
+   */
+  public static long hashRowLong(final ReadableTable table, final int row) {
+    Hasher hasher = HASH_FUNCTIONS[0].newHasher();
+    for (int i = 0; i < table.numColumns(); ++i) {
+      addValue(hasher, table, i, row);
+    }
+    return hasher.hash().asLong();
+  }
+
+  /**
+   * Compute the hash code of the value in the specified column and row of the given table.
+   *
+   * @param table the table containing the values to be hashed
+   * @param column the column containing the value to be hashed
+   * @param row the row containing the value to be hashed
+   * @return the hash code of the specified value
+   */
+  public static long hashValueLong(final ReadableTable table, final int column, final int row) {
+    return hashValueLong(table, column, row, 0);
+  }
+
+  /**
+   * Compute the hash code of the value in the specified column and row of the given table with specific hashcode.
+   *
+   * @param table the table containing the values to be hashed
+   * @param column the column containing the value to be hashed
+   * @param row the row containing the value to be hashed
+   * @param seedIndex the index of the chosen hash function
+   * @return hash code of the specified seed
+   */
+  public static long hashValueLong(
+      final ReadableTable table, final int column, final int row, final int seedIndex) {
+    Preconditions.checkPositionIndex(seedIndex, NUM_OF_HASHFUNCTIONS);
+    Hasher hasher = HASH_FUNCTIONS[seedIndex].newHasher();
+    addValue(hasher, table, column, row);
+    return hasher.hash().asLong();
+  }
+
+  /**
+   * Compute the hash code of the specified columns in the specified row of the given table.
+   *
+   * @param table the table containing the values to be hashed
+   * @param hashColumns the columns to be hashed. Order matters
+   * @param row the row containing the values to be hashed
+   * @return the hash code of the specified columns in the specified row of the given table
+   */
+  public static long hashSubRowLong(
+      final ReadableTable table, final int[] hashColumns, final int row) {
+    return hashSubRowLong(table, hashColumns, row, 0);
+  }
+
+  /**
+   * Compute the hash code of the specified columns in the specified row of the given table.
+   *
+   * @param table the table containing the values to be hashed
+   * @param hashColumns the columns to be hashed. Order matters
+   * @param row the row containing the values to be hashed
+   * @param seedIndex the index of the chosen hash function
+   * @return the hash code of the specified columns in the specified row of the given table
+   */
+  public static long hashSubRowLong(
+      final ReadableTable table, final int[] hashColumns, final int row, final int seedIndex) {
+    Objects.requireNonNull(table, "table");
+    Objects.requireNonNull(hashColumns, "hashColumns");
+    Hasher hasher = HASH_FUNCTIONS[seedIndex].newHasher();
+    for (int column : hashColumns) {
+      addValue(hasher, table, column, row);
+    }
+    return hasher.hash().asLong();
+  }
+
+  /**
    * Add the value at the specified row and column to the specified hasher.
    *
    * @param hasher the hasher

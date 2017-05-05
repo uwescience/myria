@@ -8,7 +8,6 @@ import javax.annotation.Nullable;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
-import com.gs.collections.api.iterator.IntIterator;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.Schema;
@@ -19,8 +18,8 @@ import edu.washington.escience.myria.expression.evaluate.GenericEvaluator;
 import edu.washington.escience.myria.expression.evaluate.PythonUDFEvaluator;
 import edu.washington.escience.myria.functions.PythonFunctionRegistrar;
 import edu.washington.escience.myria.operator.Operator;
-import edu.washington.escience.myria.operator.TupleHashTable;
 import edu.washington.escience.myria.operator.UnaryOperator;
+import edu.washington.escience.myria.operator.UniqueTupleHashTable;
 import edu.washington.escience.myria.operator.agg.PrimitiveAggregator.AggregationOp;
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
@@ -36,7 +35,7 @@ public class Aggregate extends UnaryOperator {
   private static final long serialVersionUID = 1L;
 
   /** The hash table containing groups and states. */
-  protected transient TupleHashTable groupStates;
+  protected transient UniqueTupleHashTable groupStates;
   /** Factories to make the Aggregators. **/
   private final AggregatorFactory[] factories;
   /** Aggregators of the internal state. */
@@ -81,18 +80,15 @@ public class Aggregate extends UnaryOperator {
     TupleBatch tb = child.nextReady();
     while (tb != null) {
       for (int row = 0; row < tb.numTuples(); ++row) {
-        IntIterator iter = groupStates.getIndices(tb, gfields, row).intIterator();
-        int index;
-        if (!iter.hasNext()) {
+        int index = groupStates.getIndex(tb, gfields, row);
+        if (index == -1) {
           groupStates.addTuple(tb, gfields, row, true);
           int offset = gfields.length;
           for (Aggregator agg : internalAggs) {
             agg.initState(groupStates.getData(), offset);
             offset += agg.getStateSize();
           }
-          index = groupStates.getData().numTuples() - 1;
-        } else {
-          index = iter.next();
+          index = groupStates.numTuples() - 1;
         }
         int offset = gfields.length;
         for (Aggregator agg : internalAggs) {
@@ -220,7 +216,7 @@ public class Aggregate extends UnaryOperator {
       }
     }
     groupStates =
-        new TupleHashTable(
+        new UniqueTupleHashTable(
             Schema.merge(groupingSchema, stateSchema), MyriaArrayUtils.range(0, gfields.length));
     resultBuffer = new TupleBatchBuffer(getSchema());
   }
