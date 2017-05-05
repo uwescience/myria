@@ -90,9 +90,12 @@ public final class UniqueTupleHashTable implements Serializable {
           return idx;
         }
       }
-      assert false; // we should never get here
+      return -1; // our search key doesn't exist but collides with an existing key
     }
-    return index;
+    if (TupleUtils.tupleEquals(tb, key, row, data, keyColumns, index)) {
+      return index;
+    }
+    return -1; // our search key doesn't exist but collides with an existing key
   }
 
   /**
