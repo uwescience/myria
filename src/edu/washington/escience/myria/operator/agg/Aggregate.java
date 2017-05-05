@@ -103,7 +103,8 @@ public class Aggregate extends UnaryOperator {
       tb = child.nextReady();
     }
     if (child.eos()) {
-      if (emitZeroForCountAllOnEmptyRelation()) {
+      /* Special check for count(*) as the only aggregate on an empty relation: emit 0. */
+      if (getNumOutputTuples() == 0 && groupStates.numTuples() == 0 && isCountAllOnlyAggregate()) {
         resultBuffer.putLong(0, 0);
       }
       generateResult();
@@ -113,12 +114,10 @@ public class Aggregate extends UnaryOperator {
   }
 
   /**
-   * Special check for count(*) on an empty relation: emit 0. Do it only when count(*) is the only aggregate and with no group by.
+   * Check if count(*) is the only aggregate with no group by.
    * */
-  private boolean emitZeroForCountAllOnEmptyRelation() {
-    return getNumOutputTuples() == 0
-        && gfields.length == 0
-        && groupStates.numTuples() == 0
+  private boolean isCountAllOnlyAggregate() {
+    return gfields.length == 0
         && internalAggs.size() == 1
         && internalAggs.get(0) instanceof PrimitiveAggregator
         && ((PrimitiveAggregator) (internalAggs.get(0))).aggOp == AggregationOp.COUNT;
