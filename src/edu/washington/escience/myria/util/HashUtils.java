@@ -57,6 +57,36 @@ public final class HashUtils {
   }
 
   /**
+   * Compute the hash code of all the values in the specified row, in column order.
+   *
+   * @param table the table containing the values
+   * @param row the row to be hashed
+   * @return the hash code of all the values in the specified row, in column order
+   */
+  public static long hashRowLong(final ReadableTable table, final int row) {
+    Hasher hasher = HASH_FUNCTIONS[0].newHasher();
+    for (int i = 0; i < table.numColumns(); ++i) {
+      addValue(hasher, table, i, row);
+    }
+    return hasher.hash().asLong();
+  }
+
+  /**
+   * Compute the hash code of all the values in the specified row, in column order.
+   *
+   * @param table the table containing the values
+   * @param row the row to be hashed
+   * @return the hash code of all the values in the specified row, in column order
+   */
+  public static byte[] hashRowBytes(final ReadableTable table, final int row) {
+    Hasher hasher = HASH_FUNCTIONS[0].newHasher();
+    for (int i = 0; i < table.numColumns(); ++i) {
+      addValue(hasher, table, i, row);
+    }
+    return hasher.hash().asBytes();
+  }
+
+  /**
    * Compute the hash code of the value in the specified column and row of the given table.
    *
    * @param table the table containing the values to be hashed
@@ -115,21 +145,6 @@ public final class HashUtils {
       addValue(hasher, table, column, row);
     }
     return hasher.hash().asInt();
-  }
-
-  /**
-   * Compute the hash code of all the values in the specified row, in column order.
-   *
-   * @param table the table containing the values
-   * @param row the row to be hashed
-   * @return the hash code of all the values in the specified row, in column order
-   */
-  public static long hashRowLong(final ReadableTable table, final int row) {
-    Hasher hasher = HASH_FUNCTIONS[0].newHasher();
-    for (int i = 0; i < table.numColumns(); ++i) {
-      addValue(hasher, table, i, row);
-    }
-    return hasher.hash().asLong();
   }
 
   /**
