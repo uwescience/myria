@@ -3,6 +3,7 @@ package edu.washington.escience.myria.util;
 import java.util.Objects;
 
 import com.google.common.base.Preconditions;
+import com.google.common.hash.HashCode;
 import com.google.common.hash.HashFunction;
 import com.google.common.hash.Hasher;
 import com.google.common.hash.Hashing;
@@ -41,6 +42,21 @@ public final class HashUtils {
    */
   public static final int NUM_OF_HASHFUNCTIONS = 10;
 
+  private static HashCode getHashCode(
+      final ReadableTable table, final int[] hashColumns, final int row, final int seedIndex) {
+    Objects.requireNonNull(table, "table");
+    Objects.requireNonNull(hashColumns, "hashColumns");
+    Hasher hasher = HASH_FUNCTIONS[seedIndex].newHasher();
+    for (int column : hashColumns) {
+      addValue(hasher, table, column, row);
+    }
+    return hasher.hash();
+  }
+
+  private static HashCode getHashCode(final ReadableTable table, final int row) {
+    return getHashCode(table, MyriaUtils.range(table.numColumns()), row, 0);
+  }
+
   /**
    * Compute the hash code of all the values in the specified row, in column order.
    *
@@ -49,11 +65,7 @@ public final class HashUtils {
    * @return the hash code of all the values in the specified row, in column order
    */
   public static int hashRow(final ReadableTable table, final int row) {
-    Hasher hasher = HASH_FUNCTIONS[0].newHasher();
-    for (int i = 0; i < table.numColumns(); ++i) {
-      addValue(hasher, table, i, row);
-    }
-    return hasher.hash().asInt();
+    return getHashCode(table, row).asInt();
   }
 
   /**
@@ -64,11 +76,7 @@ public final class HashUtils {
    * @return the hash code of all the values in the specified row, in column order
    */
   public static long hashRowLong(final ReadableTable table, final int row) {
-    Hasher hasher = HASH_FUNCTIONS[0].newHasher();
-    for (int i = 0; i < table.numColumns(); ++i) {
-      addValue(hasher, table, i, row);
-    }
-    return hasher.hash().asLong();
+    return getHashCode(table, row).asLong();
   }
 
   /**
@@ -79,11 +87,7 @@ public final class HashUtils {
    * @return the hash code of all the values in the specified row, in column order
    */
   public static byte[] hashRowBytes(final ReadableTable table, final int row) {
-    Hasher hasher = HASH_FUNCTIONS[0].newHasher();
-    for (int i = 0; i < table.numColumns(); ++i) {
-      addValue(hasher, table, i, row);
-    }
-    return hasher.hash().asBytes();
+    return getHashCode(table, row).asBytes();
   }
 
   /**
@@ -138,13 +142,7 @@ public final class HashUtils {
    */
   public static int hashSubRow(
       final ReadableTable table, final int[] hashColumns, final int row, final int seedIndex) {
-    Objects.requireNonNull(table, "table");
-    Objects.requireNonNull(hashColumns, "hashColumns");
-    Hasher hasher = HASH_FUNCTIONS[seedIndex].newHasher();
-    for (int column : hashColumns) {
-      addValue(hasher, table, column, row);
-    }
-    return hasher.hash().asInt();
+    return getHashCode(table, hashColumns, row, seedIndex).asInt();
   }
 
   /**
@@ -200,13 +198,7 @@ public final class HashUtils {
    */
   public static long hashSubRowLong(
       final ReadableTable table, final int[] hashColumns, final int row, final int seedIndex) {
-    Objects.requireNonNull(table, "table");
-    Objects.requireNonNull(hashColumns, "hashColumns");
-    Hasher hasher = HASH_FUNCTIONS[seedIndex].newHasher();
-    for (int column : hashColumns) {
-      addValue(hasher, table, column, row);
-    }
-    return hasher.hash().asLong();
+    return getHashCode(table, hashColumns, row, seedIndex).asLong();
   }
 
   /**
