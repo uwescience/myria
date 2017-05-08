@@ -3,10 +3,6 @@
  */
 package edu.washington.escience.myria.operator;
 
-import com.google.common.collect.ImmutableMap;
-
-import edu.washington.escience.myria.storage.TupleUtils;
-
 /**
  * A temporary relation that is inserted into the database.
  */

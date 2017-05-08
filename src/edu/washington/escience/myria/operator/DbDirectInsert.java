@@ -32,7 +32,7 @@ import edu.washington.escience.myria.storage.TupleBatch;
 /**
  * Writes a partition in native binary format directly from an InputStream.
  */
-public class DbDirectInsert extends Operator implements DbWriter {
+public class DbDirectInsert extends RootOperator implements DbWriter {
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
   /** The logger for this class. */
@@ -69,6 +69,7 @@ public class DbDirectInsert extends Operator implements DbWriter {
       @Nonnull final RelationKey relationKey,
       @Nonnull final Schema schema,
       @Nonnull final DistributeFunction distributeFunction) {
+    super(null);
     Objects.requireNonNull(dataSource, "dataSource");
     Objects.requireNonNull(relationKey, "relationKey");
     Objects.requireNonNull(schema, "schema");
@@ -98,7 +99,7 @@ public class DbDirectInsert extends Operator implements DbWriter {
       /* open the database connection */
       accessMethod = AccessMethod.of(connectionInfo.getDbms(), connectionInfo, false);
       /* Create the table */
-      accessMethod.createTableIfNotExists(relationKey, getSchema());
+      accessMethod.createTableIfNotExists(relationKey, schema);
       /* Populate the table */
       accessMethod.insertFromStream(relationKey, inputStream);
     } catch (final IOException e) {
@@ -126,16 +127,6 @@ public class DbDirectInsert extends Operator implements DbWriter {
   }
 
   @Override
-  public final Schema generateSchema() {
-    return schema;
-  }
-
-  @Override
-  public final Operator[] getChildren() {
-    return new Operator[] {};
-  }
-
-  @Override
   public Map<RelationKey, RelationWriteMetadata> writeSet() {
     return ImmutableMap.of(
         relationKey,
@@ -143,10 +134,11 @@ public class DbDirectInsert extends Operator implements DbWriter {
   }
 
   @Override
-  protected TupleBatch fetchNextReady() throws Exception {
-    return null;
-  }
+  protected void consumeTuples(final TupleBatch tuples) throws DbException {}
 
   @Override
-  public void setChildren(final Operator[] children) {}
+  protected void childEOS() throws DbException {}
+
+  @Override
+  protected void childEOI() throws DbException {}
 }

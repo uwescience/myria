@@ -84,6 +84,7 @@ import edu.washington.escience.myria.accessmethod.AccessMethod.IndexRef;
 import edu.washington.escience.myria.api.MyriaJsonMapperProvider;
 import edu.washington.escience.myria.api.encoding.DatasetStatus;
 import edu.washington.escience.myria.api.encoding.FunctionStatus;
+import edu.washington.escience.myria.api.encoding.PersistedDatasetEncoding;
 import edu.washington.escience.myria.api.encoding.QueryEncoding;
 import edu.washington.escience.myria.coordinator.CatalogException;
 import edu.washington.escience.myria.coordinator.MasterCatalog;
@@ -94,13 +95,16 @@ import edu.washington.escience.myria.expression.WorkerIdExpression;
 import edu.washington.escience.myria.io.AmazonS3Source;
 import edu.washington.escience.myria.io.ByteSink;
 import edu.washington.escience.myria.io.DataSink;
+import edu.washington.escience.myria.io.DataSource;
 import edu.washington.escience.myria.io.UriSink;
+import edu.washington.escience.myria.io.UriSource;
 import edu.washington.escience.myria.operator.Apply;
 import edu.washington.escience.myria.operator.CSVFragmentTupleSource;
 import edu.washington.escience.myria.operator.DbCreateFunction;
 import edu.washington.escience.myria.operator.DbCreateIndex;
 import edu.washington.escience.myria.operator.DbCreateView;
 import edu.washington.escience.myria.operator.DbDelete;
+import edu.washington.escience.myria.operator.DbDirectInsert;
 import edu.washington.escience.myria.operator.DbExecute;
 import edu.washington.escience.myria.operator.DbInsert;
 import edu.washington.escience.myria.operator.DbQueryScan;
@@ -149,6 +153,7 @@ import edu.washington.escience.myria.tools.MyriaGlobalConfigurationModule.TcpSen
 import edu.washington.escience.myria.tools.MyriaGlobalConfigurationModule.WorkerConf;
 import edu.washington.escience.myria.tools.MyriaWorkerConfigurationModule;
 import edu.washington.escience.myria.util.IPCUtils;
+import edu.washington.escience.myria.util.MyriaUtils;
 import edu.washington.escience.myria.util.concurrent.ErrorLoggingTimerTask;
 import edu.washington.escience.myria.util.concurrent.RenamingThreadFactory;
 
@@ -1286,43 +1291,38 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
     }
   }
 
+  private static String getPartitionUri(String rootUri, RelationKey relationKey, int workerId) {
+    return String.format(
+        rootUri + "/%s/%s/%s/%d",
+        relationKey.getUserName(),
+        relationKey.getProgramName(),
+        relationKey.getRelationName(),
+        workerId);
+  }
+
   /**
    * @param relationKey the relationKey of the dataset to persist
    * @return the queryID
    * @throws DbException if there is an error
    * @throws InterruptedException interrupted
    */
-  public long persistDataset(final RelationKey relationKey)
+  public PersistedDatasetEncoding persistDataset(final RelationKey relationKey)
       throws DbException, InterruptedException, URISyntaxException {
-    long queryID;
-
-    /* Mark the relation as is_persistent */
     try {
+      /* Mark the relation as is_persistent */
       catalog.markRelationPersistent(relationKey);
-    } catch (CatalogException e) {
-      throw new DbException(e);
-    }
-
-    /* Create the query plan for persist */
-    try {
+      /* Create the query plan for persist */
       ImmutableMap.Builder<Integer, SubQueryPlan> workerPlans =
           new ImmutableMap.Builder<Integer, SubQueryPlan>();
       for (Integer workerId : getWorkersForRelation(relationKey)) {
-        String partitionName =
-            String.format(
-                persistURI + "/%s/%s/%s/%d",
-                relationKey.getUserName(),
-                relationKey.getProgramName(),
-                relationKey.getRelationName(),
-                workerId);
-        DataSink workerSink = new UriSink(partitionName);
+        String partitionUri = getPartitionUri(this.persistURI, relationKey, workerId);
         workerPlans.put(
             workerId,
             new SubQueryPlan(
                 new TupleSink(
                     new DbQueryScan(relationKey, getSchema(relationKey)),
                     new PostgresBinaryTupleWriter(),
-                    workerSink)));
+                    new UriSink(partitionUri))));
       }
       ListenableFuture<Query> qf =
           queryManager.submitQuery(
@@ -1332,14 +1332,73 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
               new SubQueryPlan(new EmptySink(new EOSSource())),
               workerPlans.build());
       try {
-        queryID = qf.get().getQueryId();
+        qf.get();
       } catch (ExecutionException e) {
         throw new DbException("Error executing query", e.getCause());
       }
-    } catch (CatalogException e) {
+      return new PersistedDatasetEncoding(
+          relationKey,
+          getSchema(relationKey),
+          this.persistURI,
+          getWorkersForRelation(relationKey).size(),
+          getDatasetStatus(relationKey).getHowDistributed().getDf());
+    } catch (CatalogException | URISyntaxException e) {
       throw new DbException(e);
     }
-    return queryID;
+  }
+
+  /**
+   * Persisted Ingest
+   *
+   * @param relationKey the name of the dataset
+   * @param schema the schema of the dataset
+   * @param rootUri the root directory URI of the dataset in persistent storage
+   * @param numWorkers the number of workers assigned partitions of the dataset
+   * @param distributeFunction the hash function used to partition the dataset
+   * @return the metadata of the ingested relation
+   * @throws DbException
+   * @throws InterruptedException
+   */
+  public DatasetStatus ingestPersistedDataset(
+      final RelationKey relationKey,
+      final Schema schema,
+      final String rootUri,
+      final int numWorkers,
+      final DistributeFunction distributeFunction)
+      throws DbException, InterruptedException, URISyntaxException {
+
+    Map<Integer, SubQueryPlan> workerPlans = new HashMap<>();
+    for (int workerId = 0; workerId < numWorkers; ++workerId) {
+      String partitionUri = getPartitionUri(rootUri, relationKey, workerId);
+      DataSource source = new UriSource(partitionUri);
+      workerPlans.put(
+          workerId,
+          new SubQueryPlan(
+              new DbDirectInsert(null, source, relationKey, schema, distributeFunction)));
+    }
+
+    ListenableFuture<Query> qf;
+    try {
+      qf =
+          queryManager.submitQuery(
+              "ingestPersisted " + relationKey.toString(),
+              "ingestPersisted " + relationKey.toString(),
+              "ingestPersisted " + relationKey.toString(getDBMS()),
+              new SubQueryPlan(new EmptySink(new EOSSource())),
+              workerPlans);
+    } catch (CatalogException e) {
+      throw new DbException("Error submitting query", e);
+    }
+
+    try {
+      qf.get();
+    } catch (ExecutionException e) {
+      throw new DbException("Error executing query", e.getCause());
+    }
+
+    updateHowDistributed(
+        relationKey, new HowDistributed(distributeFunction, MyriaUtils.range(numWorkers)));
+    return getDatasetStatus(relationKey);
   }
 
   /**

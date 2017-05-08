@@ -3,6 +3,7 @@ package edu.washington.escience.myria.api;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.List;
 
 import javax.annotation.Nonnull;
@@ -50,6 +51,7 @@ import edu.washington.escience.myria.api.encoding.CreateViewEncoding;
 import edu.washington.escience.myria.api.encoding.DatasetEncoding;
 import edu.washington.escience.myria.api.encoding.DatasetStatus;
 import edu.washington.escience.myria.api.encoding.ParallelDatasetEncoding;
+import edu.washington.escience.myria.api.encoding.PersistedDatasetEncoding;
 import edu.washington.escience.myria.api.encoding.TipsyDatasetEncoding;
 import edu.washington.escience.myria.coordinator.CatalogException;
 import edu.washington.escience.myria.io.InputStreamSource;
@@ -389,17 +391,17 @@ public final class DatasetResource {
     DatasetStatus status =
         server.getDatasetStatus(RelationKey.of(userName, programName, relationName));
     RelationKey relationKey = status.getRelationKey();
-    long queryId;
+    PersistedDatasetEncoding persistedDatasetInfo;
 
     try {
-      queryId = server.persistDataset(relationKey);
+      persistedDatasetInfo = server.persistDataset(relationKey);
     } catch (Exception e) {
       throw new DbException();
     }
 
-    /* Build the response to return the queryId */
+    /* Build the response to return the PersistedDatasetEncoding */
     ResponseBuilder response = Response.ok();
-    return response.entity(queryId).build();
+    return response.entity(persistedDatasetInfo).build();
   }
 
   /** Creates an index based on the DbCreateIndexEncoding */
@@ -615,6 +617,36 @@ public final class DatasetResource {
             dataset.numberOfSkippedLines,
             dataset.s3Source,
             dataset.workers,
+            dataset.distributeFunction);
+
+    /* In the response, tell the client the path to the relation. */
+    URI datasetUri = getCanonicalResourcePath(uriInfo, dataset.relationKey);
+    status.setUri(datasetUri);
+    ResponseBuilder builder = Response.created(datasetUri);
+    return builder.entity(status).build();
+  }
+
+  /**
+   * Ingests a dataset from S3 in parallel
+   *
+   * @param dataset the dataset to be ingested.
+   * @return the created dataset resource.
+   * @throws DbException if there is an error in the database.
+   * @throws InterruptedException
+   * @throws URISyntaxException
+   */
+  @POST
+  @Path("/persistedIngest")
+  @Consumes(MediaType.APPLICATION_JSON)
+  public Response persistedIngest(final PersistedDatasetEncoding dataset)
+      throws DbException, URISyntaxException, InterruptedException {
+    dataset.validate();
+    DatasetStatus status =
+        server.ingestPersistedDataset(
+            dataset.relationKey,
+            dataset.schema,
+            dataset.rootUri,
+            dataset.numWorkers,
             dataset.distributeFunction);
 
     /* In the response, tell the client the path to the relation. */
