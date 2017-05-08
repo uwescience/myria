@@ -1,16 +1,7 @@
 package edu.washington.escience.myria.operator;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
-import java.util.HashMap;
-import java.util.List;
-
-import edu.washington.escience.myria.DbException;
-import edu.washington.escience.myria.Schema;
-import edu.washington.escience.myria.Type;
-import edu.washington.escience.myria.storage.TupleBatch;
-import edu.washington.escience.myria.util.HashUtils;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
@@ -19,6 +10,11 @@ import com.gs.collections.api.iterator.LongIterator;
 import com.gs.collections.impl.list.mutable.primitive.LongArrayList;
 import com.gs.collections.impl.map.mutable.primitive.LongLongHashMap;
 import com.gs.collections.impl.map.mutable.primitive.LongObjectHashMap;
+
+import edu.washington.escience.myria.DbException;
+import edu.washington.escience.myria.Schema;
+import edu.washington.escience.myria.storage.TupleBatch;
+import edu.washington.escience.myria.util.HashUtils;
 
 /**
  * A simple implementation of duplicate eliminate. It keeps the references to all the TupleBatches which contain unique
