@@ -20,7 +20,6 @@ import com.gs.collections.impl.list.mutable.primitive.LongArrayList;
 import com.gs.collections.impl.map.mutable.primitive.LongLongHashMap;
 import com.gs.collections.impl.map.mutable.primitive.LongObjectHashMap;
 
-
 /**
  * A simple implementation of duplicate eliminate. It keeps the references to all the TupleBatches which contain unique
  * tuples.
@@ -68,7 +67,10 @@ public final class DupElimHashOnly extends UnaryOperator {
     final BitSet toRemove = new BitSet(numTuples);
     for (int i = 0; i < numTuples; ++i) {
       final byte[] hashCodeBytes = HashUtils.hashRowBytes(tb, i);
-      Preconditions.checkArgument(hashCodeBytes.length == 16, "Expected 16 bytes in hash code, found %d", hashCodeBytes.length);
+      Preconditions.checkArgument(
+          hashCodeBytes.length == 16,
+          "Expected 16 bytes in hash code, found %d",
+          hashCodeBytes.length);
       byte[] hashCodeBytes1 = Arrays.copyOfRange(hashCodeBytes, 0, 8);
       byte[] hashCodeBytes2 = Arrays.copyOfRange(hashCodeBytes, 8, hashCodeBytes.length);
       long hashCode1 = Longs.fromByteArray(hashCodeBytes1);
