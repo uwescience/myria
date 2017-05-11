@@ -1,11 +1,10 @@
 package edu.washington.escience.myria.operator;
 
-import java.util.Arrays;
+import java.nio.ByteBuffer;
 import java.util.BitSet;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.primitives.Longs;
 import com.gs.collections.api.iterator.LongIterator;
 import com.gs.collections.impl.list.mutable.primitive.LongArrayList;
 import com.gs.collections.impl.map.mutable.primitive.LongLongHashMap;
@@ -17,10 +16,11 @@ import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.util.HashUtils;
 
 /**
- * A simple implementation of duplicate eliminate. It keeps the references to all the TupleBatches which contain unique
- * tuples.
+ * Instead of storing unique tuples to deduplicate against,
+ * this implementation stores 128-bit hash codes of tuples
+ * (to make collisions statistically negligible).
  * */
-public final class DupElimHashOnly extends UnaryOperator {
+public final class HashDupElim extends UnaryOperator {
 
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
@@ -38,11 +38,13 @@ public final class DupElimHashOnly extends UnaryOperator {
   private transient LongLongHashMap initialToFinalhashCodes;
   /** Map of first 64-bit words to colliding second 64-bit words. */
   private transient LongObjectHashMap<LongArrayList> collidingFinalHashCodes;
+  /** Cached byte buffer to avoid allocating a new buffer for each byte copy. */
+  private transient ByteBuffer byteCopyBuffer = ByteBuffer.allocate(Long.BYTES);
 
   /**
    * @param child the child
    * */
-  public DupElimHashOnly(final Operator child) {
+  public HashDupElim(final Operator child) {
     super(child);
   }
 
@@ -67,10 +69,14 @@ public final class DupElimHashOnly extends UnaryOperator {
           hashCodeBytes.length == 16,
           "Expected 16 bytes in hash code, found %d",
           hashCodeBytes.length);
-      byte[] hashCodeBytes1 = Arrays.copyOfRange(hashCodeBytes, 0, 8);
-      byte[] hashCodeBytes2 = Arrays.copyOfRange(hashCodeBytes, 8, hashCodeBytes.length);
-      long hashCode1 = Longs.fromByteArray(hashCodeBytes1);
-      long hashCode2 = Longs.fromByteArray(hashCodeBytes2);
+      byteCopyBuffer.clear();
+      byteCopyBuffer.put(hashCodeBytes, 0, 8);
+      byteCopyBuffer.flip();
+      long hashCode1 = byteCopyBuffer.getLong();
+      byteCopyBuffer.clear();
+      byteCopyBuffer.put(hashCodeBytes, 8, 8);
+      byteCopyBuffer.flip();
+      long hashCode2 = byteCopyBuffer.getLong();
       long hashCodeValue = initialToFinalhashCodes.getIfAbsent(hashCode1, ABSENT_VALUE);
       if (hashCodeValue == ABSENT_VALUE) {
         initialToFinalhashCodes.put(hashCode1, hashCode2);
@@ -79,13 +85,18 @@ public final class DupElimHashOnly extends UnaryOperator {
         Preconditions.checkNotNull(collidingHashCodes);
         Preconditions.checkState(collidingHashCodes.size() > 1);
         LongIterator iter = collidingHashCodes.longIterator();
+        boolean found = false;
         while (iter.hasNext()) {
           long hc = iter.next();
           if (hc == hashCode2) {
             // duplicate found
             toRemove.set(i);
+            found = true;
             break;
           }
+        }
+        if (!found) {
+          collidingHashCodes.add(hashCode2);
         }
       } else if (hashCodeValue != hashCode2) {
         LongArrayList collidingHashCodes = LongArrayList.newListWith(hashCodeValue, hashCode2);

@@ -94,8 +94,7 @@ public class DupElimTest {
   @Test
   public void testDupElim() throws DbException {
     BatchTupleSource src = new BatchTupleSource(makeTestData());
-    // StreamingStateWrapper dupElim = new StreamingStateWrapper(src, new DupElim());
-    DupElimHashOnly dupElim = new DupElimHashOnly(src);
+    HashDupElim dupElim = new HashDupElim(src);
 
     List<TupleBatch> ans = Lists.newLinkedList();
     dupElim.open(TestEnvVars.get());
