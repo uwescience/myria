@@ -39,7 +39,7 @@ public final class DupElim extends UnaryOperator {
   /** Map of first 64-bit words to colliding second 64-bit words. */
   private transient LongObjectHashMap<LongArrayList> collidingFinalHashCodes;
   /** Cached byte buffer to avoid allocating a new buffer for each byte copy. */
-  private transient ByteBuffer byteCopyBuffer = ByteBuffer.allocate(Long.BYTES);
+  private transient ByteBuffer byteCopyBuffer;
 
   /**
    * @param child the child
@@ -49,7 +49,11 @@ public final class DupElim extends UnaryOperator {
   }
 
   @Override
-  protected void cleanup() throws DbException {}
+  protected void cleanup() throws DbException {
+    initialToFinalhashCodes = null;
+    collidingFinalHashCodes = null;
+    byteCopyBuffer = null;
+  }
 
   /**
    * Do duplicate elimination for the tb.
@@ -139,5 +143,6 @@ public final class DupElim extends UnaryOperator {
   protected void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
     initialToFinalhashCodes = new LongLongHashMap();
     collidingFinalHashCodes = new LongObjectHashMap<LongArrayList>();
+    byteCopyBuffer = ByteBuffer.allocate(Long.BYTES);
   }
 }
