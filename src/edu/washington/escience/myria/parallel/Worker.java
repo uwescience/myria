@@ -69,6 +69,7 @@ import edu.washington.escience.myria.proto.QueryProto.QueryMessage;
 import edu.washington.escience.myria.proto.TransportProto.TransportMessage;
 import edu.washington.escience.myria.tools.MyriaGlobalConfigurationModule.DefaultStorageDbPassword;
 import edu.washington.escience.myria.tools.MyriaGlobalConfigurationModule.DefaultStorageDbPort;
+import edu.washington.escience.myria.tools.MyriaGlobalConfigurationModule.EnableElasticMode;
 import edu.washington.escience.myria.tools.MyriaGlobalConfigurationModule.FlowControlWriteBufferHighMarkBytes;
 import edu.washington.escience.myria.tools.MyriaGlobalConfigurationModule.FlowControlWriteBufferLowMarkBytes;
 import edu.washington.escience.myria.tools.MyriaGlobalConfigurationModule.MasterHost;
@@ -568,6 +569,7 @@ public final class Worker implements Task, TaskMessageSource {
       @Parameter(FlowControlWriteBufferHighMarkBytes.class) final int writeBufferHighWaterMark,
       @Parameter(OperatorInputBufferCapacity.class) final int inputBufferCapacity,
       @Parameter(OperatorInputBufferRecoverTrigger.class) final int inputBufferRecoverTrigger,
+      @Parameter(EnableElasticMode.class) final boolean enableElasticMode,
       @Parameter(WorkerConf.class) final Set<String> workerConfs)
       throws Exception {
 
@@ -617,7 +619,8 @@ public final class Worker implements Task, TaskMessageSource {
     execEnvVars.put(
         MyriaConstants.EXEC_ENV_VAR_DATABASE_CONN_INFO,
         ConnectionInfo.of(databaseSystem, jsonConnInfo));
-
+    execEnvVars.put(MyriaConstants.EXEC_ENV_VAR_ELASTIC_MODE, enableElasticMode);
+    LOGGER.info("Worker: Elastic mode enabled: " + enableElasticMode);
     URI baseUri = UriBuilder.fromUri("http://0.0.0.0/").port(workerStatsPort).build();
     ResourceConfig workerApplication = new WorkerApplication(this);
     apiServer = GrizzlyHttpServerFactory.createHttpServer(baseUri, workerApplication);

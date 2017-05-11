@@ -465,6 +465,7 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
    * @param inputBufferCapacity size of the input buffer in bytes
    * @param inputBufferRecoverTrigger number of bytes in the input buffer to trigger recovery after overflow
    * @param persistURI the storage endpoint URI for persisting partitioned relations
+   * @param enableElasticMode whether to enable elastic mode for the cluster
    * @param injector a Tang injector for instantiating objects from configuration
    */
   @Inject
@@ -504,6 +505,7 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
     execEnvVars.put(MyriaConstants.EXEC_ENV_VAR_DATABASE_SYSTEM, databaseSystem);
     execEnvVars.put(MyriaConstants.EXEC_ENV_VAR_ELASTIC_MODE, enableElasticMode);
 
+    LOGGER.info("Server: Elastic mode enabled: " + enableElasticMode);
     aliveWorkers = Sets.newConcurrentHashSet();
     messageQueue = new LinkedBlockingQueue<>();
   }
