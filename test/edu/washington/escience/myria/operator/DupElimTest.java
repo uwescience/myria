@@ -94,7 +94,32 @@ public class DupElimTest {
   @Test
   public void testDupElim() throws DbException {
     BatchTupleSource src = new BatchTupleSource(makeTestData());
-    HashDupElim dupElim = new HashDupElim(src);
+    DupElim dupElim = new DupElim(src);
+
+    List<TupleBatch> ans = Lists.newLinkedList();
+    dupElim.open(TestEnvVars.get());
+    while (!dupElim.eos()) {
+      TupleBatch tb = dupElim.nextReady();
+      if (tb != null) {
+        ans.add(tb);
+      }
+    }
+    dupElim.close();
+
+    int count = 0;
+    for (TupleBatch tb : ans) {
+      count += tb.numTuples();
+    }
+    assertEquals(2, ans.size());
+    assertEquals(4, count);
+    assertEquals(3, ans.get(0).numTuples());
+    assertEquals(1, ans.get(1).numTuples());
+  }
+
+  @Test
+  public void testStatefulDupElim() throws DbException {
+    BatchTupleSource src = new BatchTupleSource(makeTestData());
+    StreamingStateWrapper dupElim = new StreamingStateWrapper(src, new StatefulDupElim());
 
     List<TupleBatch> ans = Lists.newLinkedList();
     dupElim.open(TestEnvVars.get());
