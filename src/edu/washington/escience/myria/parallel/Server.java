@@ -1370,7 +1370,7 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
       throws DbException, InterruptedException, URISyntaxException {
 
     Map<Integer, SubQueryPlan> workerPlans = new HashMap<>();
-    for (int workerId = 0; workerId < numWorkers; ++workerId) {
+    for (int workerId = 1; workerId <= numWorkers; ++workerId) {
       String partitionUri = getPartitionUri(rootUri, relationKey, workerId);
       DataSource source = new UriSource(partitionUri);
       workerPlans.put(
