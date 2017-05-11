@@ -204,9 +204,8 @@ public class DbInsert extends AbstractDbInsert {
     }
     Preconditions.checkArgument(
         !enableElasticMode
-            || (distributeFunction != null
-                && distributeFunction instanceof HashDistributeFunction),
-                "Only hash partitioning is allowed on clusters in elastic mode");
+            || (distributeFunction != null && distributeFunction instanceof HashDistributeFunction),
+        "Only hash partitioning is allowed on clusters in elastic mode");
 
     /* retrieve connection information from the environment variables, if not already set */
     if (connectionInfo == null && execEnvVars != null) {
