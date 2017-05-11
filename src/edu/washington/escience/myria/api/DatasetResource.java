@@ -643,14 +643,14 @@ public final class DatasetResource {
     dataset.validate();
     DatasetStatus status =
         server.ingestPersistedDataset(
-            dataset.relationKey,
-            dataset.schema,
-            dataset.rootUri,
-            dataset.numWorkers,
-            dataset.distributeFunction);
+            dataset.getRelationKey(),
+            dataset.getSchema(),
+            dataset.getRootUri(),
+            dataset.getNumWorkers(),
+            dataset.getDistributeFunction());
 
     /* In the response, tell the client the path to the relation. */
-    URI datasetUri = getCanonicalResourcePath(uriInfo, dataset.relationKey);
+    URI datasetUri = getCanonicalResourcePath(uriInfo, dataset.getRelationKey());
     status.setUri(datasetUri);
     ResponseBuilder builder = Response.created(datasetUri);
     return builder.entity(status).build();
