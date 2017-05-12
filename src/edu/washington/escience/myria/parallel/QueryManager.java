@@ -346,7 +346,7 @@ public class QueryManager {
       queryState.markSuccess();
       /* Trigger GC on workers to avoid affecting the performance of the next query. */
       for (int workerId : server.getAliveWorkers()) {
-        server.getIPCConnectionPool().sendShortMessage(workerId, IPCUtils.systemGC());
+        server.getIPCConnectionPool().sendShortMessage(workerId, IPCUtils.CONTROL_SYSTEM_GC);
       }
       finishQuery(queryState);
       return null;
