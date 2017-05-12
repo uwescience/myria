@@ -202,9 +202,7 @@ def main(in_file, out_file):
 
 if __name__ == '__main__':
     # Read a local port to connect to from stdin
-    print ("launching Myria Python Worker")
     java_port = int(sys.stdin.readline())
-    print ("waiting to launch")
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sock.connect(("127.0.0.1", java_port))
     infile = os.fdopen(os.dup(sock.fileno()), "rb", 65536)
