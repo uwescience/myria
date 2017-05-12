@@ -120,7 +120,7 @@ class PickleSerializer(Serializer):
             self.write_double(obj, stream)
         elif output_type == DataType.BLOB:
             self.write_int(DataType.BLOB, stream)
-            self.pickle_and_write(obj, stream)
+            self.pickle_and_write(self, obj, stream)
 
     @classmethod
     def read_command(self, stream):
