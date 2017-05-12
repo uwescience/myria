@@ -344,6 +344,10 @@ public class QueryManager {
     }
     if (task == null) {
       queryState.markSuccess();
+      /* Trigger GC on workers to avoid affecting the performance of the next query. */
+      for (int workerId : server.getAliveWorkers()) {
+        server.getIPCConnectionPool().sendShortMessage(workerId, IPCUtils.systemGC());
+      }
       finishQuery(queryState);
       return null;
     }

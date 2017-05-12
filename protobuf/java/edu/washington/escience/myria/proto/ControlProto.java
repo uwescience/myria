@@ -8,10 +8,10 @@ public final class ControlProto {
   public static void registerAllExtensions(
       com.google.protobuf.ExtensionRegistry registry) {
   }
-  public interface ControlMessageOrBuilder extends
-      // @@protoc_insertion_point(interface_extends:ControlMessage)
-      com.google.protobuf.MessageOrBuilder {
+  public interface ControlMessageOrBuilder
+      extends com.google.protobuf.MessageOrBuilder {
 
+    // required .ControlMessage.Type type = 1;
     /**
      * <code>required .ControlMessage.Type type = 1;</code>
      *
@@ -29,6 +29,7 @@ public final class ControlProto {
      */
     edu.washington.escience.myria.proto.ControlProto.ControlMessage.Type getType();
 
+    // optional int32 worker_id = 2;
     /**
      * <code>optional int32 worker_id = 2;</code>
      */
@@ -38,6 +39,7 @@ public final class ControlProto {
      */
     int getWorkerId();
 
+    // optional .SocketInfo remote_address = 3;
     /**
      * <code>optional .SocketInfo remote_address = 3;</code>
      */
@@ -51,6 +53,7 @@ public final class ControlProto {
      */
     edu.washington.escience.myria.proto.ControlProto.SocketInfoOrBuilder getRemoteAddressOrBuilder();
 
+    // repeated .ResourceStats resource_stats = 4;
     /**
      * <code>repeated .ResourceStats resource_stats = 4;</code>
      */
@@ -75,6 +78,7 @@ public final class ControlProto {
     edu.washington.escience.myria.proto.ControlProto.ResourceStatsOrBuilder getResourceStatsOrBuilder(
         int index);
 
+    // repeated int32 acked_worker_ids = 5;
     /**
      * <code>repeated int32 acked_worker_ids = 5;</code>
      */
@@ -92,9 +96,8 @@ public final class ControlProto {
    * Protobuf type {@code ControlMessage}
    */
   public static final class ControlMessage extends
-      com.google.protobuf.GeneratedMessage implements
-      // @@protoc_insertion_point(message_implements:ControlMessage)
-      ControlMessageOrBuilder {
+      com.google.protobuf.GeneratedMessage
+      implements ControlMessageOrBuilder {
     // Use ControlMessage.newBuilder() to construct.
     private ControlMessage(com.google.protobuf.GeneratedMessage.Builder<?> builder) {
       super(builder);
@@ -304,6 +307,14 @@ public final class ControlProto {
        * </pre>
        */
       RESOURCE_STATS(6, 7),
+      /**
+       * <code>SYSTEM_GC = 8;</code>
+       *
+       * <pre>
+       * master -&gt; worker
+       * </pre>
+       */
+      SYSTEM_GC(7, 8),
       ;
 
       /**
@@ -362,6 +373,14 @@ public final class ControlProto {
        * </pre>
        */
       public static final int RESOURCE_STATS_VALUE = 7;
+      /**
+       * <code>SYSTEM_GC = 8;</code>
+       *
+       * <pre>
+       * master -&gt; worker
+       * </pre>
+       */
+      public static final int SYSTEM_GC_VALUE = 8;
 
 
       public final int getNumber() { return value; }
@@ -375,6 +394,7 @@ public final class ControlProto {
           case 5: return REMOVE_WORKER_ACK;
           case 6: return ADD_WORKER_ACK;
           case 7: return RESOURCE_STATS;
+          case 8: return SYSTEM_GC;
           default: return null;
         }
       }
@@ -427,6 +447,7 @@ public final class ControlProto {
     }
 
     private int bitField0_;
+    // required .ControlMessage.Type type = 1;
     public static final int TYPE_FIELD_NUMBER = 1;
     private edu.washington.escience.myria.proto.ControlProto.ControlMessage.Type type_;
     /**
@@ -450,6 +471,7 @@ public final class ControlProto {
       return type_;
     }
 
+    // optional int32 worker_id = 2;
     public static final int WORKER_ID_FIELD_NUMBER = 2;
     private int workerId_;
     /**
@@ -465,6 +487,7 @@ public final class ControlProto {
       return workerId_;
     }
 
+    // optional .SocketInfo remote_address = 3;
     public static final int REMOTE_ADDRESS_FIELD_NUMBER = 3;
     private edu.washington.escience.myria.proto.ControlProto.SocketInfo remoteAddress_;
     /**
@@ -486,6 +509,7 @@ public final class ControlProto {
       return remoteAddress_;
     }
 
+    // repeated .ResourceStats resource_stats = 4;
     public static final int RESOURCE_STATS_FIELD_NUMBER = 4;
     private java.util.List<edu.washington.escience.myria.proto.ControlProto.ResourceStats> resourceStats_;
     /**
@@ -521,6 +545,7 @@ public final class ControlProto {
       return resourceStats_.get(index);
     }
 
+    // repeated int32 acked_worker_ids = 5;
     public static final int ACKED_WORKER_IDS_FIELD_NUMBER = 5;
     private java.util.List<java.lang.Integer> ackedWorkerIds_;
     /**
@@ -553,8 +578,7 @@ public final class ControlProto {
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
       byte isInitialized = memoizedIsInitialized;
-      if (isInitialized == 1) return true;
-      if (isInitialized == 0) return false;
+      if (isInitialized != -1) return isInitialized == 1;
 
       if (!hasType()) {
         memoizedIsInitialized = 0;
@@ -710,9 +734,8 @@ public final class ControlProto {
      * Protobuf type {@code ControlMessage}
      */
     public static final class Builder extends
-        com.google.protobuf.GeneratedMessage.Builder<Builder> implements
-        // @@protoc_insertion_point(builder_implements:ControlMessage)
-        edu.washington.escience.myria.proto.ControlProto.ControlMessageOrBuilder {
+        com.google.protobuf.GeneratedMessage.Builder<Builder>
+       implements edu.washington.escience.myria.proto.ControlProto.ControlMessageOrBuilder {
       public static final com.google.protobuf.Descriptors.Descriptor
           getDescriptor() {
         return edu.washington.escience.myria.proto.ControlProto.internal_static_ControlMessage_descriptor;
@@ -927,6 +950,7 @@ public final class ControlProto {
       }
       private int bitField0_;
 
+      // required .ControlMessage.Type type = 1;
       private edu.washington.escience.myria.proto.ControlProto.ControlMessage.Type type_ = edu.washington.escience.myria.proto.ControlProto.ControlMessage.Type.SHUTDOWN;
       /**
        * <code>required .ControlMessage.Type type = 1;</code>
@@ -978,6 +1002,7 @@ public final class ControlProto {
         return this;
       }
 
+      // optional int32 worker_id = 2;
       private int workerId_ ;
       /**
        * <code>optional int32 worker_id = 2;</code>
@@ -1010,6 +1035,7 @@ public final class ControlProto {
         return this;
       }
 
+      // optional .SocketInfo remote_address = 3;
       private edu.washington.escience.myria.proto.ControlProto.SocketInfo remoteAddress_ = edu.washington.escience.myria.proto.ControlProto.SocketInfo.getDefaultInstance();
       private com.google.protobuf.SingleFieldBuilder<
           edu.washington.escience.myria.proto.ControlProto.SocketInfo, edu.washington.escience.myria.proto.ControlProto.SocketInfo.Builder, edu.washington.escience.myria.proto.ControlProto.SocketInfoOrBuilder> remoteAddressBuilder_;
@@ -1118,7 +1144,7 @@ public final class ControlProto {
         if (remoteAddressBuilder_ == null) {
           remoteAddressBuilder_ = new com.google.protobuf.SingleFieldBuilder<
               edu.washington.escience.myria.proto.ControlProto.SocketInfo, edu.washington.escience.myria.proto.ControlProto.SocketInfo.Builder, edu.washington.escience.myria.proto.ControlProto.SocketInfoOrBuilder>(
-                  getRemoteAddress(),
+                  remoteAddress_,
                   getParentForChildren(),
                   isClean());
           remoteAddress_ = null;
@@ -1126,6 +1152,7 @@ public final class ControlProto {
         return remoteAddressBuilder_;
       }
 
+      // repeated .ResourceStats resource_stats = 4;
       private java.util.List<edu.washington.escience.myria.proto.ControlProto.ResourceStats> resourceStats_ =
         java.util.Collections.emptyList();
       private void ensureResourceStatsIsMutable() {
@@ -1267,8 +1294,7 @@ public final class ControlProto {
           java.lang.Iterable<? extends edu.washington.escience.myria.proto.ControlProto.ResourceStats> values) {
         if (resourceStatsBuilder_ == null) {
           ensureResourceStatsIsMutable();
-          com.google.protobuf.AbstractMessageLite.Builder.addAll(
-              values, resourceStats_);
+          super.addAll(values, resourceStats_);
           onChanged();
         } else {
           resourceStatsBuilder_.addAllMessages(values);
@@ -1366,6 +1392,7 @@ public final class ControlProto {
         return resourceStatsBuilder_;
       }
 
+      // repeated int32 acked_worker_ids = 5;
       private java.util.List<java.lang.Integer> ackedWorkerIds_ = java.util.Collections.emptyList();
       private void ensureAckedWorkerIdsIsMutable() {
         if (!((bitField0_ & 0x00000010) == 0x00000010)) {
@@ -1417,8 +1444,7 @@ public final class ControlProto {
       public Builder addAllAckedWorkerIds(
           java.lang.Iterable<? extends java.lang.Integer> values) {
         ensureAckedWorkerIdsIsMutable();
-        com.google.protobuf.AbstractMessageLite.Builder.addAll(
-            values, ackedWorkerIds_);
+        super.addAll(values, ackedWorkerIds_);
         onChanged();
         return this;
       }
@@ -1443,10 +1469,10 @@ public final class ControlProto {
     // @@protoc_insertion_point(class_scope:ControlMessage)
   }
 
-  public interface SocketInfoOrBuilder extends
-      // @@protoc_insertion_point(interface_extends:SocketInfo)
-      com.google.protobuf.MessageOrBuilder {
+  public interface SocketInfoOrBuilder
+      extends com.google.protobuf.MessageOrBuilder {
 
+    // required string host = 1;
     /**
      * <code>required string host = 1;</code>
      */
@@ -1461,6 +1487,7 @@ public final class ControlProto {
     com.google.protobuf.ByteString
         getHostBytes();
 
+    // required int32 port = 2;
     /**
      * <code>required int32 port = 2;</code>
      */
@@ -1474,9 +1501,8 @@ public final class ControlProto {
    * Protobuf type {@code SocketInfo}
    */
   public static final class SocketInfo extends
-      com.google.protobuf.GeneratedMessage implements
-      // @@protoc_insertion_point(message_implements:SocketInfo)
-      SocketInfoOrBuilder {
+      com.google.protobuf.GeneratedMessage
+      implements SocketInfoOrBuilder {
     // Use SocketInfo.newBuilder() to construct.
     private SocketInfo(com.google.protobuf.GeneratedMessage.Builder<?> builder) {
       super(builder);
@@ -1523,9 +1549,8 @@ public final class ControlProto {
               break;
             }
             case 10: {
-              com.google.protobuf.ByteString bs = input.readBytes();
               bitField0_ |= 0x00000001;
-              host_ = bs;
+              host_ = input.readBytes();
               break;
             }
             case 16: {
@@ -1573,6 +1598,7 @@ public final class ControlProto {
     }
 
     private int bitField0_;
+    // required string host = 1;
     public static final int HOST_FIELD_NUMBER = 1;
     private java.lang.Object host_;
     /**
@@ -1615,6 +1641,7 @@ public final class ControlProto {
       }
     }
 
+    // required int32 port = 2;
     public static final int PORT_FIELD_NUMBER = 2;
     private int port_;
     /**
@@ -1637,8 +1664,7 @@ public final class ControlProto {
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
       byte isInitialized = memoizedIsInitialized;
-      if (isInitialized == 1) return true;
-      if (isInitialized == 0) return false;
+      if (isInitialized != -1) return isInitialized == 1;
 
       if (!hasHost()) {
         memoizedIsInitialized = 0;
@@ -1760,9 +1786,8 @@ public final class ControlProto {
      * Protobuf type {@code SocketInfo}
      */
     public static final class Builder extends
-        com.google.protobuf.GeneratedMessage.Builder<Builder> implements
-        // @@protoc_insertion_point(builder_implements:SocketInfo)
-        edu.washington.escience.myria.proto.ControlProto.SocketInfoOrBuilder {
+        com.google.protobuf.GeneratedMessage.Builder<Builder>
+       implements edu.washington.escience.myria.proto.ControlProto.SocketInfoOrBuilder {
       public static final com.google.protobuf.Descriptors.Descriptor
           getDescriptor() {
         return edu.washington.escience.myria.proto.ControlProto.internal_static_SocketInfo_descriptor;
@@ -1894,6 +1919,7 @@ public final class ControlProto {
       }
       private int bitField0_;
 
+      // required string host = 1;
       private java.lang.Object host_ = "";
       /**
        * <code>required string host = 1;</code>
@@ -1907,12 +1933,9 @@ public final class ControlProto {
       public java.lang.String getHost() {
         java.lang.Object ref = host_;
         if (!(ref instanceof java.lang.String)) {
-          com.google.protobuf.ByteString bs =
-              (com.google.protobuf.ByteString) ref;
-          java.lang.String s = bs.toStringUtf8();
-          if (bs.isValidUtf8()) {
-            host_ = s;
-          }
+          java.lang.String s = ((com.google.protobuf.ByteString) ref)
+              .toStringUtf8();
+          host_ = s;
           return s;
         } else {
           return (java.lang.String) ref;
@@ -1970,6 +1993,7 @@ public final class ControlProto {
         return this;
       }
 
+      // required int32 port = 2;
       private int port_ ;
       /**
        * <code>required int32 port = 2;</code>
@@ -2013,10 +2037,10 @@ public final class ControlProto {
     // @@protoc_insertion_point(class_scope:SocketInfo)
   }
 
-  public interface ResourceStatsOrBuilder extends
-      // @@protoc_insertion_point(interface_extends:ResourceStats)
-      com.google.protobuf.MessageOrBuilder {
+  public interface ResourceStatsOrBuilder
+      extends com.google.protobuf.MessageOrBuilder {
 
+    // required int64 timestamp = 1;
     /**
      * <code>required int64 timestamp = 1;</code>
      */
@@ -2026,6 +2050,7 @@ public final class ControlProto {
      */
     long getTimestamp();
 
+    // required int32 opId = 2;
     /**
      * <code>required int32 opId = 2;</code>
      */
@@ -2035,6 +2060,7 @@ public final class ControlProto {
      */
     int getOpId();
 
+    // required string measurement = 3;
     /**
      * <code>required string measurement = 3;</code>
      */
@@ -2049,6 +2075,7 @@ public final class ControlProto {
     com.google.protobuf.ByteString
         getMeasurementBytes();
 
+    // required int64 value = 4;
     /**
      * <code>required int64 value = 4;</code>
      */
@@ -2058,6 +2085,7 @@ public final class ControlProto {
      */
     long getValue();
 
+    // required int64 queryId = 5;
     /**
      * <code>required int64 queryId = 5;</code>
      */
@@ -2067,6 +2095,7 @@ public final class ControlProto {
      */
     long getQueryId();
 
+    // required int64 subqueryId = 6;
     /**
      * <code>required int64 subqueryId = 6;</code>
      */
@@ -2080,9 +2109,8 @@ public final class ControlProto {
    * Protobuf type {@code ResourceStats}
    */
   public static final class ResourceStats extends
-      com.google.protobuf.GeneratedMessage implements
-      // @@protoc_insertion_point(message_implements:ResourceStats)
-      ResourceStatsOrBuilder {
+      com.google.protobuf.GeneratedMessage
+      implements ResourceStatsOrBuilder {
     // Use ResourceStats.newBuilder() to construct.
     private ResourceStats(com.google.protobuf.GeneratedMessage.Builder<?> builder) {
       super(builder);
@@ -2139,9 +2167,8 @@ public final class ControlProto {
               break;
             }
             case 26: {
-              com.google.protobuf.ByteString bs = input.readBytes();
               bitField0_ |= 0x00000004;
-              measurement_ = bs;
+              measurement_ = input.readBytes();
               break;
             }
             case 32: {
@@ -2199,6 +2226,7 @@ public final class ControlProto {
     }
 
     private int bitField0_;
+    // required int64 timestamp = 1;
     public static final int TIMESTAMP_FIELD_NUMBER = 1;
     private long timestamp_;
     /**
@@ -2214,6 +2242,7 @@ public final class ControlProto {
       return timestamp_;
     }
 
+    // required int32 opId = 2;
     public static final int OPID_FIELD_NUMBER = 2;
     private int opId_;
     /**
@@ -2229,6 +2258,7 @@ public final class ControlProto {
       return opId_;
     }
 
+    // required string measurement = 3;
     public static final int MEASUREMENT_FIELD_NUMBER = 3;
     private java.lang.Object measurement_;
     /**
@@ -2271,6 +2301,7 @@ public final class ControlProto {
       }
     }
 
+    // required int64 value = 4;
     public static final int VALUE_FIELD_NUMBER = 4;
     private long value_;
     /**
@@ -2286,6 +2317,7 @@ public final class ControlProto {
       return value_;
     }
 
+    // required int64 queryId = 5;
     public static final int QUERYID_FIELD_NUMBER = 5;
     private long queryId_;
     /**
@@ -2301,6 +2333,7 @@ public final class ControlProto {
       return queryId_;
     }
 
+    // required int64 subqueryId = 6;
     public static final int SUBQUERYID_FIELD_NUMBER = 6;
     private long subqueryId_;
     /**
@@ -2327,8 +2360,7 @@ public final class ControlProto {
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
       byte isInitialized = memoizedIsInitialized;
-      if (isInitialized == 1) return true;
-      if (isInitialized == 0) return false;
+      if (isInitialized != -1) return isInitialized == 1;
 
       if (!hasTimestamp()) {
         memoizedIsInitialized = 0;
@@ -2494,9 +2526,8 @@ public final class ControlProto {
      * Protobuf type {@code ResourceStats}
      */
     public static final class Builder extends
-        com.google.protobuf.GeneratedMessage.Builder<Builder> implements
-        // @@protoc_insertion_point(builder_implements:ResourceStats)
-        edu.washington.escience.myria.proto.ControlProto.ResourceStatsOrBuilder {
+        com.google.protobuf.GeneratedMessage.Builder<Builder>
+       implements edu.washington.escience.myria.proto.ControlProto.ResourceStatsOrBuilder {
       public static final com.google.protobuf.Descriptors.Descriptor
           getDescriptor() {
         return edu.washington.escience.myria.proto.ControlProto.internal_static_ResourceStats_descriptor;
@@ -2680,6 +2711,7 @@ public final class ControlProto {
       }
       private int bitField0_;
 
+      // required int64 timestamp = 1;
       private long timestamp_ ;
       /**
        * <code>required int64 timestamp = 1;</code>
@@ -2712,6 +2744,7 @@ public final class ControlProto {
         return this;
       }
 
+      // required int32 opId = 2;
       private int opId_ ;
       /**
        * <code>required int32 opId = 2;</code>
@@ -2744,6 +2777,7 @@ public final class ControlProto {
         return this;
       }
 
+      // required string measurement = 3;
       private java.lang.Object measurement_ = "";
       /**
        * <code>required string measurement = 3;</code>
@@ -2757,12 +2791,9 @@ public final class ControlProto {
       public java.lang.String getMeasurement() {
         java.lang.Object ref = measurement_;
         if (!(ref instanceof java.lang.String)) {
-          com.google.protobuf.ByteString bs =
-              (com.google.protobuf.ByteString) ref;
-          java.lang.String s = bs.toStringUtf8();
-          if (bs.isValidUtf8()) {
-            measurement_ = s;
-          }
+          java.lang.String s = ((com.google.protobuf.ByteString) ref)
+              .toStringUtf8();
+          measurement_ = s;
           return s;
         } else {
           return (java.lang.String) ref;
@@ -2820,6 +2851,7 @@ public final class ControlProto {
         return this;
       }
 
+      // required int64 value = 4;
       private long value_ ;
       /**
        * <code>required int64 value = 4;</code>
@@ -2852,6 +2884,7 @@ public final class ControlProto {
         return this;
       }
 
+      // required int64 queryId = 5;
       private long queryId_ ;
       /**
        * <code>required int64 queryId = 5;</code>
@@ -2884,6 +2917,7 @@ public final class ControlProto {
         return this;
       }
 
+      // required int64 subqueryId = 6;
       private long subqueryId_ ;
       /**
        * <code>required int64 subqueryId = 6;</code>
@@ -2927,17 +2961,17 @@ public final class ControlProto {
     // @@protoc_insertion_point(class_scope:ResourceStats)
   }
 
-  private static final com.google.protobuf.Descriptors.Descriptor
+  private static com.google.protobuf.Descriptors.Descriptor
     internal_static_ControlMessage_descriptor;
   private static
     com.google.protobuf.GeneratedMessage.FieldAccessorTable
       internal_static_ControlMessage_fieldAccessorTable;
-  private static final com.google.protobuf.Descriptors.Descriptor
+  private static com.google.protobuf.Descriptors.Descriptor
     internal_static_SocketInfo_descriptor;
   private static
     com.google.protobuf.GeneratedMessage.FieldAccessorTable
       internal_static_SocketInfo_fieldAccessorTable;
-  private static final com.google.protobuf.Descriptors.Descriptor
+  private static com.google.protobuf.Descriptors.Descriptor
     internal_static_ResourceStats_descriptor;
   private static
     com.google.protobuf.GeneratedMessage.FieldAccessorTable
@@ -2951,51 +2985,52 @@ public final class ControlProto {
       descriptor;
   static {
     java.lang.String[] descriptorData = {
-      "\n\rcontrol.proto\"\275\002\n\016ControlMessage\022\"\n\004ty" +
+      "\n\rcontrol.proto\"\314\002\n\016ControlMessage\022\"\n\004ty" +
       "pe\030\001 \002(\0162\024.ControlMessage.Type\022\021\n\tworker" +
       "_id\030\002 \001(\005\022#\n\016remote_address\030\003 \001(\0132\013.Sock" +
       "etInfo\022&\n\016resource_stats\030\004 \003(\0132\016.Resourc" +
-      "eStats\022\030\n\020acked_worker_ids\030\005 \003(\005\"\214\001\n\004Typ" +
+      "eStats\022\030\n\020acked_worker_ids\030\005 \003(\005\"\233\001\n\004Typ" +
       "e\022\014\n\010SHUTDOWN\020\001\022\024\n\020WORKER_HEARTBEAT\020\002\022\021\n" +
       "\rREMOVE_WORKER\020\003\022\016\n\nADD_WORKER\020\004\022\025\n\021REMO" +
       "VE_WORKER_ACK\020\005\022\022\n\016ADD_WORKER_ACK\020\006\022\022\n\016R" +
-      "ESOURCE_STATS\020\007\"(\n\nSocketInfo\022\014\n\004host\030\001 " +
-      "\002(\t\022\014\n\004port\030\002 \002(\005\"y\n\rResourceStats\022\021\n\tti",
-      "mestamp\030\001 \002(\003\022\014\n\004opId\030\002 \002(\005\022\023\n\013measureme" +
-      "nt\030\003 \002(\t\022\r\n\005value\030\004 \002(\003\022\017\n\007queryId\030\005 \002(\003" +
-      "\022\022\n\nsubqueryId\030\006 \002(\003B3\n#edu.washington.e" +
-      "science.myria.protoB\014ControlProto"
+      "ESOURCE_STATS\020\007\022\r\n\tSYSTEM_GC\020\010\"(\n\nSocket" +
+      "Info\022\014\n\004host\030\001 \002(\t\022\014\n\004port\030\002 \002(\005\"y\n\rReso",
+      "urceStats\022\021\n\ttimestamp\030\001 \002(\003\022\014\n\004opId\030\002 \002" +
+      "(\005\022\023\n\013measurement\030\003 \002(\t\022\r\n\005value\030\004 \002(\003\022\017" +
+      "\n\007queryId\030\005 \002(\003\022\022\n\nsubqueryId\030\006 \002(\003B3\n#e" +
+      "du.washington.escience.myria.protoB\014Cont" +
+      "rolProto"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
-        new com.google.protobuf.Descriptors.FileDescriptor.    InternalDescriptorAssigner() {
-          public com.google.protobuf.ExtensionRegistry assignDescriptors(
-              com.google.protobuf.Descriptors.FileDescriptor root) {
-            descriptor = root;
-            return null;
-          }
-        };
+      new com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
+        public com.google.protobuf.ExtensionRegistry assignDescriptors(
+            com.google.protobuf.Descriptors.FileDescriptor root) {
+          descriptor = root;
+          internal_static_ControlMessage_descriptor =
+            getDescriptor().getMessageTypes().get(0);
+          internal_static_ControlMessage_fieldAccessorTable = new
+            com.google.protobuf.GeneratedMessage.FieldAccessorTable(
+              internal_static_ControlMessage_descriptor,
+              new java.lang.String[] { "Type", "WorkerId", "RemoteAddress", "ResourceStats", "AckedWorkerIds", });
+          internal_static_SocketInfo_descriptor =
+            getDescriptor().getMessageTypes().get(1);
+          internal_static_SocketInfo_fieldAccessorTable = new
+            com.google.protobuf.GeneratedMessage.FieldAccessorTable(
+              internal_static_SocketInfo_descriptor,
+              new java.lang.String[] { "Host", "Port", });
+          internal_static_ResourceStats_descriptor =
+            getDescriptor().getMessageTypes().get(2);
+          internal_static_ResourceStats_fieldAccessorTable = new
+            com.google.protobuf.GeneratedMessage.FieldAccessorTable(
+              internal_static_ResourceStats_descriptor,
+              new java.lang.String[] { "Timestamp", "OpId", "Measurement", "Value", "QueryId", "SubqueryId", });
+          return null;
+        }
+      };
     com.google.protobuf.Descriptors.FileDescriptor
       .internalBuildGeneratedFileFrom(descriptorData,
         new com.google.protobuf.Descriptors.FileDescriptor[] {
         }, assigner);
-    internal_static_ControlMessage_descriptor =
-      getDescriptor().getMessageTypes().get(0);
-    internal_static_ControlMessage_fieldAccessorTable = new
-      com.google.protobuf.GeneratedMessage.FieldAccessorTable(
-        internal_static_ControlMessage_descriptor,
-        new java.lang.String[] { "Type", "WorkerId", "RemoteAddress", "ResourceStats", "AckedWorkerIds", });
-    internal_static_SocketInfo_descriptor =
-      getDescriptor().getMessageTypes().get(1);
-    internal_static_SocketInfo_fieldAccessorTable = new
-      com.google.protobuf.GeneratedMessage.FieldAccessorTable(
-        internal_static_SocketInfo_descriptor,
-        new java.lang.String[] { "Host", "Port", });
-    internal_static_ResourceStats_descriptor =
-      getDescriptor().getMessageTypes().get(2);
-    internal_static_ResourceStats_fieldAccessorTable = new
-      com.google.protobuf.GeneratedMessage.FieldAccessorTable(
-        internal_static_ResourceStats_descriptor,
-        new java.lang.String[] { "Timestamp", "OpId", "Measurement", "Value", "QueryId", "SubqueryId", });
   }
 
   // @@protoc_insertion_point(outer_class_scope)
