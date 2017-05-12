@@ -129,15 +129,12 @@ public class DupElimTest {
         ans.add(tb);
       }
     }
-    dupElim.close();
-
-    int count = 0;
-    for (TupleBatch tb : ans) {
-      count += tb.numTuples();
-    }
     assertEquals(2, ans.size());
-    assertEquals(4, count);
     assertEquals(3, ans.get(0).numTuples());
     assertEquals(1, ans.get(1).numTuples());
+    List<TupleBatch> state = dupElim.getStreamingState().exportState();
+    assertEquals(1, state.size());
+    assertEquals(4, state.get(0).numTuples());
+    dupElim.close();
   }
 }
