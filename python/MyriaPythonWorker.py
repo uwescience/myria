@@ -136,13 +136,16 @@ class PickleSerializer(Serializer):
         unenc = base64.urlsafe_b64decode(s)
         return self.loads(unenc)
 
+    @staticmethod
     def dumps(self, obj):
         protocol = 2
         return cPickle.dumps(obj, protocol)
 
+    @staticmethod
     def loads(self, obj):
         return cPickle.loads(obj)
 
+    @staticmethod
     def pickle_and_write(self, obj, stream):
         serialized = self.dumps(obj)
 
