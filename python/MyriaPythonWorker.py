@@ -57,15 +57,15 @@ class Serializer(object):
         stream.write(struct.pack("!i", value))
 
     @staticmethod
-    def write_float(self, value, stream):
+    def write_float(value, stream):
         stream.write(struct.pack("!f", value))
 
     @staticmethod
-    def write_double(self, value, stream):
+    def write_double(value, stream):
         stream.write(struct.pack("!d", value))
 
     @staticmethod
-    def write_long(self, value, stream):
+    def write_long(value, stream):
         stream.write(struct.pack("!q", value))
 
 
@@ -109,7 +109,7 @@ class PickleSerializer(Serializer):
         if output_type == DataType.INT:
             self.write_int(DataType.INT, stream)
             self.write_int(obj, stream)
-        elif (output_type == DataType.LONG):
+        elif output_type == DataType.LONG:
             self.write_int(DataType.LONG, stream)
             obj.write_long(obj, stream)
         elif output_type == DataType.FLOAT:
@@ -137,17 +137,17 @@ class PickleSerializer(Serializer):
         return self.loads(unenc)
 
     @staticmethod
-    def dumps(self, obj):
+    def dumps(obj):
         protocol = 2
         return cPickle.dumps(obj, protocol)
 
     @staticmethod
-    def loads(self, obj):
+    def loads(obj):
         return cPickle.loads(obj)
 
     @staticmethod
     def pickle_and_write(self, obj, stream):
-        serialized = self.dumps(obj)
+        serialized = self.dumps(self, obj)
 
         if serialized is None:
             raise ValueError("Serialized value should not be None.")
