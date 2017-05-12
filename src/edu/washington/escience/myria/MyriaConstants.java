@@ -328,11 +328,13 @@ public final class MyriaConstants {
   /**
    * python executable name.
    */
-  public static final String PYTHONEXEC = "python";
+  public static final String PYTHON_EXEC = "python";
   /**
    * Python worker module.
    */
-  public static final String PYTHONWORKER = "MyriaPythonWorker.worker";
+  public static final String PYTHON_WORKER_FILE = "MyriaPythonWorker.py";
+
+  public static final String PYTHON_WORKER_PATH = "./reef/global/";
 
   /**
    * UDF language.
