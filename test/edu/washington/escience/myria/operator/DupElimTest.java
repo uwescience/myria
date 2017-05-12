@@ -94,7 +94,7 @@ public class DupElimTest {
   @Test
   public void testDupElim() throws DbException {
     BatchTupleSource src = new BatchTupleSource(makeTestData());
-    StreamingStateWrapper dupElim = new StreamingStateWrapper(src, new DupElim());
+    DupElim dupElim = new DupElim(src);
 
     List<TupleBatch> ans = Lists.newLinkedList();
     dupElim.open(TestEnvVars.get());
@@ -114,5 +114,27 @@ public class DupElimTest {
     assertEquals(4, count);
     assertEquals(3, ans.get(0).numTuples());
     assertEquals(1, ans.get(1).numTuples());
+  }
+
+  @Test
+  public void testStatefulDupElim() throws DbException {
+    BatchTupleSource src = new BatchTupleSource(makeTestData());
+    StreamingStateWrapper dupElim = new StreamingStateWrapper(src, new StatefulDupElim());
+
+    List<TupleBatch> ans = Lists.newLinkedList();
+    dupElim.open(TestEnvVars.get());
+    while (!dupElim.eos()) {
+      TupleBatch tb = dupElim.nextReady();
+      if (tb != null) {
+        ans.add(tb);
+      }
+    }
+    assertEquals(2, ans.size());
+    assertEquals(3, ans.get(0).numTuples());
+    assertEquals(1, ans.get(1).numTuples());
+    List<TupleBatch> state = dupElim.getStreamingState().exportState();
+    assertEquals(1, state.size());
+    assertEquals(4, state.get(0).numTuples());
+    dupElim.close();
   }
 }
