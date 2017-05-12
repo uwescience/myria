@@ -147,7 +147,7 @@ class PickleSerializer(Serializer):
 
     @staticmethod
     def pickle_and_write(self, obj, stream):
-        serialized = self.dumps(self, obj)
+        serialized = self.dumps( obj)
 
         if serialized is None:
             raise ValueError("Serialized value should not be None.")
