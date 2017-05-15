@@ -127,7 +127,6 @@ class PickleSerializer(Serializer):
         length = self.read_int(stream)
 
         if length < 0:
-            print("Command length is less than zero!", file=sys.stderr)
             raise ValueError("Command cannot have a length zero.")
         s = stream.read(length)
 
