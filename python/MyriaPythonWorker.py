@@ -171,7 +171,7 @@ def main(in_file, out_file):
         while True:
             num_tuples = pickle_serializer.read_int(in_file)
             if num_tuples == SpecialLengths.END_OF_STREAM:
-                sys.exit(0)
+                exit(0)
 
             tuple_list = []
             for j in range(num_tuples):
@@ -195,9 +195,13 @@ def main(in_file, out_file):
             pickle_serializer.write_with_length(traceback.format_exc().encode(
                 "utf-8"), out_file, 5)
             print(traceback.format_exc(), file=sys.stderr)
+        except IOError:
+            # JVM close the socket
+            pass
         except Exception:
             print("python process failed with exception: ", file=sys.stderr)
             print(traceback.format_exc(), file=sys.stderr)
+        exit(-1)
 
 
 if __name__ == '__main__':
@@ -207,12 +211,5 @@ if __name__ == '__main__':
     sock.connect(("127.0.0.1", java_port))
     infile = os.fdopen(os.dup(sock.fileno()), "rb", 65536)
     outfile = os.fdopen(os.dup(sock.fileno()), "wb", 65536)
-    exit_code = 0
+    main(infile, outfile)
 
-    try:
-        main(infile, outfile)
-    except SystemExit as exc:
-        exit_code = exc.code
-    finally:
-        outfile.flush()
-        sock.close()
