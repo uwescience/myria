@@ -91,7 +91,7 @@ class PickleSerializer(Serializer):
         datalist = []
         for i in range(tuplesize):
             # first element read type
-            elementType = self.read_int(stream)
+            element_type = self.read_int(stream)
             # Second read the length
             length = self.read_int(stream)
 
@@ -99,7 +99,7 @@ class PickleSerializer(Serializer):
                 datalist.append(0)
             # length is > 0, read the item now
             elif length > 0:
-                obj = self.read_item(stream, elementType, length)
+                obj = self.read_item(stream, element_type, length)
                 datalist.append(obj)
 
         return datalist
@@ -127,8 +127,8 @@ class PickleSerializer(Serializer):
         length = self.read_int(stream)
 
         if length < 0:
-            print("command length is less than zero", file=sys.stderr)
-            return None
+            print("Command length is less than zero!", file=sys.stderr)
+            raise ValueError("Command cannot have a length zero.")
         s = stream.read(length)
 
         if len(s) < length:
@@ -172,7 +172,8 @@ def main(in_file, out_file):
         while True:
             num_tuples = pickle_serializer.read_int(in_file)
             if num_tuples == SpecialLengths.END_OF_STREAM:
-                break
+                sys.exit(0)
+
             tuple_list = []
             for j in range(num_tuples):
                 tuple_list.append(pickle_serializer.read_tuple(in_file, tuple_size))
