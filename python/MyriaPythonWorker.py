@@ -111,7 +111,7 @@ class PickleSerializer(Serializer):
             self.write_int(obj, stream)
         elif output_type == DataType.LONG:
             self.write_int(DataType.LONG, stream)
-            obj.write_long(obj, stream)
+            self.write_long(obj, stream)
         elif output_type == DataType.FLOAT:
             self.write_int(DataType.FLOAT, stream)
             self.write_float(obj, stream)
