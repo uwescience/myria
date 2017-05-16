@@ -167,8 +167,8 @@ public final class Worker implements Task, TaskMessageSource {
                   sendMessageToMaster(IPCUtils.addWorkerAckTM(workerId));
                   break;
                 case SYSTEM_GC:
-                  if (LOGGER.isInfoEnabled()) {
-                    LOGGER.info("Trigger System GC");
+                  if (LOGGER.isDebugEnabled()) {
+                    LOGGER.debug("Trigger System GC");
                   }
                   System.gc();
                   break;
@@ -254,7 +254,6 @@ public final class Worker implements Task, TaskMessageSource {
                 }
                 q = null;
               }
-
               break;
             default:
               break;
