@@ -89,7 +89,7 @@ class PickleSerializer(Serializer):
     @classmethod
     def read_tuple(cls, stream, tuplesize):
         datalist = []
-        for i in range(tuplesize):
+        for _ in range(tuplesize):
             # first element read type
             element_type = cls.read_int(stream)
             # Second read the length
@@ -129,7 +129,7 @@ class PickleSerializer(Serializer):
         length = cls.read_int(stream)
 
         if length < 0:
-            raise ValueError("Command cannot be less than zero.")
+            raise ValueError("Command length cannot be less than zero.")
         s = stream.read(length)
 
         if len(s) < length:
@@ -176,7 +176,7 @@ def main(in_file, out_file):
                 break
 
             tuple_list = []
-            for j in range(num_tuples):
+            for _ in range(num_tuples):
                 tuple_list.append(pickle_serializer.read_tuple(in_file, tuple_size))
 
             retval = func(tuple_list)
@@ -199,12 +199,12 @@ def main(in_file, out_file):
             print(traceback.format_exc(), file=sys.stderr)
         except IOError:
             # JVM closed the socket
-            print("IOError: \n{}".
+            print("IOError:\n{}".
                   format(traceback.format_exc()), file=sys.stderr)
         except Exception:
             print("Python worker process failed with exception:\n{}".
                   format(traceback.format_exc()), file=sys.stderr)
-        exit(-1)
+        sys.exit(-1)
 
 
 if __name__ == '__main__':
