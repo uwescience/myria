@@ -101,6 +101,8 @@ class PickleSerializer(Serializer):
             elif length > 0:
                 obj = self.read_item(stream, element_type, length)
                 datalist.append(obj)
+            else:
+                raise ValueError("Invalid length for item.")
 
         return datalist
 
