@@ -122,7 +122,7 @@ class PickleSerializer(Serializer):
             self.write_double(obj, stream)
         elif output_type == DataType.BLOB:
             self.write_int(DataType.BLOB, stream)
-            self.pickle_and_write(self, obj, stream)
+            self.pickle_and_write(obj, stream)
 
     @classmethod
     def read_command(self, stream):
@@ -148,7 +148,7 @@ class PickleSerializer(Serializer):
 
     @classmethod
     def pickle_and_write(self, obj, stream):
-        serialized = self.dumps( obj)
+        serialized = self.dumps(obj)
 
         if serialized is None:
             raise ValueError("Serialized value should not be None.")
