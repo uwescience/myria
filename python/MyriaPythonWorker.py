@@ -199,7 +199,8 @@ def main(in_file, out_file):
             print(traceback.format_exc(), file=sys.stderr)
         except IOError:
             # JVM closed the socket
-            pass
+            print("IOError: \n{}".
+                  format(traceback.format_exc()), file=sys.stderr)
         except Exception:
             print("Python worker process failed with exception:\n{}".
                   format(traceback.format_exc()), file=sys.stderr)
