@@ -144,7 +144,7 @@ class PickleSerializer(Serializer):
     def loads(obj):
         return cPickle.loads(obj)
 
-    @staticmethod
+    @classmethod
     def pickle_and_write(self, obj, stream):
         serialized = self.dumps( obj)
 
@@ -166,12 +166,12 @@ def main(in_file, out_file):
         is_flatmap = pickle_serializer.read_int(in_file)
 
         if tuple_size < 1:
-            raise ValueError("size of tuple should not be less than 1 ")
+            raise ValueError("Size of tuple should not be less than 1.")
 
         while True:
             num_tuples = pickle_serializer.read_int(in_file)
             if num_tuples == SpecialLengths.END_OF_STREAM:
-                exit(0)
+                break
 
             tuple_list = []
             for j in range(num_tuples):
@@ -193,14 +193,13 @@ def main(in_file, out_file):
         try:
             pickle_serializer.write_int(SpecialLengths.PYTHON_EXCEPTION_THROWN, out_file)
             pickle_serializer.write_with_length(traceback.format_exc().encode(
-                "utf-8"), out_file, 5)
+                "utf-8"), out_file, DataType.BLOB)
             print(traceback.format_exc(), file=sys.stderr)
         except IOError:
-            # JVM close the socket
+            # JVM closed the socket
             pass
         except Exception:
-            print("python process failed with exception: ", file=sys.stderr)
-            print(traceback.format_exc(), file=sys.stderr)
+            print("Python worker process failed with exception:\n{}".format(traceback.format_exc()), file=sys.stderr)
         exit(-1)
 
 
