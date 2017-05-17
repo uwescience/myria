@@ -180,7 +180,7 @@ def main(in_file, out_file):
                 tuple_list.append(pickle_serializer.read_tuple(in_file, tuple_size))
 
             retval = func(tuple_list)
-            if is_flatmap > 0:
+            if is_flatmap:
                 count = len(retval)
                 pickle_serializer.write_int(count, out_file)
                 for i in range(count):
