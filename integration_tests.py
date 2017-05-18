@@ -386,5 +386,28 @@ T1 = load('{}',csv(schema(a:int,b:int))); T2 = [from T1 emit a, count(*) as c]; 
             count_result.to_dict(), uda_result.to_dict())
 
 
+class BlobLiteralTest(MyriaTestBase):
+    def test(self):
+        program = """
+R = empty(bit:blob);
+S = [from R emit bitset(b'\x01')];
+store(S, bits);
+"""
+        query = MyriaQuery.submit(program)
+        expected = [
+            {'bit': True},
+            {'bit': False},
+            {'bit': False},
+            {'bit': False},
+            {'bit': False},
+            {'bit': False},
+            {'bit': False},
+            {'bit': False}
+        ]
+
+        self.assertEqual(query.status, 'SUCCESS')
+        self.assertListOfDictsEqual(query.to_dict(), expected)
+
+
 if __name__ == '__main__':
     unittest.main()

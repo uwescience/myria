@@ -299,7 +299,10 @@ public final class MyriaConstants {
    * Default imports for janino. Modules imported here can be used in expressions.
    */
   public static final String[] DEFAULT_JANINO_IMPORTS = {
-    "com.google.common.hash.Hashing", "java.nio.charset.Charset"
+    "com.google.common.hash.Hashing",
+    "java.nio.charset.Charset",
+    "java.nio.ByteBuffer",
+    "java.util.Base64"
   };
 
   /** Private constructor to disallow building utility class. */
