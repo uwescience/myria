@@ -177,7 +177,8 @@ def main(in_file, out_file):
 
             tuple_list = []
             for _ in range(num_tuples):
-                tuple_list.append(pickle_serializer.read_tuple(in_file, tuple_size))
+                tuple_list.append(
+                    pickle_serializer.read_tuple(in_file, tuple_size))
 
             retval = func(tuple_list)
             if is_flatmap:
@@ -187,13 +188,15 @@ def main(in_file, out_file):
                     pickle_serializer.write_with_length(
                         retval[i], out_file, output_type)
             else:
-                pickle_serializer.write_with_length(retval, out_file, output_type)
+                pickle_serializer.write_with_length(
+                    retval, out_file, output_type)
 
             out_file.flush()
 
     except Exception:
         try:
-            pickle_serializer.write_int(SpecialLengths.PYTHON_EXCEPTION_THROWN, out_file)
+            pickle_serializer.write_int(
+                SpecialLengths.PYTHON_EXCEPTION_THROWN, out_file)
             pickle_serializer.write_with_length(traceback.format_exc().encode(
                 "utf-8"), out_file, DataType.BLOB)
             print(traceback.format_exc(), file=sys.stderr)
@@ -215,4 +218,3 @@ if __name__ == '__main__':
     with os.fdopen(os.dup(sock.fileno()), "rb", 65536) as infile,\
             os.fdopen(os.dup(sock.fileno()), "wb", 65536) as outfile:
         main(infile, outfile)
-

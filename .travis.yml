@@ -25,7 +25,7 @@ after_failure:
 - find . -name '*.stderr' | xargs cat
 after_success:
 - ./gradlew jacocoTestReport coveralls
-- flake8 ./integration_tests.py
+- flake8 ./integration_tests.py ./python/MyriaPythonWorker.py
 cache:
   directories:
   - $HOME/.gradle/caches
