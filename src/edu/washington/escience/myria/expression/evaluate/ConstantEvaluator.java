@@ -44,11 +44,11 @@ public final class ConstantEvaluator extends GenericEvaluator {
       final Expression expression, final ExpressionOperatorParameter parameters)
       throws DbException {
     super(expression, parameters);
+    ;
     Preconditions.checkArgument(
-        !expression.hasOperator(VariableExpression.class)
-            && !expression.hasOperator(StateExpression.class),
-        "Expression %s does not evaluate to a constant",
-        expression);
+        expression.isConstant(), "Expression %s does not evaluate to a constant", expression);
+    Preconditions.checkArgument(
+        !expression.isMultiValued(), "Expression %s is multivalued", expression);
     type = expression.getOutputType(parameters);
     String java;
     try {
