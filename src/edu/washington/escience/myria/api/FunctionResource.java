@@ -4,8 +4,10 @@
 package edu.washington.escience.myria.api;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.List;
 import java.util.Map.Entry;
+import java.util.zip.ZipInputStream;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
@@ -87,7 +89,21 @@ public class FunctionResource {
   public List<CreateFunctionEncoding> loadJar(final LoadJarEncoding encoding) throws DbException {
     List<CreateFunctionEncoding> functions;
     try {
-      functions = server.loadJar(encoding.name, encoding.binary, encoding.binaryUri);
+      functions = server.loadJar(encoding.name, encoding.binaryUri);
+    } catch (Exception e) {
+      throw new DbException(e);
+    }
+    return functions;
+  }
+
+  @POST
+  @Path("/jar/download/{name}")
+  @Consumes(MediaType.APPLICATION_OCTET_STREAM)
+  public List<CreateFunctionEncoding> downloadJar(
+      final InputStream is, @PathParam("name") final String name) throws DbException {
+    List<CreateFunctionEncoding> functions;
+    try {
+      functions = server.downloadJar(name, is);
     } catch (Exception e) {
       throw new DbException(e);
     }

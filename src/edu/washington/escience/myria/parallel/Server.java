@@ -1267,28 +1267,26 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
    * Download a jar to JavaUDF directory
    *
    * @param jarName the name of the jar file
-   * @param binary the binary of the jar file
    * @param binaryUri a URI where the binary of the jar file can be downloaded from
    * @return the status of all functions contained in the jar
    */
-  public List<CreateFunctionEncoding> loadJar(String jarName, String binary, String binaryUri)
+  public List<CreateFunctionEncoding> loadJar(String jarName, String binaryUri)
       throws URISyntaxException, IOException, DbException, FileNotFoundException,
           ClassNotFoundException {
-    InputStream in;
-    if (binary != null) {
-      in = new ByteArrayInputStream(binary.getBytes(Charset.forName("UTF_8")));
-    } else if (binaryUri != null) {
-      UriSource uriSource = new UriSource(binaryUri);
-      in = uriSource.getInputStream();
-    } else {
-      throw new DbException();
-    }
+    UriSource uriSource = new UriSource(binaryUri);
+    InputStream is = uriSource.getInputStream();
+    return this.downloadJar(jarName, is);
+  }
+
+  public List<CreateFunctionEncoding> downloadJar(String jarName, InputStream is)
+      throws URISyntaxException, IOException, DbException, FileNotFoundException,
+          ClassNotFoundException {
     // Copy file to local directory
     String path = this.instancePath + "/JavaUDF/" + jarName;
-    OutputStream out = new FileOutputStream(path, false);
-    IOUtils.copy(in, out);
-    in.close();
-    out.close();
+    OutputStream os = new FileOutputStream(path, false);
+    IOUtils.copy(is, os);
+    is.close();
+    os.close();
 
     // Add the Jar to the class path
     URLClassLoader cl =
