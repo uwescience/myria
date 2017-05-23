@@ -55,6 +55,11 @@ public enum Type implements Serializable {
     public String getName() {
       return "Int";
     }
+
+    @Override
+    public String getEnumName() {
+      return "INT_TYPE";
+    }
   },
 
   /**
@@ -99,6 +104,11 @@ public enum Type implements Serializable {
     @Override
     public String getName() {
       return "Float";
+    }
+
+    @Override
+    public String getEnumName() {
+      return "FLOAT_TYPE";
     }
   },
 
@@ -145,6 +155,10 @@ public enum Type implements Serializable {
     public String getName() {
       return "Double";
     }
+
+    public String getEnumName() {
+      return "DOUBLE_TYPE";
+    }
   },
 
   /**
@@ -189,6 +203,11 @@ public enum Type implements Serializable {
     @Override
     public String getName() {
       return "Boolean";
+    }
+
+    @Override
+    public String getEnumName() {
+      return "BOOLEAN_TYPE";
     }
   },
 
@@ -235,6 +254,11 @@ public enum Type implements Serializable {
     public String getName() {
       return "String";
     }
+
+    @Override
+    public String getEnumName() {
+      return "STRING_TYPE";
+    }
   },
 
   /**
@@ -280,6 +304,11 @@ public enum Type implements Serializable {
     public String getName() {
       return "Long";
     }
+
+    @Override
+    public String getEnumName() {
+      return "LONG_TYPE";
+    }
   },
   /**
    * byteArray type.
@@ -304,6 +333,11 @@ public enum Type implements Serializable {
     @Override
     public String getName() {
       return "Blob";
+    }
+
+    @Override
+    public String getEnumName() {
+      return "BLOB_TYPE";
     }
 
     @Override
@@ -364,6 +398,11 @@ public enum Type implements Serializable {
     @Override
     public String getName() {
       return "DateTime";
+    }
+
+    @Override
+    public String getEnumName() {
+      return "DATETIME_TYPE";
     }
   };
 
@@ -594,8 +633,14 @@ public enum Type implements Serializable {
     return false;
   }
 
+  /**
+   * @param c the Java class to be converted to a Myria Type
+   * @return the associated Myria Type for a Java class
+   */
   public static Type fromJavaType(Class<?> c) {
-    if (c.equals(Integer.class) || c.equals(int.class)) {
+    if (c == null) {
+      return null;
+    } else if (c.equals(Integer.class) || c.equals(int.class)) {
       return INT_TYPE;
     } else if (c.equals(Float.class) || c.equals(float.class)) {
       return FLOAT_TYPE;
@@ -634,4 +679,9 @@ public enum Type implements Serializable {
    * @return The name of the type usually used in the code. May be used to generate function names.
    */
   public abstract String getName();
+
+  /**
+   * @return The name of the enum type usually used in the code. May be used to generate function names.
+   */
+  public abstract String getEnumName();
 }

@@ -1,6 +1,7 @@
 package edu.washington.escience.myria.daemon;
 
 import java.io.IOException;
+import java.io.File;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
@@ -337,7 +338,7 @@ public final class MyriaDriverLauncher {
                   driverJobSubmissionDirectory,
                   driverHostName,
                   driverMemoryMB,
-                  javaLibPath.split(";"),
+                  javaLibPath.split(File.pathSeparator),
                   new String[] {nativeLibPath, pythonLibPath}),
               globalConfWrapper);
 

@@ -17,7 +17,6 @@ public class CreateFunctionEncoding extends MyriaApiEncoding {
   @Required public Boolean isMultiValued;
   public String description;
   public String binary;
-  public String binaryUri;
   public Set<Integer> workers;
   public String shortName;
 }

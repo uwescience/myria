@@ -1,8 +1,7 @@
 {
-    "name": "JavaFunctions.javaUDF.square",
+    "name": "javaUDF.JavaFunctions.square",
     "shortName": "square",
-    "outputType": "INT_TYPE",
     "lang": "JAVA",
-    "isMultiValued": "false",
-    "binaryUri": "file:///home/miles/JavaFunctions.jar"
+    "outputType": "INT_TYPE",
+    "isMultiValued": "false"
 }

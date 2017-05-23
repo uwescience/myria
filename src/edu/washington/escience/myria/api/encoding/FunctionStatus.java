@@ -33,12 +33,14 @@ public class FunctionStatus {
   @JsonCreator
   public FunctionStatus(
       @JsonProperty("name") final String name,
+      @JsonProperty("shortName") final String shortName,
       @JsonProperty("description") final String description,
       @JsonProperty("outputType") final String outputType,
       @JsonProperty("isMultiValued") final Boolean isMultiValued,
       @JsonProperty("lang") final FunctionLanguage lang,
       @JsonProperty("binary") final String binary) {
     this.name = name;
+    this.shortName = shortName;
     this.description = description;
     this.outputType = outputType;
     this.isMultiValued = isMultiValued;
@@ -48,6 +50,8 @@ public class FunctionStatus {
 
   /** The name identifying the function. */
   @JsonProperty private final String name;
+  /** The name identifying the function. */
+  @JsonProperty private final String shortName;
   /** The text of the function */
   @JsonProperty private final String description;
   /** The type of the output tuples to the function. */
@@ -64,6 +68,12 @@ public class FunctionStatus {
    */
   public String getName() {
     return name;
+  }
+  /**
+   * @return The short name identifying the function.
+   */
+  public String getShortName() {
+    return shortName;
   }
   /**
    * @return get text associated with the function

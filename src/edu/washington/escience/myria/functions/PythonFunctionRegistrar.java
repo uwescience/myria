@@ -95,10 +95,11 @@ public class PythonFunctionRegistrar {
 
     // add UDF
     pyFunctions.putString(0, name);
-    pyFunctions.putString(1, description);
-    pyFunctions.putString(2, outputType);
-    pyFunctions.putBoolean(3, isMultiValued);
-    pyFunctions.putString(4, binary);
+    pyFunctions.putString(1, name);
+    pyFunctions.putString(2, description);
+    pyFunctions.putString(3, outputType);
+    pyFunctions.putBoolean(4, isMultiValued);
+    pyFunctions.putString(5, binary);
 
     accessMethod.tupleBatchInsert(MyriaConstants.PYUDF_RELATION, pyFunctions.popAny());
   }
@@ -132,9 +133,10 @@ public class PythonFunctionRegistrar {
                 pyFunctionName,
                 tb.getString(1, 0),
                 tb.getString(2, 0),
-                tb.getBoolean(3, 0),
+                tb.getString(3, 0),
+                tb.getBoolean(4, 0),
                 FunctionLanguage.PYTHON,
-                tb.getString(4, 0));
+                tb.getString(6, 0));
         return fs;
       }
     }

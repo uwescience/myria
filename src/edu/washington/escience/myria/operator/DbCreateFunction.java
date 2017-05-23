@@ -42,8 +42,6 @@ public class DbCreateFunction extends RootOperator {
   private final String shortName;
   /** function body.*/
   private final String binary;
-  /** Uri of jar file with java location **/
-  private final String binaryUri;
   /** function description or text.*/
   private final String description;
   /** does function return multiple tuples.*/
@@ -75,8 +73,7 @@ public class DbCreateFunction extends RootOperator {
       final String outputType,
       final Boolean isMultiValued,
       final FunctionLanguage lang,
-      final String binary,
-      final String binaryUri) {
+      final String binary) {
     super(child);
     this.name = name;
     this.shortName = shortName != null ? shortName : name;
@@ -85,7 +82,6 @@ public class DbCreateFunction extends RootOperator {
     this.isMultiValued = isMultiValued;
     this.lang = lang;
     this.binary = binary;
-    this.binaryUri = binaryUri;
   }
 
   @Override
@@ -122,17 +118,17 @@ public class DbCreateFunction extends RootOperator {
         }
         break;
       case JAVA:
-        if (binaryUri != null) {
-          UriSource uriSource = new UriSource(binaryUri);
-          InputStream in = uriSource.getInputStream();
-          OutputStream out =
-              new FileOutputStream(
-                  System.getenv("REPO_ROOT") + "/JavaUDF/" + FilenameUtils.getName(binaryUri),
-                  false);
-          IOUtils.copy(in, out);
-          in.close();
-          out.close();
-        }
+        // if (binaryUri != null) {
+        //   UriSource uriSource = new UriSource(binaryUri);
+        //   InputStream in = uriSource.getInputStream();
+        //   OutputStream out =
+        //       new FileOutputStream(
+        //           getExecEnvVars().get("Server.instancePath") + "/JavaUDF/" + FilenameUtils.getName(binaryUri),
+        //           false);
+        //   IOUtils.copy(in, out);
+        //   in.close();
+        //   out.close();
+        // }
         break;
       default:
         throw new DbException("Function language not supported!");

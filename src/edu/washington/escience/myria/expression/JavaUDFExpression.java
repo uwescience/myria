@@ -24,8 +24,6 @@ public class JavaUDFExpression extends NAryExpression {
 
   @JsonProperty private String name;
 
-  @JsonProperty private Type outputType;
-
   /**
    * This is not really unused, it's used automagically by Jackson deserialization.
    */
@@ -37,11 +35,9 @@ public class JavaUDFExpression extends NAryExpression {
    * @param children operand.
    * @param name - name of the java function in the catalog
    */
-  public JavaUDFExpression(
-      final List<ExpressionOperator> children, final String name, final Type outputType) {
+  public JavaUDFExpression(final List<ExpressionOperator> children, final String name) {
     super(children);
     this.name = name;
-    this.outputType = outputType;
   }
 
   // Returns true if c1 can be implicitly cast as c2
@@ -61,14 +57,11 @@ public class JavaUDFExpression extends NAryExpression {
         return true;
       }
     } else if (c2.equals(float.class) || c2.equals(Float.class)) {
-      if (c1.equals(Integer.class) || c1.equals(Long.class) || c1.equals(Float.class)) {
+      if (c1.equals(Float.class)) {
         return true;
       }
     } else if (c2.equals(double.class) || c2.equals(Double.class)) {
-      if (c1.equals(Integer.class)
-          || c1.equals(Long.class)
-          || c1.equals(Float.class)
-          || c1.equals(Double.class)) {
+      if (c1.equals(Float.class) || c1.equals(Double.class)) {
         return true;
       }
     }
@@ -114,15 +107,18 @@ public class JavaUDFExpression extends NAryExpression {
     // Search through class methods for matching signature
     Method[] methods = c.getDeclaredMethods();
     for (Method m : methods) {
+      // Check that the current method name is equal to the one that we are searching for and that this method is static
       if (!m.getName().equals(methodName) || !Modifier.isStatic(m.getModifiers())) {
         continue;
       }
 
+      // Check that the length of the parameters are equivalent
       Class<?>[] parameterTypes = m.getParameterTypes();
       if (parameterTypes.length != childrenTypes.length) {
         continue;
       }
 
+      // Check that the signature of this method is compatible with the expected signature
       if (!compareTypes(parameterTypes, childrenTypes)) {
         continue;
       }
@@ -136,7 +132,7 @@ public class JavaUDFExpression extends NAryExpression {
       return t;
     }
 
-    // No suitable method was found
+    // No suitable method was found throw an exception
     StringBuilder signature = new StringBuilder(methodName + "(");
     if (childrenSize != 0) {
       signature.append(childrenTypes[0].toJavaType().getSimpleName());
@@ -144,8 +140,8 @@ public class JavaUDFExpression extends NAryExpression {
         signature.append(childrenTypes[i].toJavaType().getSimpleName());
       }
     }
-
     signature.append(")");
+
     throw new IllegalArgumentException("No method found with signature " + signature.toString());
   }
 

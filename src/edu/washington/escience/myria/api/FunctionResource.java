@@ -5,6 +5,7 @@ package edu.washington.escience.myria.api;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Map.Entry;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
@@ -29,6 +30,7 @@ import com.wordnik.swagger.annotations.ApiResponses;
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.api.encoding.CreateFunctionEncoding;
 import edu.washington.escience.myria.api.encoding.FunctionStatus;
+import edu.washington.escience.myria.api.encoding.LoadJarEncoding;
 import edu.washington.escience.myria.parallel.Server;
 
 /**
@@ -71,7 +73,6 @@ public class FunctionResource {
               encoding.isMultiValued,
               encoding.lang,
               encoding.binary,
-              encoding.binaryUri,
               encoding.workers);
     } catch (Exception e) {
       throw new DbException(e);
@@ -79,6 +80,18 @@ public class FunctionResource {
     /* Build the response to return the queryId */
     ResponseBuilder response = Response.ok();
     return response.entity(functionCreationResponse).build();
+  }
+
+  @POST
+  @Path("/jar")
+  public List<CreateFunctionEncoding> loadJar(final LoadJarEncoding encoding) throws DbException {
+    List<CreateFunctionEncoding> functions;
+    try {
+      functions = server.loadJar(encoding.name, encoding.binary, encoding.binaryUri);
+    } catch (Exception e) {
+      throw new DbException(e);
+    }
+    return functions;
   }
 
   /**

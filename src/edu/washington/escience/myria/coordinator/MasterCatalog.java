@@ -159,6 +159,7 @@ public final class MasterCatalog {
   private static final String CREATE_REGISTERED_FUNCTIONS =
       "CREATE TABLE registered_functions (\n"
           + "    function_name TEXT PRIMARY KEY, \n"
+          + "    function_shortName TEXT NOT NULL, \n"
           + "    function_description TEXT NOT NULL,\n"
           + "    function_outputType TEXT NOT NULL,\n"
           + "    function_isMultiValued INTEGER NOT NULL, \n"
@@ -414,21 +415,23 @@ public final class MasterCatalog {
 
                     SQLiteStatement statement =
                         sqliteConnection.prepare(
-                            "SELECT function_name, function_description, function_outputType,  function_isMultiValued, function_lang  FROM registered_functions WHERE function_name=?");
+                            "SELECT function_name, function_shortName, function_description, function_outputType,  function_isMultiValued, function_lang  FROM registered_functions WHERE function_name=?");
                     statement.bind(1, name);
                     if (!statement.step()) {
                       return null;
                     }
 
                     String name = statement.columnString(0);
-                    String descrip = statement.columnString(1);
-                    String outputType = statement.columnString(2);
-                    Boolean isMultiValued = ((statement.columnInt(3) == 0) ? false : true);
-                    int lang = statement.columnInt(4);
+                    String shortName = statement.columnString(1);
+                    String descrip = statement.columnString(2);
+                    String outputType = statement.columnString(3);
+                    Boolean isMultiValued = ((statement.columnInt(4) == 0) ? false : true);
+                    int lang = statement.columnInt(5);
                     statement.dispose();
 
                     return new FunctionStatus(
                         name,
+                        shortName,
                         descrip,
                         outputType,
                         isMultiValued,
@@ -1829,12 +1832,14 @@ public final class MasterCatalog {
    */
   public void registerFunction(
       @Nonnull final String name,
+      @Nonnull final String shortName,
       @Nonnull final String description,
       @Nonnull final String outputType,
       @Nonnull final Boolean isMultiValued,
       @Nonnull final FunctionLanguage lang)
       throws CatalogException {
     Objects.requireNonNull(name, "function name");
+    Objects.requireNonNull(shortName, "function short name");
     Objects.requireNonNull(description, "function definition");
     Objects.requireNonNull(outputType, "function output type");
     Objects.requireNonNull(isMultiValued, "is function a flatmap");
@@ -1855,12 +1860,13 @@ public final class MasterCatalog {
                   try {
                     SQLiteStatement statement =
                         sqliteConnection.prepare(
-                            "INSERT OR REPLACE INTO registered_functions (function_name, function_description, function_outputType, function_isMultiValued, function_lang) VALUES (?,?,?,?,?);");
+                            "INSERT OR REPLACE INTO registered_functions (function_name, function_shortName, function_description, function_outputType, function_isMultiValued, function_lang) VALUES (?,?,?,?,?,?);");
                     statement.bind(1, name);
-                    statement.bind(2, description);
-                    statement.bind(3, outputType);
-                    statement.bind(4, ((isMultiValued == true) ? 1 : 0));
-                    statement.bind(5, lang.ordinal());
+                    statement.bind(2, shortName);
+                    statement.bind(3, description);
+                    statement.bind(4, outputType);
+                    statement.bind(5, ((isMultiValued == true) ? 1 : 0));
+                    statement.bind(6, lang.ordinal());
                     statement.stepThrough();
                     statement.dispose();
                     statement = null;

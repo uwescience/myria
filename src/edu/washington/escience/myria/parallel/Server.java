@@ -1,12 +1,21 @@
 package edu.washington.escience.myria.parallel;
 
+import java.lang.Class;
+import java.lang.reflect.Method;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.ObjectInputStream;
 import java.net.BindException;
 import java.net.URISyntaxException;
+import java.net.URL;
+import java.net.URLClassLoader;
+import java.io.FileInputStream;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -16,6 +25,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.AbstractMap.SimpleEntry;
 import java.util.Queue;
 import java.util.Random;
 import java.util.Set;
@@ -28,6 +38,8 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -35,6 +47,8 @@ import javax.inject.Inject;
 
 import org.apache.commons.httpclient.URIException;
 import org.apache.commons.lang.text.StrSubstitutor;
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.io.IOUtils;
 import org.apache.reef.tang.Configuration;
 import org.apache.reef.tang.Injector;
 import org.apache.reef.tang.Tang;
@@ -82,8 +96,9 @@ import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.accessmethod.AccessMethod.IndexRef;
 import edu.washington.escience.myria.api.MyriaJsonMapperProvider;
 import edu.washington.escience.myria.api.encoding.DatasetStatus;
-import edu.washington.escience.myria.api.encoding.FunctionStatus;
 import edu.washington.escience.myria.api.encoding.QueryEncoding;
+import edu.washington.escience.myria.api.encoding.FunctionStatus;
+import edu.washington.escience.myria.api.encoding.CreateFunctionEncoding;
 import edu.washington.escience.myria.coordinator.CatalogException;
 import edu.washington.escience.myria.coordinator.MasterCatalog;
 import edu.washington.escience.myria.expression.Expression;
@@ -105,6 +120,7 @@ import edu.washington.escience.myria.operator.DbInsert;
 import edu.washington.escience.myria.operator.DbQueryScan;
 import edu.washington.escience.myria.operator.DuplicateTBGenerator;
 import edu.washington.escience.myria.operator.EOSSource;
+import edu.washington.escience.myria.io.UriSource;
 import edu.washington.escience.myria.operator.EmptyRelation;
 import edu.washington.escience.myria.operator.EmptySink;
 import edu.washington.escience.myria.operator.Operator;
@@ -1196,7 +1212,6 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
       final Boolean isMultiValued,
       final FunctionLanguage lang,
       final String binary,
-      final String binaryUri,
       final Set<Integer> workers)
       throws DbException, InterruptedException {
     long queryID = 0;
@@ -1220,8 +1235,7 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
                     outputType,
                     isMultiValued,
                     lang,
-                    binary,
-                    binaryUri)));
+                    binary)));
       }
 
       ListenableFuture<Query> qf =
@@ -1242,11 +1256,71 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
     }
     /* Register the function to the catalog don't send the binary. */
     try {
-      catalog.registerFunction(name, definition, outputType, isMultiValued, lang);
+      catalog.registerFunction(name, shortName, definition, outputType, isMultiValued, lang);
     } catch (CatalogException e) {
       throw new DbException(e);
     }
     return queryID;
+  }
+
+  /**
+   * Download a jar to JavaUDF directory
+   *
+   * @param jarName the name of the jar file
+   * @param binary the binary of the jar file
+   * @param binaryUri a URI where the binary of the jar file can be downloaded from
+   * @return the status of all functions contained in the jar
+   */
+  public List<CreateFunctionEncoding> loadJar(String jarName, String binary, String binaryUri)
+      throws URISyntaxException, IOException, DbException, FileNotFoundException,
+          ClassNotFoundException {
+    InputStream in;
+    if (binary != null) {
+      in = new ByteArrayInputStream(binary.getBytes(Charset.forName("UTF_8")));
+    } else if (binaryUri != null) {
+      UriSource uriSource = new UriSource(binaryUri);
+      in = uriSource.getInputStream();
+    } else {
+      throw new DbException();
+    }
+    // Copy file to local directory
+    String path = this.instancePath + "/JavaUDF/" + jarName;
+    OutputStream out = new FileOutputStream(path, false);
+    IOUtils.copy(in, out);
+    in.close();
+    out.close();
+
+    // Add the Jar to the class path
+    URLClassLoader cl =
+        new URLClassLoader(new URL[] {new URL("file://" + path)}, this.getClass().getClassLoader());
+
+    List<String> classNames = new ArrayList<String>();
+    ZipInputStream zip = new ZipInputStream(new FileInputStream(path));
+    for (ZipEntry entry = zip.getNextEntry(); entry != null; entry = zip.getNextEntry()) {
+      if (!entry.isDirectory() && entry.getName().endsWith(".class")) {
+        String className = entry.getName().replace('/', '.');
+        classNames.add(className.substring(0, className.length() - ".class".length()));
+      }
+    }
+
+    List<CreateFunctionEncoding> functions = new ArrayList<CreateFunctionEncoding>();
+    for (String className : classNames) {
+      Class<?> c = Class.forName(className, true, cl);
+      Method[] methods = c.getDeclaredMethods();
+      for (Method m : methods) {
+        CreateFunctionEncoding f = new CreateFunctionEncoding();
+        f.name = m.getName();
+        Type t = Type.fromJavaType(m.getReturnType());
+        if (t != null) {
+          f.outputType = t.getEnumName();
+          f.lang = FunctionLanguage.JAVA;
+          f.isMultiValued = false;
+          functions.add(f);
+        }
+      }
+    }
+
+    return functions;
   }
 
   /**
