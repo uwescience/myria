@@ -4,6 +4,7 @@ import java.util.List;
 
 import edu.washington.escience.myria.api.encoding.QueryConstruct.ConstructArgs;
 import edu.washington.escience.myria.operator.SymmetricHashJoin;
+import edu.washington.escience.myria.operator.SymmetricHashJoin.ChildRelationship;
 import edu.washington.escience.myria.operator.SymmetricHashJoin.JoinPullOrder;
 
 public class SymmetricHashJoinEncoding extends BinaryOperatorEncoding<SymmetricHashJoin> {
@@ -16,6 +17,7 @@ public class SymmetricHashJoinEncoding extends BinaryOperatorEncoding<SymmetricH
   public boolean argSetSemanticsLeft = false;
   public boolean argSetSemanticsRight = false;
   public JoinPullOrder argOrder = JoinPullOrder.ALTERNATE;
+  public ChildRelationship relationship = ChildRelationship.MANY_TO_MANY;
 
   @Override
   public SymmetricHashJoin construct(final ConstructArgs args) {
@@ -29,6 +31,7 @@ public class SymmetricHashJoinEncoding extends BinaryOperatorEncoding<SymmetricH
         argSetSemanticsLeft,
         argSetSemanticsRight,
         argColumnNames,
-        argOrder);
+        argOrder,
+        relationship);
   }
 }

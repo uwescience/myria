@@ -47,6 +47,8 @@ public final class SymmetricHashJoin extends BinaryOperator {
   private boolean pollLeft = false;
   /** Join pull order, default: ALTERNATE. */
   private JoinPullOrder order = JoinPullOrder.ALTERNATE;
+  /** Functional dependencies between the inputs, default: MANY_TO_MANY. */
+  private ChildRelationship relationship = ChildRelationship.MANY_TO_MANY;
 
   /** if the hash table of the left child should use set semantics. */
   private boolean setSemanticsLeft = false;
@@ -87,7 +89,8 @@ public final class SymmetricHashJoin extends BinaryOperator {
         false,
         false,
         null,
-        JoinPullOrder.ALTERNATE);
+        JoinPullOrder.ALTERNATE,
+        ChildRelationship.MANY_TO_MANY);
   }
 
   /**
@@ -118,7 +121,8 @@ public final class SymmetricHashJoin extends BinaryOperator {
       final boolean setSemanticsLeft,
       final boolean setSemanticsRight,
       final List<String> outputColumns,
-      final JoinPullOrder order) {
+      final JoinPullOrder order,
+      final ChildRelationship relationship) {
     super(left, right);
     Preconditions.checkArgument(leftCompareColumns.length == rightCompareColumns.length);
     if (outputColumns != null) {
@@ -139,6 +143,7 @@ public final class SymmetricHashJoin extends BinaryOperator {
     this.setSemanticsLeft = setSemanticsLeft;
     this.setSemanticsRight = setSemanticsRight;
     this.order = order;
+    this.relationship = relationship;
   }
 
   @Override
@@ -458,9 +463,11 @@ public final class SymmetricHashJoin extends BinaryOperator {
         IntIterator iter = probeHashTable.getIndices(tb, buildCompareColumns, row).intIterator();
         while (iter.hasNext()) {
           addToAns(tb, row, probeHashTable.getData(), iter.next(), fromLeft);
+          // If 1:1 relationship or "many" side of a 1:many relationship, delete from probeHashTable.
         }
       }
       if (buildHashTable != null) {
+        // If this is a 1:1 relationship or the "many" side of a 1:many relationship, don't add to buildHashTable.
         addToHashTable(tb, buildCompareColumns, row, buildHashTable, useSetSemantics);
       }
     }
@@ -514,5 +521,17 @@ public final class SymmetricHashJoin extends BinaryOperator {
     LEFT_EOS,
     /** Pull from the right child until it reaches EOS. */
     RIGHT_EOS
+  }
+
+  /** Functional dependencies between the inputs. */
+  public enum ChildRelationship {
+    /** No constraints. */
+    MANY_TO_MANY,
+    /** 1:1 relationship. */
+    ONE_TO_ONE,
+    /** 1:many from left->right. */
+    LEFT_ONE_TO_RIGHT_MANY,
+    /** 1:many from right->left. */
+    RIGHT_ONE_TO_LEFT_MANY
   }
 }
