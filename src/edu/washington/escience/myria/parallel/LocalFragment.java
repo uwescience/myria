@@ -498,7 +498,8 @@ public final class LocalFragment {
             }
           } catch (final Throwable e) {
             if (LOGGER.isErrorEnabled()) {
-              LOGGER.error("Unexpected exception occurred during operator execution. Operator: " + root, e);
+              LOGGER.error(
+                  "Unexpected exception occurred during operator execution. Operator: " + root, e);
             }
             failureCause = e;
             AtomicUtils.setBitByValue(executionCondition, STATE_FAIL);
