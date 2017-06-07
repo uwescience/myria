@@ -7,10 +7,6 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.nio.ByteBuffer;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Iterator;
 
 import javax.annotation.Nullable;
@@ -27,7 +23,6 @@ import com.google.common.primitives.Floats;
 
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
-import edu.washington.escience.myria.storage.TupleUtils;
 import edu.washington.escience.myria.util.DateTimeUtils;
 
 /**
@@ -190,6 +185,22 @@ public class CsvTupleReader implements TupleReader {
   @Override
   public Schema getSchema() {
     return schema;
+  }
+
+  public char getDelimiter() {
+    return delimiter;
+  }
+
+  public char getQuote() {
+    return quote;
+  }
+
+  public char getEscape() {
+    return escape;
+  }
+
+  public Integer getSkip() {
+    return numberOfSkippedLines;
   }
 
   @Override
