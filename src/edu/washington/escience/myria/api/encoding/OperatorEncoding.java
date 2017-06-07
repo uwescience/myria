@@ -10,7 +10,6 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 
 import edu.washington.escience.myria.api.MyriaApiException;
 import edu.washington.escience.myria.api.encoding.QueryConstruct.ConstructArgs;
-import edu.washington.escience.myria.operator.CSVFragmentTupleSource;
 import edu.washington.escience.myria.operator.Operator;
 
 /**
@@ -30,7 +29,7 @@ import edu.washington.escience.myria.operator.Operator;
   @Type(name = "Consumer", value = ConsumerEncoding.class),
   @Type(name = "Counter", value = CounterEncoding.class),
   @Type(name = "CrossWithSingleton", value = CrossWithSingletonEncoding.class),
-  @Type(name = "CSVFileScanFragment", value = CSVFragmentTupleSource.class),
+  @Type(name = "CSVFragmentTupleSource", value = CSVFragmentTupleSourceEncoding.class),
   @Type(name = "DbInsert", value = DbInsertEncoding.class),
   @Type(name = "DbQueryScan", value = QueryScanEncoding.class),
   @Type(name = "DbCreateIndex", value = CreateIndexEncoding.class),

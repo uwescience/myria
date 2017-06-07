@@ -187,15 +187,15 @@ public class CsvTupleReader implements TupleReader {
     return schema;
   }
 
-  public char getDelimiter() {
+  public Character getDelimiter() {
     return delimiter;
   }
 
-  public char getQuote() {
+  public Character getQuote() {
     return quote;
   }
 
-  public char getEscape() {
+  public Character getEscape() {
     return escape;
   }
 
