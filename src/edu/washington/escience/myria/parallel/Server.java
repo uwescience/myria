@@ -95,7 +95,7 @@ import edu.washington.escience.myria.io.ByteSink;
 import edu.washington.escience.myria.io.DataSink;
 import edu.washington.escience.myria.io.UriSink;
 import edu.washington.escience.myria.operator.Apply;
-import edu.washington.escience.myria.operator.CSVFileScanFragment;
+import edu.washington.escience.myria.operator.CSVFragmentTupleSource;
 import edu.washington.escience.myria.operator.DbCreateFunction;
 import edu.washington.escience.myria.operator.DbCreateIndex;
 import edu.washington.escience.myria.operator.DbCreateView;
@@ -899,8 +899,8 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
 
     Map<Integer, SubQueryPlan> workerPlans = new HashMap<>();
     for (int workerID = 1; workerID <= workersArray.length; workerID++) {
-      CSVFileScanFragment scanFragment =
-          new CSVFileScanFragment(
+      CSVFragmentTupleSource scanFragment =
+          new CSVFragmentTupleSource(
               s3Source, schema, workersArray, delimiter, quote, escape, numberOfSkippedLines);
       workerPlans.put(
           workersArray[workerID - 1],

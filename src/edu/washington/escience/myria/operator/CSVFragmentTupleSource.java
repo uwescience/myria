@@ -7,7 +7,6 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.nio.ByteBuffer;
 import java.util.Iterator;
 
 import javax.annotation.Nullable;
@@ -15,7 +14,6 @@ import javax.annotation.Nullable;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
-import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.BooleanUtils;
 
 import com.google.common.base.MoreObjects;
@@ -31,13 +29,12 @@ import edu.washington.escience.myria.io.DataSource;
 import edu.washington.escience.myria.io.FileSource;
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
-import edu.washington.escience.myria.storage.TupleUtils;
 import edu.washington.escience.myria.util.DateTimeUtils;
 
 /**
  *
  */
-public class CSVFileScanFragment extends LeafOperator {
+public class CSVFragmentTupleSource extends LeafOperator {
 
   /** The Schema of the relation stored in this file. */
   private final Schema schema;
@@ -85,9 +82,9 @@ public class CSVFileScanFragment extends LeafOperator {
    * The logger for debug, trace, etc. messages in this class.
    */
   private static final org.slf4j.Logger LOGGER =
-      org.slf4j.LoggerFactory.getLogger(CSVFileScanFragment.class);
+      org.slf4j.LoggerFactory.getLogger(CSVFragmentTupleSource.class);
 
-  public CSVFileScanFragment(
+  public CSVFragmentTupleSource(
       final String filename,
       final Schema schema,
       final long startByteRange,
@@ -96,7 +93,7 @@ public class CSVFileScanFragment extends LeafOperator {
     this(filename, schema, startByteRange, endByteRange, isLastWorker, null, null, null, null);
   }
 
-  public CSVFileScanFragment(
+  public CSVFragmentTupleSource(
       final DataSource source,
       final Schema schema,
       final long startByteRange,
@@ -105,7 +102,7 @@ public class CSVFileScanFragment extends LeafOperator {
     this(source, schema, startByteRange, endByteRange, isLastWorker, null, null, null, null);
   }
 
-  public CSVFileScanFragment(
+  public CSVFragmentTupleSource(
       final String filename,
       final Schema schema,
       final long startByteRange,
@@ -124,7 +121,7 @@ public class CSVFileScanFragment extends LeafOperator {
         null);
   }
 
-  public CSVFileScanFragment(
+  public CSVFragmentTupleSource(
       final DataSource source,
       final Schema schema,
       final long startByteRange,
@@ -134,7 +131,7 @@ public class CSVFileScanFragment extends LeafOperator {
     this(source, schema, startByteRange, endByteRange, isLastWorker, delimiter, null, null, null);
   }
 
-  public CSVFileScanFragment(
+  public CSVFragmentTupleSource(
       final String filename,
       final Schema schema,
       final long startByteRange,
@@ -156,7 +153,7 @@ public class CSVFileScanFragment extends LeafOperator {
         numberOfSkippedLines);
   }
 
-  public CSVFileScanFragment(
+  public CSVFragmentTupleSource(
       final DataSource source,
       final Schema schema,
       final long partitionStartByteRange,
@@ -185,7 +182,7 @@ public class CSVFileScanFragment extends LeafOperator {
     flagAsRangeSelected = true;
   }
 
-  public CSVFileScanFragment(
+  public CSVFragmentTupleSource(
       final AmazonS3Source source,
       final Schema schema,
       final int[] workerIds,
