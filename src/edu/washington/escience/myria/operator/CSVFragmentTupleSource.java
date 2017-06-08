@@ -416,7 +416,7 @@ public class CSVFragmentTupleSource extends LeafOperator {
         }
       }
       if (workerIndex >= 0) {
-        boolean isLastWorker = workerIndex == workerIds.length - 1;
+        boolean isLastWorker = (workerIndex == workerIds.length - 1);
         long startByteRange = currentPartitionSize * workerIndex;
         long endByteRange;
 
