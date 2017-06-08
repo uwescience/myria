@@ -409,24 +409,28 @@ public class CSVFragmentTupleSource extends LeafOperator {
       int workerID = getNodeID();
       long fileSize = source.getFileSize();
       long currentPartitionSize = fileSize / workerIds.length;
-      int workerIndex = 0;
+      int workerIndex = -1;
       for (int i = 0; i < workerIds.length; i++) {
         if (workerID == workerIds[i]) {
           workerIndex = i;
         }
       }
-      boolean isLastWorker = workerIndex == workerIds.length - 1;
-      long startByteRange = currentPartitionSize * workerIndex;
-      long endByteRange;
+      if (workerIndex >= 0) {
+        boolean isLastWorker = workerIndex == workerIds.length - 1;
+        long startByteRange = currentPartitionSize * workerIndex;
+        long endByteRange;
 
-      if (isLastWorker) {
-        endByteRange = fileSize - 1;
+        if (isLastWorker) {
+          endByteRange = fileSize - 1;
+        } else {
+          endByteRange = (currentPartitionSize * (workerIndex + 1)) - 1;
+        }
+        this.partitionStartByteRange = startByteRange;
+        this.partitionEndByteRange = endByteRange;
+        this.isLastWorker = isLastWorker;
       } else {
-        endByteRange = (currentPartitionSize * (workerIndex + 1)) - 1;
+        flagAsIncomplete = true;
       }
-      this.partitionStartByteRange = startByteRange;
-      this.partitionEndByteRange = endByteRange;
-      this.isLastWorker = isLastWorker;
     }
 
     try {
