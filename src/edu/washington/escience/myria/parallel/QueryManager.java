@@ -597,7 +597,7 @@ public class QueryManager {
    * @param workerId the worker that died.
    * @param cause the exception describing why the worker died.
    */
-  protected synchronized void workerDied(final int workerId, final Throwable cause) {
+  protected synchronized void workerDied(final int workerId, @Nullable final Throwable cause) {
     for (MasterSubQuery mqp : executingSubQueries.values()) {
       /* for each alive query that the failed worker is assigned to, tell the query that the worker failed. */
       if (mqp.getWorkerAssigned().contains(workerId)) {

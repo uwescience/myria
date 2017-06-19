@@ -16,14 +16,7 @@ public class WorkerFailedException extends Exception {
   public WorkerFailedException() {}
 
   /**
-   * @param msg the message describing this Exception.
-   * */
-  public WorkerFailedException(final String msg) {
-    super(msg);
-  }
-
-  /**
-   * @param cause the Exception causing this Exception.
+   * @param cause the Throwable causing this Exception.
    * */
   public WorkerFailedException(final Throwable cause) {
     super(cause);
