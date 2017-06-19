@@ -13,13 +13,11 @@ import javax.annotation.concurrent.NotThreadSafe;
 import javax.ws.rs.core.Response.Status;
 
 import org.apache.commons.httpclient.URIException;
-
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.s3a.AnonymousAWSCredentialsProvider;
 
 import com.amazonaws.ClientConfiguration;
 import com.amazonaws.auth.AWSCredentialsProvider;
-
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.GetObjectRequest;
 import com.fasterxml.jackson.annotation.JsonCreator;
@@ -59,7 +57,8 @@ public class AmazonS3Source implements DataSource, Serializable {
       @JsonProperty(value = "startRange") final Long startRange,
       @JsonProperty(value = "endRange") final Long endRange)
       throws URIException {
-    s3Uri = URI.create(Objects.requireNonNull(uri, "Parameter uri to UriSource may not be null"));
+    s3Uri =
+        URI.create(Objects.requireNonNull(uri, "Parameter uri to AmazonS3Source may not be null"));
     if (!s3Uri.getScheme().equals("s3")) {
       throw new URIException("URI must contain an S3 scheme");
     }
@@ -70,6 +69,11 @@ public class AmazonS3Source implements DataSource, Serializable {
 
     this.startRange = MoreObjects.firstNonNull(startRange, new Long(0));
     this.endRange = MoreObjects.firstNonNull(endRange, getFileSize());
+  }
+
+  @JsonProperty("s3Uri")
+  private String getUriString() {
+    return s3Uri.toString();
   }
 
   public AmazonS3Client getS3Client() throws MyriaApiException {
