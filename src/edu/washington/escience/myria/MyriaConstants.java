@@ -410,4 +410,9 @@ public final class MyriaConstants {
    * Flatmapid column name
    */
   public static final String FLATMAP_COLUMN_NAME = "flatmapid";
+
+  /** The default JVM base port if using JVMs with elastic memory. Each worker's
+   * JVM port is this number + its worker ID, if not specified. Only used when
+   * -ElasticMem is specified. */
+  public static final int DEFAULT_ELASTIC_JVM_BASE_PORT = 3157;
 }
