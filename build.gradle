@@ -81,9 +81,6 @@ test.dependsOn verifyFormatting
 
 /* Where we will fetch external JAR files from. */
 repositories {
-  /* We need to override the official Apache repo for our custom Hadoop jars */
-  /* TODO: remove when we upgrade to Hadoop 2.8 (fixes HADOOP-12807) */
-  maven { url "https://raw.github.com/uwescience/hadoop/mvn-repo" }
   mavenCentral() /* The standard Java Maven repository. */
   maven { url "http://clojars.org/repo" } /* Clojars, for MonetDB */
   flatDir {
@@ -112,7 +109,7 @@ ext.jmxetricsVersion = "1.0.8"
 /* ext.reefVersion = "0.15.0" */
 /* for local or development REEF builds */
 ext.reefVersion = "0.16.0-SNAPSHOT"
-ext.hadoopVersion = "2.7.2"
+ext.hadoopVersion = "2.8.0"
 
 dependencies {
 
@@ -171,7 +168,9 @@ dependencies {
   runtime "info.ganglia.jmxetric:jmxetric:${jmxetricsVersion}"
 
   compile "org.apache.commons:commons-csv:1.1"
-  
+
+  compile "commons-httpclient:commons-httpclient:3.1"
+
   // Expression compiler
   compile "org.codehaus.janino:janino:2.7.7"
 
