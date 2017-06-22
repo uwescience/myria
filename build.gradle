@@ -3,6 +3,7 @@ buildscript {
   dependencies {
     classpath 'org.kt3k.gradle.plugin:coveralls-gradle-plugin:2.0.0'
     classpath 'gradle.plugin.com.github.sherter.google-java-format:google-java-format-gradle-plugin:0.2'
+    classpath 'org.owasp:dependency-check-gradle:1.4.5'
   }
 }
 
@@ -24,6 +25,7 @@ apply plugin: 'com.github.kt3k.coveralls'
 /* Maven shade plugin equivalent */
 apply plugin: 'com.github.johnrengelman.shadow'
 apply plugin: 'com.github.sherter.google-java-format'
+apply plugin: 'org.owasp.dependencycheck'
 
 /* Set up group and version info for myria */
 archivesBaseName = "myria"
