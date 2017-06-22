@@ -90,35 +90,36 @@ public class AmazonS3Source implements DataSource, Serializable {
         LOGGER.warn(
             "No AWS credentials provider property found in Hadoop configuration file. Instantiating the AmazonS3Client with anonymous credentials.");
         credentials = new AnonymousAWSCredentialsProvider();
-      }
-      try {
-        Class<?> credentialClass = Class.forName(className);
+      } else {
         try {
-          credentials =
-              (AWSCredentialsProvider)
-                  credentialClass
-                      .getDeclaredConstructor(URI.class, Configuration.class)
-                      .newInstance(s3Uri, conf);
+          Class<?> credentialClass = Class.forName(className);
+          try {
+            credentials =
+                (AWSCredentialsProvider)
+                    credentialClass
+                        .getDeclaredConstructor(URI.class, Configuration.class)
+                        .newInstance(s3Uri, conf);
+          } catch (NoSuchMethodException | SecurityException e) {
+            credentials =
+                (AWSCredentialsProvider) credentialClass.getDeclaredConstructor().newInstance();
+          }
+        } catch (ClassNotFoundException e) {
+          throw new MyriaApiException(Status.INTERNAL_SERVER_ERROR, className + " not found ", e);
         } catch (NoSuchMethodException | SecurityException e) {
-          credentials =
-              (AWSCredentialsProvider) credentialClass.getDeclaredConstructor().newInstance();
+          throw new MyriaApiException(
+              Status.INTERNAL_SERVER_ERROR,
+              className
+                  + " constructor exception. Should provide an accessible constructor accepting URI"
+                  + " and Configuration, or an accessible default constructor.",
+              e);
+        } catch (ReflectiveOperationException | IllegalArgumentException e) {
+          throw new MyriaApiException(
+              Status.INTERNAL_SERVER_ERROR, className + " instantiation exception.", e);
         }
-        clientConfig = new ClientConfiguration();
-        clientConfig.setMaxErrorRetry(3);
-        s3Client = new AmazonS3Client(credentials, clientConfig);
-      } catch (ClassNotFoundException e) {
-        throw new MyriaApiException(Status.INTERNAL_SERVER_ERROR, className + " not found ", e);
-      } catch (NoSuchMethodException | SecurityException e) {
-        throw new MyriaApiException(
-            Status.INTERNAL_SERVER_ERROR,
-            className
-                + " constructor exception. Should provide an accessible constructor accepting URI"
-                + " and Configuration, or an accessible default constructor.",
-            e);
-      } catch (ReflectiveOperationException | IllegalArgumentException e) {
-        throw new MyriaApiException(
-            Status.INTERNAL_SERVER_ERROR, className + " instantiation exception.", e);
       }
+      clientConfig = new ClientConfiguration();
+      clientConfig.setMaxErrorRetry(3);
+      s3Client = new AmazonS3Client(credentials, clientConfig);
     }
     return s3Client;
   }
