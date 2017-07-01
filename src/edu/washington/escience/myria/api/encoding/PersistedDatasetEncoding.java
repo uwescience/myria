@@ -3,6 +3,7 @@
  */
 package edu.washington.escience.myria.api.encoding;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import edu.washington.escience.myria.RelationKey;
@@ -24,6 +25,7 @@ public class PersistedDatasetEncoding extends MyriaApiEncoding {
   /** The tuple distribution function. */
   @JsonProperty private final DistributeFunction distributeFunction;
 
+  @JsonCreator
   public PersistedDatasetEncoding(
       RelationKey relationKey,
       Schema schema,
