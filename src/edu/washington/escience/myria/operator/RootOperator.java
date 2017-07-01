@@ -147,7 +147,7 @@ public abstract class RootOperator extends Operator {
   }
 
   @Override
-  public final Schema generateSchema() {
+  public Schema generateSchema() {
     if (child == null) {
       return null;
     }
