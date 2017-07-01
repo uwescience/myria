@@ -144,6 +144,11 @@ public class DbDirectInsert extends RootOperator implements DbWriter {
   }
 
   @Override
+  protected final TupleBatch fetchNextReady() throws DbException {
+    return null;
+  }
+
+  @Override
   protected void consumeTuples(final TupleBatch tuples) throws DbException {}
 
   @Override
