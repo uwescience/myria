@@ -27,11 +27,11 @@ public class PersistedDatasetEncoding extends MyriaApiEncoding {
 
   @JsonCreator
   public PersistedDatasetEncoding(
-      RelationKey relationKey,
-      Schema schema,
-      String rootUri,
-      Integer numWorkers,
-      DistributeFunction distributeFunction) {
+      @JsonProperty("relationKey") RelationKey relationKey,
+      @JsonProperty("schema") Schema schema,
+      @JsonProperty("rootUri") String rootUri,
+      @JsonProperty("numWorkers") Integer numWorkers,
+      @JsonProperty("distributeFunction") DistributeFunction distributeFunction) {
     this.relationKey = relationKey;
     this.schema = schema;
     this.rootUri = rootUri;
