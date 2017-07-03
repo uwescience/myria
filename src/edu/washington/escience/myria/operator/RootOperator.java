@@ -133,7 +133,7 @@ public abstract class RootOperator extends Operator {
   }
 
   @Override
-  public Operator[] getChildren() {
+  public final Operator[] getChildren() {
     return new Operator[] {child};
   }
 
