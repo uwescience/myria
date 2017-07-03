@@ -50,8 +50,8 @@ public class DbDirectInsert extends RootOperator implements DbWriter {
   private final DistributeFunction distributeFunction;
 
   /**
-   * Constructs an insertion operator to store the tuples from the specified InputStream into the
-   * specified database. If the table already exists, the constructor will fail.
+   * Constructs an insertion operator to store the tuples from the specified DataSource into the
+   * specified relation. If the relation already exists, it will be overwritten.
    *
    * @param connectionInfo connection parameters for the database containing the destination table.
    * @param dataSource the source of the tuples to be inserted.
@@ -125,7 +125,7 @@ public class DbDirectInsert extends RootOperator implements DbWriter {
   public Map<RelationKey, RelationWriteMetadata> writeSet() {
     return ImmutableMap.of(
         relationKey,
-        new RelationWriteMetadata(relationKey, getSchema(), false, false, distributeFunction));
+        new RelationWriteMetadata(relationKey, getSchema(), true, false, distributeFunction));
   }
 
   @Override
