@@ -149,9 +149,6 @@ public class DbDirectInsert extends RootOperator implements DbWriter {
   }
 
   @Override
-  protected void checkEOSAndEOI() {}
-
-  @Override
   protected void consumeTuples(final TupleBatch tuples) throws DbException {}
 
   @Override
