@@ -127,11 +127,6 @@ public class DbDirectInsert extends RootOperator implements DbWriter {
   }
 
   @Override
-  public final Schema generateSchema() {
-    return schema;
-  }
-
-  @Override
   public Map<RelationKey, RelationWriteMetadata> writeSet() {
     return ImmutableMap.of(
         relationKey,
