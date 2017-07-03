@@ -111,7 +111,7 @@ public abstract class RootOperator extends Operator {
   }
 
   @Override
-  protected TupleBatch fetchNextReady() throws DbException {
+  protected final TupleBatch fetchNextReady() throws DbException {
     TupleBatch tb = null;
     tb = child.nextReady();
     if (tb != null) {
