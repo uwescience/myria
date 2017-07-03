@@ -20,7 +20,6 @@ import com.google.common.collect.ImmutableMap;
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.RelationKey;
-import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.accessmethod.AccessMethod;
 import edu.washington.escience.myria.accessmethod.ConnectionInfo;
 import edu.washington.escience.myria.io.DataSource;
@@ -47,8 +46,6 @@ public class DbDirectInsert extends RootOperator implements DbWriter {
   private final DataSource dataSource;
   /** The name of the table the tuples should be inserted into. */
   private final RelationKey relationKey;
-  /** The schema of the table the tuples should be inserted into. */
-  private final Schema schema;
   /** The DistributeFunction used to distribute the table across workers. */
   private final DistributeFunction distributeFunction;
 
@@ -64,15 +61,14 @@ public class DbDirectInsert extends RootOperator implements DbWriter {
    *        partition.
    */
   public DbDirectInsert(
+      @Nonnull final Operator child,
       @Nullable final ConnectionInfo connectionInfo,
       @Nonnull final DataSource dataSource,
       @Nonnull final RelationKey relationKey,
-      @Nonnull final Schema schema,
       @Nonnull final DistributeFunction distributeFunction) {
-    super(null);
+    super(child);
     Objects.requireNonNull(dataSource, "dataSource");
     Objects.requireNonNull(relationKey, "relationKey");
-    Objects.requireNonNull(schema, "schema");
     Objects.requireNonNull(distributeFunction, "distributeFunction");
     Preconditions.checkArgument(
         distributeFunction instanceof HashDistributeFunction,
@@ -80,7 +76,6 @@ public class DbDirectInsert extends RootOperator implements DbWriter {
     this.connectionInfo = connectionInfo;
     this.dataSource = dataSource;
     this.relationKey = relationKey;
-    this.schema = schema;
     this.distributeFunction = distributeFunction;
   }
 
@@ -99,7 +94,7 @@ public class DbDirectInsert extends RootOperator implements DbWriter {
       /* open the database connection */
       accessMethod = AccessMethod.of(connectionInfo.getDbms(), connectionInfo, false);
       /* Create the table */
-      accessMethod.createTableIfNotExists(relationKey, schema);
+      accessMethod.createTableIfNotExists(relationKey, getSchema());
       /* Populate the table */
       accessMethod.insertFromStream(relationKey, inputStream);
     } catch (final IOException e) {

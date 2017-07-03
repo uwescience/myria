@@ -1360,6 +1360,7 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
    * @return the metadata of the ingested relation
    * @throws DbException
    * @throws InterruptedException
+   * @throws URISyntaxException
    */
   public DatasetStatus ingestPersistedDataset(
       final RelationKey relationKey,
@@ -1376,7 +1377,8 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
       workerPlans.put(
           workerId,
           new SubQueryPlan(
-              new DbDirectInsert(null, source, relationKey, schema, distributeFunction)));
+              new DbDirectInsert(
+                  EmptyRelation.of(schema), null, source, relationKey, distributeFunction)));
     }
 
     ListenableFuture<Query> qf;
