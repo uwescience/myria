@@ -388,11 +388,14 @@ public final class DatasetResource {
       @PathParam("relationName") final String relationName)
       throws DbException {
 
-    DatasetStatus status =
-        server.getDatasetStatus(RelationKey.of(userName, programName, relationName));
-    RelationKey relationKey = status.getRelationKey();
-    PersistedDatasetEncoding persistedDatasetInfo;
+    RelationKey relationKey = RelationKey.of(userName, programName, relationName);
+    DatasetStatus status = server.getDatasetStatus(relationKey);
+    if (status == null) {
+      /* Not found, throw a 404 (Not Found) */
+      throw new MyriaApiException(Status.NOT_FOUND, "Dataset " + relationKey + " was not found");
+    }
 
+    PersistedDatasetEncoding persistedDatasetInfo;
     try {
       persistedDatasetInfo = server.persistDataset(relationKey);
     } catch (Exception e) {

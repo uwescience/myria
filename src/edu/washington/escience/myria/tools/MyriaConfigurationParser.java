@@ -68,10 +68,7 @@ public final class MyriaConfigurationParser {
                 getHostname(parser, MyriaConstants.MASTER_ID))
             .set(
                 MyriaGlobalConfigurationModule.MASTER_RPC_PORT,
-                getPort(parser, MyriaConstants.MASTER_ID))
-            .set(
-                MyriaGlobalConfigurationModule.PERSIST_URI,
-                getRequired(parser, "persist", MyriaSystemConfigKeys.PERSIST_URI));
+                getPort(parser, MyriaConstants.MASTER_ID));
 
     // Optional parameters
     conf =
@@ -219,6 +216,11 @@ public final class MyriaConfigurationParser {
             conf,
             MyriaGlobalConfigurationModule.TCP_RECEIVE_BUFFER_SIZE_BYTES,
             getOptional(parser, "deployment", MyriaSystemConfigKeys.TCP_RECEIVE_BUFFER_SIZE_BYTES));
+    conf =
+        setOptional(
+            conf,
+            MyriaGlobalConfigurationModule.PERSIST_URI,
+            getOptional(parser, "deployment", MyriaSystemConfigKeys.PERSIST_URI));
     conf =
         setOptional(
             conf,

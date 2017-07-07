@@ -7,31 +7,31 @@ import argparse
 from itertools import groupby
 
 
-def get_deployment(path, coordinator_hostname, worker_hostnames, persist_uri,
+def get_deployment(path, coordinator_hostname, worker_hostnames,
                    name='myria', rest_port=8753, database_type='postgresql',
                    database_port=5432, heap_mem_fraction=None, driver_mem=None,
                    master_mem=None, worker_mem=None, master_cores=None,
-                   worker_cores=None, debug=False, elastic_mode=False,
-                   database_username=None, database_password=None,
-                   coordinator_port=9001, worker_ports=None,
-                   worker_base_port=8001, worker_directories=None,
-                   worker_databases=None):
+                   worker_cores=None, debug=False, persist_uri=None,
+                   elastic_mode=False, database_username=None,
+                   database_password=None, coordinator_port=9001,
+                   worker_ports=None, worker_base_port=8001,
+                   worker_directories=None, worker_databases=None):
     """ Generates a Myria deployment file with the given configuration """
     return (_get_header(path, name, rest_port, database_type, database_port,
                         database_username, database_password, debug,
-                        elastic_mode) +
+                        persist_uri, elastic_mode) +
             _get_coordinator(coordinator_hostname, coordinator_port) +
             _get_runtime(heap_mem_fraction, driver_mem, master_mem,
                          worker_mem, master_cores, worker_cores) +
             _get_workers(worker_hostnames, worker_ports, worker_base_port,
-                         worker_directories, worker_databases) +
-            _get_persist(persist_uri)
+                         worker_directories, worker_databases)
             )
 
 
 def _get_header(path, name='myria', rest_port=8753, database_type='postgresql',
                 database_port=5432, database_username=None,
-                database_password=None, debug=False, elastic_mode=False):
+                database_password=None, debug=False, persist_uri=None,
+                elastic_mode=False):
     """ Generates the header section of a Myria deployment file """
     header = ('[deployment]\n'
               'name = {name}\n'
@@ -48,6 +48,8 @@ def _get_header(path, name='myria', rest_port=8753, database_type='postgresql',
         header += 'database_password = %s\n' % database_password
     if debug:
         header += 'debug = True\n'
+    if persist_uri:
+        header += 'persist_uri = %s\n' % persist_uri
     if elastic_mode:
         header += 'elastic_mode = True\n'
 
@@ -113,12 +115,6 @@ def _get_workers(hostnames, ports=None, base_port=8001,
                                                directory, database_name)
 
     return workers
-
-
-def _get_persist(uri):
-    """ Generates the persistence section of a Myria deployment file """
-    return '[persist]\n' \
-           'persist_uri = {}\n\n'.format(uri)
 
 
 def main(argv):
@@ -189,7 +185,7 @@ def main(argv):
         '--heap-memory-fraction', type=float, dest='heap_mem_fraction',
         help='Fraction of container memory used by JVM heap (e.g., "0.9")')
     parser.add_argument(
-        '--persist-uri', dest='persist_uri', type=str,
+        '--persist-uri', dest='persist_uri', type=str, default=None,
         help='URI of persistence endpoint')
     parser.add_argument(
         '--debug', default=False, action='store_true',
@@ -199,6 +195,7 @@ def main(argv):
         action='store_true', help='Enable elastic mode')
 
     print get_deployment(**vars(parser.parse_args(argv[1:])))
+
 
 if __name__ == "__main__":
     main(sys.argv)

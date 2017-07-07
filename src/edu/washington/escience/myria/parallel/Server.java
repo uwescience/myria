@@ -1311,6 +1311,9 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
   public PersistedDatasetEncoding persistDataset(final RelationKey relationKey)
       throws DbException, InterruptedException, URISyntaxException {
     try {
+      if (this.persistURI.isEmpty()) {
+        throw new DbException("Persistence URI not configured");
+      }
       /* Mark the relation as is_persistent */
       catalog.markRelationPersistent(relationKey);
       /* Create the query plan for persist */

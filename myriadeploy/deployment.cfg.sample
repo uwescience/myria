@@ -12,6 +12,7 @@ rest_port = 8753
 # Uncomment if there is a server running master Ganglia daemon
 #ganglia.master.host = vega.cs.washington.edu
 #ganglia.master.port = 8649
+persist_uri = s3://uwdb/sampleData
 
 # Compute nodes configuration
 [master]
@@ -56,6 +57,3 @@ rest_port = 8753
 #container.worker.memory.size.gb = 2
 # Uncomment to set other JVM options, separate them with space
 #jvm.options = -XX:+UseG1GC
-
-[persist]
-persist_uri = hdfs://vega.cs.washington.edu:8020
