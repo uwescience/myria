@@ -1327,6 +1327,41 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
   }
 
   /**
+   * Directly runs a command on the underlying database on all alive workers
+   * 
+   * @param sqlSting command to run on the database
+   */
+  public void executeSQLStatement(final String sqlString) 
+  	throws DbException, InterruptedException {
+    final Set<Integer> workers = getAliveWorkers();
+	  
+    /* Execute the SQL command on the set of workers */
+    try {
+      Map<Integer, SubQueryPlan> workerPlans = new HashMap<>();
+      for (Integer workerId : workers) {
+        workerPlans.put(
+            workerId,
+            new SubQueryPlan(
+                new DbExecute(EmptyRelation.of(Schema.EMPTY_SCHEMA), sqlString, null)));
+      }
+      ListenableFuture<Query> qf =
+          queryManager.submitQuery(
+              "sql execute " + sqlString,
+              "sql execute " + sqlString,
+              "sql execute " + sqlString,
+              new SubQueryPlan(new EmptySink(new EOSSource())),
+              workerPlans);
+      try {
+        qf.get();
+      } catch (ExecutionException e) {
+        throw new DbException("Error executing query", e.getCause());
+      }
+    } catch (CatalogException e) {
+      throw new DbException(e);
+    }	  
+  }
+  
+  /**
    * Directly runs a command on the underlying database based on the selected workers
    *
    * @param sqlString command to run on the database
