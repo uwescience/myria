@@ -40,7 +40,7 @@ import edu.washington.escience.myria.parallel.Server;
 @Consumes(MediaType.TEXT_PLAIN)
 @Produces(MyriaApiConstants.JSON_UTF_8)
 @Path("/sql")
-@Api(value = "/function", description = "Operations on functions")
+@Api(value = "/sql", description = "Executes SQL in postgres")
 public class SQLResource {
   /** The Myria server running on the master. */
   @Context private Server server;
