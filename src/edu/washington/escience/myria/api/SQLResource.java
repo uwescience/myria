@@ -52,7 +52,7 @@ public class SQLResource {
   @POST
   public Response createFunction(final String SQLQuery) throws DbException {
     try {
-        server.executeSQLStatement(SQLQuery);
+      server.executeSQLStatement(SQLQuery);
     } catch (Exception e) {
       throw new DbException(e);
     }

@@ -1328,13 +1328,12 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
 
   /**
    * Directly runs a command on the underlying database on all alive workers
-   * 
+   *
    * @param sqlSting command to run on the database
    */
-  public void executeSQLStatement(final String sqlString) 
-  	throws DbException, InterruptedException {
+  public void executeSQLStatement(final String sqlString) throws DbException, InterruptedException {
     final Set<Integer> workers = getAliveWorkers();
-	  
+
     /* Execute the SQL command on the set of workers */
     try {
       Map<Integer, SubQueryPlan> workerPlans = new HashMap<>();
@@ -1358,9 +1357,9 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
       }
     } catch (CatalogException e) {
       throw new DbException(e);
-    }	  
+    }
   }
-  
+
   /**
    * Directly runs a command on the underlying database based on the selected workers
    *
