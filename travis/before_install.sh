@@ -21,7 +21,7 @@ cd ~/myria-web
 git submodule init
 git submodule update
 cd ~/myria-web/submodules/raco
-git fetch --all && git reset --hard origin/blob_literal
+git fetch --all && git reset --hard origin/master
 python setup.py install
 
 # Set up myria-python
