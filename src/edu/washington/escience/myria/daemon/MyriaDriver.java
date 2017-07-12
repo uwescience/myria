@@ -17,6 +17,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
 
+import javax.annotation.Nullable;
 import javax.inject.Inject;
 
 import org.apache.reef.driver.client.JobMessageObserver;
@@ -268,7 +269,7 @@ public final class MyriaDriver {
                 (wid, ctx) -> {
                   tasksByWorkerId.remove(wid);
                   updateDriverStateOnWorkerFailure(wid);
-                  removeWorker(wid);
+                  removeWorker(wid, ((FailedTask) ctx).asError());
                 }))
         .put(
             TaskState.PENDING_TASK_RUNNING_ACK,
@@ -278,7 +279,7 @@ public final class MyriaDriver {
                 (wid, ctx) -> {
                   contextsByWorkerId.remove(wid);
                   updateDriverStateOnWorkerFailure(wid);
-                  removeWorker(wid);
+                  removeWorker(wid, ((FailedContext) ctx).asError());
                 }))
         .put(
             TaskState.PENDING_TASK_RUNNING_ACK,
@@ -289,7 +290,7 @@ public final class MyriaDriver {
                   contextsByWorkerId.remove(wid);
                   evaluatorsByWorkerId.remove(wid);
                   updateDriverStateOnWorkerFailure(wid);
-                  removeWorker(wid);
+                  removeWorker(wid, ((FailedEvaluator) ctx).getEvaluatorException());
                 }))
         .put(
             TaskState.READY,
@@ -299,7 +300,7 @@ public final class MyriaDriver {
                 (wid, ctx) -> {
                   tasksByWorkerId.remove(wid);
                   updateDriverStateOnWorkerFailure(wid);
-                  removeWorker(wid);
+                  removeWorker(wid, ((FailedTask) ctx).asError());
                 }))
         .put(
             TaskState.READY,
@@ -310,7 +311,7 @@ public final class MyriaDriver {
                   tasksByWorkerId.remove(wid);
                   contextsByWorkerId.remove(wid);
                   updateDriverStateOnWorkerFailure(wid);
-                  removeWorker(wid);
+                  removeWorker(wid, ((FailedContext) ctx).asError());
                 }))
         .put(
             TaskState.READY,
@@ -322,7 +323,7 @@ public final class MyriaDriver {
                   contextsByWorkerId.remove(wid);
                   evaluatorsByWorkerId.remove(wid);
                   updateDriverStateOnWorkerFailure(wid);
-                  removeWorker(wid);
+                  removeWorker(wid, ((FailedEvaluator) ctx).getEvaluatorException());
                 }))
         .put(
             TaskState.FAILED_TASK_PENDING_TASK_FAILED_ACK,
@@ -796,7 +797,8 @@ public final class MyriaDriver {
     }
   }
 
-  private void removeWorker(final int workerId) throws InterruptedException {
+  private void removeWorker(final int workerId, @Nullable final Throwable workerException)
+      throws InterruptedException {
     Preconditions.checkState(workerId != MyriaConstants.MASTER_ID);
     // this is obviously racy but it doesn't matter since we timeout on acks
     final ImmutableSet<Integer> aliveWorkers = getAliveWorkers();
@@ -839,7 +841,7 @@ public final class MyriaDriver {
         (wid) -> {
           coordinatorAcked.countDown();
         });
-    notifyCoordinatorOnFailure(workerId, ackedWorkers);
+    notifyCoordinatorOnFailure(workerId, ackedWorkers, workerException);
     coordinatorAcked.await();
     unregisterCoordinatorRemoveAckHandler(workerId);
     // we need to perform the transition in our own thread or we can't re-enter the lock
@@ -850,7 +852,14 @@ public final class MyriaDriver {
     // we should never get here on coordinator failure
     Preconditions.checkArgument(workerId != MyriaConstants.MASTER_ID);
     LOGGER.info("Sending REMOVE_WORKER for worker {} to worker {}", workerId, workerToNotifyId);
-    final TransportMessage workerFailed = IPCUtils.removeWorkerTM(workerId, null);
+    final TransportMessage workerFailed;
+    try {
+      workerFailed = IPCUtils.removeWorkerTM(workerId, null, null);
+    } catch (final IOException e) {
+      LOGGER.error(
+          "Failed to notify worker {} on failure of worker {}:\n{}", workerToNotifyId, workerId, e);
+      return;
+    }
     if (!sendMessageToWorker(workerToNotifyId, workerFailed)) {
       LOGGER.warn(
           "Unable to send REMOVE_WORKER for worker {} to worker {}", workerId, workerToNotifyId);
@@ -875,10 +884,19 @@ public final class MyriaDriver {
     }
   }
 
-  private void notifyCoordinatorOnFailure(final int workerId, final Set<Integer> ackedWorkers) {
+  private void notifyCoordinatorOnFailure(
+      final int workerId,
+      final Set<Integer> ackedWorkers,
+      @Nullable final Throwable workerException) {
     Preconditions.checkState(workerId != MyriaConstants.MASTER_ID);
     LOGGER.info("Sending REMOVE_WORKER for worker {} to coordinator", workerId);
-    final TransportMessage workerFailed = IPCUtils.removeWorkerTM(workerId, ackedWorkers);
+    final TransportMessage workerFailed;
+    try {
+      workerFailed = IPCUtils.removeWorkerTM(workerId, ackedWorkers, workerException);
+    } catch (final IOException e) {
+      LOGGER.error("Failed to notify coordinator on failure of worker {}:\n{}", workerId, e);
+      return;
+    }
     sendMessageToCoordinator(workerFailed);
   }
 
