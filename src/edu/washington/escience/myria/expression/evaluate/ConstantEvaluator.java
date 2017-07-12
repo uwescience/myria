@@ -94,8 +94,9 @@ public final class ConstantEvaluator extends GenericEvaluator {
       final int stateRow,
       final WritableColumn result,
       final WritableColumn count) {
+    Preconditions.checkArgument(
+        count == null, "Count column must be null for constant expressions");
     result.appendObject(value);
-    count.appendInt(1);
   }
 
   @Override

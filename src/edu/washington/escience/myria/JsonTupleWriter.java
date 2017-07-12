@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
+import java.util.Base64;
 import java.util.List;
 import java.util.Objects;
 
@@ -186,7 +187,7 @@ public class JsonTupleWriter implements TupleWriter {
             break;
           case BLOB_TYPE:
             print('"');
-            print("Byte buffer, cannot be written to json yet!");
+            print(Base64.getEncoder().encodeToString(tuples.getBlob(j, i).array()));
             print('"');
             break;
         }
