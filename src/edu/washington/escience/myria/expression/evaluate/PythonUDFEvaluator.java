@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.nio.charset.StandardCharsets;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -230,12 +231,13 @@ public class PythonUDFEvaluator extends GenericEvaluator {
       for (int i = 0; i < c; i++) {
         // then read the type of tuple
         int type = dIn.readInt();
-        // if the 'type' is exception, throw exception
+        // Signals that an exception has been thrown in python
         if (type == MyriaConstants.PythonSpecialLengths.PYTHON_EXCEPTION.getVal()) {
           int excepLength = dIn.readInt();
           byte[] excp = new byte[excepLength];
           dIn.readFully(excp);
-          throw new DbException(new String(excp));
+          throw new DbException(new String(excp,StandardCharsets.UTF_8));
+
         } else {
           // read the rest of the tuple
           if (type == MyriaConstants.PythonType.DOUBLE.getVal()) {
