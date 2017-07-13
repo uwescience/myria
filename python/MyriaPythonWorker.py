@@ -198,7 +198,7 @@ def main(in_file, out_file):
             pickle_serializer.write_int(
                 SpecialLengths.PYTHON_EXCEPTION_THROWN, out_file)
             pickle_serializer.write_with_length(traceback.format_exc().encode(
-                "utf-8"), out_file, DataType.BLOB)
+                "utf-8"), out_file, DataType.INT)
             print(traceback.format_exc(), file=sys.stderr)
         except IOError:
             # JVM closed the socket
