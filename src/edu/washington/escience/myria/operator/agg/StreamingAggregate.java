@@ -1,6 +1,7 @@
 package edu.washington.escience.myria.operator.agg;
 
 import java.io.IOException;
+import java.nio.BufferOverflowException;
 import java.util.List;
 
 import javax.annotation.Nonnull;
@@ -41,10 +42,11 @@ public class StreamingAggregate extends Aggregate {
    *
    * @throws DbException if any error occurs.
    * @return result tuple batch
+ * @throws BufferOverflowException 
    * @throws IOException
    */
   @Override
-  protected TupleBatch fetchNextReady() throws DbException {
+  protected TupleBatch fetchNextReady() throws DbException, BufferOverflowException, IOException {
     final Operator child = getChild();
     TupleBatch tb = child.nextReady();
     while (tb != null) {
