@@ -8,10 +8,10 @@ public final class QueryProto {
   public static void registerAllExtensions(
       com.google.protobuf.ExtensionRegistry registry) {
   }
-  public interface QueryMessageOrBuilder extends
-      // @@protoc_insertion_point(interface_extends:QueryMessage)
-      com.google.protobuf.MessageOrBuilder {
+  public interface QueryMessageOrBuilder
+      extends com.google.protobuf.MessageOrBuilder {
 
+    // required uint64 query_id = 1;
     /**
      * <code>required uint64 query_id = 1;</code>
      */
@@ -21,6 +21,7 @@ public final class QueryProto {
      */
     long getQueryId();
 
+    // required uint64 subquery_id = 2;
     /**
      * <code>required uint64 subquery_id = 2;</code>
      */
@@ -30,6 +31,7 @@ public final class QueryProto {
      */
     long getSubqueryId();
 
+    // required .QueryMessage.Type type = 3;
     /**
      * <code>required .QueryMessage.Type type = 3;</code>
      */
@@ -39,6 +41,7 @@ public final class QueryProto {
      */
     edu.washington.escience.myria.proto.QueryProto.QueryMessage.Type getType();
 
+    // optional .QueryReport query_report = 4;
     /**
      * <code>optional .QueryReport query_report = 4;</code>
      *
@@ -64,6 +67,7 @@ public final class QueryProto {
      */
     edu.washington.escience.myria.proto.QueryProto.QueryReportOrBuilder getQueryReportOrBuilder();
 
+    // optional .Query query = 5;
     /**
      * <code>optional .Query query = 5;</code>
      *
@@ -89,6 +93,7 @@ public final class QueryProto {
      */
     edu.washington.escience.myria.proto.QueryProto.QueryOrBuilder getQueryOrBuilder();
 
+    // optional int32 worker_id = 6;
     /**
      * <code>optional int32 worker_id = 6;</code>
      *
@@ -110,9 +115,8 @@ public final class QueryProto {
    * Protobuf type {@code QueryMessage}
    */
   public static final class QueryMessage extends
-      com.google.protobuf.GeneratedMessage implements
-      // @@protoc_insertion_point(message_implements:QueryMessage)
-      QueryMessageOrBuilder {
+      com.google.protobuf.GeneratedMessage
+      implements QueryMessageOrBuilder {
     // Use QueryMessage.newBuilder() to construct.
     private QueryMessage(com.google.protobuf.GeneratedMessage.Builder<?> builder) {
       super(builder);
@@ -450,6 +454,7 @@ public final class QueryProto {
     }
 
     private int bitField0_;
+    // required uint64 query_id = 1;
     public static final int QUERY_ID_FIELD_NUMBER = 1;
     private long queryId_;
     /**
@@ -465,6 +470,7 @@ public final class QueryProto {
       return queryId_;
     }
 
+    // required uint64 subquery_id = 2;
     public static final int SUBQUERY_ID_FIELD_NUMBER = 2;
     private long subqueryId_;
     /**
@@ -480,6 +486,7 @@ public final class QueryProto {
       return subqueryId_;
     }
 
+    // required .QueryMessage.Type type = 3;
     public static final int TYPE_FIELD_NUMBER = 3;
     private edu.washington.escience.myria.proto.QueryProto.QueryMessage.Type type_;
     /**
@@ -495,6 +502,7 @@ public final class QueryProto {
       return type_;
     }
 
+    // optional .QueryReport query_report = 4;
     public static final int QUERY_REPORT_FIELD_NUMBER = 4;
     private edu.washington.escience.myria.proto.QueryProto.QueryReport queryReport_;
     /**
@@ -528,6 +536,7 @@ public final class QueryProto {
       return queryReport_;
     }
 
+    // optional .Query query = 5;
     public static final int QUERY_FIELD_NUMBER = 5;
     private edu.washington.escience.myria.proto.QueryProto.Query query_;
     /**
@@ -561,6 +570,7 @@ public final class QueryProto {
       return query_;
     }
 
+    // optional int32 worker_id = 6;
     public static final int WORKER_ID_FIELD_NUMBER = 6;
     private int workerId_;
     /**
@@ -595,8 +605,7 @@ public final class QueryProto {
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
       byte isInitialized = memoizedIsInitialized;
-      if (isInitialized == 1) return true;
-      if (isInitialized == 0) return false;
+      if (isInitialized != -1) return isInitialized == 1;
 
       if (!hasQueryId()) {
         memoizedIsInitialized = 0;
@@ -762,9 +771,8 @@ public final class QueryProto {
      * Protobuf type {@code QueryMessage}
      */
     public static final class Builder extends
-        com.google.protobuf.GeneratedMessage.Builder<Builder> implements
-        // @@protoc_insertion_point(builder_implements:QueryMessage)
-        edu.washington.escience.myria.proto.QueryProto.QueryMessageOrBuilder {
+        com.google.protobuf.GeneratedMessage.Builder<Builder>
+       implements edu.washington.escience.myria.proto.QueryProto.QueryMessageOrBuilder {
       public static final com.google.protobuf.Descriptors.Descriptor
           getDescriptor() {
         return edu.washington.escience.myria.proto.QueryProto.internal_static_QueryMessage_descriptor;
@@ -964,6 +972,7 @@ public final class QueryProto {
       }
       private int bitField0_;
 
+      // required uint64 query_id = 1;
       private long queryId_ ;
       /**
        * <code>required uint64 query_id = 1;</code>
@@ -996,6 +1005,7 @@ public final class QueryProto {
         return this;
       }
 
+      // required uint64 subquery_id = 2;
       private long subqueryId_ ;
       /**
        * <code>required uint64 subquery_id = 2;</code>
@@ -1028,6 +1038,7 @@ public final class QueryProto {
         return this;
       }
 
+      // required .QueryMessage.Type type = 3;
       private edu.washington.escience.myria.proto.QueryProto.QueryMessage.Type type_ = edu.washington.escience.myria.proto.QueryProto.QueryMessage.Type.QUERY_DISTRIBUTE;
       /**
        * <code>required .QueryMessage.Type type = 3;</code>
@@ -1063,6 +1074,7 @@ public final class QueryProto {
         return this;
       }
 
+      // optional .QueryReport query_report = 4;
       private edu.washington.escience.myria.proto.QueryProto.QueryReport queryReport_ = edu.washington.escience.myria.proto.QueryProto.QueryReport.getDefaultInstance();
       private com.google.protobuf.SingleFieldBuilder<
           edu.washington.escience.myria.proto.QueryProto.QueryReport, edu.washington.escience.myria.proto.QueryProto.QueryReport.Builder, edu.washington.escience.myria.proto.QueryProto.QueryReportOrBuilder> queryReportBuilder_;
@@ -1207,7 +1219,7 @@ public final class QueryProto {
         if (queryReportBuilder_ == null) {
           queryReportBuilder_ = new com.google.protobuf.SingleFieldBuilder<
               edu.washington.escience.myria.proto.QueryProto.QueryReport, edu.washington.escience.myria.proto.QueryProto.QueryReport.Builder, edu.washington.escience.myria.proto.QueryProto.QueryReportOrBuilder>(
-                  getQueryReport(),
+                  queryReport_,
                   getParentForChildren(),
                   isClean());
           queryReport_ = null;
@@ -1215,6 +1227,7 @@ public final class QueryProto {
         return queryReportBuilder_;
       }
 
+      // optional .Query query = 5;
       private edu.washington.escience.myria.proto.QueryProto.Query query_ = edu.washington.escience.myria.proto.QueryProto.Query.getDefaultInstance();
       private com.google.protobuf.SingleFieldBuilder<
           edu.washington.escience.myria.proto.QueryProto.Query, edu.washington.escience.myria.proto.QueryProto.Query.Builder, edu.washington.escience.myria.proto.QueryProto.QueryOrBuilder> queryBuilder_;
@@ -1359,7 +1372,7 @@ public final class QueryProto {
         if (queryBuilder_ == null) {
           queryBuilder_ = new com.google.protobuf.SingleFieldBuilder<
               edu.washington.escience.myria.proto.QueryProto.Query, edu.washington.escience.myria.proto.QueryProto.Query.Builder, edu.washington.escience.myria.proto.QueryProto.QueryOrBuilder>(
-                  getQuery(),
+                  query_,
                   getParentForChildren(),
                   isClean());
           query_ = null;
@@ -1367,6 +1380,7 @@ public final class QueryProto {
         return queryBuilder_;
       }
 
+      // optional int32 worker_id = 6;
       private int workerId_ ;
       /**
        * <code>optional int32 worker_id = 6;</code>
@@ -1426,10 +1440,10 @@ public final class QueryProto {
     // @@protoc_insertion_point(class_scope:QueryMessage)
   }
 
-  public interface QueryOrBuilder extends
-      // @@protoc_insertion_point(interface_extends:Query)
-      com.google.protobuf.MessageOrBuilder {
+  public interface QueryOrBuilder
+      extends com.google.protobuf.MessageOrBuilder {
 
+    // required bytes query = 1;
     /**
      * <code>required bytes query = 1;</code>
      *
@@ -1451,9 +1465,8 @@ public final class QueryProto {
    * Protobuf type {@code Query}
    */
   public static final class Query extends
-      com.google.protobuf.GeneratedMessage implements
-      // @@protoc_insertion_point(message_implements:Query)
-      QueryOrBuilder {
+      com.google.protobuf.GeneratedMessage
+      implements QueryOrBuilder {
     // Use Query.newBuilder() to construct.
     private Query(com.google.protobuf.GeneratedMessage.Builder<?> builder) {
       super(builder);
@@ -1544,6 +1557,7 @@ public final class QueryProto {
     }
 
     private int bitField0_;
+    // required bytes query = 1;
     public static final int QUERY_FIELD_NUMBER = 1;
     private com.google.protobuf.ByteString query_;
     /**
@@ -1573,8 +1587,7 @@ public final class QueryProto {
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
       byte isInitialized = memoizedIsInitialized;
-      if (isInitialized == 1) return true;
-      if (isInitialized == 0) return false;
+      if (isInitialized != -1) return isInitialized == 1;
 
       if (!hasQuery()) {
         memoizedIsInitialized = 0;
@@ -1685,9 +1698,8 @@ public final class QueryProto {
      * Protobuf type {@code Query}
      */
     public static final class Builder extends
-        com.google.protobuf.GeneratedMessage.Builder<Builder> implements
-        // @@protoc_insertion_point(builder_implements:Query)
-        edu.washington.escience.myria.proto.QueryProto.QueryOrBuilder {
+        com.google.protobuf.GeneratedMessage.Builder<Builder>
+       implements edu.washington.escience.myria.proto.QueryProto.QueryOrBuilder {
       public static final com.google.protobuf.Descriptors.Descriptor
           getDescriptor() {
         return edu.washington.escience.myria.proto.QueryProto.internal_static_Query_descriptor;
@@ -1804,6 +1816,7 @@ public final class QueryProto {
       }
       private int bitField0_;
 
+      // required bytes query = 1;
       private com.google.protobuf.ByteString query_ = com.google.protobuf.ByteString.EMPTY;
       /**
        * <code>required bytes query = 1;</code>
@@ -1866,10 +1879,10 @@ public final class QueryProto {
     // @@protoc_insertion_point(class_scope:Query)
   }
 
-  public interface QueryReportOrBuilder extends
-      // @@protoc_insertion_point(interface_extends:QueryReport)
-      com.google.protobuf.MessageOrBuilder {
+  public interface QueryReportOrBuilder
+      extends com.google.protobuf.MessageOrBuilder {
 
+    // required bool success = 1;
     /**
      * <code>required bool success = 1;</code>
      *
@@ -1887,6 +1900,7 @@ public final class QueryProto {
      */
     boolean getSuccess();
 
+    // required .ExecutionStatistics execution_statistics = 2;
     /**
      * <code>required .ExecutionStatistics execution_statistics = 2;</code>
      */
@@ -1900,6 +1914,7 @@ public final class QueryProto {
      */
     edu.washington.escience.myria.proto.QueryProto.ExecutionStatisticsOrBuilder getExecutionStatisticsOrBuilder();
 
+    // optional bytes cause = 3;
     /**
      * <code>optional bytes cause = 3;</code>
      *
@@ -1921,9 +1936,8 @@ public final class QueryProto {
    * Protobuf type {@code QueryReport}
    */
   public static final class QueryReport extends
-      com.google.protobuf.GeneratedMessage implements
-      // @@protoc_insertion_point(message_implements:QueryReport)
-      QueryReportOrBuilder {
+      com.google.protobuf.GeneratedMessage
+      implements QueryReportOrBuilder {
     // Use QueryReport.newBuilder() to construct.
     private QueryReport(com.google.protobuf.GeneratedMessage.Builder<?> builder) {
       super(builder);
@@ -2032,6 +2046,7 @@ public final class QueryProto {
     }
 
     private int bitField0_;
+    // required bool success = 1;
     public static final int SUCCESS_FIELD_NUMBER = 1;
     private boolean success_;
     /**
@@ -2055,6 +2070,7 @@ public final class QueryProto {
       return success_;
     }
 
+    // required .ExecutionStatistics execution_statistics = 2;
     public static final int EXECUTION_STATISTICS_FIELD_NUMBER = 2;
     private edu.washington.escience.myria.proto.QueryProto.ExecutionStatistics executionStatistics_;
     /**
@@ -2076,6 +2092,7 @@ public final class QueryProto {
       return executionStatistics_;
     }
 
+    // optional bytes cause = 3;
     public static final int CAUSE_FIELD_NUMBER = 3;
     private com.google.protobuf.ByteString cause_;
     /**
@@ -2107,8 +2124,7 @@ public final class QueryProto {
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
       byte isInitialized = memoizedIsInitialized;
-      if (isInitialized == 1) return true;
-      if (isInitialized == 0) return false;
+      if (isInitialized != -1) return isInitialized == 1;
 
       if (!hasSuccess()) {
         memoizedIsInitialized = 0;
@@ -2241,9 +2257,8 @@ public final class QueryProto {
      * Protobuf type {@code QueryReport}
      */
     public static final class Builder extends
-        com.google.protobuf.GeneratedMessage.Builder<Builder> implements
-        // @@protoc_insertion_point(builder_implements:QueryReport)
-        edu.washington.escience.myria.proto.QueryProto.QueryReportOrBuilder {
+        com.google.protobuf.GeneratedMessage.Builder<Builder>
+       implements edu.washington.escience.myria.proto.QueryProto.QueryReportOrBuilder {
       public static final com.google.protobuf.Descriptors.Descriptor
           getDescriptor() {
         return edu.washington.escience.myria.proto.QueryProto.internal_static_QueryReport_descriptor;
@@ -2395,6 +2410,7 @@ public final class QueryProto {
       }
       private int bitField0_;
 
+      // required bool success = 1;
       private boolean success_ ;
       /**
        * <code>required bool success = 1;</code>
@@ -2443,6 +2459,7 @@ public final class QueryProto {
         return this;
       }
 
+      // required .ExecutionStatistics execution_statistics = 2;
       private edu.washington.escience.myria.proto.QueryProto.ExecutionStatistics executionStatistics_ = edu.washington.escience.myria.proto.QueryProto.ExecutionStatistics.getDefaultInstance();
       private com.google.protobuf.SingleFieldBuilder<
           edu.washington.escience.myria.proto.QueryProto.ExecutionStatistics, edu.washington.escience.myria.proto.QueryProto.ExecutionStatistics.Builder, edu.washington.escience.myria.proto.QueryProto.ExecutionStatisticsOrBuilder> executionStatisticsBuilder_;
@@ -2551,7 +2568,7 @@ public final class QueryProto {
         if (executionStatisticsBuilder_ == null) {
           executionStatisticsBuilder_ = new com.google.protobuf.SingleFieldBuilder<
               edu.washington.escience.myria.proto.QueryProto.ExecutionStatistics, edu.washington.escience.myria.proto.QueryProto.ExecutionStatistics.Builder, edu.washington.escience.myria.proto.QueryProto.ExecutionStatisticsOrBuilder>(
-                  getExecutionStatistics(),
+                  executionStatistics_,
                   getParentForChildren(),
                   isClean());
           executionStatistics_ = null;
@@ -2559,6 +2576,7 @@ public final class QueryProto {
         return executionStatisticsBuilder_;
       }
 
+      // optional bytes cause = 3;
       private com.google.protobuf.ByteString cause_ = com.google.protobuf.ByteString.EMPTY;
       /**
        * <code>optional bytes cause = 3;</code>
@@ -2621,10 +2639,10 @@ public final class QueryProto {
     // @@protoc_insertion_point(class_scope:QueryReport)
   }
 
-  public interface ExecutionStatisticsOrBuilder extends
-      // @@protoc_insertion_point(interface_extends:ExecutionStatistics)
-      com.google.protobuf.MessageOrBuilder {
+  public interface ExecutionStatisticsOrBuilder
+      extends com.google.protobuf.MessageOrBuilder {
 
+    // required uint64 elapse = 2;
     /**
      * <code>required uint64 elapse = 2;</code>
      *
@@ -2646,9 +2664,8 @@ public final class QueryProto {
    * Protobuf type {@code ExecutionStatistics}
    */
   public static final class ExecutionStatistics extends
-      com.google.protobuf.GeneratedMessage implements
-      // @@protoc_insertion_point(message_implements:ExecutionStatistics)
-      ExecutionStatisticsOrBuilder {
+      com.google.protobuf.GeneratedMessage
+      implements ExecutionStatisticsOrBuilder {
     // Use ExecutionStatistics.newBuilder() to construct.
     private ExecutionStatistics(com.google.protobuf.GeneratedMessage.Builder<?> builder) {
       super(builder);
@@ -2739,6 +2756,7 @@ public final class QueryProto {
     }
 
     private int bitField0_;
+    // required uint64 elapse = 2;
     public static final int ELAPSE_FIELD_NUMBER = 2;
     private long elapse_;
     /**
@@ -2768,8 +2786,7 @@ public final class QueryProto {
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
       byte isInitialized = memoizedIsInitialized;
-      if (isInitialized == 1) return true;
-      if (isInitialized == 0) return false;
+      if (isInitialized != -1) return isInitialized == 1;
 
       if (!hasElapse()) {
         memoizedIsInitialized = 0;
@@ -2880,9 +2897,8 @@ public final class QueryProto {
      * Protobuf type {@code ExecutionStatistics}
      */
     public static final class Builder extends
-        com.google.protobuf.GeneratedMessage.Builder<Builder> implements
-        // @@protoc_insertion_point(builder_implements:ExecutionStatistics)
-        edu.washington.escience.myria.proto.QueryProto.ExecutionStatisticsOrBuilder {
+        com.google.protobuf.GeneratedMessage.Builder<Builder>
+       implements edu.washington.escience.myria.proto.QueryProto.ExecutionStatisticsOrBuilder {
       public static final com.google.protobuf.Descriptors.Descriptor
           getDescriptor() {
         return edu.washington.escience.myria.proto.QueryProto.internal_static_ExecutionStatistics_descriptor;
@@ -2999,6 +3015,7 @@ public final class QueryProto {
       }
       private int bitField0_;
 
+      // required uint64 elapse = 2;
       private long elapse_ ;
       /**
        * <code>required uint64 elapse = 2;</code>
@@ -3058,22 +3075,22 @@ public final class QueryProto {
     // @@protoc_insertion_point(class_scope:ExecutionStatistics)
   }
 
-  private static final com.google.protobuf.Descriptors.Descriptor
+  private static com.google.protobuf.Descriptors.Descriptor
     internal_static_QueryMessage_descriptor;
   private static
     com.google.protobuf.GeneratedMessage.FieldAccessorTable
       internal_static_QueryMessage_fieldAccessorTable;
-  private static final com.google.protobuf.Descriptors.Descriptor
+  private static com.google.protobuf.Descriptors.Descriptor
     internal_static_Query_descriptor;
   private static
     com.google.protobuf.GeneratedMessage.FieldAccessorTable
       internal_static_Query_fieldAccessorTable;
-  private static final com.google.protobuf.Descriptors.Descriptor
+  private static com.google.protobuf.Descriptors.Descriptor
     internal_static_QueryReport_descriptor;
   private static
     com.google.protobuf.GeneratedMessage.FieldAccessorTable
       internal_static_QueryReport_fieldAccessorTable;
-  private static final com.google.protobuf.Descriptors.Descriptor
+  private static com.google.protobuf.Descriptors.Descriptor
     internal_static_ExecutionStatistics_descriptor;
   private static
     com.google.protobuf.GeneratedMessage.FieldAccessorTable
@@ -3103,41 +3120,41 @@ public final class QueryProto {
       "hington.escience.myria.protoB\nQueryProto"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
-        new com.google.protobuf.Descriptors.FileDescriptor.    InternalDescriptorAssigner() {
-          public com.google.protobuf.ExtensionRegistry assignDescriptors(
-              com.google.protobuf.Descriptors.FileDescriptor root) {
-            descriptor = root;
-            return null;
-          }
-        };
+      new com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
+        public com.google.protobuf.ExtensionRegistry assignDescriptors(
+            com.google.protobuf.Descriptors.FileDescriptor root) {
+          descriptor = root;
+          internal_static_QueryMessage_descriptor =
+            getDescriptor().getMessageTypes().get(0);
+          internal_static_QueryMessage_fieldAccessorTable = new
+            com.google.protobuf.GeneratedMessage.FieldAccessorTable(
+              internal_static_QueryMessage_descriptor,
+              new java.lang.String[] { "QueryId", "SubqueryId", "Type", "QueryReport", "Query", "WorkerId", });
+          internal_static_Query_descriptor =
+            getDescriptor().getMessageTypes().get(1);
+          internal_static_Query_fieldAccessorTable = new
+            com.google.protobuf.GeneratedMessage.FieldAccessorTable(
+              internal_static_Query_descriptor,
+              new java.lang.String[] { "Query", });
+          internal_static_QueryReport_descriptor =
+            getDescriptor().getMessageTypes().get(2);
+          internal_static_QueryReport_fieldAccessorTable = new
+            com.google.protobuf.GeneratedMessage.FieldAccessorTable(
+              internal_static_QueryReport_descriptor,
+              new java.lang.String[] { "Success", "ExecutionStatistics", "Cause", });
+          internal_static_ExecutionStatistics_descriptor =
+            getDescriptor().getMessageTypes().get(3);
+          internal_static_ExecutionStatistics_fieldAccessorTable = new
+            com.google.protobuf.GeneratedMessage.FieldAccessorTable(
+              internal_static_ExecutionStatistics_descriptor,
+              new java.lang.String[] { "Elapse", });
+          return null;
+        }
+      };
     com.google.protobuf.Descriptors.FileDescriptor
       .internalBuildGeneratedFileFrom(descriptorData,
         new com.google.protobuf.Descriptors.FileDescriptor[] {
         }, assigner);
-    internal_static_QueryMessage_descriptor =
-      getDescriptor().getMessageTypes().get(0);
-    internal_static_QueryMessage_fieldAccessorTable = new
-      com.google.protobuf.GeneratedMessage.FieldAccessorTable(
-        internal_static_QueryMessage_descriptor,
-        new java.lang.String[] { "QueryId", "SubqueryId", "Type", "QueryReport", "Query", "WorkerId", });
-    internal_static_Query_descriptor =
-      getDescriptor().getMessageTypes().get(1);
-    internal_static_Query_fieldAccessorTable = new
-      com.google.protobuf.GeneratedMessage.FieldAccessorTable(
-        internal_static_Query_descriptor,
-        new java.lang.String[] { "Query", });
-    internal_static_QueryReport_descriptor =
-      getDescriptor().getMessageTypes().get(2);
-    internal_static_QueryReport_fieldAccessorTable = new
-      com.google.protobuf.GeneratedMessage.FieldAccessorTable(
-        internal_static_QueryReport_descriptor,
-        new java.lang.String[] { "Success", "ExecutionStatistics", "Cause", });
-    internal_static_ExecutionStatistics_descriptor =
-      getDescriptor().getMessageTypes().get(3);
-    internal_static_ExecutionStatistics_fieldAccessorTable = new
-      com.google.protobuf.GeneratedMessage.FieldAccessorTable(
-        internal_static_ExecutionStatistics_descriptor,
-        new java.lang.String[] { "Elapse", });
   }
 
   // @@protoc_insertion_point(outer_class_scope)

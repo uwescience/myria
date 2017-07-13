@@ -17,6 +17,12 @@ message ControlMessage {
   optional SocketInfo remote_address = 3;
   repeated ResourceStats resource_stats = 4;
   repeated int32 acked_worker_ids = 5;
+  optional Exception worker_exception = 6;	// REMOVE_WORKER
+}
+
+message Exception {
+ // for now, the exception is a simple java serialized object.
+ required bytes exception = 1;
 }
 
 message SocketInfo {
