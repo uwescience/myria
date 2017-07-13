@@ -50,7 +50,7 @@ public class SQLResource {
   protected static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(FunctionResource.class);
 
   @POST
-  public Response createFunction(final String SQLQuery) throws DbException {
+  public Response createSQL(final String SQLQuery) throws DbException {
     try {
       server.executeSQLStatement(SQLQuery);
     } catch (Exception e) {
