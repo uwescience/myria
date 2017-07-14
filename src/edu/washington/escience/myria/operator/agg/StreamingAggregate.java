@@ -40,7 +40,6 @@ public class StreamingAggregate extends Aggregate {
    *
    * @throws DbException if any error occurs.
    * @return result tuple batch
-   *
    */
   @Override
   protected TupleBatch fetchNextReady() throws DbException {

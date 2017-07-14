@@ -124,7 +124,7 @@ class PickleSerializer(Serializer):
         elif output_type == DataType.BLOB:
             cls.write_int(DataType.BLOB, stream)
             cls.pickle_and_write(obj, stream)
-        elif output_type ==DataType.EXCEPTION:
+        elif output_type == DataType.EXCEPTION:
             cls.write_int(len(obj), stream)
             stream.write(str(obj))
 
@@ -201,8 +201,8 @@ def main(in_file, out_file):
         try:
             pickle_serializer.write_int(
                 SpecialLengths.PYTHON_EXCEPTION_THROWN, out_file)
-            pickle_serializer.write_with_length(traceback.format_exc().encode(
-                "utf-8"), out_file, DataType.EXCEPTION)
+            pickle_serializer.write_with_length(traceback.format_exc().encode("utf-8"),
+                                                out_file, DataType.EXCEPTION)
             print(traceback.format_exc(), file=sys.stderr)
         except IOError:
             # JVM closed the socket

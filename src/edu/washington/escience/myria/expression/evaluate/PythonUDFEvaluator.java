@@ -228,8 +228,8 @@ public class PythonUDFEvaluator extends GenericEvaluator {
         int type = dIn.readInt();
         // Signals that an exception has been thrown in python
         if (type == MyriaConstants.PythonSpecialLengths.PYTHON_EXCEPTION.getVal()) {
-          int excepLength = dIn.readInt();
-          byte[] excp = new byte[excepLength];
+          int excLen = dIn.readInt();
+          byte[] excp = new byte[excLen];
           dIn.readFully(excp);
           throw new DbException(new String(excp, StandardCharsets.UTF_8));
 

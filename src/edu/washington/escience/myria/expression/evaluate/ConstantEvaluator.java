@@ -1,8 +1,6 @@
 package edu.washington.escience.myria.expression.evaluate;
 
-import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
-import java.nio.BufferOverflowException;
 
 import org.codehaus.commons.compiler.CompileException;
 import org.codehaus.janino.ExpressionEvaluator;
@@ -102,7 +100,7 @@ public final class ConstantEvaluator extends GenericEvaluator {
 
   @Override
   public EvaluatorResult evalTupleBatch(final TupleBatch tb, final Schema outputSchema)
-      throws DbException, BufferOverflowException {
+      throws DbException {
     if (TupleUtils.getBatchSize(outputSchema) == tb.getBatchSize()) {
       return new EvaluatorResult(
           new ConstantValueColumn((Comparable<?>) value, type, tb.numTuples()),
