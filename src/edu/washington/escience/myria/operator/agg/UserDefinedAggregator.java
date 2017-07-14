@@ -1,7 +1,5 @@
 package edu.washington.escience.myria.operator.agg;
 
-import java.io.IOException;
-import java.nio.BufferOverflowException;
 import java.util.List;
 
 import edu.washington.escience.myria.DbException;
@@ -71,10 +69,9 @@ public class UserDefinedAggregator implements Aggregator {
    * @param tb
    * @param offset
    * @throws DbException
-   * @throws BufferOverflowException
    */
   public void finalizePythonUpdaters(final MutableTupleBuffer tb, final int offset)
-      throws DbException, BufferOverflowException {
+      throws DbException {
     for (int i = 0; i < updateEvaluators.size(); ++i) {
       GenericEvaluator eval = updateEvaluators.get(i);
       if (eval instanceof PythonUDFEvaluator) {
