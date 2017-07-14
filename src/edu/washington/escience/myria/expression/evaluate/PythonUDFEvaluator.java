@@ -6,7 +6,6 @@ package edu.washington.escience.myria.expression.evaluate;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -138,7 +137,7 @@ public class PythonUDFEvaluator extends GenericEvaluator {
       final int stateRow,
       @Nonnull final WritableColumn result,
       @Nullable final WritableColumn count)
-      throws DbException, BufferOverflowException {
+      throws DbException {
     pyWorker.sendNumTuples(1);
     for (int i = 0; i < columnIdxs.length; ++i) {
       if (stateColumns.contains(i)) {
@@ -176,10 +175,8 @@ public class PythonUDFEvaluator extends GenericEvaluator {
    * @param state state
    * @param col column index of the state to be written to.
    * @throws DbException in case of error
-   * @throws BufferOverflowException
    */
-  public void evalGroups(final MutableTupleBuffer state, final int col)
-      throws DbException, BufferOverflowException {
+  public void evalGroups(final MutableTupleBuffer state, final int col) throws DbException {
     IntIterator keyIter = groups.keySet().intIterator();
     while (keyIter.hasNext()) {
       int key = keyIter.next();
@@ -210,10 +207,9 @@ public class PythonUDFEvaluator extends GenericEvaluator {
    * @param result2 appendable table
    * @param resultColIdx id of the result column.
    * @throws DbException in case of error.
-   * @throws BufferOverflowException
    */
   public void readFromStream(final WritableColumn count, final WritableColumn result)
-      throws DbException, BufferOverflowException {
+      throws DbException {
     DataInputStream dIn = pyWorker.getDataInputStream();
     int c = 1; // single valued expressions only return 1 tuple.
     try {

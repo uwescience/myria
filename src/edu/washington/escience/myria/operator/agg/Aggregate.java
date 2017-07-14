@@ -1,7 +1,5 @@
 package edu.washington.escience.myria.operator.agg;
 
-import java.io.IOException;
-import java.nio.BufferOverflowException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -75,10 +73,9 @@ public class Aggregate extends UnaryOperator {
    *
    * @throws DbException if any error occurs.
    * @return result TB.
-   * @throws BufferOverflowException
    */
   @Override
-  protected TupleBatch fetchNextReady() throws DbException, BufferOverflowException {
+  protected TupleBatch fetchNextReady() throws DbException {
     final Operator child = getChild();
     TupleBatch tb = child.nextReady();
     while (tb != null) {
@@ -125,9 +122,8 @@ public class Aggregate extends UnaryOperator {
   /**
    * @return A batch's worth of result tuples from this aggregate.
    * @throws DbException if there is an error.
-   * @throws BufferOverflowException
    */
-  protected void generateResult() throws DbException, BufferOverflowException {
+  protected void generateResult() throws DbException {
     if (groupStates.numTuples() == 0) {
       return;
     }
