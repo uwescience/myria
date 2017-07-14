@@ -161,7 +161,7 @@ public class GenericEvaluator extends Evaluator {
    * @param result the table storing the result
    * @param count column storing number of results (null for single-valued expressions)
    * @throws DbException in case of error.
- * @throws BufferOverflowException 
+   * @throws BufferOverflowException
    */
   public void eval(
       @Nullable final ReadableTable input,
@@ -242,7 +242,7 @@ public class GenericEvaluator extends Evaluator {
    * @return an {@link EvaluatorResult} containing the results and result counts of evaluating this expression on the
    *         entire TupleBatch
    * @throws DbException
-   * @throws BufferOverflowException 
+   * @throws BufferOverflowException
    */
   public EvaluatorResult evalTupleBatch(final TupleBatch tb, final Schema outputSchema)
       throws DbException, BufferOverflowException {

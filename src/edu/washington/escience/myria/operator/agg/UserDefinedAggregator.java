@@ -70,8 +70,8 @@ public class UserDefinedAggregator implements Aggregator {
   /**
    * @param tb
    * @param offset
-   * @throws DbException 
- * @throws BufferOverflowException 
+   * @throws DbException
+   * @throws BufferOverflowException
    */
   public void finalizePythonUpdaters(final MutableTupleBuffer tb, final int offset)
       throws DbException, BufferOverflowException {

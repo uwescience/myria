@@ -75,7 +75,7 @@ public class Aggregate extends UnaryOperator {
    *
    * @throws DbException if any error occurs.
    * @return result TB.
- * @throws BufferOverflowException 
+   * @throws BufferOverflowException
    */
   @Override
   protected TupleBatch fetchNextReady() throws DbException, BufferOverflowException {
@@ -125,7 +125,7 @@ public class Aggregate extends UnaryOperator {
   /**
    * @return A batch's worth of result tuples from this aggregate.
    * @throws DbException if there is an error.
- * @throws BufferOverflowException 
+   * @throws BufferOverflowException
    */
   protected void generateResult() throws DbException, BufferOverflowException {
     if (groupStates.numTuples() == 0) {

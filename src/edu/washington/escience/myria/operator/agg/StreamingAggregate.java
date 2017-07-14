@@ -42,8 +42,8 @@ public class StreamingAggregate extends Aggregate {
    *
    * @throws DbException if any error occurs.
    * @return result tuple batch
- * @throws BufferOverflowException 
- 
+   * @throws BufferOverflowException
+   *
    */
   @Override
   protected TupleBatch fetchNextReady() throws DbException, BufferOverflowException {

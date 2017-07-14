@@ -176,9 +176,10 @@ public class PythonUDFEvaluator extends GenericEvaluator {
    * @param state state
    * @param col column index of the state to be written to.
    * @throws DbException in case of error
-   * @throws BufferOverflowException 
+   * @throws BufferOverflowException
    */
-  public void evalGroups(final MutableTupleBuffer state, final int col) throws DbException, BufferOverflowException {
+  public void evalGroups(final MutableTupleBuffer state, final int col)
+      throws DbException, BufferOverflowException {
     IntIterator keyIter = groups.keySet().intIterator();
     while (keyIter.hasNext()) {
       int key = keyIter.next();
@@ -209,7 +210,7 @@ public class PythonUDFEvaluator extends GenericEvaluator {
    * @param result2 appendable table
    * @param resultColIdx id of the result column.
    * @throws DbException in case of error.
-   * @throws BufferOverflowException 
+   * @throws BufferOverflowException
    */
   public void readFromStream(final WritableColumn count, final WritableColumn result)
       throws DbException, BufferOverflowException {
@@ -234,7 +235,7 @@ public class PythonUDFEvaluator extends GenericEvaluator {
           int excepLength = dIn.readInt();
           byte[] excp = new byte[excepLength];
           dIn.readFully(excp);
-          throw new DbException(new String(excp,StandardCharsets.UTF_8));
+          throw new DbException(new String(excp, StandardCharsets.UTF_8));
 
         } else {
           // read the rest of the tuple
