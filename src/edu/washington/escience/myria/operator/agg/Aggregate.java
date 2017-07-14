@@ -75,11 +75,10 @@ public class Aggregate extends UnaryOperator {
    *
    * @throws DbException if any error occurs.
    * @return result TB.
- * @throws IOException 
  * @throws BufferOverflowException 
    */
   @Override
-  protected TupleBatch fetchNextReady() throws DbException, BufferOverflowException, IOException {
+  protected TupleBatch fetchNextReady() throws DbException, BufferOverflowException {
     final Operator child = getChild();
     TupleBatch tb = child.nextReady();
     while (tb != null) {
@@ -126,10 +125,9 @@ public class Aggregate extends UnaryOperator {
   /**
    * @return A batch's worth of result tuples from this aggregate.
    * @throws DbException if there is an error.
- * @throws IOException 
  * @throws BufferOverflowException 
    */
-  protected void generateResult() throws DbException, BufferOverflowException, IOException {
+  protected void generateResult() throws DbException, BufferOverflowException {
     if (groupStates.numTuples() == 0) {
       return;
     }

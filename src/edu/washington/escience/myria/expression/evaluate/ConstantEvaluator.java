@@ -102,7 +102,7 @@ public final class ConstantEvaluator extends GenericEvaluator {
 
   @Override
   public EvaluatorResult evalTupleBatch(final TupleBatch tb, final Schema outputSchema)
-      throws DbException, BufferOverflowException, IOException {
+      throws DbException, BufferOverflowException {
     if (TupleUtils.getBatchSize(outputSchema) == tb.getBatchSize()) {
       return new EvaluatorResult(
           new ConstantValueColumn((Comparable<?>) value, type, tb.numTuples()),

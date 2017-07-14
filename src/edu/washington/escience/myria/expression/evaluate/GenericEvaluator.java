@@ -1,6 +1,5 @@
 package edu.washington.escience.myria.expression.evaluate;
 
-import java.io.IOException;
 import java.nio.BufferOverflowException;
 import java.util.List;
 
@@ -162,7 +161,6 @@ public class GenericEvaluator extends Evaluator {
    * @param result the table storing the result
    * @param count column storing number of results (null for single-valued expressions)
    * @throws DbException in case of error.
- * @throws IOException 
  * @throws BufferOverflowException 
    */
   public void eval(
@@ -172,7 +170,7 @@ public class GenericEvaluator extends Evaluator {
       final int stateRow,
       @Nonnull final WritableColumn result,
       @Nullable final WritableColumn count)
-      throws DbException, BufferOverflowException, IOException {
+      throws DbException, BufferOverflowException {
     Preconditions.checkArgument(
         evaluator != null, "Call compile first or copy the data if it is the same in the input.");
     Preconditions.checkArgument(
@@ -244,11 +242,10 @@ public class GenericEvaluator extends Evaluator {
    * @return an {@link EvaluatorResult} containing the results and result counts of evaluating this expression on the
    *         entire TupleBatch
    * @throws DbException
- * @throws IOException 
- * @throws BufferOverflowException 
+   * @throws BufferOverflowException 
    */
   public EvaluatorResult evalTupleBatch(final TupleBatch tb, final Schema outputSchema)
-      throws DbException, BufferOverflowException, IOException {
+      throws DbException, BufferOverflowException {
     final Column<?> constCounts = new ConstantValueColumn(1, Type.INT_TYPE, tb.numTuples());
     int batchSize = TupleUtils.getBatchSize(outputSchema);
     // Critical optimization: return a zero-copy reference to a column referenced by a pure `VariableExpression`.

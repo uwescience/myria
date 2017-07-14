@@ -70,12 +70,11 @@ public class UserDefinedAggregator implements Aggregator {
   /**
    * @param tb
    * @param offset
-   * @throws DbException
- * @throws IOException 
+   * @throws DbException 
  * @throws BufferOverflowException 
    */
   public void finalizePythonUpdaters(final MutableTupleBuffer tb, final int offset)
-      throws DbException, BufferOverflowException, IOException {
+      throws DbException, BufferOverflowException {
     for (int i = 0; i < updateEvaluators.size(); ++i) {
       GenericEvaluator eval = updateEvaluators.get(i);
       if (eval instanceof PythonUDFEvaluator) {
