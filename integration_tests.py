@@ -385,6 +385,14 @@ T1 = load('{}',csv(schema(a:int,b:int))); T2 = [from T1 emit a, count(*) as c]; 
         self.assertListOfDictsEqual(
             count_result.to_dict(), uda_result.to_dict())
 
+class ParallelIngestTest(MyriaTestBase):
+    def test(self):
+        twitterData = self.get_file_url('testdata/twitter/TwitterK.csv')
+        query_ingest = """
+T1 = load('{}',csv(schema(a:int,b:int))); T2 = [from T1 emit *]; store(T2, parallelIngest);
+""".format(twitterData)
+        result = MyriaQuery.submit(query_ingest)
+        self.assertEqual(len(result.to_dict()), 2715)
 
 if __name__ == '__main__':
     unittest.main()
