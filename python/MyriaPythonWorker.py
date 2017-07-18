@@ -20,6 +20,7 @@ class DataType(object):
     FLOAT = 3
     DOUBLE = 4
     BLOB = 5
+    EXCEPTION = 6
 
 
 class Serializer(object):
@@ -123,6 +124,10 @@ class PickleSerializer(Serializer):
         elif output_type == DataType.BLOB:
             cls.write_int(DataType.BLOB, stream)
             cls.pickle_and_write(obj, stream)
+        elif output_type == DataType.EXCEPTION:
+            assert type(obj) is str
+            cls.write_int(len(obj), stream)
+            stream.write(obj)
 
     @classmethod
     def read_command(cls, stream):
@@ -197,8 +202,8 @@ def main(in_file, out_file):
         try:
             pickle_serializer.write_int(
                 SpecialLengths.PYTHON_EXCEPTION_THROWN, out_file)
-            pickle_serializer.write_with_length(traceback.format_exc().encode(
-                "utf-8"), out_file, DataType.BLOB)
+            pickle_serializer.write_with_length(traceback.format_exc().encode("utf-8"),
+                                                out_file, DataType.EXCEPTION)
             print(traceback.format_exc(), file=sys.stderr)
         except IOError:
             # JVM closed the socket
