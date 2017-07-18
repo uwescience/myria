@@ -125,8 +125,9 @@ class PickleSerializer(Serializer):
             cls.write_int(DataType.BLOB, stream)
             cls.pickle_and_write(obj, stream)
         elif output_type == DataType.EXCEPTION:
+            assert type(obj) is str
             cls.write_int(len(obj), stream)
-            stream.write(str(obj))
+            stream.write(obj)
 
     @classmethod
     def read_command(cls, stream):
