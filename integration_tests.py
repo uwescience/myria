@@ -387,12 +387,12 @@ T1 = load('{}',csv(schema(a:int,b:int))); T2 = [from T1 emit a, count(*) as c]; 
 
 class ParallelIngestTest(MyriaTestBase):
     def test(self):
-        twitterData = self.get_file_url('testdata/twitter/TwitterK.csv')
+        twitterDataS3 ='s3://uwdb/sampleData/TwitterK.csv'
         query_ingest = """
 T1 = load('{}',csv(schema(a:int,b:int))); T2 = [from T1 emit *]; store(T2, parallelIngest);
-""".format(twitterData)
+""".format(twitterDataS3)
         result = MyriaQuery.submit(query_ingest)
-        self.assertEqual(len(result.to_dict()), 2715)
+        self.assertEqual(len(result.to_dict()), 100)
 
 if __name__ == '__main__':
     unittest.main()
