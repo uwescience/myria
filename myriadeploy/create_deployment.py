@@ -12,14 +12,15 @@ def get_deployment(path, coordinator_hostname, worker_hostnames,
                    database_port=5432, heap_mem_fraction=None, driver_mem=None,
                    master_mem=None, worker_mem=None, master_cores=None,
                    worker_cores=None, debug=False, persist_uri=None,
-                   elastic_mode=False, database_username=None,
-                   database_password=None, coordinator_port=9001,
-                   worker_ports=None, worker_base_port=8001,
-                   worker_directories=None, worker_databases=None):
+                   elastic_mode=False, num_partitions=0,
+                   database_username=None, database_password=None,
+                   coordinator_port=9001, worker_ports=None,
+                   worker_base_port=8001, worker_directories=None,
+                   worker_databases=None):
     """ Generates a Myria deployment file with the given configuration """
     return (_get_header(path, name, rest_port, database_type, database_port,
                         database_username, database_password, debug,
-                        persist_uri, elastic_mode) +
+                        persist_uri, elastic_mode, num_partitions) +
             _get_coordinator(coordinator_hostname, coordinator_port) +
             _get_runtime(heap_mem_fraction, driver_mem, master_mem,
                          worker_mem, master_cores, worker_cores) +
@@ -31,7 +32,7 @@ def get_deployment(path, coordinator_hostname, worker_hostnames,
 def _get_header(path, name='myria', rest_port=8753, database_type='postgresql',
                 database_port=5432, database_username=None,
                 database_password=None, debug=False, persist_uri=None,
-                elastic_mode=False):
+                elastic_mode=False, num_partitions=0):
     """ Generates the header section of a Myria deployment file """
     header = ('[deployment]\n'
               'name = {name}\n'
@@ -52,6 +53,8 @@ def _get_header(path, name='myria', rest_port=8753, database_type='postgresql',
         header += 'persist_uri = %s\n' % persist_uri
     if elastic_mode:
         header += 'elastic_mode = True\n'
+    if num_partitions:
+        header += 'num_partitions = %d\n' % num_partitions
 
     return header + '\n'
 
@@ -193,6 +196,10 @@ def main(argv):
     parser.add_argument(
         '--elastic-mode', dest='elastic_mode', default=False,
         action='store_true', help='Enable elastic mode')
+    parser.add_argument(
+        '--num-partitions', dest='num_partitions', default=0,
+        action='store_true',
+        help='Number of partitions for a cluster in elastic mode')
 
     print get_deployment(**vars(parser.parse_args(argv[1:])))
 

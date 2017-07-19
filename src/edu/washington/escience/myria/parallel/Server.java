@@ -143,6 +143,7 @@ import edu.washington.escience.myria.tools.MyriaGlobalConfigurationModule.FlowCo
 import edu.washington.escience.myria.tools.MyriaGlobalConfigurationModule.FlowControlWriteBufferLowMarkBytes;
 import edu.washington.escience.myria.tools.MyriaGlobalConfigurationModule.MasterHost;
 import edu.washington.escience.myria.tools.MyriaGlobalConfigurationModule.MasterRpcPort;
+import edu.washington.escience.myria.tools.MyriaGlobalConfigurationModule.NumPartitions;
 import edu.washington.escience.myria.tools.MyriaGlobalConfigurationModule.OperatorInputBufferCapacity;
 import edu.washington.escience.myria.tools.MyriaGlobalConfigurationModule.OperatorInputBufferRecoverTrigger;
 import edu.washington.escience.myria.tools.MyriaGlobalConfigurationModule.PersistUri;
@@ -466,6 +467,7 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
    * @param inputBufferRecoverTrigger number of bytes in the input buffer to trigger recovery after overflow
    * @param persistURI the storage endpoint URI for persisting partitioned relations
    * @param enableElasticMode whether to enable elastic mode for the cluster
+   * @param numPartitions number of partitions for a cluster in elastic mode
    * @param injector a Tang injector for instantiating objects from configuration
    */
   @Inject
@@ -483,8 +485,12 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
       @Parameter(OperatorInputBufferRecoverTrigger.class) final int inputBufferRecoverTrigger,
       @Parameter(PersistUri.class) final String persistURI,
       @Parameter(EnableElasticMode.class) final boolean enableElasticMode,
+      @Parameter(NumPartitions.class) final int numPartitions,
       final Injector injector) {
 
+    Preconditions.checkArgument(
+        !enableElasticMode || numPartitions > 0,
+        "NUM_PARTITIONS must be nonzero if elastic mode is enabled.");
     this.instancePath = instancePath;
     this.connectTimeoutMillis = connectTimeoutMillis;
     this.sendBufferSize = sendBufferSize;
@@ -504,6 +510,7 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
     execEnvVars.put(MyriaConstants.EXEC_ENV_VAR_EXECUTION_MODE, getExecutionMode());
     execEnvVars.put(MyriaConstants.EXEC_ENV_VAR_DATABASE_SYSTEM, databaseSystem);
     execEnvVars.put(MyriaConstants.EXEC_ENV_VAR_ELASTIC_MODE, enableElasticMode);
+    execEnvVars.put(MyriaConstants.EXEC_ENV_VAR_NUM_PARTITIONS, numPartitions);
 
     LOGGER.info("Server: Elastic mode enabled: " + enableElasticMode);
     aliveWorkers = Sets.newConcurrentHashSet();
@@ -774,6 +781,16 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
   /** @return the dbms from {@link #execEnvVars}. */
   public String getDBMS() {
     return (String) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_DATABASE_SYSTEM);
+  }
+
+  /** @return elastic mode from {@link #execEnvVars}. */
+  public boolean elasticModeEnabled() {
+    return (boolean) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_ELASTIC_MODE);
+  }
+
+  /** @return number of partitions from {@link #execEnvVars}. */
+  public int numPartitions() {
+    return (int) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_NUM_PARTITIONS);
   }
 
   /**
@@ -1372,7 +1389,16 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
       final int numWorkers,
       final DistributeFunction distributeFunction)
       throws DbException, InterruptedException, URISyntaxException {
-
+    if (!elasticModeEnabled()) {
+      throw new DbException("Cluster must be in elastic mode to ingest persisted dataset.");
+    }
+    if (numPartitions() != numWorkers) {
+      throw new DbException(
+          String.format(
+              "Number of partitions in persisted dataset (%d) must equal number of partitions in cluster (%d).",
+              numWorkers,
+              numPartitions()));
+    }
     Map<Integer, SubQueryPlan> workerPlans = new HashMap<>();
     for (int workerId = 1; workerId <= numWorkers; ++workerId) {
       String partitionUri = getPartitionUri(rootUri, relationKey, workerId);

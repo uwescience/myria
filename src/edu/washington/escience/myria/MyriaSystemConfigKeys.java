@@ -102,4 +102,6 @@ public final class MyriaSystemConfigKeys {
   public static final String PERSIST_URI = "persist_uri";
 
   public static final String ELASTIC_MODE = "elastic_mode";
+
+  public static final String NUM_PARTITIONS = "num_partitions";
 }

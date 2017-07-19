@@ -79,6 +79,11 @@ public final class MyriaConstants {
    */
   public static final String EXEC_ENV_VAR_ELASTIC_MODE = "elastic_mode";
 
+  /**
+   * Number of partitions.
+   */
+  public static final String EXEC_ENV_VAR_NUM_PARTITIONS = "num_partitions";
+
   /** Time interval between two heartbeats. */
   public static final int HEARTBEAT_INTERVAL = 1000;
 

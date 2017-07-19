@@ -226,6 +226,11 @@ public final class MyriaConfigurationParser {
             conf,
             MyriaGlobalConfigurationModule.ENABLE_ELASTIC_MODE,
             getOptional(parser, "deployment", MyriaSystemConfigKeys.ELASTIC_MODE));
+    conf =
+        setOptional(
+            conf,
+            MyriaGlobalConfigurationModule.NUM_PARTITIONS,
+            getOptional(parser, "deployment", MyriaSystemConfigKeys.NUM_PARTITIONS));
 
     return conf;
   }
