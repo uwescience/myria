@@ -44,7 +44,6 @@ public final class ConstantEvaluator extends GenericEvaluator {
       final Expression expression, final ExpressionOperatorParameter parameters)
       throws DbException {
     super(expression, parameters);
-    ;
     Preconditions.checkArgument(
         expression.isConstant(), "Expression %s does not evaluate to a constant", expression);
     Preconditions.checkArgument(
