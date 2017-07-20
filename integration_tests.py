@@ -385,6 +385,22 @@ T1 = load('{}',csv(schema(a:int,b:int))); T2 = [from T1 emit a, count(*) as c]; 
         self.assertListOfDictsEqual(
             count_result.to_dict(), uda_result.to_dict())
 
+class ParallelIngestTest(MyriaTestBase):
+    def smallFile(self):
+        twitterDataS3 ='s3://uwdb/sampleData/TwitterK.csv'
+        query_ingest = """
+T1 = load('{}',csv(schema(a:int,b:int))); T2 = [from T1 emit *]; store(T2, parallelIngest);
+""".format(twitterDataS3)
+        result = MyriaQuery.submit(query_ingest)
+        self.assertEqual(len(result.to_dict()), 100)
+
+    def largeFile(self):
+        twitterDataS3 ='s3://uwdb/sampleData/TwitterK-Large-100MB.txt'
+        query_ingest = """
+T1 = load('{}',csv(schema(a:int,b:int))); T2 = [from T1 emit *]; store(T2, parallelIngest);
+""".format(twitterDataS3)
+        result = MyriaQuery.submit(query_ingest)
+        self.assertEqual(len(result.to_dict()), 15475500)
 
 if __name__ == '__main__':
     unittest.main()

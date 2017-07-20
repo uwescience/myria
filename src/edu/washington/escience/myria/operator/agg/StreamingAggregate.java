@@ -1,6 +1,5 @@
 package edu.washington.escience.myria.operator.agg;
 
-import java.io.IOException;
 import java.util.List;
 
 import javax.annotation.Nonnull;
@@ -41,7 +40,6 @@ public class StreamingAggregate extends Aggregate {
    *
    * @throws DbException if any error occurs.
    * @return result tuple batch
-   * @throws IOException
    */
   @Override
   protected TupleBatch fetchNextReady() throws DbException {

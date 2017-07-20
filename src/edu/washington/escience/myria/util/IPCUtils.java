@@ -3,6 +3,7 @@ package edu.washington.escience.myria.util;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.NotSerializableException;
+import java.io.ObjectOutput;
 import java.io.ObjectOutputStream;
 import java.util.Arrays;
 import java.util.List;
@@ -26,6 +27,7 @@ import edu.washington.escience.myria.parallel.SocketInfo;
 import edu.washington.escience.myria.parallel.SubQueryId;
 import edu.washington.escience.myria.parallel.SubQueryPlan;
 import edu.washington.escience.myria.parallel.ipc.StreamOutputChannel;
+import edu.washington.escience.myria.proto.ControlProto;
 import edu.washington.escience.myria.proto.ControlProto.ControlMessage;
 import edu.washington.escience.myria.proto.DataProto.ColumnMessage;
 import edu.washington.escience.myria.proto.DataProto.DataMessage;
@@ -131,16 +133,31 @@ public final class IPCUtils {
 
   /**
    * @param workerId the id of the worker to be removed.
+   * @param ackedWorkerIds the ids of all workers who have acked the removed worker.
+   * @param workerException the exception associated with the failed worker.
    * @return the remove worker TM.
+   * @throws IOException if serializing {@link workerException} fails.
    * */
   public static TransportMessage removeWorkerTM(
-      final int workerId, @Nullable final Set<Integer> ackedWorkerIds) {
+      final int workerId,
+      @Nullable final Set<Integer> ackedWorkerIds,
+      @Nullable final Throwable workerException)
+      throws IOException {
     ControlMessage.Builder cmBuilder =
         ControlMessage.newBuilder()
             .setType(ControlMessage.Type.REMOVE_WORKER)
             .setWorkerId(workerId);
     if (ackedWorkerIds != null) {
       cmBuilder.addAllAckedWorkerIds(ackedWorkerIds);
+    }
+    if (workerException != null) {
+      try (ByteArrayOutputStream bos = new ByteArrayOutputStream();
+          ObjectOutput out = new ObjectOutputStream(bos)) {
+        out.writeObject(workerException);
+        cmBuilder.setWorkerException(
+            ControlProto.Exception.newBuilder()
+                .setException(ByteString.copyFrom(bos.toByteArray())));
+      }
     }
     return TransportMessage.newBuilder()
         .setType(TransportMessage.Type.CONTROL)

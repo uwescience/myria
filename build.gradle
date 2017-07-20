@@ -3,6 +3,7 @@ buildscript {
   dependencies {
     classpath 'org.kt3k.gradle.plugin:coveralls-gradle-plugin:2.0.0'
     classpath 'gradle.plugin.com.github.sherter.google-java-format:google-java-format-gradle-plugin:0.2'
+    classpath 'org.owasp:dependency-check-gradle:1.4.5'
   }
 }
 
@@ -24,6 +25,7 @@ apply plugin: 'com.github.kt3k.coveralls'
 /* Maven shade plugin equivalent */
 apply plugin: 'com.github.johnrengelman.shadow'
 apply plugin: 'com.github.sherter.google-java-format'
+apply plugin: 'org.owasp.dependencycheck'
 
 /* Set up group and version info for myria */
 archivesBaseName = "myria"
@@ -81,9 +83,6 @@ test.dependsOn verifyFormatting
 
 /* Where we will fetch external JAR files from. */
 repositories {
-  /* We need to override the official Apache repo for our custom Hadoop jars */
-  /* TODO: remove when we upgrade to Hadoop 2.8 (fixes HADOOP-12807) */
-  maven { url "https://raw.github.com/uwescience/hadoop/mvn-repo" }
   mavenCentral() /* The standard Java Maven repository. */
   maven { url "http://clojars.org/repo" } /* Clojars, for MonetDB */
   flatDir {
@@ -112,7 +111,7 @@ ext.jmxetricsVersion = "1.0.8"
 /* ext.reefVersion = "0.15.0" */
 /* for local or development REEF builds */
 ext.reefVersion = "0.16.0-SNAPSHOT"
-ext.hadoopVersion = "2.7.2"
+ext.hadoopVersion = "2.8.0"
 
 dependencies {
 
@@ -171,7 +170,9 @@ dependencies {
   runtime "info.ganglia.jmxetric:jmxetric:${jmxetricsVersion}"
 
   compile "org.apache.commons:commons-csv:1.1"
-  
+
+  compile "commons-httpclient:commons-httpclient:3.1"
+
   // Expression compiler
   compile "org.codehaus.janino:janino:2.7.7"
 

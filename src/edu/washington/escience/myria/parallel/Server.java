@@ -4,6 +4,7 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.ObjectInput;
 import java.io.ObjectInputStream;
 import java.net.BindException;
 import java.net.URISyntaxException;
@@ -95,7 +96,7 @@ import edu.washington.escience.myria.io.ByteSink;
 import edu.washington.escience.myria.io.DataSink;
 import edu.washington.escience.myria.io.UriSink;
 import edu.washington.escience.myria.operator.Apply;
-import edu.washington.escience.myria.operator.CSVFileScanFragment;
+import edu.washington.escience.myria.operator.CSVFragmentTupleSource;
 import edu.washington.escience.myria.operator.DbCreateFunction;
 import edu.washington.escience.myria.operator.DbCreateIndex;
 import edu.washington.escience.myria.operator.DbCreateView;
@@ -119,6 +120,7 @@ import edu.washington.escience.myria.operator.network.GenericShuffleProducer;
 import edu.washington.escience.myria.operator.network.distribute.BroadcastDistributeFunction;
 import edu.washington.escience.myria.operator.network.distribute.DistributeFunction;
 import edu.washington.escience.myria.operator.network.distribute.HowDistributed;
+import edu.washington.escience.myria.parallel.Worker.QueryCommand;
 import edu.washington.escience.myria.parallel.ipc.IPCConnectionPool;
 import edu.washington.escience.myria.parallel.ipc.IPCMessage;
 import edu.washington.escience.myria.parallel.ipc.InJVMLoopbackChannelSink;
@@ -289,7 +291,18 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
             LOGGER.info(
                 "Driver reported worker {} as dead, removing from alive workers.", workerId);
             aliveWorkers.remove(workerId);
-            queryManager.workerDied(workerId);
+            Throwable workerException = null;
+            if (controlM.hasWorkerException()) {
+              try (ByteArrayInputStream bis =
+                      new ByteArrayInputStream(
+                          controlM.getWorkerException().getException().toByteArray());
+                  ObjectInput in = new ObjectInputStream(bis)) {
+                workerException = (Throwable) (in.readObject());
+              } catch (IOException | ClassNotFoundException e) {
+                LOGGER.error("Error decoding worker exception", e);
+              }
+            }
+            queryManager.workerDied(workerId, workerException);
             connectionPool
                 .removeRemote(workerId)
                 .addListener(
@@ -899,8 +912,8 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
 
     Map<Integer, SubQueryPlan> workerPlans = new HashMap<>();
     for (int workerID = 1; workerID <= workersArray.length; workerID++) {
-      CSVFileScanFragment scanFragment =
-          new CSVFileScanFragment(
+      CSVFragmentTupleSource scanFragment =
+          new CSVFragmentTupleSource(
               s3Source, schema, workersArray, delimiter, quote, escape, numberOfSkippedLines);
       workerPlans.put(
           workersArray[workerID - 1],

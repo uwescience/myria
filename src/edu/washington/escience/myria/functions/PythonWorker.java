@@ -152,8 +152,10 @@ public class PythonWorker {
    * @throws IOException in case of error.
    */
   private void startPythonWorker() throws IOException {
-    String pythonWorker = MyriaConstants.PYTHONWORKER;
-    ProcessBuilder pb = new ProcessBuilder(MyriaConstants.PYTHONEXEC, "-m", pythonWorker);
+    String myriaPythonWorker =
+        MyriaConstants.PYTHON_WORKER_PATH + MyriaConstants.PYTHON_WORKER_FILE;
+
+    ProcessBuilder pb = new ProcessBuilder(MyriaConstants.PYTHON_EXEC, myriaPythonWorker);
     final Map<String, String> env = pb.environment();
 
     env.put("PYTHONUNBUFFERED", "YES");
