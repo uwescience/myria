@@ -599,15 +599,7 @@ public final class MyriaDriver {
       if (jvmPort > 0) {
         jvmOptions.add("-JVMPort=" + jvmPort);
       } else {
-        LOGGER.debug(
-            "JVM ports not specified, using default base port "
-                + MyriaConstants.DEFAULT_ELASTIC_JVM_BASE_PORT
-                + " + worker Id as the port numbers");
-        final int workerId =
-            Tang.Factory.getTang()
-                .newInjector(workerConf)
-                .getNamedInstance(MyriaWorkerConfigurationModule.WorkerId.class);
-        jvmOptions.add("-JVMPort=" + MyriaConstants.DEFAULT_ELASTIC_JVM_BASE_PORT + workerId);
+        throw new InjectionException("-ElasticMem is enabled but JVM ports are not specified");
       }
     }
     final JVMProcess jvmProcess =

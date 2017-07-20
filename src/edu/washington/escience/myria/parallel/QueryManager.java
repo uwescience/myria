@@ -335,29 +335,19 @@ public class QueryManager {
       task = queryState.nextSubQuery();
     } catch (QueryKilledException qke) {
       queryState.markKilled();
-      triggerWorkerSystemGC();
       finishQuery(queryState);
       return null;
     } catch (RuntimeException | DbException e) {
       queryState.markFailed(e);
-      triggerWorkerSystemGC();
       finishQuery(queryState);
       return null;
     }
     if (task == null) {
       queryState.markSuccess();
-      triggerWorkerSystemGC();
       finishQuery(queryState);
       return null;
     }
     return submitSubQuery(queryState);
-  }
-
-  /* Trigger GC on workers to avoid affecting the performance of the next query. */
-  private void triggerWorkerSystemGC() {
-    for (int workerId : server.getAliveWorkers()) {
-      server.getIPCConnectionPool().sendShortMessage(workerId, IPCUtils.CONTROL_SYSTEM_GC);
-    }
   }
 
   /**
