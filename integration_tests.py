@@ -402,5 +402,38 @@ T1 = load('{}',csv(schema(a:int,b:int))); T2 = [from T1 emit *]; store(T2, paral
         result = MyriaQuery.submit(query_ingest)
         self.assertEqual(len(result.to_dict()), 15475500)
 
+
+class JoinConditionOrderTest(MyriaTestBase):
+    def test(self):
+        nodesTable = self.get_file_url('testdata/cosmo/nodesTable.csv')
+        edgesTable = self.get_file_url('testdata/cosmo/edgesTable.csv')
+        loadData = """
+T1 = load('{}',csv(schema(grpID:int, timeStep:int, totalMass:float, totalParticles:int), skip=1));
+store(T1, nodesTable, hash(grpID, timeStep));
+
+T2 = load('{}',csv(schema(currentGroup:int, currentTime:int, nextGroup:int, nowGroup:int, sharedParticles:int), skip=1));
+store(T2, edgesTable, round_robin());
+""".format(nodesTable, edgesTable)
+        MyriaQuery.submit(loadData)
+        order1Query = """
+T1 = select currentGroup, grpID, timeStep, nowGroup, sharedParticles
+    from scan(nodesTable) as n, scan(edgesTable) as e
+    where n.timeStep = e.currentTime
+    and n.grpID = e.currentGroup;
+store(T1, order1Result);
+"""
+        order1Result = MyriaQuery.submit(order1Query)
+        order2Query = """
+T2 = select currentGroup, grpID, timeStep, nowGroup, sharedParticles
+    from scan(nodesTable) as n, scan(edgesTable) as e
+    where n.grpID = e.currentGroup
+    and n.timeStep = e.currentTime;
+store(T2, order2Result);
+"""
+        order2Result = MyriaQuery.submit(order2Query)
+        self.assertListOfDictsEqual(
+            order1Result.to_dict(), order2Result.to_dict())
+
+
 if __name__ == '__main__':
     unittest.main()
