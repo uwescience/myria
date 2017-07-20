@@ -13,7 +13,7 @@ from google.protobuf import descriptor_pb2
 DESCRIPTOR = _descriptor.FileDescriptor(
   name='control.proto',
   package='',
-  serialized_pb='\n\rcontrol.proto\"\xe3\x02\n\x0e\x43ontrolMessage\x12\"\n\x04type\x18\x01 \x02(\x0e\x32\x14.ControlMessage.Type\x12\x11\n\tworker_id\x18\x02 \x01(\x05\x12#\n\x0eremote_address\x18\x03 \x01(\x0b\x32\x0b.SocketInfo\x12&\n\x0eresource_stats\x18\x04 \x03(\x0b\x32\x0e.ResourceStats\x12\x18\n\x10\x61\x63ked_worker_ids\x18\x05 \x03(\x05\x12$\n\x10worker_exception\x18\x06 \x01(\x0b\x32\n.Exception\"\x8c\x01\n\x04Type\x12\x0c\n\x08SHUTDOWN\x10\x01\x12\x14\n\x10WORKER_HEARTBEAT\x10\x02\x12\x11\n\rREMOVE_WORKER\x10\x03\x12\x0e\n\nADD_WORKER\x10\x04\x12\x15\n\x11REMOVE_WORKER_ACK\x10\x05\x12\x12\n\x0e\x41\x44\x44_WORKER_ACK\x10\x06\x12\x12\n\x0eRESOURCE_STATS\x10\x07\"\x1e\n\tException\x12\x11\n\texception\x18\x01 \x02(\x0c\"(\n\nSocketInfo\x12\x0c\n\x04host\x18\x01 \x02(\t\x12\x0c\n\x04port\x18\x02 \x02(\x05\"y\n\rResourceStats\x12\x11\n\ttimestamp\x18\x01 \x02(\x03\x12\x0c\n\x04opId\x18\x02 \x02(\x05\x12\x13\n\x0bmeasurement\x18\x03 \x02(\t\x12\r\n\x05value\x18\x04 \x02(\x03\x12\x0f\n\x07queryId\x18\x05 \x02(\x03\x12\x12\n\nsubqueryId\x18\x06 \x02(\x03\x42\x33\n#edu.washington.escience.myria.protoB\x0c\x43ontrolProto')
+  serialized_pb='\n\rcontrol.proto\"\xf2\x02\n\x0e\x43ontrolMessage\x12\"\n\x04type\x18\x01 \x02(\x0e\x32\x14.ControlMessage.Type\x12\x11\n\tworker_id\x18\x02 \x01(\x05\x12#\n\x0eremote_address\x18\x03 \x01(\x0b\x32\x0b.SocketInfo\x12&\n\x0eresource_stats\x18\x04 \x03(\x0b\x32\x0e.ResourceStats\x12\x18\n\x10\x61\x63ked_worker_ids\x18\x05 \x03(\x05\x12$\n\x10worker_exception\x18\x06 \x01(\x0b\x32\n.Exception\"\x9b\x01\n\x04Type\x12\x0c\n\x08SHUTDOWN\x10\x01\x12\x14\n\x10WORKER_HEARTBEAT\x10\x02\x12\x11\n\rREMOVE_WORKER\x10\x03\x12\x0e\n\nADD_WORKER\x10\x04\x12\x15\n\x11REMOVE_WORKER_ACK\x10\x05\x12\x12\n\x0e\x41\x44\x44_WORKER_ACK\x10\x06\x12\x12\n\x0eRESOURCE_STATS\x10\x07\x12\r\n\tSYSTEM_GC\x10\x08\"\x1e\n\tException\x12\x11\n\texception\x18\x01 \x02(\x0c\"(\n\nSocketInfo\x12\x0c\n\x04host\x18\x01 \x02(\t\x12\x0c\n\x04port\x18\x02 \x02(\x05\"y\n\rResourceStats\x12\x11\n\ttimestamp\x18\x01 \x02(\x03\x12\x0c\n\x04opId\x18\x02 \x02(\x05\x12\x13\n\x0bmeasurement\x18\x03 \x02(\t\x12\r\n\x05value\x18\x04 \x02(\x03\x12\x0f\n\x07queryId\x18\x05 \x02(\x03\x12\x12\n\nsubqueryId\x18\x06 \x02(\x03\x42\x33\n#edu.washington.escience.myria.protoB\x0c\x43ontrolProto')
 
 
 
@@ -51,11 +51,15 @@ _CONTROLMESSAGE_TYPE = _descriptor.EnumDescriptor(
       name='RESOURCE_STATS', index=6, number=7,
       options=None,
       type=None),
+    _descriptor.EnumValueDescriptor(
+      name='SYSTEM_GC', index=7, number=8,
+      options=None,
+      type=None),
   ],
   containing_type=None,
   options=None,
   serialized_start=233,
-  serialized_end=373,
+  serialized_end=388,
 )
 
 
@@ -119,7 +123,7 @@ _CONTROLMESSAGE = _descriptor.Descriptor(
   is_extendable=False,
   extension_ranges=[],
   serialized_start=18,
-  serialized_end=373,
+  serialized_end=388,
 )
 
 
@@ -146,8 +150,8 @@ _EXCEPTION = _descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=375,
-  serialized_end=405,
+  serialized_start=390,
+  serialized_end=420,
 )
 
 
@@ -181,8 +185,8 @@ _SOCKETINFO = _descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=407,
-  serialized_end=447,
+  serialized_start=422,
+  serialized_end=462,
 )
 
 
@@ -244,8 +248,8 @@ _RESOURCESTATS = _descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=449,
-  serialized_end=570,
+  serialized_start=464,
+  serialized_end=585,
 )
 
 _CONTROLMESSAGE.fields_by_name['type'].enum_type = _CONTROLMESSAGE_TYPE

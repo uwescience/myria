@@ -346,6 +346,14 @@ public final class ControlProto {
        * </pre>
        */
       RESOURCE_STATS(6, 7),
+      /**
+       * <code>SYSTEM_GC = 8;</code>
+       *
+       * <pre>
+       * master -&gt; worker
+       * </pre>
+       */
+      SYSTEM_GC(7, 8),
       ;
 
       /**
@@ -404,6 +412,14 @@ public final class ControlProto {
        * </pre>
        */
       public static final int RESOURCE_STATS_VALUE = 7;
+      /**
+       * <code>SYSTEM_GC = 8;</code>
+       *
+       * <pre>
+       * master -&gt; worker
+       * </pre>
+       */
+      public static final int SYSTEM_GC_VALUE = 8;
 
 
       public final int getNumber() { return value; }
@@ -417,6 +433,7 @@ public final class ControlProto {
           case 5: return REMOVE_WORKER_ACK;
           case 6: return ADD_WORKER_ACK;
           case 7: return RESOURCE_STATS;
+          case 8: return SYSTEM_GC;
           default: return null;
         }
       }
@@ -3676,22 +3693,22 @@ public final class ControlProto {
       descriptor;
   static {
     java.lang.String[] descriptorData = {
-      "\n\rcontrol.proto\"\343\002\n\016ControlMessage\022\"\n\004ty" +
+      "\n\rcontrol.proto\"\362\002\n\016ControlMessage\022\"\n\004ty" +
       "pe\030\001 \002(\0162\024.ControlMessage.Type\022\021\n\tworker" +
       "_id\030\002 \001(\005\022#\n\016remote_address\030\003 \001(\0132\013.Sock" +
       "etInfo\022&\n\016resource_stats\030\004 \003(\0132\016.Resourc" +
       "eStats\022\030\n\020acked_worker_ids\030\005 \003(\005\022$\n\020work" +
-      "er_exception\030\006 \001(\0132\n.Exception\"\214\001\n\004Type\022" +
+      "er_exception\030\006 \001(\0132\n.Exception\"\233\001\n\004Type\022" +
       "\014\n\010SHUTDOWN\020\001\022\024\n\020WORKER_HEARTBEAT\020\002\022\021\n\rR" +
       "EMOVE_WORKER\020\003\022\016\n\nADD_WORKER\020\004\022\025\n\021REMOVE" +
       "_WORKER_ACK\020\005\022\022\n\016ADD_WORKER_ACK\020\006\022\022\n\016RES" +
-      "OURCE_STATS\020\007\"\036\n\tException\022\021\n\texception\030",
-      "\001 \002(\014\"(\n\nSocketInfo\022\014\n\004host\030\001 \002(\t\022\014\n\004por" +
-      "t\030\002 \002(\005\"y\n\rResourceStats\022\021\n\ttimestamp\030\001 " +
-      "\002(\003\022\014\n\004opId\030\002 \002(\005\022\023\n\013measurement\030\003 \002(\t\022\r" +
-      "\n\005value\030\004 \002(\003\022\017\n\007queryId\030\005 \002(\003\022\022\n\nsubque" +
-      "ryId\030\006 \002(\003B3\n#edu.washington.escience.my" +
-      "ria.protoB\014ControlProto"
+      "OURCE_STATS\020\007\022\r\n\tSYSTEM_GC\020\010\"\036\n\tExceptio",
+      "n\022\021\n\texception\030\001 \002(\014\"(\n\nSocketInfo\022\014\n\004ho" +
+      "st\030\001 \002(\t\022\014\n\004port\030\002 \002(\005\"y\n\rResourceStats\022" +
+      "\021\n\ttimestamp\030\001 \002(\003\022\014\n\004opId\030\002 \002(\005\022\023\n\013meas" +
+      "urement\030\003 \002(\t\022\r\n\005value\030\004 \002(\003\022\017\n\007queryId\030" +
+      "\005 \002(\003\022\022\n\nsubqueryId\030\006 \002(\003B3\n#edu.washing" +
+      "ton.escience.myria.protoB\014ControlProto"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
       new com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {

@@ -407,7 +407,7 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
   public static final int NUM_SECONDS_FOR_ELEGANT_CLEANUP = 10;
 
   /** @return my connection pool for IPC. */
-  IPCConnectionPool getIPCConnectionPool() {
+  public IPCConnectionPool getIPCConnectionPool() {
     return connectionPool;
   }
 
