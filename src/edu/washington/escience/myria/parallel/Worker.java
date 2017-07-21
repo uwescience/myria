@@ -53,7 +53,6 @@ import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.MyriaConstants.FTMode;
 import edu.washington.escience.myria.accessmethod.ConnectionInfo;
 import edu.washington.escience.myria.coordinator.ConfigFileException;
-import edu.washington.escience.myria.functions.PythonFunctionRegistrar;
 import edu.washington.escience.myria.parallel.ipc.IPCConnectionPool;
 import edu.washington.escience.myria.parallel.ipc.InJVMLoopbackChannelSink;
 import edu.washington.escience.myria.profiling.ProfilingLogger;
@@ -82,6 +81,7 @@ import edu.washington.escience.myria.tools.MyriaWorkerConfigurationModule.Worker
 import edu.washington.escience.myria.util.IPCUtils;
 import edu.washington.escience.myria.util.concurrent.RenamingThreadFactory;
 import edu.washington.escience.myria.util.concurrent.ThreadAffinityFixedRoundRobinExecutionPool;
+import edu.washington.escience.myria.functions.PythonFunctionRegistrar;
 
 /**
  * Workers do the real query execution. A query received by the server will be pre-processed and then dispatched to the
@@ -149,6 +149,7 @@ public final class Worker implements Task, TaskMessageSource {
           ControlMessage cm = null;
           try {
             while ((cm = controlMessageQueue.take()) != null) {
+              int workerId = cm.getWorkerId();
               switch (cm.getType()) {
                 case SHUTDOWN:
                   if (LOGGER.isInfoEnabled()) {
@@ -158,19 +159,12 @@ public final class Worker implements Task, TaskMessageSource {
                   abruptShutdown = false;
                   break;
                 case ADD_WORKER:
-                  int workerId = cm.getWorkerId();
                   if (LOGGER.isInfoEnabled()) {
                     LOGGER.info("received ADD_WORKER " + workerId);
                   }
                   connectionPool.putRemote(
                       workerId, SocketInfo.fromProtobuf(cm.getRemoteAddress()));
                   sendMessageToMaster(IPCUtils.addWorkerAckTM(workerId));
-                  break;
-                case SYSTEM_GC:
-                  if (LOGGER.isDebugEnabled()) {
-                    LOGGER.debug("Trigger System GC");
-                  }
-                  System.gc();
                   break;
                 default:
                   if (LOGGER.isErrorEnabled()) {
@@ -254,6 +248,7 @@ public final class Worker implements Task, TaskMessageSource {
                 }
                 q = null;
               }
+
               break;
             default:
               break;

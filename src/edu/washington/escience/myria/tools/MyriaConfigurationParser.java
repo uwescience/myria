@@ -232,7 +232,6 @@ public final class MyriaConfigurationParser {
               .set(MyriaWorkerConfigurationModule.WORKER_ID, workerId + "")
               .set(MyriaWorkerConfigurationModule.WORKER_HOST, getHostname(parser, workerId))
               .set(MyriaWorkerConfigurationModule.WORKER_PORT, getPort(parser, workerId))
-              .set(MyriaWorkerConfigurationModule.WORKER_JVM_PORT, getJVMPort(parser, workerId))
               .set(
                   MyriaWorkerConfigurationModule.WORKER_STORAGE_DB_NAME,
                   getWorkerDatabaseName(parser, workerId))
@@ -320,26 +319,6 @@ public final class MyriaConfigurationParser {
     } else {
       return Integer.parseInt(getRequired(parser, "workers", nodeId + "").split(":")[1]);
     }
-  }
-
-  /**
-   *
-   * @param nodeId the worker/master ID
-   * @return the port number
-   * @throws ConfigFileException if error occurred when getting the value
-   */
-  private static int getJVMPort(final ConfigParser parser, final int nodeId)
-      throws ConfigFileException {
-    String[] args;
-    if (nodeId == MyriaConstants.MASTER_ID) {
-      args = getRequired(parser, "master", nodeId + "").split(":");
-    } else {
-      args = getRequired(parser, "workers", nodeId + "").split(":");
-    }
-    if (args.length <= 2) {
-      return 0;
-    }
-    return Integer.parseInt(args[2]);
   }
 
   /**

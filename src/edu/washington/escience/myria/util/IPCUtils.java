@@ -492,13 +492,6 @@ public final class IPCUtils {
         .build();
   }
 
-  /** a SYSTEM GC message. * */
-  public static TransportMessage CONTROL_SYSTEM_GC =
-      TransportMessage.newBuilder()
-          .setType(TransportMessage.Type.CONTROL)
-          .setControlMessage(ControlMessage.newBuilder().setType(ControlMessage.Type.SYSTEM_GC))
-          .build();
-
   /**
    * @param taskId the query/subquery task to be killed.
    * @return a query ready TM.

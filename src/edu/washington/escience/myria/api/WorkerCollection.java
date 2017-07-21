@@ -14,7 +14,6 @@ import javax.ws.rs.core.Response.Status;
 
 import edu.washington.escience.myria.parallel.Server;
 import edu.washington.escience.myria.parallel.SocketInfo;
-import edu.washington.escience.myria.util.IPCUtils;
 
 /**
  * This is the class that handles API calls that return workers.
@@ -64,21 +63,5 @@ public final class WorkerCollection {
     }
     /* Don't cache the answer. */
     return Response.ok(ret).cacheControl(MyriaApiUtils.doNotCache()).build();
-  }
-
-  /**
-   * @param workerId identifier of the worker.
-   * @return an HTTP OK
-   */
-  @GET
-  @Path("/sysgc-{workerId:\\d+}")
-  public Response callWorkerSysGC(@PathParam("workerId") final int workerId) {
-    SocketInfo workerInfo = server.getWorkers().get(workerId);
-    if (workerInfo == null) {
-      /* Not found, throw a 404 (Not Found) */
-      throw new MyriaApiException(Status.NOT_FOUND, "Worker " + workerId);
-    }
-    server.getIPCConnectionPool().sendShortMessage(workerId, IPCUtils.CONTROL_SYSTEM_GC);
-    return Response.ok().build();
   }
 }
