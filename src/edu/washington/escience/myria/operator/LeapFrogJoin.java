@@ -8,11 +8,12 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 
+import org.eclipse.collections.impl.list.mutable.primitive.IntArrayList;
+
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import com.gs.collections.impl.list.mutable.primitive.IntArrayList;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.Schema;

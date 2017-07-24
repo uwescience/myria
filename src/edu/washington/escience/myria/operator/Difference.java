@@ -3,9 +3,10 @@ package edu.washington.escience.myria.operator;
 import java.util.BitSet;
 import java.util.List;
 
+import org.eclipse.collections.impl.list.mutable.primitive.IntArrayList;
+import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap;
+
 import com.google.common.collect.ImmutableMap;
-import com.gs.collections.impl.list.mutable.primitive.IntArrayList;
-import com.gs.collections.impl.map.mutable.primitive.IntObjectHashMap;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.Schema;

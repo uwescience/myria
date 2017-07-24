@@ -139,8 +139,8 @@ dependencies {
 
   compile "io.netty:netty:3.9.6.Final"
 
-  compile "com.goldmansachs:gs-collections:5.1.0"
-  compile "com.goldmansachs:gs-collections-api:5.1.0"
+  compile 'org.eclipse.collections:eclipse-collections-api:8.2.0'
+  compile 'org.eclipse.collections:eclipse-collections:8.2.0'
 
   compile "joda-time:joda-time:2.6"
 
