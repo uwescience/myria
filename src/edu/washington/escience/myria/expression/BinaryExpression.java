@@ -89,7 +89,17 @@ public abstract class BinaryExpression extends ExpressionOperator {
    */
   protected final String getObjectComparisonString(
       final SimplePredicate.Op op, final ExpressionOperatorParameter parameters) {
-    return new StringBuilder("(")
+    if (op == SimplePredicate.Op.LIKE) {
+      return new StringBuilder("(")
+          .append(getLeft().getJavaString(parameters))
+          .append(".indexOf(")
+          .append(getRight().getJavaString(parameters))
+          .append(')')
+          .append(">=0")
+          .append(")")
+          .toString();
+    } else
+      return new StringBuilder("(")
         .append(getLeft().getJavaString(parameters))
         .append(".compareTo(")
         .append(getRight().getJavaString(parameters))
