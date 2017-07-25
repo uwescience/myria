@@ -2,7 +2,6 @@ package edu.washington.escience.myria.parallel;
 
 import java.io.IOException;
 import java.net.URI;
-import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Queue;
@@ -20,9 +19,6 @@ import javax.annotation.Nonnull;
 import javax.annotation.concurrent.GuardedBy;
 import javax.inject.Inject;
 import javax.ws.rs.core.UriBuilder;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.core.Response;
 
 import org.apache.commons.io.FilenameUtils;
 import org.apache.reef.tang.Configuration;
@@ -54,6 +50,7 @@ import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
 import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
 import org.jboss.netty.handler.execution.OrderedMemoryAwareThreadPoolExecutor;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.common.util.concurrent.Striped;
 import com.google.protobuf.InvalidProtocolBufferException;
 
@@ -63,6 +60,7 @@ import edu.washington.escience.myria.MyriaConstants.FTMode;
 import edu.washington.escience.myria.accessmethod.ConnectionInfo;
 import edu.washington.escience.myria.api.WorkerApplication;
 import edu.washington.escience.myria.coordinator.ConfigFileException;
+import edu.washington.escience.myria.functions.PythonFunctionRegistrar;
 import edu.washington.escience.myria.parallel.ipc.IPCConnectionPool;
 import edu.washington.escience.myria.parallel.ipc.InJVMLoopbackChannelSink;
 import edu.washington.escience.myria.profiling.ProfilingLogger;
@@ -92,7 +90,6 @@ import edu.washington.escience.myria.tools.MyriaWorkerConfigurationModule.Worker
 import edu.washington.escience.myria.util.IPCUtils;
 import edu.washington.escience.myria.util.concurrent.RenamingThreadFactory;
 import edu.washington.escience.myria.util.concurrent.ThreadAffinityFixedRoundRobinExecutionPool;
-import edu.washington.escience.myria.functions.PythonFunctionRegistrar;
 
 /**
  * Workers do the real query execution. A query received by the server will be pre-processed and then dispatched to the
@@ -281,10 +278,12 @@ public final class Worker implements Task, TaskMessageSource {
    * @param qid query id.
    * @return the current hash table stats of the query.
    */
-  public String getHashTableStats(final long qid) {
-    if (!activeQueries.containsKey(qid)) return "";
+  public Map<String, Map<String, Integer>> getHashTableStats(final long qid) {
+    if (!activeQueries.containsKey(qid)) return ImmutableMap.of();
     SubQueryId subQueryId = activeQueries.get(qid);
-    if (!executingSubQueries.containsKey(subQueryId)) return "";
+    if (!executingSubQueries.containsKey(subQueryId)) {
+      return ImmutableMap.of();
+    }
     return executingSubQueries.get(subQueryId).dumpHashTableStats();
   }
 

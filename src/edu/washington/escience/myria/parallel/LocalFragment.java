@@ -938,12 +938,17 @@ public final class LocalFragment {
     return ret;
   }
 
-  public String dumpHashTableStats(final Operator op) {
-    String ret = "";
+  /**
+   * 
+   * @param op the operator
+   * @return the hash table stats of the operators that are children of op
+   */
+  public Map<String, Map<String, Integer>> dumpHashTableStats(final Operator op) {
+    Map<String, Map<String, Integer>> ret = new HashMap<String, Map<String, Integer>>();
     for (Operator o : op.getChildren()) {
-      ret += dumpHashTableStats(o);
+      ret.putAll(dumpHashTableStats(o));
     }
-    ret += op.dumpHashTableStats();
+    ret.putAll(op.dumpHashTableStats());
     return ret;
   }
 }

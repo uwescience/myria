@@ -2,8 +2,10 @@ package edu.washington.escience.myria.parallel;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.Timer;
 import java.util.concurrent.ConcurrentHashMap;
@@ -352,10 +354,13 @@ public class WorkerSubQuery extends LocalSubQuery {
     return ret;
   }
 
-  public String dumpHashTableStats() {
-    String ret = "";
+  /**
+   * @return the hash table stats of the subquery.
+   */
+  public Map<String, Map<String, Integer>> dumpHashTableStats() {
+    Map<String, Map<String, Integer>> ret = new HashMap<String, Map<String, Integer>>();
     for (LocalFragment t : fragments) {
-      ret += t.dumpHashTableStats(t.getRootOp());
+      ret.putAll(t.dumpHashTableStats(t.getRootOp()));
     }
     return ret;
   }

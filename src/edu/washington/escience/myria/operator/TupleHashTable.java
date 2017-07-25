@@ -1,12 +1,15 @@
 package edu.washington.escience.myria.operator;
 
 import java.io.Serializable;
+import java.util.HashMap;
+import java.util.Map;
 
-import com.gs.collections.api.iterator.IntIterator;
-import com.gs.collections.impl.list.mutable.primitive.IntArrayList;
-import com.gs.collections.impl.map.mutable.primitive.IntObjectHashMap;
+import org.eclipse.collections.api.iterator.IntIterator;
+import org.eclipse.collections.impl.list.mutable.primitive.IntArrayList;
+import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap;
 
 import edu.washington.escience.myria.Schema;
+import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.storage.MutableTupleBuffer;
 import edu.washington.escience.myria.storage.ReadableTable;
 import edu.washington.escience.myria.storage.TupleBatch;
@@ -16,16 +19,20 @@ import edu.washington.escience.myria.util.HashUtils;
 /**
  * An abstraction of a hash table of tuples.
  */
-public final class TupleHashTable implements Serializable {
+public class TupleHashTable implements Serializable {
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
 
   /** Map from hash codes to indices. */
   private transient IntObjectHashMap<IntArrayList> keyHashCodesToIndices;
   /** The table containing keys and values. */
-  private transient MutableTupleBuffer data;
+  protected transient MutableTupleBuffer data;
   /** Key column indices. */
-  private final int[] keyColumns;
+  protected final int[] keyColumns;
+  /* Name of the hash table. */
+  public String name;
+  /* Stats. */
+  protected Map<String, Integer> stats;
 
   /**
    * @param schema schema
@@ -35,6 +42,23 @@ public final class TupleHashTable implements Serializable {
     this.keyColumns = keyColumns;
     data = new MutableTupleBuffer(schema);
     keyHashCodesToIndices = new IntObjectHashMap<IntArrayList>();
+    int numIntegers = 0, numLongs = 0, numStrings = 0;
+    for (Type t : schema.getColumnTypes()) {
+      if (t == Type.INT_TYPE || t == Type.FLOAT_TYPE) {
+        numIntegers += 1;
+      }
+      if (t == Type.LONG_TYPE || t == Type.DOUBLE_TYPE) {
+        numLongs += 1;
+      }
+      if (t == Type.STRING_TYPE) {
+        numStrings += 1;
+      }
+    }
+    stats = new HashMap<String, Integer>();
+    stats.put("numIntegers", numIntegers);
+    stats.put("numLongs", numLongs);
+    stats.put("numStrings", numStrings);
+    stats.put("sumStrings", 0);
   }
 
   /**
@@ -83,6 +107,9 @@ public final class TupleHashTable implements Serializable {
     while (iter.hasNext()) {
       int i = iter.next();
       for (int j = 0; j < data.numColumns(); ++j) {
+        if (tb.getSchema().getColumnType(j) == Type.STRING_TYPE) {
+          stats.put("sumStrings", stats.get("sumStrings") - tb.getString(j, i).length() + tb.getString(j, row).length());
+        }
         data.replace(j, i, tb.getDataColumns().get(j), row);
       }
     }
@@ -106,10 +133,16 @@ public final class TupleHashTable implements Serializable {
     indices.add(numTuples());
     if (keyOnly) {
       for (int i = 0; i < keyColumns.length; ++i) {
+        if (tb.getSchema().getColumnType(i) == Type.STRING_TYPE) {
+          stats.put("sumStrings", stats.get("sumStrings") + tb.getString(keyColumns[i], row).length());
+        }
         data.put(i, tb.asColumn(keyColumns[i]), row);
       }
     } else {
       for (int i = 0; i < data.numColumns(); ++i) {
+        if (tb.getSchema().getColumnType(i) == Type.STRING_TYPE) {
+          stats.put("sumStrings", stats.get("sumStrings") + tb.getString(i, row).length());
+        }
         data.put(i, tb.asColumn(i), row);
       }
     }
@@ -128,5 +161,24 @@ public final class TupleHashTable implements Serializable {
   public void cleanup() {
     keyHashCodesToIndices = new IntObjectHashMap<IntArrayList>();
     data = new MutableTupleBuffer(data.getSchema());
+  }
+
+  /**
+   * 
+   * @return stats of the hash table.
+   */
+  public Map<String, Integer> dumpStats() {
+    Map<String, Integer> ret = new HashMap<String, Integer>(stats);
+    ret.put("numTuples", numTuples());
+    ret.put("numKeys", keyHashCodesToIndices.size());
+    return ret;
+  }
+
+  /**
+   * 
+   * @return the schema.
+   */
+  public Schema getSchema() {
+    return data.getSchema();
   }
 }

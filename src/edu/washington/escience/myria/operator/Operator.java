@@ -595,4 +595,11 @@ public abstract class Operator implements Serializable {
   public Integer getOpId() {
     return opId;
   }
+
+  /**
+   * @return hash table stats
+   */
+  public Map<String, Map<String, Integer>> dumpHashTableStats() {
+    return ImmutableMap.of();
+  }
 }
