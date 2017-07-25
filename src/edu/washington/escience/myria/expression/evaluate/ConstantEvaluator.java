@@ -45,10 +45,9 @@ public final class ConstantEvaluator extends GenericEvaluator {
       throws DbException {
     super(expression, parameters);
     Preconditions.checkArgument(
-        !expression.hasOperator(VariableExpression.class)
-            && !expression.hasOperator(StateExpression.class),
-        "Expression %s does not evaluate to a constant",
-        expression);
+        expression.isConstant(), "Expression %s does not evaluate to a constant", expression);
+    Preconditions.checkArgument(
+        !expression.isMultiValued(), "Expression %s is multivalued", expression);
     type = expression.getOutputType(parameters);
     String java;
     try {
@@ -94,8 +93,9 @@ public final class ConstantEvaluator extends GenericEvaluator {
       final int stateRow,
       final WritableColumn result,
       final WritableColumn count) {
+    Preconditions.checkArgument(
+        count == null, "Count column must be null for constant expressions");
     result.appendObject(value);
-    count.appendInt(1);
   }
 
   @Override

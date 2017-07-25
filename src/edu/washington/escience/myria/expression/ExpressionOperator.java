@@ -29,6 +29,7 @@ import edu.washington.escience.myria.expression.evaluate.ExpressionOperatorParam
   @Type(name = "WORKERID", value = WorkerIdExpression.class),
   /* Unary */
   @Type(name = "ABS", value = AbsExpression.class),
+  @Type(name = "BITSET", value = BitsetExpression.class),
   @Type(name = "CAST", value = CastExpression.class),
   @Type(name = "CEIL", value = CeilExpression.class),
   @Type(name = "COS", value = CosExpression.class),

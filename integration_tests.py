@@ -3,6 +3,7 @@
 import os
 import random
 import json
+import base64
 import unittest
 from tempfile import NamedTemporaryFile
 from collections import Counter
@@ -433,6 +434,40 @@ store(T2, order2Result);
         order2Result = MyriaQuery.submit(order2Query)
         self.assertListOfDictsEqual(
             order1Result.to_dict(), order2Result.to_dict())
+
+
+class BlobLiteralTest(MyriaTestBase):
+    def test(self):
+        program = r"""
+R = [b'\x01' as bytes];
+store(R, bytes);
+"""
+        query = MyriaQuery.submit(program)
+        expected = [{'bytes': base64.standard_b64encode(b'\x01')}]
+        self.assertEqual(query.status, 'SUCCESS')
+        self.assertListOfDictsEqual(query.to_dict(), expected)
+
+
+class BitsetTest(MyriaTestBase):
+    def test(self):
+        program = r"""
+R = [b'\x01' as bytes];
+S = [from R emit BITSET($0) as bit];
+store(S, bits);
+"""
+        query = MyriaQuery.submit(program)
+        expected = [
+            {'bit': True},
+            {'bit': False},
+            {'bit': False},
+            {'bit': False},
+            {'bit': False},
+            {'bit': False},
+            {'bit': False},
+            {'bit': False}
+        ]
+        self.assertEqual(query.status, 'SUCCESS')
+        self.assertListOfDictsEqual(query.to_dict(), expected)
 
 
 if __name__ == '__main__':

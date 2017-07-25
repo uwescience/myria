@@ -286,7 +286,7 @@ public class Apply extends UnaryOperator {
 
     for (Expression expr : emitExpressions) {
       GenericEvaluator evaluator;
-      if (expr.isConstant()) {
+      if (expr.isConstant() && !expr.isMultiValued()) {
         evaluator = new ConstantEvaluator(expr, parameters);
       } else if (expr.isRegisteredPythonUDF()) {
         evaluator = new PythonUDFEvaluator(expr, parameters);
