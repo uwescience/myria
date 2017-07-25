@@ -100,14 +100,14 @@ public abstract class BinaryExpression extends ExpressionOperator {
           .toString();
     } else
       return new StringBuilder("(")
-        .append(getLeft().getJavaString(parameters))
-        .append(".compareTo(")
-        .append(getRight().getJavaString(parameters))
-        .append(')')
-        .append(op.toJavaString())
-        .append(0)
-        .append(")")
-        .toString();
+          .append(getLeft().getJavaString(parameters))
+          .append(".compareTo(")
+          .append(getRight().getJavaString(parameters))
+          .append(')')
+          .append(op.toJavaString())
+          .append(0)
+          .append(")")
+          .toString();
   }
 
   /**

@@ -51,7 +51,6 @@ public final class UniqueTupleHashTable extends TupleHashTable {
     collidingKeyHashCodesToIndexes = new LongObjectHashMap<IntArrayList>();
   }
 
-
   /**
    * Get the data table index given key columns from a tuple in a tuple batch.
    *

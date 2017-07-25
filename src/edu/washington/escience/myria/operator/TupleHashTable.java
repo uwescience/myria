@@ -108,7 +108,11 @@ public class TupleHashTable implements Serializable {
       int i = iter.next();
       for (int j = 0; j < data.numColumns(); ++j) {
         if (tb.getSchema().getColumnType(j) == Type.STRING_TYPE) {
-          stats.put("sumStrings", stats.get("sumStrings") - tb.getString(j, i).length() + tb.getString(j, row).length());
+          stats.put(
+              "sumStrings",
+              stats.get("sumStrings")
+                  - tb.getString(j, i).length()
+                  + tb.getString(j, row).length());
         }
         data.replace(j, i, tb.getDataColumns().get(j), row);
       }
@@ -134,7 +138,8 @@ public class TupleHashTable implements Serializable {
     if (keyOnly) {
       for (int i = 0; i < keyColumns.length; ++i) {
         if (tb.getSchema().getColumnType(i) == Type.STRING_TYPE) {
-          stats.put("sumStrings", stats.get("sumStrings") + tb.getString(keyColumns[i], row).length());
+          stats.put(
+              "sumStrings", stats.get("sumStrings") + tb.getString(keyColumns[i], row).length());
         }
         data.put(i, tb.asColumn(keyColumns[i]), row);
       }
@@ -164,7 +169,7 @@ public class TupleHashTable implements Serializable {
   }
 
   /**
-   * 
+   *
    * @return stats of the hash table.
    */
   public Map<String, Integer> dumpStats() {
@@ -175,7 +180,7 @@ public class TupleHashTable implements Serializable {
   }
 
   /**
-   * 
+   *
    * @return the schema.
    */
   public Schema getSchema() {

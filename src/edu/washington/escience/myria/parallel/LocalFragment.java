@@ -939,7 +939,7 @@ public final class LocalFragment {
   }
 
   /**
-   * 
+   *
    * @param op the operator
    * @return the hash table stats of the operators that are children of op
    */

@@ -274,7 +274,7 @@ public final class Worker implements Task, TaskMessageSource {
   }
 
   /**
-   * 
+   *
    * @param qid query id.
    * @return the current hash table stats of the query.
    */
@@ -470,7 +470,7 @@ public final class Worker implements Task, TaskMessageSource {
    * Execution environment variables for operators.
    */
   private final ConcurrentHashMap<String, Object> execEnvVars;
-  
+
   /** */
   private final HttpServer apiServer;
 
@@ -761,7 +761,7 @@ public final class Worker implements Task, TaskMessageSource {
       LOGGER.info("shutdown IPC completed");
     }
     /* must use shutdownNow here because the query queue processor and the control message processor
-       are both blocking. We have to interrupt them at shutdown. */
+    are both blocking. We have to interrupt them at shutdown. */
     messageProcessingExecutor.shutdownNow();
     queryExecutor.shutdown();
     apiServer.shutdownNow();
@@ -866,11 +866,11 @@ public final class Worker implements Task, TaskMessageSource {
   /**
    * @return the working directory of the Myria worker.
    */
-/*
-  @GET
-  @Path("/working_dir")
-  public Response getWorkingDir() {
-    return Response.ok(Paths.get(".").toAbsolutePath().normalize().toString()).build();
-  }
-*/
+  /*
+    @GET
+    @Path("/working_dir")
+    public Response getWorkingDir() {
+      return Response.ok(Paths.get(".").toAbsolutePath().normalize().toString()).build();
+    }
+  */
 }
