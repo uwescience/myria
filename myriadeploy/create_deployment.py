@@ -197,7 +197,7 @@ def main(argv):
         '--elastic-mode', dest='elastic_mode', default=False,
         action='store_true', help='Enable elastic mode')
     parser.add_argument(
-        '--num-partitions', dest='num_partitions', default=0,
+        '--num-partitions', type=int, dest='num_partitions', default=0,
         help='Number of partitions for a cluster in elastic mode')
 
     print get_deployment(**vars(parser.parse_args(argv[1:])))
