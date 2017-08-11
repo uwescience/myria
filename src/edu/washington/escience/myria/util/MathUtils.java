@@ -44,11 +44,11 @@ public final class MathUtils {
    */
   public static boolean castLongToBoolean(final long v) {
     if (v == 0) {
-        return false;
+      return false;
     } else if (v == 1) {
-        return true;
+      return true;
     } else {
-        throw new IllegalArgumentException("numbers other than 1 or 0 cannot be cast to boolean");
+      throw new IllegalArgumentException("numbers other than 1 or 0 cannot be cast to boolean");
     }
   }
 
@@ -60,13 +60,13 @@ public final class MathUtils {
    * @throws IllegalArgumentException if v is anything but 1 or 0
    */
   public static boolean castIntToBoolean(final int v) {
-      if (v == 0) {
-          return false;
-      } else if (v == 1) {
-          return true;
-      } else {
-          throw new IllegalArgumentException("numbers other than 1 or 0 cannot be cast to boolean");
-      }
+    if (v == 0) {
+      return false;
+    } else if (v == 1) {
+      return true;
+    } else {
+      throw new IllegalArgumentException("numbers other than 1 or 0 cannot be cast to boolean");
+    }
   }
 
   /**
