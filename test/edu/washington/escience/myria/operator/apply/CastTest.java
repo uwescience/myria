@@ -168,6 +168,36 @@ public class CastTest {
   }
 
   @Test
+  public void testIntToBoolean() throws Throwable {
+    ConstantExpression val0 = new ConstantExpression(0);
+    Object ans = evaluateCastAndUnrollException(val0, Type.BOOLEAN_TYPE);
+    assertEquals(false, ((Boolean) ans).booleanValue());
+
+    ConstantExpression val1 = new ConstantExpression(1);
+    ans = evaluateCastAndUnrollException(val1, Type.BOOLEAN_TYPE);
+    assertEquals(true, ((Boolean) ans).booleanValue());
+
+    ConstantExpression val42 = new ConstantExpression(42);
+    ans = evaluateCastAndUnrollException(val42, Type.BOOLEAN_TYPE);
+    assertEquals(true, ((Boolean) ans).booleanValue());
+  }
+
+  @Test
+  public void testLongToBoolean() throws Throwable {
+    ConstantExpression val0 = new ConstantExpression(0L);
+    Object ans = evaluateCastAndUnrollException(val0, Type.BOOLEAN_TYPE);
+    assertEquals(false, ((Boolean) ans).booleanValue());
+
+    ConstantExpression val1 = new ConstantExpression(1L);
+    ans = evaluateCastAndUnrollException(val1, Type.BOOLEAN_TYPE);
+    assertEquals(true, ((Boolean) ans).booleanValue());
+
+    ConstantExpression val42 = new ConstantExpression(42L);
+    ans = evaluateCastAndUnrollException(val42, Type.BOOLEAN_TYPE);
+    assertEquals(true, ((Boolean) ans).booleanValue());
+  }
+
+  @Test
   public void testDoubleToFloat() throws Throwable {
     float tolerance = (float) 1e-6;
     ConstantExpression val1 = new ConstantExpression(0.0);

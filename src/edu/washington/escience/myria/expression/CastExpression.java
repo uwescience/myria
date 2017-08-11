@@ -30,6 +30,14 @@ public class CastExpression extends BinaryExpression {
      */
     INT_OR_LONG_TO_FLOAT,
     /**
+     * long to boolean.
+     */
+    LONG_TO_BOOLEAN,
+    /**
+     * int to boolean.
+     */
+    INT_TO_BOOLEAN,
+    /**
      * from double to float.
      */
     DOUBLE_TO_FLOAT,
@@ -148,6 +156,11 @@ public class CastExpression extends BinaryExpression {
         return CastType.STR_TO_DOUBLE;
       case "STRING_TYPE|LONG_TYPE":
         return CastType.STR_TO_LONG;
+        /* numeric type to boolean */
+      case "INT_TYPE|BOOLEAN_TYPE":
+        return CastType.INT_TO_BOOLEAN;
+      case "LONG_TYPE|BOOLEAN_TYPE":
+        return CastType.LONG_TO_BOOLEAN;
       default:
         break;
     }
@@ -193,6 +206,12 @@ public class CastExpression extends BinaryExpression {
             "java.math.RoundingMode.DOWN");
       case INT_OR_LONG_TO_FLOAT:
         return getPrimitiveTypeCastString("float", parameters);
+      case LONG_TO_BOOLEAN:
+        return getLeftFunctionCallString(
+            "edu.washington.escience.myria.util.MathUtils.castLongToBoolean", parameters);
+      case INT_TO_BOOLEAN:
+        return getLeftFunctionCallString(
+            "edu.washington.escience.myria.util.MathUtils.castIntToBoolean", parameters);
       case DOUBLE_TO_FLOAT:
         return getLeftFunctionCallString(
             "edu.washington.escience.myria.util.MathUtils.castDoubleToFloat", parameters);
