@@ -1,5 +1,7 @@
 package edu.washington.escience.myria.expression;
 
+import java.nio.ByteBuffer;
+
 import com.google.common.base.Preconditions;
 
 import edu.washington.escience.myria.Type;
@@ -77,6 +79,10 @@ public class CastExpression extends BinaryExpression {
      * from string to long.
      */
     STR_TO_LONG,
+    /**
+     * from blob to int.
+     */
+    BLOB_TO_INT,
     /**
      * unsupported cast.
      */
@@ -167,6 +173,8 @@ public class CastExpression extends BinaryExpression {
         return CastType.LONG_TO_BOOLEAN;
       case "BOOLEAN_TYPE|INT_TYPE":
         return CastType.BOOLEAN_TO_INT;
+      case "BLOB_TYPE|INT_TYPE":
+        return CastType.BLOB_TO_INT;
       default:
         break;
     }
@@ -243,6 +251,9 @@ public class CastExpression extends BinaryExpression {
         return getLeftFunctionCallString("Double.parseDouble", parameters);
       case STR_TO_LONG:
         return getLeftFunctionCallString("Long.parseLong", parameters);
+      case BLOB_TO_INT:
+        return getLeftFunctionCallString(
+            "edu.washington.escience.myria.util.MyriaUtils.castBlobToInt", parameters);
       default:
         throw new IllegalStateException("should not reach here.");
     }

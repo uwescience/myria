@@ -1,5 +1,6 @@
 package edu.washington.escience.myria.util;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -13,7 +14,7 @@ import org.apache.commons.io.IOUtils;
 import org.joda.time.DateTime;
 
 import com.google.common.base.Preconditions;
-
+import edu.washington.escience.myria.io.AmazonS3Source;
 import edu.washington.escience.myria.io.UriSource;
 
 /**
@@ -164,6 +165,37 @@ public final class MyriaUtils {
     } catch (Exception e) {
       LOGGER.debug(e.getMessage());
       return null;
+    }
+  }
+
+  /**
+   * casts blob v to an int
+   * @param v the blob to cast
+   * @return the value inside of the blob as an int
+   * @throws IndexOutOfBoundsException if the blob is smaller or larger than an int
+   */
+  public static int castBlobToInt(ByteBuffer v) throws IndexOutOfBoundsException {
+    v.rewind();
+    if (v.limit() == Integer.BYTES) {
+      return v.getInt();
+    } else {
+      throw new IndexOutOfBoundsException("Blob was not the size of an int");
+    }
+  }
+
+  /**
+   * casts blob v to a long
+   * @param v the blob to cast
+   * @return the value inside of the blob as a long
+   * @throws IndexOutOfBoundsException if the blob is smaller or larger than a long
+   */
+  public static long castBlobToLong(ByteBuffer v) throws IndexOutOfBoundsException {
+    v.rewind();
+    if (v.limit() == Long.BYTES) {
+      return v.getLong();
+    } else {
+      throw new IndexOutOfBoundsException(
+          "Blob was of size " + v.limit() + ", not the size of a long");
     }
   }
 
