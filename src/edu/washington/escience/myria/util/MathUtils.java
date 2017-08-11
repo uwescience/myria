@@ -56,6 +56,19 @@ public final class MathUtils {
   }
 
   /**
+   * Cast a boolean to an int
+   *
+   * @param v the boolean
+   * @returns 1 if v was True, 0 if v was False
+   */
+  public static int castBooleanToInt(final boolean v) {
+    if (v) {
+      return 1;
+    }
+    return 0;
+  }
+
+  /**
    * util classes are not instantiable.
    * */
   private MathUtils() {}

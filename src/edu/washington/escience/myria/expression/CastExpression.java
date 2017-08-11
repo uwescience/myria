@@ -38,6 +38,10 @@ public class CastExpression extends BinaryExpression {
      */
     INT_TO_BOOLEAN,
     /**
+     * boolean to int.
+     */
+    BOOLEAN_TO_INT,
+    /**
      * from double to float.
      */
     DOUBLE_TO_FLOAT,
@@ -161,6 +165,8 @@ public class CastExpression extends BinaryExpression {
         return CastType.INT_TO_BOOLEAN;
       case "LONG_TYPE|BOOLEAN_TYPE":
         return CastType.LONG_TO_BOOLEAN;
+      case "BOOLEAN_TYPE|INT_TYPE":
+        return CastType.BOOLEAN_TO_INT;
       default:
         break;
     }
@@ -212,6 +218,9 @@ public class CastExpression extends BinaryExpression {
       case INT_TO_BOOLEAN:
         return getLeftFunctionCallString(
             "edu.washington.escience.myria.util.MathUtils.castIntToBoolean", parameters);
+      case BOOLEAN_TO_INT:
+        return getLeftFunctionCallString(
+            "edu.washington.escience.myria.util.MathUtils.castBooleanToInt", parameters);
       case DOUBLE_TO_FLOAT:
         return getLeftFunctionCallString(
             "edu.washington.escience.myria.util.MathUtils.castDoubleToFloat", parameters);

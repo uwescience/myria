@@ -198,6 +198,17 @@ public class CastTest {
   }
 
   @Test
+  public void testBooleanToInt() throws Throwable {
+    ConstantExpression valF = new ConstantExpression(false);
+    Object ans = evaluateCastAndUnrollException(valF, Type.INT_TYPE);
+    assertEquals(0, ((Integer) ans).intValue());
+
+    ConstantExpression valT = new ConstantExpression(true);
+    ans = evaluateCastAndUnrollException(valT, Type.INT_TYPE);
+    assertEquals(1, ((Integer) ans).intValue());
+  }
+
+  @Test
   public void testDoubleToFloat() throws Throwable {
     float tolerance = (float) 1e-6;
     ConstantExpression val1 = new ConstantExpression(0.0);
