@@ -39,20 +39,34 @@ public final class MathUtils {
    * Cast a long to a boolean.
    *
    * @param v the long
-   * @returns True if <code>v != 0</code>, False otherwise
+   * @returns True if <code>v == 1</code>, False if <code>v == 0</code>
+   * @throws IllegalArgumentException if v is anything but 1 or 0
    */
   public static boolean castLongToBoolean(final long v) {
-    return v != 0;
+    if (v == 0) {
+        return false;
+    } else if (v == 1) {
+        return true;
+    } else {
+        throw new IllegalArgumentException("numbers other than 1 or 0 cannot be cast to boolean");
+    }
   }
 
   /**
    * Cast an int to a boolean.
    *
    * @param v the int
-   * @returns True if <code>v != 0</code>, False otherwise
+   * @returns True if <code>v == 1</code>, False if <code>v == 0</code>
+   * @throws IllegalArgumentException if v is anything but 1 or 0
    */
   public static boolean castIntToBoolean(final int v) {
-    return v != 0;
+      if (v == 0) {
+          return false;
+      } else if (v == 1) {
+          return true;
+      } else {
+          throw new IllegalArgumentException("numbers other than 1 or 0 cannot be cast to boolean");
+      }
   }
 
   /**

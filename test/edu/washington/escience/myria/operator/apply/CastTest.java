@@ -176,10 +176,6 @@ public class CastTest {
     ConstantExpression val1 = new ConstantExpression(1);
     ans = evaluateCastAndUnrollException(val1, Type.BOOLEAN_TYPE);
     assertEquals(true, ((Boolean) ans).booleanValue());
-
-    ConstantExpression val42 = new ConstantExpression(42);
-    ans = evaluateCastAndUnrollException(val42, Type.BOOLEAN_TYPE);
-    assertEquals(true, ((Boolean) ans).booleanValue());
   }
 
   @Test
@@ -190,10 +186,6 @@ public class CastTest {
 
     ConstantExpression val1 = new ConstantExpression(1L);
     ans = evaluateCastAndUnrollException(val1, Type.BOOLEAN_TYPE);
-    assertEquals(true, ((Boolean) ans).booleanValue());
-
-    ConstantExpression val42 = new ConstantExpression(42L);
-    ans = evaluateCastAndUnrollException(val42, Type.BOOLEAN_TYPE);
     assertEquals(true, ((Boolean) ans).booleanValue());
   }
 
