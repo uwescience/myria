@@ -83,6 +83,19 @@ public final class MathUtils {
   }
 
   /**
+   * Cast a boolean to an long
+   *
+   * @param v the boolean
+   * @returns 1 if v was True, 0 if v was False
+   */
+  public static long castBooleanToLong(final boolean v) {
+    if (v) {
+      return 1L;
+    }
+    return 0L;
+  }
+
+  /**
    * util classes are not instantiable.
    * */
   private MathUtils() {}

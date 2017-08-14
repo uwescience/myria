@@ -44,6 +44,10 @@ public class CastExpression extends BinaryExpression {
      */
     BOOLEAN_TO_INT,
     /**
+     * boolean to long.
+     */
+    BOOLEAN_TO_LONG,
+    /**
      * from double to float.
      */
     DOUBLE_TO_FLOAT,
@@ -83,6 +87,10 @@ public class CastExpression extends BinaryExpression {
      * from blob to int.
      */
     BLOB_TO_INT,
+    /**
+     * from blob to long.
+     */
+    BLOB_TO_LONG,
     /**
      * unsupported cast.
      */
@@ -173,8 +181,12 @@ public class CastExpression extends BinaryExpression {
         return CastType.LONG_TO_BOOLEAN;
       case "BOOLEAN_TYPE|INT_TYPE":
         return CastType.BOOLEAN_TO_INT;
+      case "BOOLEAN_TYPE|LONG_TYPE":
+        return CastType.BOOLEAN_TO_LONG;
       case "BLOB_TYPE|INT_TYPE":
         return CastType.BLOB_TO_INT;
+      case "BLOB_TYPE|LONG_TYPE":
+        return CastType.BLOB_TO_LONG;
       default:
         break;
     }
@@ -229,6 +241,9 @@ public class CastExpression extends BinaryExpression {
       case BOOLEAN_TO_INT:
         return getLeftFunctionCallString(
             "edu.washington.escience.myria.util.MathUtils.castBooleanToInt", parameters);
+      case BOOLEAN_TO_LONG:
+        return getLeftFunctionCallString(
+            "edu.washington.escience.myria.util.MathUtils.castBooleanToLong", parameters);
       case DOUBLE_TO_FLOAT:
         return getLeftFunctionCallString(
             "edu.washington.escience.myria.util.MathUtils.castDoubleToFloat", parameters);
@@ -254,6 +269,9 @@ public class CastExpression extends BinaryExpression {
       case BLOB_TO_INT:
         return getLeftFunctionCallString(
             "edu.washington.escience.myria.util.MyriaUtils.castBlobToInt", parameters);
+      case BLOB_TO_LONG:
+        return getLeftFunctionCallString(
+            "edu.washington.escience.myria.util.MyriaUtils.castBlobToLong", parameters);
       default:
         throw new IllegalStateException("should not reach here.");
     }

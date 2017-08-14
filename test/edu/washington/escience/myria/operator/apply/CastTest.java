@@ -202,6 +202,17 @@ public class CastTest {
   }
 
   @Test
+  public void testBooleanToLong() throws Throwable {
+    ConstantExpression valF = new ConstantExpression(false);
+    Object ans = evaluateCastAndUnrollException(valF, Type.LONG_TYPE);
+    assertEquals(0L, ((Long) ans).intValue());
+
+    ConstantExpression valT = new ConstantExpression(true);
+    ans = evaluateCastAndUnrollException(valT, Type.LONG_TYPE);
+    assertEquals(1L, ((Long) ans).intValue());
+  }
+
+  @Test
   public void testDoubleToFloat() throws Throwable {
     float tolerance = (float) 1e-6;
     ConstantExpression val1 = new ConstantExpression(0.0);
@@ -322,6 +333,15 @@ public class CastTest {
     assertEquals(42, ((Integer) ans).intValue());
   }
 
+  @Test
+  public void testBlobToLong() throws Throwable {
+    ByteBuffer b = ByteBuffer.allocate(8);
+    b.putLong(42L);
+    ConstantExpression blob = new ConstantExpression(b);
+    Object ans = evaluateCastAndUnrollException(blob, Type.LONG_TYPE);
+    assertEquals(42L, ((Long) ans).longValue());
+  }
+
   @Test(expected = IllegalArgumentException.class)
   public void testLongToIntOverflow() throws Throwable {
     ConstantExpression val = new ConstantExpression((long) Integer.MAX_VALUE + 1);
@@ -426,6 +446,23 @@ public class CastTest {
     b.put((byte) 0x01);
     ConstantExpression blob = new ConstantExpression(b);
     evaluateCastAndUnrollException(blob, Type.INT_TYPE);
+  }
+
+  @Test(expected = IndexOutOfBoundsException.class)
+  public void testBlobToLongTooBig() throws Throwable {
+    ByteBuffer b = ByteBuffer.allocate(10);
+    b.putLong(42L);
+    b.put((byte) 0x01);
+    ConstantExpression blob = new ConstantExpression(b);
+    evaluateCastAndUnrollException(blob, Type.LONG_TYPE);
+  }
+
+  @Test(expected = IndexOutOfBoundsException.class)
+  public void testBlobToLongTooSmall() throws Throwable {
+    ByteBuffer b = ByteBuffer.allocate(2);
+    b.put((byte) 0x01);
+    ConstantExpression blob = new ConstantExpression(b);
+    evaluateCastAndUnrollException(blob, Type.LONG_TYPE);
   }
 
   @Test(expected = IllegalArgumentException.class)
