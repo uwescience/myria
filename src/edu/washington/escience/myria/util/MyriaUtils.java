@@ -1,6 +1,5 @@
 package edu.washington.escience.myria.util;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -14,7 +13,7 @@ import org.apache.commons.io.IOUtils;
 import org.joda.time.DateTime;
 
 import com.google.common.base.Preconditions;
-import edu.washington.escience.myria.io.AmazonS3Source;
+
 import edu.washington.escience.myria.io.UriSource;
 
 /**
@@ -150,11 +149,12 @@ public final class MyriaUtils {
     throw new IllegalArgumentException(
         "Object of type " + o.getClass() + " is not a valid Myria type");
   }
+
   /**
    * This function is called by DownloadBlob expression. It cannot throw an exception as it
-   * is a complied expression, so, it returns null if there is an error in retriving the binary data.
-   * @param filename uri of the binary data.
-   * @return Binary data in ByteBuffer format.
+   * is a compiled expression, so, it returns null if there is an error in retrieving the binary data.
+   * @param filename URI of the binary data.
+   * @return binary data in ByteBuffer format.
    */
   public static ByteBuffer getBlob(final String filename) {
     try {
@@ -166,6 +166,33 @@ public final class MyriaUtils {
       LOGGER.debug(e.getMessage());
       return null;
     }
+  }
+
+  /**
+   * Returns a byte range, or subsequence, of the given blob.
+   * @param blob sequence of bytes to get the subsequence from
+   * @param beginIdx starting index of subsequence, inclusive
+   * @param endIdx ending index of subsequence, exclusive
+   * @return blob representing the new subsequence
+   * @throws IndexOutOfBoundsException
+   */
+  public static ByteBuffer byteRange(ByteBuffer blob, int beginIdx, int endIdx)
+      throws IndexOutOfBoundsException {
+    if (blob.limit() < endIdx || blob.limit() < beginIdx) {
+      throw new IndexOutOfBoundsException("index goes past end of blob");
+    }
+    if (beginIdx < 0 || endIdx < 0) {
+      throw new IndexOutOfBoundsException("negative index is invalid");
+    }
+    if (beginIdx >= endIdx) {
+      throw new IndexOutOfBoundsException("begin index goes past end index");
+    }
+    int length = endIdx - beginIdx;
+    blob.rewind();
+    blob.position(beginIdx);
+    ByteBuffer subsequence = blob.slice();
+    subsequence.limit(length);
+    return subsequence;
   }
 
   /**

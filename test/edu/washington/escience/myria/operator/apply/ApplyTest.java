@@ -1,5 +1,6 @@
 package edu.washington.escience.myria.operator.apply;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -16,6 +17,7 @@ import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.expression.AbsExpression;
 import edu.washington.escience.myria.expression.AndExpression;
+import edu.washington.escience.myria.expression.ByteRangeExpression;
 import edu.washington.escience.myria.expression.CeilExpression;
 import edu.washington.escience.myria.expression.ConcatExpression;
 import edu.washington.escience.myria.expression.ConditionalExpression;
@@ -63,7 +65,6 @@ import edu.washington.escience.myria.util.TestEnvVars;
 public class ApplyTest {
 
   private final int NUM_TUPLES = 2 * TupleUtils.getBatchSize(Type.LONG_TYPE);
-  private final int SMALL_NUM_TUPLES = 10;
 
   @Test
   public void testApply() throws DbException {
@@ -77,6 +78,7 @@ public class ApplyTest {
                 Type.BOOLEAN_TYPE,
                 Type.BLOB_TYPE),
             ImmutableList.of("a", "b", "c", "d", "e", "f"));
+
     final TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
     byte[] bytes = {(byte) 0xDE, (byte) 0xAD, (byte) 0xBE, (byte) 0xEF};
     for (long i = 0; i < NUM_TUPLES; i++) {
@@ -87,6 +89,7 @@ public class ApplyTest {
       tbb.putBoolean(4, i % 2 == 0);
       tbb.putBlob(5, ByteBuffer.wrap(bytes));
     }
+
     ImmutableList.Builder<Expression> Expressions = ImmutableList.builder();
 
     ExpressionOperator vara = new VariableExpression(0);
@@ -94,6 +97,7 @@ public class ApplyTest {
     ExpressionOperator varc = new VariableExpression(2);
     ExpressionOperator vard = new VariableExpression(3);
     ExpressionOperator vare = new VariableExpression(4);
+    ExpressionOperator varf = new VariableExpression(5);
 
     {
       // Expression: Math.sqrt(a);
@@ -319,8 +323,17 @@ public class ApplyTest {
     }
 
     {
+      // Expression: concat(d, "t");
       ConcatExpression concat = new ConcatExpression(vard, new ConstantExpression("t"));
       Expression expr = new Expression("concat", concat);
+      Expressions.add(expr);
+    }
+
+    {
+      // Expression: byterange(blob, 2, 4);
+      ByteRangeExpression byterange =
+          new ByteRangeExpression(varf, new ConstantExpression(2), new ConstantExpression(4));
+      Expression expr = new Expression("byterange", byterange);
       Expressions.add(expr);
     }
 
@@ -352,10 +365,12 @@ public class ApplyTest {
     TupleBatch result;
     int resultSize = 0;
     final double tolerance = 0.0000001;
+    byte[] expectedByteRangeResult = {(byte) 0xBE, (byte) 0xEF};
+
     while (!apply.eos()) {
       result = apply.nextReady();
       if (result != null) {
-        assertEquals(25, result.getSchema().numColumns());
+        assertEquals(26, result.getSchema().numColumns());
         assertEquals(Type.DOUBLE_TYPE, result.getSchema().getColumnType(0));
         assertEquals(Type.LONG_TYPE, result.getSchema().getColumnType(1));
         assertEquals(Type.DOUBLE_TYPE, result.getSchema().getColumnType(2));
@@ -378,9 +393,10 @@ public class ApplyTest {
         assertEquals(Type.LONG_TYPE, result.getSchema().getColumnType(19));
         assertEquals(Type.STRING_TYPE, result.getSchema().getColumnType(20));
         assertEquals(Type.STRING_TYPE, result.getSchema().getColumnType(21));
-        assertEquals(Type.LONG_TYPE, result.getSchema().getColumnType(22));
+        assertEquals(Type.BLOB_TYPE, result.getSchema().getColumnType(22));
         assertEquals(Type.LONG_TYPE, result.getSchema().getColumnType(23));
         assertEquals(Type.LONG_TYPE, result.getSchema().getColumnType(24));
+        assertEquals(Type.LONG_TYPE, result.getSchema().getColumnType(25));
 
         assertEquals("sqrt", result.getSchema().getColumnName(0));
         assertEquals("simpleNestedExpression", result.getSchema().getColumnName(1));
@@ -404,9 +420,10 @@ public class ApplyTest {
         assertEquals("min", result.getSchema().getColumnName(19));
         assertEquals("substr", result.getSchema().getColumnName(20));
         assertEquals("concat", result.getSchema().getColumnName(21));
-        assertEquals("hashA", result.getSchema().getColumnName(22));
-        assertEquals("hashC", result.getSchema().getColumnName(23));
-        assertEquals("hashD", result.getSchema().getColumnName(24));
+        assertEquals("byterange", result.getSchema().getColumnName(22));
+        assertEquals("hashA", result.getSchema().getColumnName(23));
+        assertEquals("hashC", result.getSchema().getColumnName(24));
+        assertEquals("hashD", result.getSchema().getColumnName(25));
 
         for (int curI = 0; curI < result.numTuples(); curI++) {
           long i = curI + resultSize;
@@ -415,6 +432,7 @@ public class ApplyTest {
           int c = (int) i;
           String d = "Foo" + i;
           boolean e = i % 2 == 0;
+
           assertEquals(i, result.getDouble(0, curI), tolerance);
           assertEquals((b + c) * (b - c), result.getLong(1, curI));
           assertEquals(
@@ -446,11 +464,15 @@ public class ApplyTest {
           assertEquals(Math.min(a, c), result.getLong(19, curI));
           assertEquals(d.substring(0, 4), result.getString(20, curI));
           assertEquals(d + "t", result.getString(21, curI));
-          assertEquals(Hashing.md5().hashLong(a).asLong(), result.getLong(22, curI));
-          assertEquals(Hashing.md5().hashInt(c).asLong(), result.getLong(23, curI));
+          ByteBuffer resultBytes = result.getBlob(22, curI);
+          byte[] actualByteRangeResult = new byte[resultBytes.remaining()];
+          resultBytes.get(actualByteRangeResult);
+          assertArrayEquals(expectedByteRangeResult, actualByteRangeResult);
+          assertEquals(Hashing.md5().hashLong(a).asLong(), result.getLong(23, curI));
+          assertEquals(Hashing.md5().hashInt(c).asLong(), result.getLong(24, curI));
           assertEquals(
               Hashing.md5().hashString(d, Charset.defaultCharset()).asLong(),
-              result.getLong(24, curI));
+              result.getLong(25, curI));
         }
         resultSize += result.numTuples();
       }
@@ -464,7 +486,7 @@ public class ApplyTest {
     final Schema schema =
         new Schema(ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE), ImmutableList.of("a", "b"));
     final TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
-    for (long i = 0; i < SMALL_NUM_TUPLES; i++) {
+    for (long i = 0; i < NUM_TUPLES; i++) {
       tbb.putLong(0, i + 1);
       tbb.putLong(1, 2 * i);
     }
@@ -557,7 +579,7 @@ public class ApplyTest {
         resultSize += result.numTuples();
       }
     }
-    assertEquals(SMALL_NUM_TUPLES, resultSize);
+    assertEquals(NUM_TUPLES, resultSize);
     apply.close();
   }
 
@@ -567,7 +589,7 @@ public class ApplyTest {
         new Schema(
             ImmutableList.of(Type.STRING_TYPE, Type.STRING_TYPE), ImmutableList.of("c", "d"));
     final TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
-    for (long i = 0; i < SMALL_NUM_TUPLES; i++) {
+    for (long i = 0; i < NUM_TUPLES; i++) {
       tbb.putString(0, "Foo" + i);
       tbb.putString(1, "Foo" + (2 - i));
     }
@@ -661,7 +683,7 @@ public class ApplyTest {
         resultSize += result.numTuples();
       }
     }
-    assertEquals(SMALL_NUM_TUPLES, resultSize);
+    assertEquals(NUM_TUPLES, resultSize);
     apply.close();
   }
 
