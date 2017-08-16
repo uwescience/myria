@@ -177,6 +177,10 @@ public class CastTest {
     ConstantExpression val1 = new ConstantExpression(1);
     ans = evaluateCastAndUnrollException(val1, Type.BOOLEAN_TYPE);
     assertEquals(true, ((Boolean) ans).booleanValue());
+
+    ConstantExpression val42 = new ConstantExpression(42);
+    ans = evaluateCastAndUnrollException(val42, Type.BOOLEAN_TYPE);
+    assertEquals(true, ((Boolean) ans).booleanValue());
   }
 
   @Test
@@ -187,6 +191,10 @@ public class CastTest {
 
     ConstantExpression val1 = new ConstantExpression(1L);
     ans = evaluateCastAndUnrollException(val1, Type.BOOLEAN_TYPE);
+    assertEquals(true, ((Boolean) ans).booleanValue());
+
+    ConstantExpression val42 = new ConstantExpression(42L);
+    ans = evaluateCastAndUnrollException(val42, Type.BOOLEAN_TYPE);
     assertEquals(true, ((Boolean) ans).booleanValue());
   }
 
@@ -417,18 +425,6 @@ public class CastTest {
   public void testStringToDoubleFormatError() throws Throwable {
     ConstantExpression val = new ConstantExpression("12.95abc");
     evaluateCastAndUnrollException(val, Type.DOUBLE_TYPE);
-  }
-
-  @Test(expected = IllegalArgumentException.class)
-  public void testIntToBooleanInvalid() throws Throwable {
-    ConstantExpression val42 = new ConstantExpression(42);
-    evaluateCastAndUnrollException(val42, Type.BOOLEAN_TYPE);
-  }
-
-  @Test(expected = IllegalArgumentException.class)
-  public void testLongToBooleanInvalid() throws Throwable {
-    ConstantExpression val42 = new ConstantExpression(42L);
-    evaluateCastAndUnrollException(val42, Type.BOOLEAN_TYPE);
   }
 
   @Test(expected = IndexOutOfBoundsException.class)
