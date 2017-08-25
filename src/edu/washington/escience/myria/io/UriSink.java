@@ -13,6 +13,7 @@ import org.apache.hadoop.fs.Path;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import edu.washington.escience.myria.coordinator.CatalogException;
+import edu.washington.escience.myria.util.MyriaUtils;
 
 public class UriSink implements DataSink {
   /** Required for Java serialization. */
@@ -24,17 +25,7 @@ public class UriSink implements DataSink {
       throws CatalogException, URISyntaxException {
     this.uri = URI.create(Objects.requireNonNull(uri, "Parameter uri cannot be null"));
     /* Force using the Hadoop S3A FileSystem */
-    if (this.uri.getScheme().equals("s3")) {
-      this.uri =
-          new URI(
-              "s3a",
-              this.uri.getUserInfo(),
-              this.uri.getHost(),
-              this.uri.getPort(),
-              this.uri.getPath(),
-              this.uri.getQuery(),
-              this.uri.getFragment());
-    }
+    this.uri = MyriaUtils.normalizeS3Uri(this.uri);
     if (!this.uri.getScheme().equals("hdfs") && !this.uri.getScheme().equals("s3a")) {
       throw new CatalogException("URI must be an HDFS or S3 URI");
     }

@@ -29,6 +29,7 @@ import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
 import edu.washington.escience.myria.storage.TupleUtils;
+import edu.washington.escience.myria.util.MyriaUtils;
 
 /**
  * Read and merge Tipsy bin file, iOrder ascii file and group number ascii file.
@@ -346,7 +347,7 @@ public class TipsyFileScan extends LeafOperator {
 
   private static InputStream openFileOrUrlInputStream(String filenameOrUrl) throws DbException {
     try {
-      URI uri = new URI(filenameOrUrl);
+      URI uri = MyriaUtils.normalizeS3Uri(new URI(filenameOrUrl));
       if (uri.getScheme() == null) {
         return openFileInputStream(filenameOrUrl);
       } else if (uri.getScheme().equals("hdfs")) {

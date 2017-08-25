@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -30,6 +31,7 @@ import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleBatchBuffer;
 import edu.washington.escience.myria.storage.TupleUtils;
+import edu.washington.escience.myria.util.MyriaUtils;
 
 /**
  * Parse NChilada file formats. See <a
@@ -285,10 +287,10 @@ public class NChiladaFileScan extends LeafOperator {
     InputStream groupInputStreamLocal;
     try {
       Configuration conf = new Configuration();
-      FileSystem fs = FileSystem.get(URI.create(groupFilePath), conf);
+      FileSystem fs = FileSystem.get(MyriaUtils.normalizeS3Uri(URI.create(groupFilePath)), conf);
       Path rootPath = new Path(groupFilePath);
       groupInputStreamLocal = fs.open(rootPath);
-    } catch (IOException e) {
+    } catch (IOException | URISyntaxException e) {
       throw new DbException(e);
     }
     return groupInputStreamLocal;
@@ -306,7 +308,7 @@ public class NChiladaFileScan extends LeafOperator {
     FileSystem fs;
     Map<String, DataInput> map = new HashMap<>();
     try {
-      fs = FileSystem.get(URI.create(path), conf);
+      fs = FileSystem.get(MyriaUtils.normalizeS3Uri(URI.create(path)), conf);
       Path rootPath = new Path(path + File.separator);
       FileStatus[] statii = fs.listStatus(rootPath);
       if (statii == null || statii.length == 0) {
@@ -319,7 +321,7 @@ public class NChiladaFileScan extends LeafOperator {
         DataInput dataInputStream = fs.open(p);
         map.put(fileName, dataInputStream);
       }
-    } catch (IOException e) {
+    } catch (IOException | URISyntaxException e) {
       throw new DbException(e);
     }
     return map;

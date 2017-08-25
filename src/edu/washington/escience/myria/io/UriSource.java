@@ -19,6 +19,8 @@ import org.apache.hadoop.fs.Path;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import edu.washington.escience.myria.util.MyriaUtils;
+
 /**
  * A data source that pulls data from a specified URI. The URI may be: a path on the local file system; an HDFS link; a
  * web link; an AWS link; and perhaps more.
@@ -51,17 +53,7 @@ public class UriSource implements DataSource, Serializable {
     parsedUri =
         URI.create(Objects.requireNonNull(uri, "Parameter uri to UriSource may not be null"));
     /* Force using the Hadoop S3A FileSystem */
-    if (parsedUri.getScheme().equals("s3")) {
-      parsedUri =
-          new URI(
-              "s3a",
-              parsedUri.getUserInfo(),
-              parsedUri.getHost(),
-              parsedUri.getPort(),
-              parsedUri.getPath(),
-              parsedUri.getQuery(),
-              parsedUri.getFragment());
-    }
+    parsedUri = MyriaUtils.normalizeS3Uri(parsedUri);
   }
 
   @Override

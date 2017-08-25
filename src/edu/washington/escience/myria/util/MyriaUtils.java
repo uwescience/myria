@@ -1,18 +1,19 @@
 package edu.washington.escience.myria.util;
 
-import java.io.IOException;
 import java.io.InputStream;
+import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+
 import org.apache.commons.io.IOUtils;
 import org.joda.time.DateTime;
 
 import com.google.common.base.Preconditions;
-import edu.washington.escience.myria.io.AmazonS3Source;
+
 import edu.washington.escience.myria.io.UriSource;
 
 /**
@@ -164,5 +165,27 @@ public final class MyriaUtils {
       LOGGER.debug(e.getMessage());
       return null;
     }
+  }
+
+  /**
+   * This function replaces the `s3` scheme with the `s3a` scheme,
+   * to force use of the new S3A Hadoop filesystem.
+   * @param uri input URI
+   * @return normalized URI
+   * @throws URISyntaxException
+   */
+  public static URI normalizeS3Uri(URI uri) throws URISyntaxException {
+    if (uri.getScheme() != null && uri.getScheme().equals("s3")) {
+      uri =
+          new URI(
+              "s3a",
+              uri.getUserInfo(),
+              uri.getHost(),
+              uri.getPort(),
+              uri.getPath(),
+              uri.getQuery(),
+              uri.getFragment());
+    }
+    return uri;
   }
 }
