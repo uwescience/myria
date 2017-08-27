@@ -26,10 +26,13 @@ after_failure:
 after_success:
 - ./gradlew jacocoTestReport coveralls
 - flake8 ./integration_tests.py ./python/MyriaPythonWorker.py
+before_cache:
+  - rm -f  $HOME/.gradle/caches/modules-2/modules-2.lock
+  - rm -fr $HOME/.gradle/caches/*/plugin-resolution/
 cache:
   directories:
-  - $HOME/.gradle/caches
-
+    - $HOME/.gradle/caches/
+    - $HOME/.gradle/wrapper/
 # encrypted AWS credentials for travis-ci IAM user under myria account
 env:
   global:
