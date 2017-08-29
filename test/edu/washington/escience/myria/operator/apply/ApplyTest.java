@@ -16,6 +16,7 @@ import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.expression.AbsExpression;
 import edu.washington.escience.myria.expression.AndExpression;
 import edu.washington.escience.myria.expression.CeilExpression;
+import edu.washington.escience.myria.expression.ConcatExpression;
 import edu.washington.escience.myria.expression.ConditionalExpression;
 import edu.washington.escience.myria.expression.ConstantExpression;
 import edu.washington.escience.myria.expression.CosExpression;
@@ -310,6 +311,12 @@ public class ApplyTest {
     }
 
     {
+      ConcatExpression concat = new ConcatExpression(vard, new ConstantExpression("t"));
+      Expression expr = new Expression("concat", concat);
+      Expressions.add(expr);
+    }
+
+    {
       // Expression: hash(a);
       HashMd5Expression hash = new HashMd5Expression(vara);
       Expression expr = new Expression("hashA", hash);
@@ -340,7 +347,7 @@ public class ApplyTest {
     while (!apply.eos()) {
       result = apply.nextReady();
       if (result != null) {
-        assertEquals(24, result.getSchema().numColumns());
+        assertEquals(25, result.getSchema().numColumns());
         assertEquals(Type.DOUBLE_TYPE, result.getSchema().getColumnType(0));
         assertEquals(Type.LONG_TYPE, result.getSchema().getColumnType(1));
         assertEquals(Type.DOUBLE_TYPE, result.getSchema().getColumnType(2));
@@ -362,9 +369,10 @@ public class ApplyTest {
         assertEquals(Type.LONG_TYPE, result.getSchema().getColumnType(18));
         assertEquals(Type.LONG_TYPE, result.getSchema().getColumnType(19));
         assertEquals(Type.STRING_TYPE, result.getSchema().getColumnType(20));
-        assertEquals(Type.LONG_TYPE, result.getSchema().getColumnType(21));
+        assertEquals(Type.STRING_TYPE, result.getSchema().getColumnType(21));
         assertEquals(Type.LONG_TYPE, result.getSchema().getColumnType(22));
         assertEquals(Type.LONG_TYPE, result.getSchema().getColumnType(23));
+        assertEquals(Type.LONG_TYPE, result.getSchema().getColumnType(24));
 
         assertEquals("sqrt", result.getSchema().getColumnName(0));
         assertEquals("simpleNestedExpression", result.getSchema().getColumnName(1));
@@ -387,9 +395,10 @@ public class ApplyTest {
         assertEquals("max", result.getSchema().getColumnName(18));
         assertEquals("min", result.getSchema().getColumnName(19));
         assertEquals("substr", result.getSchema().getColumnName(20));
-        assertEquals("hashA", result.getSchema().getColumnName(21));
-        assertEquals("hashC", result.getSchema().getColumnName(22));
-        assertEquals("hashD", result.getSchema().getColumnName(23));
+        assertEquals("concat", result.getSchema().getColumnName(21));
+        assertEquals("hashA", result.getSchema().getColumnName(22));
+        assertEquals("hashC", result.getSchema().getColumnName(23));
+        assertEquals("hashD", result.getSchema().getColumnName(24));
 
         for (int curI = 0; curI < result.numTuples(); curI++) {
           long i = curI + resultSize;
@@ -428,11 +437,12 @@ public class ApplyTest {
           assertEquals(Math.max(a, c), result.getLong(18, curI));
           assertEquals(Math.min(a, c), result.getLong(19, curI));
           assertEquals(d.substring(0, 4), result.getString(20, curI));
-          assertEquals(Hashing.md5().hashLong(a).asLong(), result.getLong(21, curI));
-          assertEquals(Hashing.md5().hashInt(c).asLong(), result.getLong(22, curI));
+          assertEquals(d + "t", result.getString(21, curI));
+          assertEquals(Hashing.md5().hashLong(a).asLong(), result.getLong(22, curI));
+          assertEquals(Hashing.md5().hashInt(c).asLong(), result.getLong(23, curI));
           assertEquals(
               Hashing.md5().hashString(d, Charset.defaultCharset()).asLong(),
-              result.getLong(23, curI));
+              result.getLong(24, curI));
         }
         resultSize += result.numTuples();
       }
