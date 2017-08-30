@@ -52,7 +52,7 @@ public class Counter extends UnaryOperator {
     if (childTuples == null) {
       return null;
     }
-    LongColumnBuilder builder = new LongColumnBuilder();
+    LongColumnBuilder builder = new LongColumnBuilder(childTuples.numTuples());
     for (int i = 0; i < childTuples.numTuples(); ++i) {
       builder.appendLong(count);
       ++count;

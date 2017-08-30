@@ -129,18 +129,16 @@ public class StatefulApply extends Apply {
     }
 
     // second, build and add the columns that require state
-    List<ColumnBuilder<?>> columnBuilders = Lists.newArrayListWithCapacity(needState.size());
+    List<Type> outputTypes = new ArrayList<Type>();
     for (int builderIdx = 0; builderIdx < needState.size(); builderIdx++) {
-      columnBuilders.add(
-          ColumnFactory.allocateColumn(
-              getEmitEvaluators().get(needState.get(builderIdx)).getOutputType()));
+      outputTypes.add(getEmitEvaluators().get(needState.get(builderIdx)).getOutputType());
     }
+    List<ColumnBuilder<?>> columnBuilders = ColumnFactory.allocateColumns(outputTypes);
 
     for (int rowIdx = 0; rowIdx < tb.numTuples(); rowIdx++) {
       // update state
       Tuple newState = new Tuple(getStateSchema());
       for (int columnIdx = 0; columnIdx < stateSchema.numColumns(); columnIdx++) {
-
         updateEvaluators
             .get(columnIdx)
             .eval(tb, rowIdx, state, 0, newState.asWritableColumn(columnIdx), null);

@@ -1103,7 +1103,7 @@ public class StreamingAggTest {
     // min
     assertEquals(0, result.getLong(1, 0));
     // max
-    assertEquals(19999, result.getLong(2, 0));
+    assertEquals(numTuples - 1, result.getLong(2, 0));
     // count
     assertEquals(numTuples, result.getLong(3, 0));
     // sum

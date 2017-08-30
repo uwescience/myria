@@ -7,6 +7,7 @@ import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.Column;
 import edu.washington.escience.myria.proto.DataProto.ColumnMessage;
+import edu.washington.escience.myria.storage.TupleUtils;
 
 /**
  * A column of a batch of tuples.
@@ -19,26 +20,27 @@ public final class ColumnFactory {
    * Allocate a ColumnBuilder for the specified Myria type.
    *
    * @param type the Myria type of the returned Builder.
+   * @param size the size of the column.
    * @return a ColumnBuilder for the specified Myria type.
    */
-  public static ColumnBuilder<?> allocateColumn(final Type type) {
+  public static ColumnBuilder<?> allocateColumn(final Type type, final int size) {
     switch (type) {
       case BOOLEAN_TYPE:
-        return new BooleanColumnBuilder();
+        return new BooleanColumnBuilder(size);
       case DOUBLE_TYPE:
-        return new DoubleColumnBuilder();
+        return new DoubleColumnBuilder(size);
       case FLOAT_TYPE:
-        return new FloatColumnBuilder();
+        return new FloatColumnBuilder(size);
       case INT_TYPE:
-        return new IntColumnBuilder();
+        return new IntColumnBuilder(size);
       case LONG_TYPE:
-        return new LongColumnBuilder();
+        return new LongColumnBuilder(size);
       case STRING_TYPE:
-        return new StringColumnBuilder();
+        return new StringColumnBuilder(size);
       case DATETIME_TYPE:
-        return new DateTimeColumnBuilder();
+        return new DateTimeColumnBuilder(size);
       case BLOB_TYPE:
-        return new BlobColumnBuilder();
+        return new BlobColumnBuilder(size);
     }
     throw new IllegalArgumentException("Cannot allocate a ColumnBuilder for unknown type " + type);
   }
@@ -60,9 +62,10 @@ public final class ColumnFactory {
    * @return the allocated Columns
    */
   public static List<ColumnBuilder<?>> allocateColumns(final List<Type> columnTypes) {
+    final int size = TupleUtils.getBatchSize(columnTypes);
     final ArrayList<ColumnBuilder<?>> columns = new ArrayList<ColumnBuilder<?>>(columnTypes.size());
     for (Type type : columnTypes) {
-      columns.add(allocateColumn(type));
+      columns.add(allocateColumn(type, size));
     }
     return columns;
   }

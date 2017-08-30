@@ -3,6 +3,7 @@ package edu.washington.escience.myria.operator.apply;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 
 import org.junit.Test;
@@ -68,15 +69,22 @@ public class ApplyTest {
     final Schema schema =
         new Schema(
             ImmutableList.of(
-                Type.LONG_TYPE, Type.LONG_TYPE, Type.INT_TYPE, Type.STRING_TYPE, Type.BOOLEAN_TYPE),
-            ImmutableList.of("a", "b", "c", "d", "e"));
+                Type.LONG_TYPE,
+                Type.LONG_TYPE,
+                Type.INT_TYPE,
+                Type.STRING_TYPE,
+                Type.BOOLEAN_TYPE,
+                Type.BLOB_TYPE),
+            ImmutableList.of("a", "b", "c", "d", "e", "f"));
     final TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
+    byte[] bytes = {(byte) 0xDE, (byte) 0xAD, (byte) 0xBE, (byte) 0xEF};
     for (long i = 0; i < NUM_TUPLES; i++) {
       tbb.putLong(0, (long) Math.pow(i, 2));
       tbb.putLong(1, i + 1);
       tbb.putInt(2, (int) i);
       tbb.putString(3, "Foo" + i);
       tbb.putBoolean(4, i % 2 == 0);
+      tbb.putBlob(5, ByteBuffer.wrap(bytes));
     }
     ImmutableList.Builder<Expression> Expressions = ImmutableList.builder();
 

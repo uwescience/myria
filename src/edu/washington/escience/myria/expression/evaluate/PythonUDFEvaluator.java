@@ -7,11 +7,11 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.nio.charset.StandardCharsets;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -188,16 +188,14 @@ public class PythonUDFEvaluator extends GenericEvaluator {
           writeToStream(buffer, row, i);
         }
       }
-      ColumnBuilder<?> output = ColumnFactory.allocateColumn(outputType);
+      ColumnBuilder<?> output = ColumnFactory.allocateColumn(outputType, 1);
       /* TODO: Leaving the count column to be null for now since since it's not used by Python evaluator for aggregate.
        * A better design is to let the Aggregator emit two columns or even multiple columns. */
       readFromStream(null, output);
       if (output.size() > 1) {
         throw new RuntimeException("PythonUDFEvaluator cannot be multivalued for Aggregate");
       }
-      for (int i = 0; i < output.size(); ++i) {
-        state.replace(col, key, output, i);
-      }
+      state.replace(col, key, output, 0);
     }
   }
 

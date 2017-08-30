@@ -7,17 +7,16 @@ import java.nio.BufferOverflowException;
 import org.junit.Test;
 
 import edu.washington.escience.myria.Type;
-import edu.washington.escience.myria.column.StringColumn;
 import edu.washington.escience.myria.column.builder.StringColumnBuilder;
 import edu.washington.escience.myria.proto.DataProto.ColumnMessage;
-import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleUtils;
 
 public class StringColumnTest {
+  final int size = TupleUtils.getBatchSize(Type.STRING_TYPE);
 
   @Test
   public void testProto() {
-    final StringColumnBuilder original = new StringColumnBuilder();
+    final StringColumnBuilder original = new StringColumnBuilder(size);
     original
         .appendString("First")
         .appendString("Second")
@@ -33,8 +32,8 @@ public class StringColumnTest {
 
   @Test
   public void testFull() {
-    final StringColumnBuilder builder = new StringColumnBuilder();
-    for (int i = 0; i < TupleUtils.getBatchSize(Type.STRING_TYPE); i++) {
+    final StringColumnBuilder builder = new StringColumnBuilder(size);
+    for (int i = 0; i < size; i++) {
       builder.appendString("true");
     }
     builder.build();
@@ -42,8 +41,8 @@ public class StringColumnTest {
 
   @Test(expected = BufferOverflowException.class)
   public void testOverflow() {
-    final StringColumnBuilder builder = new StringColumnBuilder();
-    for (int i = 0; i < TupleUtils.getBatchSize(Type.STRING_TYPE); i++) {
+    final StringColumnBuilder builder = new StringColumnBuilder(size);
+    for (int i = 0; i < size; i++) {
       builder.appendString("false");
     }
     builder.appendString("true");

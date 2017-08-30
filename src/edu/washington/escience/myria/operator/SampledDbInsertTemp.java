@@ -8,7 +8,6 @@ import java.util.Map;
 import java.util.Random;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 
 import edu.washington.escience.myria.DbException;
@@ -17,10 +16,10 @@ import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.accessmethod.ConnectionInfo;
 import edu.washington.escience.myria.column.Column;
-import edu.washington.escience.myria.column.builder.IntColumnBuilder;
 import edu.washington.escience.myria.parallel.RelationWriteMetadata;
 import edu.washington.escience.myria.storage.MutableTupleBuffer;
 import edu.washington.escience.myria.storage.TupleBatch;
+import edu.washington.escience.myria.storage.TupleBatchBuffer;
 
 /**
  * Samples the stream into a temp relation.
@@ -120,18 +119,12 @@ public class SampledDbInsertTemp extends DbInsertTemp {
     for (TupleBatch tb : reservoir.getAll()) {
       accessMethod.tupleBatchInsert(getRelationKey(), tb);
     }
-    // Insert (WorkerID, PartitionSize, PartitionSampleSize) to
-    // countRelationKey.
-    IntColumnBuilder wIdCol = new IntColumnBuilder();
-    IntColumnBuilder tupCountCol = new IntColumnBuilder();
-    IntColumnBuilder sampledSizeCol = new IntColumnBuilder();
-    wIdCol.appendInt(getNodeID());
-    tupCountCol.appendInt(currentTupleCount);
-    sampledSizeCol.appendInt(reservoir.numTuples());
-    ImmutableList.Builder<Column<?>> columns = ImmutableList.builder();
-    columns.add(wIdCol.build(), tupCountCol.build(), sampledSizeCol.build());
-    TupleBatch tb = new TupleBatch(COUNT_SCHEMA, columns.build());
-    accessMethod.tupleBatchInsert(countRelationKey, tb);
+    // Insert (WorkerID, PartitionSize, PartitionSampleSize) to countRelationKey.
+    TupleBatchBuffer tbb = new TupleBatchBuffer(COUNT_SCHEMA);
+    tbb.putInt(0, getNodeID());
+    tbb.putInt(1, currentTupleCount);
+    tbb.putInt(2, reservoir.numTuples());
+    accessMethod.tupleBatchInsert(countRelationKey, tbb.popAny());
   }
 
   @Override

@@ -37,10 +37,12 @@ public final class BlobColumnBuilder extends ColumnBuilder<ByteBuffer> {
    */
   private boolean built = false;
 
-  /** Constructs an empty column that can hold up to TupleBatch.BATCH_SIZE elements. */
-  public BlobColumnBuilder() {
+  /** Constructs an empty column with the given capacity.
+   * @param size the capacity.
+   * */
+  public BlobColumnBuilder(final int size) {
     numBB = 0;
-    data = new ByteBuffer[TupleUtils.getBatchSize(Type.BLOB_TYPE)];
+    data = new ByteBuffer[size];
   }
 
   /**

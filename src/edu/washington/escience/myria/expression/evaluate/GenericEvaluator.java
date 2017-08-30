@@ -260,7 +260,7 @@ public class GenericEvaluator extends Evaluator {
     // For single-valued expressions, the Java expression will never attempt to write to `countsWriter`.
     WritableColumn countsWriter = null;
     if (getExpression().isMultiValued()) {
-      countsWriter = ColumnFactory.allocateColumn(Type.INT_TYPE);
+      countsWriter = ColumnFactory.allocateColumn(Type.INT_TYPE, batchSize);
     }
     for (int rowIdx = 0; rowIdx < tb.numTuples(); ++rowIdx) {
       /* Hack, tb is either Expression.INPUT or Expression.STATE */
