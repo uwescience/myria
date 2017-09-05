@@ -293,7 +293,6 @@ shadowJar {
   relocate 'javax.ws.rs', 'myriadeps.javax.ws.rs'
   relocate 'com.fasterxml.jackson', 'myriadeps.com.fasterxml.jackson'
   relocate 'org.glassfish.jersey', 'myriadeps.org.glassfish.jersey'
-  relocate 'com.amazonaws', 'myriadeps.com.amazonaws'
 }
 
 /* Coveralls */
