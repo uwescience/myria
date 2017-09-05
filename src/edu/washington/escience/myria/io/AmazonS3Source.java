@@ -21,6 +21,7 @@ import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.GetObjectRequest;
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.MoreObjects;
 
@@ -39,9 +40,9 @@ public class AmazonS3Source implements DataSource, Serializable {
       org.slf4j.LoggerFactory.getLogger(AmazonS3Source.class);
 
   private final URI s3Uri;
-  private transient ClientConfiguration clientConfig;
-  private transient AmazonS3Client s3Client;
-  private transient GetObjectRequest s3Request;
+  @JsonIgnore private transient ClientConfiguration clientConfig;
+  @JsonIgnore private transient AmazonS3Client s3Client;
+  @JsonIgnore private transient GetObjectRequest s3Request;
 
   private long startRange;
   private long endRange;
