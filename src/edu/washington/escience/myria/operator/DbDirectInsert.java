@@ -16,6 +16,7 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.io.ByteStreams;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
@@ -96,7 +97,11 @@ public class DbDirectInsert extends RootOperator implements DbWriter {
       /* Create the table */
       accessMethod.createTableIfNotExists(relationKey, getSchema());
       /* Populate the table */
-      accessMethod.insertFromStream(relationKey, inputStream);
+      //accessMethod.insertFromStream(relationKey, inputStream);
+      LOGGER.info(
+          "Postgres binary data:\n"
+              + new String(
+                  ByteStreams.toByteArray(ByteStreams.limit(inputStream, 100)), "US-ASCII"));
     } catch (final IOException e) {
       LOGGER.error(e.getMessage(), e);
       throw new DbException(e);
