@@ -288,6 +288,8 @@ shadowJar {
   transform(ApacheLicenseResourceTransformer)
   /* merge service descriptors to avoid Hadoop FileSystem services shadowing each other */
   mergeServiceFiles()
+  /* conflicts with REEF deps */
+  relocate 'com.google.common', 'myriadeps.com.google.common'
 }
 
 /* Coveralls */
