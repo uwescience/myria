@@ -10,6 +10,7 @@ import java.util.Objects;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import javax.xml.bind.DatatypeConverter;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -97,11 +98,12 @@ public class DbDirectInsert extends RootOperator implements DbWriter {
       /* Create the table */
       accessMethod.createTableIfNotExists(relationKey, getSchema());
       /* Populate the table */
-      //accessMethod.insertFromStream(relationKey, inputStream);
       LOGGER.info(
           "Postgres binary data:\n"
-              + new String(
-                  ByteStreams.toByteArray(ByteStreams.limit(inputStream, 100)), "US-ASCII"));
+              + DatatypeConverter.printHexBinary(
+                  ByteStreams.toByteArray(ByteStreams.limit(inputStream, 100))));
+      long tuplesWritten = accessMethod.insertFromStream(relationKey, inputStream);
+      LOGGER.info("{} tuples written to relation '{}'", tuplesWritten, relationKey);
     } catch (final IOException e) {
       LOGGER.error(e.getMessage(), e);
       throw new DbException(e);
