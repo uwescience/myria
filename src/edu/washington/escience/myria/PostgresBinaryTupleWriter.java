@@ -159,13 +159,12 @@ public class PostgresBinaryTupleWriter implements TupleWriter {
         }
       }
     }
-
-    // 16 bit file trailer
-    buffer.writeShort(-1);
   }
 
   @Override
   public void done() throws IOException {
+    // 16 bit file trailer
+    buffer.writeShort(-1);
     buffer.flush();
     buffer.close();
   }
