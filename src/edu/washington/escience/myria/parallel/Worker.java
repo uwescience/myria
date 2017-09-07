@@ -763,7 +763,7 @@ public final class Worker implements Task, TaskMessageSource {
     /* must use shutdownNow here because the query queue processor and the control message processor
     are both blocking. We have to interrupt them at shutdown. */
     messageProcessingExecutor.shutdownNow();
-    queryExecutor.shutdown();
+    queryExecutor.shutdownNow();
     apiServer.shutdownNow();
     if (LOGGER.isInfoEnabled()) {
       LOGGER.info("Worker #" + myID + " shutdown completed");
@@ -862,15 +862,4 @@ public final class Worker implements Task, TaskMessageSource {
     }
     return pythonFunctionRegistrar;
   }
-
-  /**
-   * @return the working directory of the Myria worker.
-   */
-  /*
-    @GET
-    @Path("/working_dir")
-    public Response getWorkingDir() {
-      return Response.ok(Paths.get(".").toAbsolutePath().normalize().toString()).build();
-    }
-  */
 }

@@ -26,7 +26,7 @@ public final class WorkerResource {
    * @return the stats of all hash tables of the given query.
    */
   @GET
-  @Path("/hashtable-query-{qid:\\d+}")
+  @Path("/query-{qid:\\d+}/hashtable-stats")
   public Response getHashTableStats(@PathParam("qid") final long qid) {
     return Response.ok(worker.getHashTableStats(qid)).build();
   }
@@ -45,7 +45,7 @@ public final class WorkerResource {
    * @return the working directory of the Myria worker.
    */
   @GET
-  @Path("/working_dir")
+  @Path("/working-dir")
   public Response getWorkingDir() {
     return Response.ok(Paths.get(".").toAbsolutePath().normalize().toString()).build();
   }

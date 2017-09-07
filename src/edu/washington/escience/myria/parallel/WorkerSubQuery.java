@@ -358,7 +358,7 @@ public class WorkerSubQuery extends LocalSubQuery {
    * @return the hash table stats of the subquery.
    */
   public Map<String, Map<String, Integer>> dumpHashTableStats() {
-    Map<String, Map<String, Integer>> ret = new HashMap<String, Map<String, Integer>>();
+    Map<String, Map<String, Integer>> ret = new HashMap<>();
     for (LocalFragment t : fragments) {
       ret.putAll(t.dumpHashTableStats(t.getRootOp()));
     }

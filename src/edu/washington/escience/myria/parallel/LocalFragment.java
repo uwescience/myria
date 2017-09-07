@@ -944,7 +944,7 @@ public final class LocalFragment {
    * @return the hash table stats of the operators that are children of op
    */
   public Map<String, Map<String, Integer>> dumpHashTableStats(final Operator op) {
-    Map<String, Map<String, Integer>> ret = new HashMap<String, Map<String, Integer>>();
+    Map<String, Map<String, Integer>> ret = new HashMap<>();
     for (Operator o : op.getChildren()) {
       ret.putAll(dumpHashTableStats(o));
     }

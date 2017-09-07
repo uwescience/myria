@@ -1,12 +1,10 @@
 package edu.washington.escience.myria.operator;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.commons.lang.ArrayUtils;
 import org.eclipse.collections.api.iterator.IntIterator;
 
 import com.google.common.base.Preconditions;
@@ -18,7 +16,6 @@ import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
-import edu.washington.escience.myria.column.Column;
 import edu.washington.escience.myria.parallel.QueryExecutionMode;
 import edu.washington.escience.myria.storage.MutableTupleBuffer;
 import edu.washington.escience.myria.storage.TupleBatch;
@@ -169,7 +166,7 @@ public final class SymmetricHashJoin extends BinaryOperator {
       Preconditions.checkState(
           leftType == rightType,
           "column types do not match for join op %s at index %s: left column type %s [%s] != right column type %s [%s]",
-          getOpId() + "",
+          getOpId(),
           i,
           leftIndex,
           leftType,
@@ -421,8 +418,8 @@ public final class SymmetricHashJoin extends BinaryOperator {
   public void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
     leftHashTable = new TupleHashTable(getLeft().getSchema(), leftCompareColumns);
     rightHashTable = new TupleHashTable(getRight().getSchema(), rightCompareColumns);
-    leftHashTable.name = "op" + getOpId() + "left";
-    rightHashTable.name = "op" + getOpId() + "right";
+    leftHashTable.name = "op" + getOpId() + ".left";
+    rightHashTable.name = "op" + getOpId() + ".right";
     ans = new TupleBatchBuffer(getSchema());
     nonBlocking =
         (QueryExecutionMode) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_EXECUTION_MODE)
@@ -527,7 +524,7 @@ public final class SymmetricHashJoin extends BinaryOperator {
 
   @Override
   public Map<String, Map<String, Integer>> dumpHashTableStats() {
-    Map<String, Map<String, Integer>> ret = new HashMap<String, Map<String, Integer>>();
+    Map<String, Map<String, Integer>> ret = new HashMap<>();
     if (leftHashTable != null) {
       ret.put(leftHashTable.name, leftHashTable.dumpStats());
     }

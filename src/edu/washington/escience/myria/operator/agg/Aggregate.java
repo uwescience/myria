@@ -226,7 +226,7 @@ public class Aggregate extends UnaryOperator {
 
   @Override
   public Map<String, Map<String, Integer>> dumpHashTableStats() {
-    Map<String, Map<String, Integer>> ret = new HashMap<String, Map<String, Integer>>();
+    Map<String, Map<String, Integer>> ret = new HashMap<>();
     if (groupStates != null) {
       ret.put(groupStates.name, groupStates.dumpStats());
     }

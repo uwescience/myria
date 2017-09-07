@@ -29,9 +29,9 @@ public class TupleHashTable implements Serializable {
   protected transient MutableTupleBuffer data;
   /** Key column indices. */
   protected final int[] keyColumns;
-  /* Name of the hash table. */
+  /** Name of the hash table. */
   public String name;
-  /* Stats. */
+  /** Stats. */
   protected Map<String, Integer> stats;
 
   /**
@@ -42,21 +42,21 @@ public class TupleHashTable implements Serializable {
     this.keyColumns = keyColumns;
     data = new MutableTupleBuffer(schema);
     keyHashCodesToIndices = new IntObjectHashMap<IntArrayList>();
-    int numIntegers = 0, numLongs = 0, numStrings = 0;
+    int num32BitTypes = 0, num64BitTypes = 0, numStrings = 0;
     for (Type t : schema.getColumnTypes()) {
       if (t == Type.INT_TYPE || t == Type.FLOAT_TYPE) {
-        numIntegers += 1;
+        num32BitTypes += 1;
       }
       if (t == Type.LONG_TYPE || t == Type.DOUBLE_TYPE) {
-        numLongs += 1;
+        num64BitTypes += 1;
       }
       if (t == Type.STRING_TYPE) {
         numStrings += 1;
       }
     }
     stats = new HashMap<String, Integer>();
-    stats.put("numIntegers", numIntegers);
-    stats.put("numLongs", numLongs);
+    stats.put("num32BitTypes", num32BitTypes);
+    stats.put("num64BitTypes", num64BitTypes);
     stats.put("numStrings", numStrings);
     stats.put("sumStrings", 0);
   }
@@ -175,7 +175,7 @@ public class TupleHashTable implements Serializable {
   public Map<String, Integer> dumpStats() {
     Map<String, Integer> ret = new HashMap<String, Integer>(stats);
     ret.put("numTuples", numTuples());
-    ret.put("numKeys", keyHashCodesToIndices.size());
+    ret.put("numHashCodes", keyHashCodesToIndices.size());
     return ret;
   }
 

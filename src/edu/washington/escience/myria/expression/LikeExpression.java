@@ -3,7 +3,7 @@ package edu.washington.escience.myria.expression;
 import edu.washington.escience.myria.SimplePredicate;
 
 /**
- * Like Expression.
+ * The SQL LIKE Expression.
  */
 public class LikeExpression extends ComparisonExpression {
   /***/

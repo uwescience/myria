@@ -25,8 +25,8 @@ public final class MyriaWorkerConfigurationModule extends ConfigurationModuleBui
   public static final RequiredParameter<Integer> WORKER_ID = new RequiredParameter<>();
   public static final RequiredParameter<String> WORKER_HOST = new RequiredParameter<>();
   public static final RequiredParameter<Integer> WORKER_PORT = new RequiredParameter<>();
-  public static final OptionalParameter<Integer> WORKER_JVM_PORT = new OptionalParameter<>();
-  public static final OptionalParameter<Integer> WORKER_STATS_PORT = new OptionalParameter<>();
+  public static final RequiredParameter<Integer> WORKER_JVM_PORT = new RequiredParameter<>();
+  public static final RequiredParameter<Integer> WORKER_STATS_PORT = new RequiredParameter<>();
   public static final RequiredParameter<String> WORKER_STORAGE_DB_NAME = new RequiredParameter<>();
   public static final OptionalParameter<String> WORKER_STORAGE_DB_PASSWORD =
       new OptionalParameter<>();

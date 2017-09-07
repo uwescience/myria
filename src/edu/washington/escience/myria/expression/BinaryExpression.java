@@ -92,11 +92,11 @@ public abstract class BinaryExpression extends ExpressionOperator {
     if (op == SimplePredicate.Op.LIKE) {
       return new StringBuilder("(")
           .append(getLeft().getJavaString(parameters))
-          .append(".indexOf(")
+          .append(".toLowerCase().matches(")
           .append(getRight().getJavaString(parameters))
-          .append(')')
-          .append(">=0")
-          .append(")")
+          .append(
+              ".toLowerCase().replace(\".\", \"\\.\").replace(\"?\", \".\").replace(\"%\", \".*\")")
+          .append("))")
           .toString();
     } else
       return new StringBuilder("(")

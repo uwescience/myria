@@ -337,7 +337,7 @@ public final class MyriaConfigurationParser {
     } else {
       args = getRequired(parser, "workers", nodeId + "").split(":");
     }
-    if (args.length <= 5) {
+    if (args.length <= 5 || args[5].equals("")) {
       return 0;
     }
     return Integer.parseInt(args[5]);

@@ -571,7 +571,9 @@ public final class MyriaDriver {
   }
 
   private void setJVMOptions(
-      final AllocatedEvaluator evaluator, final boolean isMaster, final Configuration workerConf)
+      final AllocatedEvaluator evaluator,
+      final boolean isMaster,
+      final @Nullable Configuration workerConf)
       throws InjectionException {
     final int jvmHeapSizeMinMB =
         (int)
@@ -592,14 +594,14 @@ public final class MyriaDriver {
     final Set<String> jvmOptions =
         globalConfInjector.getNamedInstance(MyriaGlobalConfigurationModule.JvmOptions.class);
     if (workerConf != null && jvmOptions.contains("-ElasticMem")) {
-      final int jvmPort =
+      final Integer jvmPort =
           Tang.Factory.getTang()
               .newInjector(workerConf)
               .getNamedInstance(MyriaWorkerConfigurationModule.WorkerJVMPort.class);
-      if (jvmPort > 0) {
+      if (jvmPort != null) {
         jvmOptions.add("-JVMPort=" + jvmPort);
       } else {
-        throw new InjectionException("-ElasticMem is enabled but JVM ports are not specified");
+        throw new RuntimeException("-ElasticMem is enabled but JVM ports are not specified");
       }
     }
     final JVMProcess jvmProcess =
