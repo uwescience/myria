@@ -11,10 +11,10 @@ echo "IdentityFile ~/id_rsa" >> ~/.ssh/config
 echo "IdentityFile ~/id_rsa_localhost" >> ~/.ssh/config
 
 # Set up myria-web
-pip install paste
-pip install webapp2
-pip install webob
-pip install jinja2
+pip install --user paste
+pip install --user webapp2
+pip install --user webob
+pip install --user jinja2
 cd ~
 git clone https://github.com/uwescience/myria-web.git
 cd ~/myria-web
@@ -25,7 +25,7 @@ git fetch --all && git reset --hard origin/master
 python setup.py install
 
 # Set up myria-python
-pip install myria-python
+pip install --user myria-python
 
 # Install flake for style check
-pip install flake8
+pip install --user flake8
