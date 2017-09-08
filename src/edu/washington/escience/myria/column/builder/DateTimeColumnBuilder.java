@@ -17,7 +17,6 @@ import edu.washington.escience.myria.column.DateTimeColumn;
 import edu.washington.escience.myria.column.mutable.DateTimeMutableColumn;
 import edu.washington.escience.myria.proto.DataProto.ColumnMessage;
 import edu.washington.escience.myria.proto.DataProto.DateTimeColumnMessage;
-import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleUtils;
 import edu.washington.escience.myria.util.MyriaUtils;
 
@@ -41,9 +40,9 @@ public final class DateTimeColumnBuilder extends ColumnBuilder<DateTime> {
   private boolean built = false;
 
   /** Constructs an empty column that can hold up to TupleBatch.BATCH_SIZE elements. */
-  public DateTimeColumnBuilder() {
+  public DateTimeColumnBuilder(final int size) {
     numDates = 0;
-    data = new DateTime[TupleUtils.getBatchSize(Type.DATETIME_TYPE)];
+    data = new DateTime[size];
   }
 
   /**

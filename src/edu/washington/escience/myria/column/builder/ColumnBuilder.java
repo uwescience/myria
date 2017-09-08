@@ -8,11 +8,10 @@ import java.sql.SQLException;
 import javax.annotation.Nonnull;
 
 import org.joda.time.DateTime;
-import java.nio.ByteBuffer;
+
 import com.almworks.sqlite4java.SQLiteException;
 import com.almworks.sqlite4java.SQLiteStatement;
 
-import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.Column;
 import edu.washington.escience.myria.column.mutable.MutableColumn;
 import edu.washington.escience.myria.storage.ReadableColumn;
@@ -198,6 +197,7 @@ public abstract class ColumnBuilder<T extends Comparable<?>>
    * @param type the type of the column to be returned.
    * @return a new empty column of the specified type.
    */
+  /*
   public static ColumnBuilder<?> of(final Type type) {
     switch (type) {
       case BOOLEAN_TYPE:
@@ -218,6 +218,7 @@ public abstract class ColumnBuilder<T extends Comparable<?>>
         throw new IllegalArgumentException("Type " + type + " is invalid");
     }
   }
+  */
 
   @Override
   public void replaceBlob(@Nonnull final ByteBuffer value, final int row) {

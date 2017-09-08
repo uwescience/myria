@@ -200,7 +200,7 @@ public class AggregateTest {
 
       /* Ints, all as a group */
       int[] ints = new int[] {3, 5, 6};
-      builder = new IntColumnBuilder();
+      builder = new IntColumnBuilder(3);
       for (int i : ints) {
         builder.appendInt(i);
       }
@@ -229,7 +229,7 @@ public class AggregateTest {
 
       /* Longs */
       long[] longs = new long[] {3, 5, 9};
-      builder = new LongColumnBuilder();
+      builder = new LongColumnBuilder(3);
       for (long l : longs) {
         builder.appendLong(l);
       }
@@ -258,7 +258,7 @@ public class AggregateTest {
 
       /* Floats */
       float[] floats = new float[] {3, 5, 11};
-      builder = new FloatColumnBuilder();
+      builder = new FloatColumnBuilder(3);
       for (float f : floats) {
         builder.appendFloat(f);
       }
@@ -287,7 +287,7 @@ public class AggregateTest {
 
       /* Double */
       double[] doubles = new double[] {3, 5, 13};
-      builder = new DoubleColumnBuilder();
+      builder = new DoubleColumnBuilder(3);
       for (double d : doubles) {
         builder.appendDouble(d);
       }
@@ -332,7 +332,8 @@ public class AggregateTest {
             DateTime.parse("2014-04-01T11:31"),
             DateTime.parse("2012-02-29T12:00")
           };
-      builder = new DateTimeColumnBuilder();
+      builder = new DateTimeColumnBuilder(dates.length);
+
       for (DateTime d : dates) {
         builder.appendDateTime(d);
       }
@@ -344,7 +345,7 @@ public class AggregateTest {
 
       /* Strings */
       String[] strings = new String[] {"abcd", "abc", "abcde", "fghij0", "fghij1"};
-      builder = new StringColumnBuilder();
+      builder = new StringColumnBuilder(strings.length);
       for (String s : strings) {
         builder.appendString(s);
       }
@@ -357,7 +358,7 @@ public class AggregateTest {
       /* Booleans */
       AggregationOp[] booleanAggs = new AggregationOp[] {AggregationOp.COUNT};
       boolean[] booleans = new boolean[] {true, false, true};
-      builder = new BooleanColumnBuilder();
+      builder = new BooleanColumnBuilder(3);
       for (boolean b : booleans) {
         builder.appendBoolean(b);
       }
@@ -962,14 +963,14 @@ public class AggregateTest {
   @Test(expected = ArithmeticException.class)
   public void testLongAggOverflow() throws Exception {
     LongColumnBuilder builder =
-        new LongColumnBuilder().appendLong(Long.MAX_VALUE - 1).appendLong(3);
+        new LongColumnBuilder(2).appendLong(Long.MAX_VALUE - 1).appendLong(3);
     doAggOpsToCol(builder, new AggregationOp[] {AggregationOp.SUM}, true);
   }
 
   @Test(expected = ArithmeticException.class)
   public void testLongAggUnderflow() throws Exception {
     LongColumnBuilder builder =
-        new LongColumnBuilder().appendLong(Long.MIN_VALUE + 1).appendLong(-3);
+        new LongColumnBuilder(2).appendLong(Long.MIN_VALUE + 1).appendLong(-3);
     doAggOpsToCol(builder, new AggregationOp[] {AggregationOp.SUM}, true);
   }
 }

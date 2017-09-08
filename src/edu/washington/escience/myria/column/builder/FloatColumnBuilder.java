@@ -14,8 +14,6 @@ import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.FloatColumn;
 import edu.washington.escience.myria.column.mutable.FloatMutableColumn;
 import edu.washington.escience.myria.proto.DataProto.ColumnMessage;
-import edu.washington.escience.myria.storage.TupleBatch;
-import edu.washington.escience.myria.storage.TupleUtils;
 import edu.washington.escience.myria.util.MyriaUtils;
 
 /**
@@ -31,9 +29,11 @@ public final class FloatColumnBuilder extends ColumnBuilder<Float> {
    * */
   private boolean built = false;
 
-  /** Constructs an empty column that can hold up to TupleBatch.BATCH_SIZE elements. */
-  public FloatColumnBuilder() {
-    data = FloatBuffer.allocate(TupleUtils.getBatchSize(Type.FLOAT_TYPE));
+  /** Constructs an empty column with the given capacity.
+   * @param size the capacity.
+   * */
+  public FloatColumnBuilder(final int size) {
+    data = FloatBuffer.allocate(size);
   }
 
   /**

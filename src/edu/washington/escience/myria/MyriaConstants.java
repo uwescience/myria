@@ -12,24 +12,16 @@ public final class MyriaConstants {
    */
   public static final String SYSTEM_NAME = "Myria";
 
-  /**
-   * 1 kb.
-   */
+  /** 1 KB. */
   public static final int KB = 1024;
 
-  /**
-   * 1 mb.
-   */
+  /** 1 MB. */
   public static final int MB = 1024 * KB;
 
-  /**
-   * 1 gb.
-   */
+  /** 1 GB. */
   public static final int GB = 1024 * MB;
 
-  /**
-   * 1 tb.
-   */
+  /** 1 TB. */
   public static final int TB = 1024 * GB;
 
   /**
@@ -203,12 +195,15 @@ public final class MyriaConstants {
    * The number of bytes that can back up in a {@link java.io.PipedInputStream} before we stop writing tuples and wait
    * for the client to read them. 16 MB.
    */
-  public static final int DEFAULT_PIPED_INPUT_STREAM_SIZE = 1024 * 1024 * 16;
+  public static final int DEFAULT_PIPED_INPUT_STREAM_SIZE = 16 * MB;
 
   /**
    * The maximum number of currently active (running, queued, paused, ...) queries at the master.
    */
   public static final int MAX_ACTIVE_QUERIES = 25;
+
+  /** Default size of a TupleBatch. */
+  public static final int TUPLE_BATCH_DEFAULT_SIZE = 10 * 1000;
 
   /**
    * The relation that stores profiling information about which operators executed when.

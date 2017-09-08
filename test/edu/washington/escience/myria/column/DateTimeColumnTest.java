@@ -8,18 +8,17 @@ import org.joda.time.DateTime;
 import org.junit.Test;
 
 import edu.washington.escience.myria.Type;
-import edu.washington.escience.myria.column.DateTimeColumn;
 import edu.washington.escience.myria.column.builder.DateTimeColumnBuilder;
 import edu.washington.escience.myria.proto.DataProto.ColumnMessage;
-import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleUtils;
 import edu.washington.escience.myria.util.DateTimeUtils;
 
 public class DateTimeColumnTest {
+  final int size = TupleUtils.getBatchSize(Type.DATETIME_TYPE);
 
   @Test
   public void testProto() {
-    final DateTimeColumnBuilder original = new DateTimeColumnBuilder();
+    final DateTimeColumnBuilder original = new DateTimeColumnBuilder(4);
     original
         .appendDateTime(DateTimeUtils.parse("2000-02-03"))
         .appendDateTime(DateTimeUtils.parse("2000-02-03"))
@@ -33,8 +32,8 @@ public class DateTimeColumnTest {
 
   @Test
   public void testFull() {
-    final DateTimeColumnBuilder builder = new DateTimeColumnBuilder();
-    for (int i = 0; i < TupleUtils.getBatchSize(Type.DATETIME_TYPE); i++) {
+    final DateTimeColumnBuilder builder = new DateTimeColumnBuilder(size);
+    for (int i = 0; i < size; i++) {
       builder.appendDateTime(new DateTime());
     }
     builder.build();
@@ -42,8 +41,8 @@ public class DateTimeColumnTest {
 
   @Test(expected = BufferOverflowException.class)
   public void testOverflow() {
-    final DateTimeColumnBuilder builder = new DateTimeColumnBuilder();
-    for (int i = 0; i < TupleUtils.getBatchSize(Type.DATETIME_TYPE); i++) {
+    final DateTimeColumnBuilder builder = new DateTimeColumnBuilder(size);
+    for (int i = 0; i < size; i++) {
       builder.appendDateTime(new DateTime());
     }
     builder.appendDateTime(new DateTime());

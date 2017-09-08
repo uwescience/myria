@@ -36,10 +36,12 @@ public final class StringColumnBuilder extends ColumnBuilder<String> {
    */
   private boolean built = false;
 
-  /** Constructs an empty column that can hold up to TupleBatch.BATCH_SIZE elements. */
-  public StringColumnBuilder() {
+  /** Constructs an empty column with the given capacity.
+   * @param size the capacity.
+   * */
+  public StringColumnBuilder(final int size) {
     numStrings = 0;
-    data = new String[TupleUtils.getBatchSize(Type.STRING_TYPE)];
+    data = new String[size];
   }
 
   /**

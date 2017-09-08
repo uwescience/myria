@@ -1,7 +1,10 @@
 package edu.washington.escience.myria.storage;
 
+import java.util.List;
+
 import com.google.common.base.Preconditions;
 
+import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.builder.ColumnBuilder;
@@ -484,26 +487,37 @@ public final class TupleUtils {
     }
     return true;
   }
+
+  /**
+   * batch size for tuple batch depending on a list of types.
+   * @param types types.
+   * @return batch size.
+   */
+  public static int getBatchSize(List<Type> types) {
+    if (types.contains(Type.BLOB_TYPE)) {
+      return 1;
+    }
+    return MyriaConstants.TUPLE_BATCH_DEFAULT_SIZE;
+  }
+
   /**
    * batch size for tuple batch depending on schema.
    * @param schema of tuplebatch
-   * @return batchsize.
+   * @return batch size.
    */
   public static int getBatchSize(Schema schema) {
-    int batchSize = 1000 * 10;
-    if (schema.getColumnTypes().indexOf(Type.BLOB_TYPE) >= 0) batchSize = 1;
-
-    return batchSize;
+    return getBatchSize(schema.getColumnTypes());
   }
+
   /**
    * batch size for column depending upon type.
    * @param type of column.
    * @return batchsize.
    */
   public static int getBatchSize(Type type) {
-    int batchSize = 1000 * 10;
-    if (type == Type.BLOB_TYPE) batchSize = 1;
-
-    return batchSize;
+    if (type == Type.BLOB_TYPE) {
+      return 1;
+    }
+    return MyriaConstants.TUPLE_BATCH_DEFAULT_SIZE;
   }
 }

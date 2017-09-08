@@ -10,14 +10,14 @@ import org.junit.Test;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.builder.IntColumnBuilder;
 import edu.washington.escience.myria.proto.DataProto.ColumnMessage;
-import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleUtils;
 
 public class IntColumnTest {
+  final int size = TupleUtils.getBatchSize(Type.INT_TYPE);
 
   @Test
   public void testProto() {
-    final IntColumnBuilder original = new IntColumnBuilder();
+    final IntColumnBuilder original = new IntColumnBuilder(size);
     original.appendInt(1).appendInt(2).appendInt(5).appendInt(11);
     final ColumnMessage serialized = original.build().serializeToProto();
     assertEquals(ColumnMessage.Type.INT, serialized.getType());
@@ -27,7 +27,7 @@ public class IntColumnTest {
 
   @Test
   public void testIntProtoColumn() {
-    final IntColumnBuilder original = new IntColumnBuilder();
+    final IntColumnBuilder original = new IntColumnBuilder(size);
     original.appendInt(1).appendInt(2).appendInt(5).appendInt(11).appendInt(17);
     final ColumnMessage serialized = original.build().serializeToProto();
     assertEquals(ColumnMessage.Type.INT, serialized.getType());
@@ -37,8 +37,8 @@ public class IntColumnTest {
 
   @Test
   public void testFull() {
-    final IntColumnBuilder builder = new IntColumnBuilder();
-    for (int i = 0; i < TupleUtils.getBatchSize(Type.INT_TYPE); i++) {
+    final IntColumnBuilder builder = new IntColumnBuilder(size);
+    for (int i = 0; i < size; i++) {
       builder.appendInt(i);
     }
     builder.build();
@@ -46,11 +46,11 @@ public class IntColumnTest {
 
   @Test(expected = BufferOverflowException.class)
   public void testOverflow() {
-    final IntColumnBuilder builder = new IntColumnBuilder();
-    for (int i = 0; i < TupleUtils.getBatchSize(Type.INT_TYPE); i++) {
+    final IntColumnBuilder builder = new IntColumnBuilder(size);
+    for (int i = 0; i < size; i++) {
       builder.appendInt(i);
     }
-    builder.appendInt(TupleUtils.getBatchSize(Type.INT_TYPE));
+    builder.appendInt(0);
     builder.build();
   }
 }

@@ -3,19 +3,16 @@ package edu.washington.escience.myria.column.builder;
 import java.nio.BufferOverflowException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.Arrays;
 import java.util.BitSet;
 
 import com.almworks.sqlite4java.SQLiteException;
 import com.almworks.sqlite4java.SQLiteStatement;
 import com.google.common.base.Preconditions;
 
-import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.BooleanColumn;
 import edu.washington.escience.myria.column.mutable.BooleanMutableColumn;
 import edu.washington.escience.myria.proto.DataProto.ColumnMessage;
-import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleUtils;
 import edu.washington.escience.myria.util.MyriaUtils;
 
@@ -38,12 +35,13 @@ public final class BooleanColumnBuilder extends ColumnBuilder<Boolean> {
    * */
   private boolean built = false;
 
-  /** Constructs an empty column that can hold up to TupleBatch.BATCH_SIZE elements. */
-  public BooleanColumnBuilder() {
+  /** Constructs an empty column that can hold up to size elements.
+   * @param size the size of the column.
+   * */
+  public BooleanColumnBuilder(final int size) {
     data = new BitSet();
     numBits = 0;
-    int batchSize = TupleUtils.getBatchSize(Type.BOOLEAN_TYPE);
-    capacity = batchSize;
+    capacity = size;
   }
 
   /**
