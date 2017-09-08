@@ -480,7 +480,7 @@ public final class MyriaDriverLauncher {
     }
   }
 
-  final clazz RuntimeErrorHandler implements EventHandler<FailedRuntime> {
+  final class RuntimeErrorHandler implements EventHandler<FailedRuntime> {
     @Override
     public void onNext(final FailedRuntime error) {
       LOGGER.error("Myria driver runtime error {}: {}", error, error.getReason().orElse(null));
