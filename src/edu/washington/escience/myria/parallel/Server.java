@@ -108,6 +108,7 @@ import edu.washington.escience.myria.operator.DuplicateTBGenerator;
 import edu.washington.escience.myria.operator.EOSSource;
 import edu.washington.escience.myria.operator.EmptyRelation;
 import edu.washington.escience.myria.operator.EmptySink;
+import edu.washington.escience.myria.operator.Limit;
 import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.operator.RootOperator;
 import edu.washington.escience.myria.operator.TupleSink;
@@ -120,7 +121,6 @@ import edu.washington.escience.myria.operator.network.GenericShuffleProducer;
 import edu.washington.escience.myria.operator.network.distribute.BroadcastDistributeFunction;
 import edu.washington.escience.myria.operator.network.distribute.DistributeFunction;
 import edu.washington.escience.myria.operator.network.distribute.HowDistributed;
-import edu.washington.escience.myria.parallel.Worker.QueryCommand;
 import edu.washington.escience.myria.parallel.ipc.IPCConnectionPool;
 import edu.washington.escience.myria.parallel.ipc.IPCMessage;
 import edu.washington.escience.myria.parallel.ipc.InJVMLoopbackChannelSink;
@@ -1574,11 +1574,15 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
    * @param relationKey the relation to be downloaded.
    * @param writer the {@link TupleWriter} which will serialize the tuples.
    * @param dataSink the {@link DataSink} for the tuple destination
+   * @param limit the maximum number of tuples to send.
    * @return the query future from which the query status can be looked up.
    * @throws DbException if there is an error in the system.
    */
   public ListenableFuture<Query> startDataStream(
-      final RelationKey relationKey, final TupleWriter writer, final DataSink dataSink)
+      final RelationKey relationKey,
+      final TupleWriter writer,
+      final DataSink dataSink,
+      final Long limit)
       throws DbException {
     /* Get the relation's schema, to make sure it exists. */
     final Schema schema;
@@ -1616,7 +1620,12 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
 
     /* Construct the master plan. */
     final Consumer consumer = new Consumer(schema, operatorId, ImmutableSet.copyOf(scanWorkers));
-    TupleSink output = new TupleSink(consumer, writer, dataSink);
+    TupleSink output = null;
+    if (limit != null) {
+      output = new TupleSink(new Limit(limit, consumer), writer, dataSink);
+    } else {
+      output = new TupleSink(consumer, writer, dataSink);
+    }
     final SubQueryPlan masterPlan = new SubQueryPlan(output);
 
     /* Submit the plan for the download. */

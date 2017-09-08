@@ -45,12 +45,10 @@ import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.TupleWriter;
 import edu.washington.escience.myria.accessmethod.AccessMethod.IndexRef;
-
 import edu.washington.escience.myria.api.encoding.CreateIndexEncoding;
 import edu.washington.escience.myria.api.encoding.CreateViewEncoding;
 import edu.washington.escience.myria.api.encoding.DatasetEncoding;
 import edu.washington.escience.myria.api.encoding.DatasetStatus;
-import edu.washington.escience.myria.api.encoding.FunctionStatus;
 import edu.washington.escience.myria.api.encoding.ParallelDatasetEncoding;
 import edu.washington.escience.myria.api.encoding.TipsyDatasetEncoding;
 import edu.washington.escience.myria.coordinator.CatalogException;
@@ -160,6 +158,7 @@ public final class DatasetResource {
    * @param programName the program to which the target relation belongs.
    * @param relationName the name of the target relation.
    * @param format the format of the output data. Valid options are (case-insensitive) "csv", "tsv", and "json".
+   * @param limit the maximum number of tuples to send to the client.
    * @return metadata about the specified relation.
    * @throws DbException if there is an error in the database.
    * @throws IOException
@@ -172,7 +171,8 @@ public final class DatasetResource {
       @PathParam("userName") final String userName,
       @PathParam("programName") final String programName,
       @PathParam("relationName") final String relationName,
-      @QueryParam("format") final String format)
+      @QueryParam("format") final String format,
+      @QueryParam("limit") final Long limit)
       throws DbException, IOException {
 
     /* Start building the response. */
@@ -221,7 +221,7 @@ public final class DatasetResource {
     }
 
     /* Start streaming tuples into the TupleWriter, and through the pipes to the PipedStreamingOutput. */
-    server.startDataStream(relationKey, writer, dataSink);
+    server.startDataStream(relationKey, writer, dataSink, limit);
 
     /* Yay, worked! Ensure the file has the correct filename. */
     return response.build();
