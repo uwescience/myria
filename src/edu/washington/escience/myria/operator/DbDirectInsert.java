@@ -97,7 +97,7 @@ public class DbDirectInsert extends RootOperator implements DbWriter {
       accessMethod = AccessMethod.of(connectionInfo.getDbms(), connectionInfo, false);
       /* Create the table */
       accessMethod.createTableIfNotExists(relationKey, getSchema());
-      /* Populate the table */;
+      /* Populate the table */
       long tuplesWritten = accessMethod.insertFromStream(relationKey, inputStream);
       LOGGER.info("{} tuples written to relation '{}'", tuplesWritten, relationKey);
     } catch (final IOException e) {
