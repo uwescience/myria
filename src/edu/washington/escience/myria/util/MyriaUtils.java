@@ -169,25 +169,26 @@ public final class MyriaUtils {
   }
 
   /**
-   * casts blob v to an int
+   * casts blob {@code v} to an {@code int}, using big-endian byte order
    * @param v the blob to cast
-   * @return the value inside of the blob as an int
-   * @throws IndexOutOfBoundsException if the blob is smaller or larger than an int
+   * @return the value of {@code v} as an {@code int}
+   * @throws IndexOutOfBoundsException if {@code v} is smaller or larger than an {@code int}
    */
   public static int castBlobToInt(ByteBuffer v) throws IndexOutOfBoundsException {
     v.rewind();
     if (v.limit() == Integer.BYTES) {
       return v.getInt();
     } else {
-      throw new IndexOutOfBoundsException("Blob was not the size of an int");
+      throw new IndexOutOfBoundsException(
+          "Blob has " + v.limit() + " bytes, expected " + Integer.BYTES);
     }
   }
 
   /**
-   * casts blob v to a long
+   * casts blob {@code v} to a {@code long}, using big-endian byte order
    * @param v the blob to cast
-   * @return the value inside of the blob as a long
-   * @throws IndexOutOfBoundsException if the blob is smaller or larger than a long
+   * @return the value of {@code v} as a {@code long}
+   * @throws IndexOutOfBoundsException if {@code v} is smaller or larger than a {@code long}
    */
   public static long castBlobToLong(ByteBuffer v) throws IndexOutOfBoundsException {
     v.rewind();
@@ -195,7 +196,7 @@ public final class MyriaUtils {
       return v.getLong();
     } else {
       throw new IndexOutOfBoundsException(
-          "Blob was of size " + v.limit() + ", not the size of a long");
+          "Blob has " + v.limit() + " bytes, expected " + Long.BYTES);
     }
   }
 

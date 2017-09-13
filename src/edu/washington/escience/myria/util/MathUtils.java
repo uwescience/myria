@@ -62,10 +62,7 @@ public final class MathUtils {
    * @returns 1 if v was True, 0 if v was False
    */
   public static int castBooleanToInt(final boolean v) {
-    if (v) {
-      return 1;
-    }
-    return 0;
+    return v ? 1 : 0;
   }
 
   /**
@@ -75,10 +72,7 @@ public final class MathUtils {
    * @returns 1 if v was True, 0 if v was False
    */
   public static long castBooleanToLong(final boolean v) {
-    if (v) {
-      return 1L;
-    }
-    return 0L;
+    return v ? 1L : 0L;
   }
 
   /**
