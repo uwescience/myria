@@ -48,6 +48,7 @@ import edu.washington.escience.myria.expression.evaluate.ExpressionOperatorParam
   @Type(name = "UPPER", value = ToUpperCaseExpression.class),
   /* Binary */
   @Type(name = "AND", value = AndExpression.class),
+  @Type(name = "CONCAT", value = ConcatExpression.class),
   @Type(name = "DIVIDE", value = DivideExpression.class),
   @Type(name = "EQ", value = EqualsExpression.class),
   @Type(name = "GREATER", value = GreaterExpression.class),
@@ -67,6 +68,7 @@ import edu.washington.escience.myria.expression.evaluate.ExpressionOperatorParam
   @Type(name = "SPLIT", value = SplitExpression.class),
   @Type(name = "TIMES", value = TimesExpression.class),
   /* Nary */
+  @Type(name = "BYTERANGE", value = ByteRangeExpression.class),
   @Type(name = "CONDITION", value = ConditionalExpression.class),
   @Type(name = "SUBSTR", value = SubstrExpression.class),
   @Type(name = "PYUDF", value = PyUDFExpression.class)
