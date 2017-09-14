@@ -1,7 +1,9 @@
 package edu.washington.escience.myria.operator.agg;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 import javax.annotation.Nullable;
@@ -168,7 +170,7 @@ public class Aggregate extends UnaryOperator {
    */
   @Override
   protected Schema generateSchema() {
-    if (getChild() == null) {
+    if (getChild() == null || getChild().getSchema() == null) {
       return null;
     }
     Schema inputSchema = getChild().getSchema();
@@ -219,5 +221,15 @@ public class Aggregate extends UnaryOperator {
         new UniqueTupleHashTable(
             Schema.merge(groupingSchema, stateSchema), MyriaArrayUtils.range(0, gfields.length));
     resultBuffer = new TupleBatchBuffer(getSchema());
+    groupStates.name = "op" + getOpId();
+  }
+
+  @Override
+  public Map<String, Map<String, Integer>> dumpHashTableStats() {
+    Map<String, Map<String, Integer>> ret = new HashMap<>();
+    if (groupStates != null) {
+      ret.put(groupStates.name, groupStates.dumpStats());
+    }
+    return ret;
   }
 };

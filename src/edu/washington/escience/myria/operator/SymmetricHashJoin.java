@@ -1,13 +1,16 @@
 package edu.washington.escience.myria.operator;
 
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+
+import org.eclipse.collections.api.iterator.IntIterator;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import com.gs.collections.api.iterator.IntIterator;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
@@ -162,7 +165,8 @@ public final class SymmetricHashJoin extends BinaryOperator {
       Type rightType = rightSchema.getColumnType(rightIndex);
       Preconditions.checkState(
           leftType == rightType,
-          "column types do not match for join at index %s: left column type %s [%s] != right column type %s [%s]",
+          "column types do not match for join op %s at index %s: left column type %s [%s] != right column type %s [%s]",
+          getOpId(),
           i,
           leftIndex,
           leftType,
@@ -414,6 +418,8 @@ public final class SymmetricHashJoin extends BinaryOperator {
   public void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
     leftHashTable = new TupleHashTable(getLeft().getSchema(), leftCompareColumns);
     rightHashTable = new TupleHashTable(getRight().getSchema(), rightCompareColumns);
+    leftHashTable.name = "op" + getOpId() + ".left";
+    rightHashTable.name = "op" + getOpId() + ".right";
     ans = new TupleBatchBuffer(getSchema());
     nonBlocking =
         (QueryExecutionMode) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_EXECUTION_MODE)
@@ -514,5 +520,17 @@ public final class SymmetricHashJoin extends BinaryOperator {
     LEFT_EOS,
     /** Pull from the right child until it reaches EOS. */
     RIGHT_EOS
+  }
+
+  @Override
+  public Map<String, Map<String, Integer>> dumpHashTableStats() {
+    Map<String, Map<String, Integer>> ret = new HashMap<>();
+    if (leftHashTable != null) {
+      ret.put(leftHashTable.name, leftHashTable.dumpStats());
+    }
+    if (rightHashTable != null) {
+      ret.put(rightHashTable.name, rightHashTable.dumpStats());
+    }
+    return ret;
   }
 }

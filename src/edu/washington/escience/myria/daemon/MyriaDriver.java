@@ -570,7 +570,10 @@ public final class MyriaDriver {
     doTransition(MyriaConstants.MASTER_ID, TaskStateEvent.EVALUATOR_SUBMITTED, masterRequest);
   }
 
-  private void setJVMOptions(final AllocatedEvaluator evaluator, final boolean isMaster)
+  private void setJVMOptions(
+      final AllocatedEvaluator evaluator,
+      final boolean isMaster,
+      final @Nullable Configuration workerConf)
       throws InjectionException {
     final int jvmHeapSizeMinMB =
         (int)
@@ -590,6 +593,17 @@ public final class MyriaDriver {
                         MyriaGlobalConfigurationModule.WorkerJvmHeapSizeMaxGB.class)));
     final Set<String> jvmOptions =
         globalConfInjector.getNamedInstance(MyriaGlobalConfigurationModule.JvmOptions.class);
+    if (workerConf != null && jvmOptions.contains("-ElasticMem")) {
+      final Integer jvmPort =
+          Tang.Factory.getTang()
+              .newInjector(workerConf)
+              .getNamedInstance(MyriaWorkerConfigurationModule.WorkerJVMPort.class);
+      if (jvmPort != null) {
+        jvmOptions.add("-JVMPort=" + jvmPort);
+      } else {
+        throw new RuntimeException("-ElasticMem is enabled but JVM ports are not specified");
+      }
+    }
     final JVMProcess jvmProcess =
         jvmProcessFactory
             .newEvaluatorProcess()
@@ -625,7 +639,7 @@ public final class MyriaDriver {
     Preconditions.checkState(!contextsByWorkerId.containsKey(workerId));
     Configuration contextConf =
         ContextConfiguration.CONF.set(ContextConfiguration.IDENTIFIER, workerId + "").build();
-    setJVMOptions(evaluator, (workerId == MyriaConstants.MASTER_ID));
+    setJVMOptions(evaluator, (workerId == MyriaConstants.MASTER_ID), workerConfs.get(workerId));
     if (workerId != MyriaConstants.MASTER_ID) {
       contextConf = Configurations.merge(contextConf, workerConfs.get(workerId));
     }

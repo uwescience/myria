@@ -1,14 +1,12 @@
 package edu.washington.escience.myria.operator;
 
-import java.io.Serializable;
-
+import org.eclipse.collections.api.iterator.IntIterator;
+import org.eclipse.collections.impl.list.mutable.primitive.IntArrayList;
+import org.eclipse.collections.impl.map.mutable.primitive.LongIntHashMap;
+import org.eclipse.collections.impl.map.mutable.primitive.LongObjectHashMap;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Preconditions;
-import com.gs.collections.api.iterator.IntIterator;
-import com.gs.collections.impl.list.mutable.primitive.IntArrayList;
-import com.gs.collections.impl.map.mutable.primitive.LongIntHashMap;
-import com.gs.collections.impl.map.mutable.primitive.LongObjectHashMap;
 
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.storage.MutableTupleBuffer;
@@ -20,7 +18,7 @@ import edu.washington.escience.myria.util.HashUtils;
 /**
  * An abstraction of a hash table of unique tuples.
  */
-public final class UniqueTupleHashTable implements Serializable {
+public final class UniqueTupleHashTable extends TupleHashTable {
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
   /**
@@ -38,10 +36,6 @@ public final class UniqueTupleHashTable implements Serializable {
   private transient LongIntHashMap keyHashCodesToIndexes;
   /** Map from colliding hash codes to indexes. */
   private transient LongObjectHashMap<IntArrayList> collidingKeyHashCodesToIndexes;
-  /** The table containing keys and values. */
-  private transient MutableTupleBuffer data;
-  /** Key column indices. */
-  private final int[] keyColumns;
 
   /** The logger for this class. */
   protected static final org.slf4j.Logger LOGGER =
@@ -52,17 +46,9 @@ public final class UniqueTupleHashTable implements Serializable {
    * @param keyColumns key column indices
    */
   public UniqueTupleHashTable(final Schema schema, final int[] keyColumns) {
-    this.keyColumns = keyColumns;
-    data = new MutableTupleBuffer(schema);
+    super(schema, keyColumns);
     keyHashCodesToIndexes = new LongIntHashMap();
     collidingKeyHashCodesToIndexes = new LongObjectHashMap<IntArrayList>();
-  }
-
-  /**
-   * @return the number of tuples this hash table has.
-   */
-  public int numTuples() {
-    return data.numTuples();
   }
 
   /**
@@ -153,15 +139,9 @@ public final class UniqueTupleHashTable implements Serializable {
   }
 
   /**
-   * @return the data
-   */
-  public MutableTupleBuffer getData() {
-    return data;
-  }
-
-  /**
    * Clean up the hash table.
    */
+  @Override
   public void cleanup() {
     keyHashCodesToIndexes = new LongIntHashMap();
     collidingKeyHashCodesToIndexes = new LongObjectHashMap<IntArrayList>();

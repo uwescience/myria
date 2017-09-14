@@ -3,12 +3,13 @@ package edu.washington.escience.myria.operator;
 import java.nio.ByteBuffer;
 import java.util.BitSet;
 
+import org.eclipse.collections.api.iterator.LongIterator;
+import org.eclipse.collections.impl.list.mutable.primitive.LongArrayList;
+import org.eclipse.collections.impl.map.mutable.primitive.LongLongHashMap;
+import org.eclipse.collections.impl.map.mutable.primitive.LongObjectHashMap;
+
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
-import com.gs.collections.api.iterator.LongIterator;
-import com.gs.collections.impl.list.mutable.primitive.LongArrayList;
-import com.gs.collections.impl.map.mutable.primitive.LongLongHashMap;
-import com.gs.collections.impl.map.mutable.primitive.LongObjectHashMap;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.Schema;

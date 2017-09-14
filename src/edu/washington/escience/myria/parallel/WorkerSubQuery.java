@@ -2,8 +2,10 @@ package edu.washington.escience.myria.parallel;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.Timer;
 import java.util.concurrent.ConcurrentHashMap;
@@ -18,9 +20,9 @@ import com.google.common.collect.ImmutableMap;
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.MyriaConstants.ProfilingMode;
+import edu.washington.escience.myria.operator.BatchTupleSource;
 import edu.washington.escience.myria.operator.RootOperator;
 import edu.washington.escience.myria.operator.StreamingState;
-import edu.washington.escience.myria.operator.BatchTupleSource;
 import edu.washington.escience.myria.operator.network.Producer;
 import edu.washington.escience.myria.operator.network.RecoverProducer;
 import edu.washington.escience.myria.parallel.ipc.StreamOutputChannel;
@@ -348,6 +350,17 @@ public class WorkerSubQuery extends LocalSubQuery {
     int ret = Integer.MIN_VALUE;
     for (LocalFragment t : fragments) {
       ret = Math.max(ret, t.getMaxOpId(t.getRootOp()));
+    }
+    return ret;
+  }
+
+  /**
+   * @return the hash table stats of the subquery.
+   */
+  public Map<String, Map<String, Integer>> dumpHashTableStats() {
+    Map<String, Map<String, Integer>> ret = new HashMap<>();
+    for (LocalFragment t : fragments) {
+      ret.putAll(t.dumpHashTableStats(t.getRootOp()));
     }
     return ret;
   }

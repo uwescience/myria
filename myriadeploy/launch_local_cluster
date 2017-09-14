@@ -1,7 +1,10 @@
 #!/bin/bash
 set -e
 REPO_ROOT=$(git rev-parse --show-toplevel)
-if [ ! -f "$REPO_ROOT/myriadeploy/deployment.cfg" ]
+if [ -n "$1" ];
+then
+    cp $1 "$REPO_ROOT/myriadeploy/deployment.cfg"
+elif [ ! -f "$REPO_ROOT/myriadeploy/deployment.cfg" ]
 then
     cp "$REPO_ROOT/myriadeploy/deployment.cfg.local" "$REPO_ROOT/myriadeploy/deployment.cfg"
 fi

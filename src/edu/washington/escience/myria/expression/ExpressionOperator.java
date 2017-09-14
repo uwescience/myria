@@ -51,6 +51,7 @@ import edu.washington.escience.myria.expression.evaluate.ExpressionOperatorParam
   @Type(name = "DIVIDE", value = DivideExpression.class),
   @Type(name = "EQ", value = EqualsExpression.class),
   @Type(name = "GREATER", value = GreaterExpression.class),
+  @Type(name = "LIKE", value = LikeExpression.class),
   @Type(name = "GT", value = GreaterThanExpression.class),
   @Type(name = "GTEQ", value = GreaterThanOrEqualsExpression.class),
   @Type(name = "IDIVIDE", value = IntDivideExpression.class),

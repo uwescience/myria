@@ -1,6 +1,7 @@
 package edu.washington.escience.myria.parallel;
 
 import java.io.IOException;
+import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Queue;
@@ -17,6 +18,7 @@ import java.util.concurrent.locks.Lock;
 import javax.annotation.Nonnull;
 import javax.annotation.concurrent.GuardedBy;
 import javax.inject.Inject;
+import javax.ws.rs.core.UriBuilder;
 
 import org.apache.commons.io.FilenameUtils;
 import org.apache.reef.tang.Configuration;
@@ -35,6 +37,9 @@ import org.apache.reef.task.events.CloseEvent;
 import org.apache.reef.task.events.DriverMessage;
 import org.apache.reef.util.Optional;
 import org.apache.reef.wake.EventHandler;
+import org.glassfish.grizzly.http.server.HttpServer;
+import org.glassfish.jersey.grizzly2.httpserver.GrizzlyHttpServerFactory;
+import org.glassfish.jersey.server.ResourceConfig;
 import org.jboss.netty.channel.ChannelFactory;
 import org.jboss.netty.channel.ChannelFuture;
 import org.jboss.netty.channel.ChannelFutureListener;
@@ -45,6 +50,7 @@ import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
 import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
 import org.jboss.netty.handler.execution.OrderedMemoryAwareThreadPoolExecutor;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.common.util.concurrent.Striped;
 import com.google.protobuf.InvalidProtocolBufferException;
 
@@ -52,7 +58,9 @@ import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.MyriaConstants.FTMode;
 import edu.washington.escience.myria.accessmethod.ConnectionInfo;
+import edu.washington.escience.myria.api.WorkerApplication;
 import edu.washington.escience.myria.coordinator.ConfigFileException;
+import edu.washington.escience.myria.functions.PythonFunctionRegistrar;
 import edu.washington.escience.myria.parallel.ipc.IPCConnectionPool;
 import edu.washington.escience.myria.parallel.ipc.InJVMLoopbackChannelSink;
 import edu.washington.escience.myria.profiling.ProfilingLogger;
@@ -77,11 +85,11 @@ import edu.washington.escience.myria.tools.MyriaWorkerConfigurationModule.Worker
 import edu.washington.escience.myria.tools.MyriaWorkerConfigurationModule.WorkerHost;
 import edu.washington.escience.myria.tools.MyriaWorkerConfigurationModule.WorkerId;
 import edu.washington.escience.myria.tools.MyriaWorkerConfigurationModule.WorkerPort;
+import edu.washington.escience.myria.tools.MyriaWorkerConfigurationModule.WorkerStatsPort;
 import edu.washington.escience.myria.tools.MyriaWorkerConfigurationModule.WorkerStorageDbName;
 import edu.washington.escience.myria.util.IPCUtils;
 import edu.washington.escience.myria.util.concurrent.RenamingThreadFactory;
 import edu.washington.escience.myria.util.concurrent.ThreadAffinityFixedRoundRobinExecutionPool;
-import edu.washington.escience.myria.functions.PythonFunctionRegistrar;
 
 /**
  * Workers do the real query execution. A query received by the server will be pre-processed and then dispatched to the
@@ -99,9 +107,6 @@ import edu.washington.escience.myria.functions.PythonFunctionRegistrar;
  *
  * 4) After the query plan finishes, each worker removes the query plan and related data structures, and then waits for
  * next query plan
- *
- */
-/**
  *
  */
 @Unit
@@ -266,6 +271,20 @@ public final class Worker implements Task, TaskMessageSource {
 
   private Optional<TaskMessage> dequeueDriverMessage() {
     return Optional.ofNullable(pendingDriverMessages.poll());
+  }
+
+  /**
+   *
+   * @param qid query id.
+   * @return the current hash table stats of the query.
+   */
+  public Map<String, Map<String, Integer>> getHashTableStats(final long qid) {
+    if (!activeQueries.containsKey(qid)) return ImmutableMap.of();
+    SubQueryId subQueryId = activeQueries.get(qid);
+    if (!executingSubQueries.containsKey(subQueryId)) {
+      return ImmutableMap.of();
+    }
+    return executingSubQueries.get(subQueryId).dumpHashTableStats();
   }
 
   private void enqueueDriverMessage(@Nonnull final TransportMessage msg) {
@@ -452,6 +471,9 @@ public final class Worker implements Task, TaskMessageSource {
    */
   private final ConcurrentHashMap<String, Object> execEnvVars;
 
+  /** */
+  private final HttpServer apiServer;
+
   /**
    * The profiling logger for this worker.
    */
@@ -531,6 +553,7 @@ public final class Worker implements Task, TaskMessageSource {
       @Parameter(WorkerId.class) final int workerID,
       @Parameter(WorkerHost.class) final String workerHost,
       @Parameter(WorkerPort.class) final int workerPort,
+      @Parameter(WorkerStatsPort.class) final int workerStatsPort,
       @Parameter(MasterHost.class) final String masterHost,
       @Parameter(MasterRpcPort.class) final int masterPort,
       @Parameter(StorageDbms.class) final String databaseSystem,
@@ -594,6 +617,10 @@ public final class Worker implements Task, TaskMessageSource {
     execEnvVars.put(
         MyriaConstants.EXEC_ENV_VAR_DATABASE_CONN_INFO,
         ConnectionInfo.of(databaseSystem, jsonConnInfo));
+
+    URI baseUri = UriBuilder.fromUri("http://0.0.0.0/").port(workerStatsPort).build();
+    ResourceConfig workerApplication = new WorkerApplication(this);
+    apiServer = GrizzlyHttpServerFactory.createHttpServer(baseUri, workerApplication);
   }
 
   private Map<Integer, SocketInfo> getComputingUnits(
@@ -733,12 +760,11 @@ public final class Worker implements Task, TaskMessageSource {
     if (LOGGER.isInfoEnabled()) {
       LOGGER.info("shutdown IPC completed");
     }
-    // must use shutdownNow here because the query queue processor and the control message processor
-    // are both
-    // blocking.
-    // We have to interrupt them at shutdown.
+    /* must use shutdownNow here because the query queue processor and the control message processor
+    are both blocking. We have to interrupt them at shutdown. */
     messageProcessingExecutor.shutdownNow();
-    queryExecutor.shutdown();
+    queryExecutor.shutdownNow();
+    apiServer.shutdownNow();
     if (LOGGER.isInfoEnabled()) {
       LOGGER.info("Worker #" + myID + " shutdown completed");
     }
@@ -755,10 +781,6 @@ public final class Worker implements Task, TaskMessageSource {
     ExecutorService workerExecutor =
         Executors.newCachedThreadPool(new RenamingThreadFactory("IPC worker"));
     pipelineExecutor = null; // Remove pipeline executors
-    // new OrderedMemoryAwareThreadPoolExecutor(3, 5 * MyriaConstants.MB, 0,
-    // MyriaConstants.THREAD_POOL_KEEP_ALIVE_TIME_IN_MS, TimeUnit.MILLISECONDS, new
-    // RenamingThreadFactory(
-    // "Pipeline executor"));
 
     ChannelFactory clientChannelFactory =
         new NioClientSocketChannelFactory(
@@ -787,8 +809,6 @@ public final class Worker implements Task, TaskMessageSource {
     if (getQueryExecutionMode() == QueryExecutionMode.NON_BLOCKING) {
       int numCPU = Runtime.getRuntime().availableProcessors();
       queryExecutor =
-          // new ThreadPoolExecutor(numCPU, numCPU, 0L, TimeUnit.MILLISECONDS, new
-          // LinkedBlockingQueue<Runnable>(),
           // new RenamingThreadFactory("Nonblocking query executor"));
           new ThreadAffinityFixedRoundRobinExecutionPool(
               numCPU, new RenamingThreadFactory("Nonblocking query executor"));
@@ -801,6 +821,8 @@ public final class Worker implements Task, TaskMessageSource {
         Executors.newCachedThreadPool(new RenamingThreadFactory("Control/Query message processor"));
     messageProcessingExecutor.submit(injector.getInstance(QueryMessageProcessor.class));
     messageProcessingExecutor.submit(injector.getInstance(ControlMessageProcessor.class));
+    apiServer.start();
+    LOGGER.info("Worker API server started");
   }
 
   /**

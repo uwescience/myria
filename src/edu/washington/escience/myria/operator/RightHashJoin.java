@@ -3,13 +3,14 @@ package edu.washington.escience.myria.operator;
 import java.util.Arrays;
 import java.util.List;
 
+import org.eclipse.collections.api.block.procedure.primitive.IntProcedure;
+import org.eclipse.collections.impl.list.mutable.primitive.IntArrayList;
+import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap;
+
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import com.gs.collections.api.block.procedure.primitive.IntProcedure;
-import com.gs.collections.impl.list.mutable.primitive.IntArrayList;
-import com.gs.collections.impl.map.mutable.primitive.IntObjectHashMap;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.Schema;

@@ -13,8 +13,8 @@ rest_port = 8753
 0 = localhost:8001
 
 [workers]
-1 = localhost:9001
-2 = localhost:9002
+1 = localhost:9001:::10001
+2 = localhost:9002:::10002
 
 [runtime]
 # Uncomment to set number of virtual CPU cores used by the master process

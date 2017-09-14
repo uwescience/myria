@@ -25,6 +25,8 @@ public final class MyriaWorkerConfigurationModule extends ConfigurationModuleBui
   public static final RequiredParameter<Integer> WORKER_ID = new RequiredParameter<>();
   public static final RequiredParameter<String> WORKER_HOST = new RequiredParameter<>();
   public static final RequiredParameter<Integer> WORKER_PORT = new RequiredParameter<>();
+  public static final RequiredParameter<Integer> WORKER_JVM_PORT = new RequiredParameter<>();
+  public static final RequiredParameter<Integer> WORKER_STATS_PORT = new RequiredParameter<>();
   public static final RequiredParameter<String> WORKER_STORAGE_DB_NAME = new RequiredParameter<>();
   public static final OptionalParameter<String> WORKER_STORAGE_DB_PASSWORD =
       new OptionalParameter<>();
@@ -36,6 +38,8 @@ public final class MyriaWorkerConfigurationModule extends ConfigurationModuleBui
           .bindNamedParameter(WorkerId.class, WORKER_ID)
           .bindNamedParameter(WorkerHost.class, WORKER_HOST)
           .bindNamedParameter(WorkerPort.class, WORKER_PORT)
+          .bindNamedParameter(WorkerJVMPort.class, WORKER_JVM_PORT)
+          .bindNamedParameter(WorkerStatsPort.class, WORKER_STATS_PORT)
           .bindNamedParameter(WorkerStorageDbName.class, WORKER_STORAGE_DB_NAME)
           .bindNamedParameter(WorkerStorageDbPassword.class, WORKER_STORAGE_DB_PASSWORD)
           .bindNamedParameter(WorkerStorageDbPort.class, WORKER_STORAGE_DB_PORT)
@@ -50,6 +54,12 @@ public final class MyriaWorkerConfigurationModule extends ConfigurationModuleBui
 
   @NamedParameter
   public class WorkerPort implements Name<Integer> {}
+
+  @NamedParameter
+  public class WorkerStatsPort implements Name<Integer> {}
+
+  @NamedParameter
+  public class WorkerJVMPort implements Name<Integer> {}
 
   @NamedParameter
   public class WorkerStorageDbName implements Name<String> {}
