@@ -470,5 +470,18 @@ store(S, bits);
         self.assertListOfDictsEqual(query.to_dict(), expected)
 
 
+class BlobToIntTest(MyriaTestBase):
+    def test(self):
+        program = r"""
+R = [b'\x00\x00\x00\x00\x00\x00\x00\x01' as longBlob];
+S = [from R emit int(longBlob) as num];
+store(S, resNum);
+"""
+        query = MyriaQuery.submit(program)
+        expected = [{'num': 1}]
+        self.assertEqual(query.status, 'SUCCESS')
+        self.assertListOfDictsEqual(query.to_dict(), expected)
+
+
 if __name__ == '__main__':
     unittest.main()

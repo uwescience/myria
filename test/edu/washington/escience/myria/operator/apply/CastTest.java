@@ -3,6 +3,7 @@ package edu.washington.escience.myria.operator.apply;
 import static org.junit.Assert.assertEquals;
 
 import java.lang.reflect.InvocationTargetException;
+import java.nio.ByteBuffer;
 
 import org.joda.time.DateTime;
 import org.junit.Test;
@@ -168,6 +169,58 @@ public class CastTest {
   }
 
   @Test
+  public void testIntToBoolean() throws Throwable {
+    ConstantExpression val0 = new ConstantExpression(0);
+    Object ans = evaluateCastAndUnrollException(val0, Type.BOOLEAN_TYPE);
+    assertEquals(false, ((Boolean) ans).booleanValue());
+
+    ConstantExpression val1 = new ConstantExpression(1);
+    ans = evaluateCastAndUnrollException(val1, Type.BOOLEAN_TYPE);
+    assertEquals(true, ((Boolean) ans).booleanValue());
+
+    ConstantExpression val42 = new ConstantExpression(42);
+    ans = evaluateCastAndUnrollException(val42, Type.BOOLEAN_TYPE);
+    assertEquals(true, ((Boolean) ans).booleanValue());
+  }
+
+  @Test
+  public void testLongToBoolean() throws Throwable {
+    ConstantExpression val0 = new ConstantExpression(0L);
+    Object ans = evaluateCastAndUnrollException(val0, Type.BOOLEAN_TYPE);
+    assertEquals(false, ((Boolean) ans).booleanValue());
+
+    ConstantExpression val1 = new ConstantExpression(1L);
+    ans = evaluateCastAndUnrollException(val1, Type.BOOLEAN_TYPE);
+    assertEquals(true, ((Boolean) ans).booleanValue());
+
+    ConstantExpression val42 = new ConstantExpression(42L);
+    ans = evaluateCastAndUnrollException(val42, Type.BOOLEAN_TYPE);
+    assertEquals(true, ((Boolean) ans).booleanValue());
+  }
+
+  @Test
+  public void testBooleanToInt() throws Throwable {
+    ConstantExpression valF = new ConstantExpression(false);
+    Object ans = evaluateCastAndUnrollException(valF, Type.INT_TYPE);
+    assertEquals(0, ((Integer) ans).intValue());
+
+    ConstantExpression valT = new ConstantExpression(true);
+    ans = evaluateCastAndUnrollException(valT, Type.INT_TYPE);
+    assertEquals(1, ((Integer) ans).intValue());
+  }
+
+  @Test
+  public void testBooleanToLong() throws Throwable {
+    ConstantExpression valF = new ConstantExpression(false);
+    Object ans = evaluateCastAndUnrollException(valF, Type.LONG_TYPE);
+    assertEquals(0L, ((Long) ans).intValue());
+
+    ConstantExpression valT = new ConstantExpression(true);
+    ans = evaluateCastAndUnrollException(valT, Type.LONG_TYPE);
+    assertEquals(1L, ((Long) ans).intValue());
+  }
+
+  @Test
   public void testDoubleToFloat() throws Throwable {
     float tolerance = (float) 1e-6;
     ConstantExpression val1 = new ConstantExpression(0.0);
@@ -279,6 +332,24 @@ public class CastTest {
     assertEquals(test6, ans);
   }
 
+  @Test
+  public void testBlobToInt() throws Throwable {
+    ByteBuffer b = ByteBuffer.allocate(4);
+    b.putInt(42);
+    ConstantExpression blob = new ConstantExpression(b);
+    Object ans = evaluateCastAndUnrollException(blob, Type.INT_TYPE);
+    assertEquals(42, ((Integer) ans).intValue());
+  }
+
+  @Test
+  public void testBlobToLong() throws Throwable {
+    ByteBuffer b = ByteBuffer.allocate(8);
+    b.putLong(42L);
+    ConstantExpression blob = new ConstantExpression(b);
+    Object ans = evaluateCastAndUnrollException(blob, Type.LONG_TYPE);
+    assertEquals(42L, ((Long) ans).longValue());
+  }
+
   @Test(expected = IllegalArgumentException.class)
   public void testLongToIntOverflow() throws Throwable {
     ConstantExpression val = new ConstantExpression((long) Integer.MAX_VALUE + 1);
@@ -354,6 +425,40 @@ public class CastTest {
   public void testStringToDoubleFormatError() throws Throwable {
     ConstantExpression val = new ConstantExpression("12.95abc");
     evaluateCastAndUnrollException(val, Type.DOUBLE_TYPE);
+  }
+
+  @Test(expected = IndexOutOfBoundsException.class)
+  public void testBlobToIntTooBig() throws Throwable {
+    ByteBuffer b = ByteBuffer.allocate(6);
+    b.putInt(42);
+    b.put((byte) 0x01);
+    ConstantExpression blob = new ConstantExpression(b);
+    evaluateCastAndUnrollException(blob, Type.INT_TYPE);
+  }
+
+  @Test(expected = IndexOutOfBoundsException.class)
+  public void testBlobToIntTooSmall() throws Throwable {
+    ByteBuffer b = ByteBuffer.allocate(2);
+    b.put((byte) 0x01);
+    ConstantExpression blob = new ConstantExpression(b);
+    evaluateCastAndUnrollException(blob, Type.INT_TYPE);
+  }
+
+  @Test(expected = IndexOutOfBoundsException.class)
+  public void testBlobToLongTooBig() throws Throwable {
+    ByteBuffer b = ByteBuffer.allocate(10);
+    b.putLong(42L);
+    b.put((byte) 0x01);
+    ConstantExpression blob = new ConstantExpression(b);
+    evaluateCastAndUnrollException(blob, Type.LONG_TYPE);
+  }
+
+  @Test(expected = IndexOutOfBoundsException.class)
+  public void testBlobToLongTooSmall() throws Throwable {
+    ByteBuffer b = ByteBuffer.allocate(2);
+    b.put((byte) 0x01);
+    ConstantExpression blob = new ConstantExpression(b);
+    evaluateCastAndUnrollException(blob, Type.LONG_TYPE);
   }
 
   @Test(expected = IllegalArgumentException.class)

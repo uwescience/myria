@@ -1,5 +1,6 @@
 package edu.washington.escience.myria.util;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -13,7 +14,7 @@ import org.apache.commons.io.IOUtils;
 import org.joda.time.DateTime;
 
 import com.google.common.base.Preconditions;
-
+import edu.washington.escience.myria.io.AmazonS3Source;
 import edu.washington.escience.myria.io.UriSource;
 
 /**
@@ -164,6 +165,38 @@ public final class MyriaUtils {
     } catch (Exception e) {
       LOGGER.debug(e.getMessage());
       return null;
+    }
+  }
+
+  /**
+   * casts blob {@code v} to an {@code int}, using big-endian byte order
+   * @param v the blob to cast
+   * @return the value of {@code v} as an {@code int}
+   * @throws IndexOutOfBoundsException if {@code v} is smaller or larger than an {@code int}
+   */
+  public static int castBlobToInt(ByteBuffer v) throws IndexOutOfBoundsException {
+    v.rewind();
+    if (v.limit() == Integer.BYTES) {
+      return v.getInt();
+    } else {
+      throw new IndexOutOfBoundsException(
+          "Blob has " + v.limit() + " bytes, expected " + Integer.BYTES);
+    }
+  }
+
+  /**
+   * casts blob {@code v} to a {@code long}, using big-endian byte order
+   * @param v the blob to cast
+   * @return the value of {@code v} as a {@code long}
+   * @throws IndexOutOfBoundsException if {@code v} is smaller or larger than a {@code long}
+   */
+  public static long castBlobToLong(ByteBuffer v) throws IndexOutOfBoundsException {
+    v.rewind();
+    if (v.limit() == Long.BYTES) {
+      return v.getLong();
+    } else {
+      throw new IndexOutOfBoundsException(
+          "Blob has " + v.limit() + " bytes, expected " + Long.BYTES);
     }
   }
 
