@@ -163,7 +163,7 @@ public final class MyriaUtils {
       return ByteBuffer.wrap(IOUtils.toByteArray(is));
 
     } catch (Exception e) {
-      LOGGER.debug(e.getMessage());
+      LOGGER.warn("Error fetching blob from URI " + filename, e);
       return null;
     }
   }
