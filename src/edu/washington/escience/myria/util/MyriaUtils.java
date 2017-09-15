@@ -187,12 +187,12 @@ public final class MyriaUtils {
     if (beginIdx >= endIdx) {
       throw new IndexOutOfBoundsException("begin index goes past end index");
     }
-    int length = endIdx - beginIdx;
-    blob.rewind();
+    int len = endIdx - beginIdx;
+    byte[] subseq = new byte[len];
     blob.position(beginIdx);
-    ByteBuffer subsequence = blob.slice();
-    subsequence.limit(length);
-    return subsequence;
+    blob.get(subseq, 0, len);
+    blob.rewind();
+    return ByteBuffer.wrap(subseq);
   }
 
   /**

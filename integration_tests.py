@@ -470,6 +470,19 @@ store(S, bits);
         self.assertListOfDictsEqual(query.to_dict(), expected)
 
 
+class ByteRangeTest(MyriaTestBase):
+    def test(self):
+        program = r"""
+R = [b'\xDE\xAD\xBE\xEF' as bytes];
+S = [from R emit BYTERANGE(R.bytes, 2, 4) as bytes];
+store(S, bytes);
+"""
+        query = MyriaQuery.submit(program)
+        expected = [{'bytes': base64.standard_b64encode(b'\xBE\xEF')}]
+        self.assertEqual(query.status, 'SUCCESS')
+        self.assertListOfDictsEqual(query.to_dict(), expected)
+
+
 class BlobToIntTest(MyriaTestBase):
     def test(self):
         program = r"""
