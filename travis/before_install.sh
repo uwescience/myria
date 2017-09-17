@@ -16,12 +16,15 @@ pip install --user webapp2
 pip install --user webob
 pip install --user jinja2
 cd ~
+git clone https://github.com/uwescience/raco.git
+pip install --user --editable ~/raco
+
 git clone https://github.com/uwescience/myria-web.git
 cd ~/myria-web
 git submodule init
 git submodule update
-cd ~/myria-web/submodules/raco
-git fetch --all && git reset --hard origin/master
+# overwrite raco submodule with symlink to raco repo dir
+ln -sf ~/raco ~/myria-web/submodules/raco
 python setup.py install
 
 # Set up myria-python
