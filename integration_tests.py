@@ -496,5 +496,44 @@ store(S, resNum);
         self.assertListOfDictsEqual(query.to_dict(), expected)
 
 
+class OrderByTests(MyriaTestBase):
+    def test(self):
+        program = """
+T2 = load('{}', csv(schema(a:int, b:int, c:int), delimiter=','));
+T1 = [FROM T2 as t EMIT * ORDER BY a ASC, b DESC, c ASC LIMIT 3];
+store(T1, orderbyTest);
+""".format(self.get_file_url('testdata/filescan/simple_three_col_int_to_sort.txt'))
+        expected = [{u'a': 1, u'b': 4, u'c': 2},
+                    {u'a': 1, u'b': 2, u'c': 2},
+                    {u'a': 1, u'b': 2, u'c': 4}]
+        query = MyriaQuery.submit(program)
+        self.assertEqual(query.status, 'SUCCESS')
+        self.assertListOfDictsEqual(query.to_dict(), expected)
+
+        program = """
+T2 = load('{}', csv(schema(a:int, b:int, c:int), delimiter=','));
+T1 = SELECT a, b, c FROM T2 as t ORDER BY a ASC, b DESC, c ASC LIMIT 3;
+store(T1, orderbyTest);
+""".format(self.get_file_url('testdata/filescan/simple_three_col_int_to_sort.txt'))
+        expected = [{u'a': 1, u'b': 4, u'c': 2},
+                    {u'a': 1, u'b': 2, u'c': 2},
+                    {u'a': 1, u'b': 2, u'c': 4}]
+        query = MyriaQuery.submit(program)
+        self.assertEqual(query.status, 'SUCCESS')
+        self.assertListOfDictsEqual(query.to_dict(), expected)
+
+        program = """
+T2 = load('{}', csv(schema(a:int, b:int, c:int), delimiter=','));
+T1 = [FROM T2 as t EMIT a, b, count(*) as cnt ORDER BY a ASC, cnt DESC LIMIT 3];
+store(T1, orderbyTest);
+""".format(self.get_file_url('testdata/filescan/simple_three_col_int_to_sort.txt'))
+        expected = [{u'a': 1, u'b': 2, u'cnt': 2},
+                    {u'a': 1, u'b': 4, u'cnt': 1},
+                    {u'a': 10, u'b': 1, u'cnt': 2}]
+        query = MyriaQuery.submit(program)
+        self.assertEqual(query.status, 'SUCCESS')
+        self.assertListOfDictsEqual(query.to_dict(), expected)
+
+
 if __name__ == '__main__':
     unittest.main()
