@@ -5,10 +5,8 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
-import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -54,6 +52,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableTable;
@@ -90,7 +89,8 @@ public final class MyriaDriver {
    * a container request, so we can't tell which EvaluatorRequest an AllocatedEvaluator corresponds to. Therefore, we
    * assign worker IDs to AllocatedEvaluators in FIFO request order.
    */
-  private final Queue<Integer> workerIdsPendingEvaluatorAllocation;
+  private final ConcurrentMap<String, ImmutableList<Integer>>
+      workerIdsPendingEvaluatorAllocationForHost;
   private final ConcurrentMap<Integer, RunningTask> tasksByWorkerId;
   private final ConcurrentMap<Integer, ActiveContext> contextsByWorkerId;
   private final ConcurrentMap<Integer, AllocatedEvaluator> evaluatorsByWorkerId;
@@ -186,7 +186,8 @@ public final class MyriaDriver {
             TaskStateTransition.of(
                 TaskState.PENDING_EVALUATOR,
                 (wid, ctx) -> {
-                  workerIdsPendingEvaluatorAllocation.add(wid);
+                  String host = ((EvaluatorRequest) ctx).getNodeNames().get(0);
+                  addWorkerIdToPendingRequestsForHost(wid, host);
                   requestor.submit((EvaluatorRequest) ctx);
                 }))
         .put(
@@ -424,7 +425,7 @@ public final class MyriaDriver {
     globalConf = new AvroConfigurationSerializer().fromString(serializedGlobalConf);
     globalConfInjector = Tang.Factory.getTang().newInjector(globalConf);
     workerConfs = initializeWorkerConfs();
-    workerIdsPendingEvaluatorAllocation = new ConcurrentLinkedQueue<>();
+    workerIdsPendingEvaluatorAllocationForHost = new ConcurrentHashMap<>();
     tasksByWorkerId = new ConcurrentHashMap<>();
     contextsByWorkerId = new ConcurrentHashMap<>();
     evaluatorsByWorkerId = new ConcurrentHashMap<>();
@@ -1022,6 +1023,29 @@ public final class MyriaDriver {
     }
   }
 
+  private void addWorkerIdToPendingRequestsForHost(final int workerId, final String host) {
+    LOGGER.info("Adding worker ID {} to pending requests for host {}", workerId, host);
+    workerIdsPendingEvaluatorAllocationForHost.computeIfAbsent(host, k -> ImmutableList.of());
+    workerIdsPendingEvaluatorAllocationForHost.compute(
+        host, (k, v) -> new ImmutableList.Builder<Integer>().addAll(v).add(workerId).build());
+  }
+
+  private Integer popNextAvailableWorkerIdForHost(final String host) {
+    final Integer[] nextWorkerId = new Integer[1];
+    workerIdsPendingEvaluatorAllocationForHost.compute(
+        host,
+        (k, v) -> {
+          if (v.size() > 0) {
+            nextWorkerId[0] = v.get(0);
+            return new ImmutableList.Builder<Integer>().addAll(v.subList(1, v.size())).build();
+          } else {
+            return v;
+          }
+        });
+    LOGGER.info("Removed worker ID {} from pending requests for host {}", nextWorkerId[0], host);
+    return nextWorkerId[0];
+  }
+
   /**
    * The driver is ready to run.
    */
@@ -1057,7 +1081,7 @@ public final class MyriaDriver {
     public void onNext(final AllocatedEvaluator evaluator) {
       final String node = evaluator.getEvaluatorDescriptor().getNodeDescriptor().getName();
       LOGGER.info("Allocated evaluator {} on node {}", evaluator.getId(), node);
-      final Integer workerId = workerIdsPendingEvaluatorAllocation.poll();
+      final Integer workerId = popNextAvailableWorkerIdForHost(node);
       Preconditions.checkState(workerId != null, "No worker ID waiting for an evaluator!");
       scheduleTransition(workerId, TaskStateEvent.EVALUATOR_ALLOCATED, evaluator);
     }
