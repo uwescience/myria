@@ -127,33 +127,6 @@ public final class DatasetResource {
   }
 
   /**
-   * Helper function to parse a format string, with default value "csv".
-   *
-   * @param format the format string, with default value "csv".
-   * @return the cleaned-up format string.
-   */
-  private String validateFormat(final String format) {
-    String cleanFormat = format;
-    if (cleanFormat == null) {
-      cleanFormat = "csv";
-    }
-    cleanFormat = cleanFormat.trim().toLowerCase();
-    /* CSV is legal */
-    if (cleanFormat.equals("csv")) {
-      return cleanFormat;
-    }
-    /* TSV is legal */
-    if (cleanFormat.equals("tsv")) {
-      return cleanFormat;
-    }
-    /* JSON is legal */
-    if (cleanFormat.equals("json")) {
-      return cleanFormat;
-    }
-    throw new MyriaApiException(Status.BAD_REQUEST, "format must be 'csv', 'tsv', or 'json'");
-  }
-
-  /**
    * @param userName the user who owns the target relation.
    * @param programName the program to which the target relation belongs.
    * @param relationName the name of the target relation.
@@ -182,7 +155,7 @@ public final class DatasetResource {
     RelationKey relationKey = RelationKey.of(userName, programName, relationName);
 
     /* Validate the request format. This will throw a MyriaApiException if format is invalid. */
-    String validFormat = validateFormat(format);
+    String validFormat = MyriaApiUtils.validateFormat(format);
 
     /* Allocate the pipes by which the {@link DataOutput} operator will talk to the {@link StreamingOutput} object that
      * will stream data to the client. */
@@ -244,7 +217,7 @@ public final class DatasetResource {
     ResponseBuilder response = Response.ok();
 
     /* Validate the request format. This will throw a MyriaApiException if format is invalid. */
-    String validFormat = validateFormat(format);
+    String validFormat = MyriaApiUtils.validateFormat(format);
 
     /* Allocate the pipes by which the {@link DataOutput} operator will talk to the {@link StreamingOutput} object that
      * will stream data to the client. */
@@ -322,7 +295,7 @@ public final class DatasetResource {
           Status.NOT_FOUND, "The dataset was not found: " + relationKey.toString());
     }
 
-    String validFormat = validateFormat(format);
+    String validFormat = MyriaApiUtils.validateFormat(format);
     Character delimiter;
     if (validFormat.equals("csv")) {
       delimiter = ',';

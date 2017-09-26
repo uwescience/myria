@@ -4,9 +4,11 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.ObjectInput;
 import java.io.ObjectInputStream;
-import java.net.BindException;
+import java.io.OutputStream;
+import java.io.SequenceInputStream;
 import java.net.URISyntaxException;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
@@ -40,6 +42,7 @@ import org.apache.reef.tang.Configuration;
 import org.apache.reef.tang.Injector;
 import org.apache.reef.tang.Tang;
 import org.apache.reef.tang.annotations.Parameter;
+import org.apache.reef.tang.exceptions.BindException;
 import org.apache.reef.tang.exceptions.InjectionException;
 import org.apache.reef.tang.formats.AvroConfigurationSerializer;
 import org.apache.reef.tang.formats.ConfigurationSerializer;
@@ -1438,6 +1441,7 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
   /**
    * @param key the relation key.
    * @param howPartitioned how the dataset was partitioned.
+   * @throws DbException if there is an catalog exception.
    */
   public void updateHowDistributed(final RelationKey key, final HowDistributed howDistributed)
       throws DbException {
@@ -2384,6 +2388,41 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
   public Object getQueryGlobal(final long queryId, @Nonnull final String key) {
     Preconditions.checkNotNull(key, "key");
     return queryManager.getQuery(queryId).getGlobal(key);
+  }
+
+  /**
+   * Registers the {@link InputStream} corresponding to an output of the specified query.
+   * NB: The output is an {@link InputStream} rather than an {@link OutputStream} because callers want to read it.
+   *
+   * @param queryId the query producing this output
+   * @param queryOutput the {@link InputStream} corresponding to this output
+   */
+  public void registerQueryOutput(final long queryId, @Nonnull final InputStream queryOutput) {
+    Preconditions.checkNotNull(queryOutput, "queryOutput");
+    queryManager.getQuery(queryId).registerOutput(queryOutput);
+  }
+
+  /**
+   * Returns an {@link InputStream} containing all registered outputs of the specified query,
+   * in order of registration.
+   * NB: The output is an {@link InputStream} rather than an {@link OutputStream} because callers want to read it.
+   *
+   * @param queryId the query producing this output
+   */
+  public InputStream getQueryOutput(final long queryId) {
+    return new SequenceInputStream(
+        Collections.enumeration(queryManager.getQuery(queryId).getRegisteredOutputs()));
+  }
+
+  /**
+   * Return the schema of the specified temp relation in the specified query.
+   *
+   * @param queryId the query that owns the temp relation
+   * @param name the name of the temporary relation
+   * @return the schema of the specified temp relation in the specified query
+   */
+  public Schema getTempSchema(@Nonnull final Long queryId, @Nonnull final String name) {
+    return queryManager.getQuery(queryId).getTempSchema(RelationKey.ofTemp(queryId, name));
   }
 
   /**

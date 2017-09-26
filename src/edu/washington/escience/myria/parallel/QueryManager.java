@@ -457,7 +457,7 @@ public class QueryManager {
             .getIPCConnectionPool()
             .sendShortMessage(workerId, IPCUtils.queryMessage(mqp.getSubQueryId(), e.getValue()));
       } catch (final IOException ee) {
-        throw new DbException(ee);
+        throw new DbException("Worker ID: " + workerId, ee);
       }
     }
     return mqp.getWorkerReceiveFuture();

@@ -1,10 +1,13 @@
 package edu.washington.escience.myria.parallel;
 
+import java.io.InputStream;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import javax.annotation.Nonnull;
 import javax.annotation.concurrent.GuardedBy;
@@ -15,6 +18,7 @@ import org.slf4j.LoggerFactory;
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Verify;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 
 import edu.washington.escience.myria.DbException;
@@ -77,6 +81,8 @@ public final class Query {
   private final ConcurrentHashMap<RelationKey, RelationWriteMetadata> tempRelations;
   /** resource usage stats of workers. */
   private final ConcurrentHashMap<Integer, ConcurrentLinkedDeque<ResourceStats>> resourceUsage;
+  /** Registered outputs of this query (InputStreams because they will be read by clients). */
+  private final List<InputStream> registeredOutputs;
 
   /**
    * Construct a new {@link Query} object for this query.
@@ -106,6 +112,7 @@ public final class Query {
     globals = new ConcurrentHashMap<>();
     tempRelations = new ConcurrentHashMap<>();
     resourceUsage = new ConcurrentHashMap<Integer, ConcurrentLinkedDeque<ResourceStats>>();
+    registeredOutputs = new CopyOnWriteArrayList<>();
   }
 
   /**
@@ -357,6 +364,22 @@ public final class Query {
    */
   public Object getGlobal(final String key) {
     return globals.get(key);
+  }
+
+  /**
+   * Register an output of this query ({@link InputStream} because it must be read by callers).
+   *
+   * @param output the InputStream corresponding to an output of this query
+   */
+  public void registerOutput(final InputStream output) {
+    registeredOutputs.add(output);
+  }
+
+  /**
+   * Return all registered outputs of this query, in order of registration.
+   */
+  public ImmutableList<InputStream> getRegisteredOutputs() {
+    return ImmutableList.copyOf(registeredOutputs);
   }
 
   /**

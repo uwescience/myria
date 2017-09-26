@@ -355,34 +355,60 @@ public class QueryConstruct {
       final List<PlanFragmentEncoding> fragments, final ConstructArgs args) {
     List<Integer> singletonWorkers =
         ImmutableList.of(args.getServer().getAliveWorkers().iterator().next());
+    List<Integer> masterWorkers = ImmutableList.of(MyriaConstants.MASTER_ID);
 
     for (PlanFragmentEncoding fragment : fragments) {
+      boolean hasSingletonOp = false;
+      boolean runOnMaster = false;
       for (OperatorEncoding<?> operator : fragment.operators) {
-        if (operator instanceof CollectConsumerEncoding
+        if (operator instanceof TupleSinkEncoding
+            || operator instanceof StreamingSinkEncoding
+            || operator instanceof CollectConsumerEncoding
             || operator instanceof SingletonEncoding
             || operator instanceof EOSControllerEncoding
             || operator instanceof TupleSourceEncoding
             || operator instanceof NChiladaFileScanEncoding
             || operator instanceof SeaFlowFileScanEncoding
             || operator instanceof TipsyFileScanEncoding) {
+
+          hasSingletonOp = true;
+          if (operator instanceof StreamingSinkEncoding) {
+            runOnMaster = true;
+          }
+          String encodingTypeName = operator.getClass().getSimpleName();
+          String operatorTypeName =
+              encodingTypeName.substring(0, encodingTypeName.indexOf("Encoding"));
+
           if (fragment.workers == null) {
-            String encodingTypeName = operator.getClass().getSimpleName();
-            String operatorTypeName =
-                encodingTypeName.substring(0, encodingTypeName.indexOf("Encoding"));
-            LOGGER.warn(
-                "{} operator can only be instantiated on a single worker, assigning to random worker",
-                operatorTypeName);
-            fragment.workers = singletonWorkers;
+            if (operator instanceof StreamingSinkEncoding) {
+              LOGGER.warn("{} operator can only be instantiated on master", operatorTypeName);
+            } else {
+              LOGGER.warn(
+                  "{} operator can only be instantiated on a single worker", operatorTypeName);
+            }
           } else {
             Preconditions.checkArgument(
                 fragment.workers.size() == 1,
                 "Fragment %s has a singleton operator %s, but workers %s",
                 fragment.fragmentIndex,
-                operator.opId,
+                operatorTypeName,
+                fragment.workers);
+            Preconditions.checkArgument(
+                !runOnMaster || fragment.workers.equals(masterWorkers),
+                "Fragment %s has a master-only operator %s, but workers %s",
+                fragment.fragmentIndex,
+                operatorTypeName,
                 fragment.workers);
           }
-          /* We only need to verify singleton-ness once per fragment. */
-          break;
+        }
+      }
+      if (fragment.workers == null && hasSingletonOp) {
+        if (runOnMaster) {
+          LOGGER.warn("Assigning unassigned fragment {} to master", fragment.fragmentIndex);
+          fragment.workers = masterWorkers;
+        } else {
+          LOGGER.warn("Assigning unassigned fragment {} to random worker", fragment.fragmentIndex);
+          fragment.workers = singletonWorkers;
         }
       }
     }
