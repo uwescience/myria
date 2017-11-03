@@ -551,6 +551,13 @@ public final class SQLiteAccessMethod extends AccessMethod {
   }
 
   @Override
+  public void createUnionView(final RelationKey viewKey, final RelationKey[] relationKeys)
+      throws DbException {
+    throw new UnsupportedOperationException(
+        "create UNION ALL view is not supported in sqlite yet, implement me");
+  }
+
+  @Override
   public void runCommand(final String command) throws DbException {
     throw new UnsupportedOperationException(
         "execute sql command is not supported in sqlite yet, implement me");

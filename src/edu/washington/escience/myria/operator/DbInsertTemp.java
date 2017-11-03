@@ -3,13 +3,10 @@
  */
 package edu.washington.escience.myria.operator;
 
-import java.io.File;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-import com.almworks.sqlite4java.SQLiteConnection;
-import com.almworks.sqlite4java.SQLiteException;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -20,18 +17,11 @@ import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.accessmethod.AccessMethod;
 import edu.washington.escience.myria.accessmethod.AccessMethod.IndexRef;
-import edu.washington.escience.myria.operator.network.distribute.DistributeFunction;
 import edu.washington.escience.myria.accessmethod.ConnectionInfo;
-import edu.washington.escience.myria.accessmethod.SQLiteInfo;
+import edu.washington.escience.myria.operator.network.distribute.DistributeFunction;
 import edu.washington.escience.myria.parallel.RelationWriteMetadata;
 import edu.washington.escience.myria.storage.TupleBatch;
 import edu.washington.escience.myria.storage.TupleUtils;
-
-import java.nio.file.Files;
-import java.nio.file.attribute.PosixFileAttributes;
-import java.nio.file.attribute.PosixFileAttributeView;
-import java.nio.file.attribute.PosixFilePermissions;
-import java.io.IOException;
 
 /** A temporary relation that is inserted into the database. */
 public class DbInsertTemp extends AbstractDbInsert {

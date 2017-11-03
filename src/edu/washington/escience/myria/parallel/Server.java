@@ -14,6 +14,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -106,7 +107,7 @@ import edu.washington.escience.myria.operator.DbCreateView;
 import edu.washington.escience.myria.operator.DbDelete;
 import edu.washington.escience.myria.operator.DbDirectInsert;
 import edu.washington.escience.myria.operator.DbExecute;
-import edu.washington.escience.myria.operator.DbInsert;
+import edu.washington.escience.myria.operator.DbInsertMultiPartition;
 import edu.washington.escience.myria.operator.DbQueryScan;
 import edu.washington.escience.myria.operator.DuplicateTBGenerator;
 import edu.washington.escience.myria.operator.EOSSource;
@@ -154,6 +155,7 @@ import edu.washington.escience.myria.tools.MyriaGlobalConfigurationModule.TcpSen
 import edu.washington.escience.myria.tools.MyriaGlobalConfigurationModule.WorkerConf;
 import edu.washington.escience.myria.tools.MyriaWorkerConfigurationModule;
 import edu.washington.escience.myria.util.IPCUtils;
+import edu.washington.escience.myria.util.MyriaArrayUtils;
 import edu.washington.escience.myria.util.MyriaUtils;
 import edu.washington.escience.myria.util.concurrent.ErrorLoggingTimerTask;
 import edu.washington.escience.myria.util.concurrent.RenamingThreadFactory;
@@ -881,7 +883,7 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
     /* The workers' plan */
     Consumer gather =
         new Consumer(source.getSchema(), scatterId, ImmutableSet.of(MyriaConstants.MASTER_ID));
-    DbInsert insert = new DbInsert(gather, relationKey, true, indexes);
+    DbInsertMultiPartition insert = new DbInsertMultiPartition(gather, relationKey, true, indexes);
     Map<Integer, SubQueryPlan> workerPlans = new HashMap<>();
     for (Integer workerId : workersArray) {
       workerPlans.put(workerId, new SubQueryPlan(insert));
@@ -944,7 +946,7 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
               s3Source, schema, workersArray, delimiter, quote, escape, numberOfSkippedLines);
       workerPlans.put(
           workersArray[workerID - 1],
-          new SubQueryPlan(new DbInsert(scanFragment, relationKey, true)));
+          new SubQueryPlan(new DbInsertMultiPartition(scanFragment, relationKey, true)));
     }
 
     ListenableFuture<Query> qf;
@@ -1019,7 +1021,9 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
       Map<Integer, SubQueryPlan> workerPlans = new HashMap<>();
       for (Integer workerId : actualWorkers) {
         workerPlans.put(
-            workerId, new SubQueryPlan(new DbInsert(EmptyRelation.of(schema), relationKey, false)));
+            workerId,
+            new SubQueryPlan(
+                new DbInsertMultiPartition(EmptyRelation.of(schema), relationKey, false)));
       }
       ListenableFuture<Query> qf =
           queryManager.submitQuery(
@@ -1554,6 +1558,8 @@ public final class Server implements TaskMessageSource, EventHandler<DriverMessa
       return queryManager
           .getQuery(relationKey.tempRelationQueryId())
           .getWorkersForTempRelation(relationKey);
+    } else if (elasticModeEnabled()) {
+      return getWorkers().keySet();
     } else {
       return catalog.getWorkersForRelationKey(relationKey);
     }

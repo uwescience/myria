@@ -12,6 +12,7 @@ import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonSubTypes.Type;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.google.common.collect.Lists;
+import com.google.common.primitives.Ints;
 
 import edu.washington.escience.myria.storage.TupleBatch;
 
@@ -71,6 +72,20 @@ public abstract class DistributeFunction implements Serializable {
   }
 
   /**
+   * @return number of partitions
+   */
+  public PartitionFunction getPartitionFunction() {
+    return partitionFunction;
+  }
+
+  /**
+   * @return number of partitions
+   */
+  public int getNumPartitions() {
+    return partitionToDestination.size();
+  }
+
+  /**
    * @return number of destinations
    */
   public int getNumDestinations() {
@@ -79,6 +94,10 @@ public abstract class DistributeFunction implements Serializable {
       d.addAll(t);
     }
     return d.size();
+  }
+
+  public int[] getPartitionsForDestination(int workerId) {
+    return Ints.toArray(partitionToDestination.get(workerId));
   }
 
   /**

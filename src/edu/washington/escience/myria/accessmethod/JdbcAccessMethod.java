@@ -10,9 +10,12 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Timestamp;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import org.apache.commons.lang3.StringUtils;
 import org.postgresql.PGConnection;
@@ -624,7 +627,7 @@ public final class JdbcAccessMethod extends AccessMethod {
    * @param index the index to be created; each entry is a list of column indices.
    * @throws DbException if there is an error in the DBMS.
    */
-  public void createIndexIfNotExistPostgres(
+  private void createIndexIfNotExistPostgres(
       final RelationKey relationKey, final Schema schema, final List<IndexRef> index)
       throws DbException {
     Objects.requireNonNull(index, "index");
@@ -676,7 +679,7 @@ public final class JdbcAccessMethod extends AccessMethod {
    * @param viewDefinition the view to be created
    * @throws DbException if there is an error in the DBMS.
    */
-  public void createViewPostgres(final String viewName, final String viewDefinition)
+  private void createViewPostgres(final String viewName, final String viewDefinition)
       throws DbException {
     String statement =
         Joiner.on(' ').join("CREATE OR REPLACE VIEW", viewName, "AS", viewDefinition, ";");
@@ -690,11 +693,34 @@ public final class JdbcAccessMethod extends AccessMethod {
    * @param viewDefinition the view to be created
    * @throws DbException if there is an error in the DBMS.
    */
-  public void createMaterializedViewPostgres(final String viewName, final String viewDefinition)
+  private void createMaterializedViewPostgres(final String viewName, final String viewDefinition)
       throws DbException {
     String statement =
         Joiner.on(' ').join("CREATE MATERIALIZED VIEW", viewName, "AS", viewDefinition, ";");
     execute(statement);
+  }
+
+  @Override
+  public void createUnionView(final RelationKey viewKey, final RelationKey[] relationKeys)
+      throws DbException {
+    if (jdbcInfo.getDbms().equals(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL)) {
+      createUnionViewPostgres(viewKey, relationKeys);
+    } else {
+      throw new UnsupportedOperationException(
+          "create UNION ALL view is not supported in " + jdbcInfo.getDbms() + ", implement me");
+    }
+  }
+
+  private void createUnionViewPostgres(final RelationKey viewKey, final RelationKey[] relationKeys)
+      throws DbException {
+    final String createStmt =
+        String.format("CREATE OR REPLACE VIEW %s AS\n", viewKey.toString(jdbcInfo.getDbms()));
+    final String selectStmt = "(SELECT * FROM %s)";
+    final String viewStmt =
+        Arrays.stream(relationKeys)
+            .map(rk -> String.format(selectStmt, rk.toString(jdbcInfo.getDbms())))
+            .collect(Collectors.joining("\nUNION ALL\n", createStmt, ";"));
+    execute(viewStmt);
   }
 
   @Override

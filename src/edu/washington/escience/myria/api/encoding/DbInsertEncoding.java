@@ -8,11 +8,13 @@ import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.accessmethod.AccessMethod.IndexRef;
 import edu.washington.escience.myria.accessmethod.ConnectionInfo;
 import edu.washington.escience.myria.api.encoding.QueryConstruct.ConstructArgs;
+import edu.washington.escience.myria.operator.AbstractDbInsert;
 import edu.washington.escience.myria.operator.DbInsert;
+import edu.washington.escience.myria.operator.DbInsertMultiPartition;
 import edu.washington.escience.myria.operator.network.distribute.DistributeFunction;
 
 /** A JSON-able wrapper for the expected wire message for a new dataset. */
-public class DbInsertEncoding extends UnaryOperatorEncoding<DbInsert> {
+public class DbInsertEncoding extends UnaryOperatorEncoding<AbstractDbInsert> {
   /** The name under which the dataset will be stored. */
   @Required public RelationKey relationKey;
   /** Whether to overwrite an existing dataset. */
@@ -29,9 +31,13 @@ public class DbInsertEncoding extends UnaryOperatorEncoding<DbInsert> {
   public ConnectionInfo connectionInfo;
 
   @Override
-  public DbInsert construct(final ConstructArgs args) {
+  public AbstractDbInsert construct(final ConstructArgs args) {
     /* default overwrite to {@code false}, so we append. */
     argOverwriteTable = MoreObjects.firstNonNull(argOverwriteTable, Boolean.FALSE);
+    if (args.getServer().elasticModeEnabled()) {
+      return new DbInsertMultiPartition(
+          null, relationKey, connectionInfo, argOverwriteTable, indexes, distributeFunction);
+    }
     return new DbInsert(
         null, relationKey, connectionInfo, argOverwriteTable, indexes, distributeFunction);
   }

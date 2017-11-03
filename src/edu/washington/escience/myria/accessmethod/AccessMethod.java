@@ -82,7 +82,6 @@ public abstract class AccessMethod {
    * Insert tuples from an InputStream in the database's native binary format.
    *
    * @param relationKey the table to insert into
-   * @param schema the schema of the relation
    * @param binaryInput the InputStream containing tuples in native format
    * @return the number of tuples inserted
    * @throws DbException if there is an error inserting the tuples.
@@ -218,6 +217,16 @@ public abstract class AccessMethod {
    * @throws DbException
    */
   public abstract void createMaterializedView(String viewName, String viewDefinition)
+      throws DbException;
+
+  /**
+   * Creates a UNION ALL view over specified relations
+   *
+   * @param viewKey
+   * @param relationKeys
+   * @throws DbException
+   */
+  public abstract void createUnionView(final RelationKey viewKey, final RelationKey[] relationKeys)
       throws DbException;
 
   /**

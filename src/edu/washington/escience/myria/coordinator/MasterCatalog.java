@@ -34,6 +34,8 @@ import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableListMultimap;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
@@ -146,6 +148,15 @@ public final class MasterCatalog {
   /** Create an index on the shards table. */
   private static final String CREATE_SHARDS_INDEX =
       "CREATE INDEX shards_idx ON shards (stored_relation_id);";
+  /** Create the partitions table. */
+  private static final String CREATE_PARTITIONS =
+      "CREATE TABLE partitions (\n"
+          + "    partition INTEGER NOT NULL,\n"
+          + "    worker_id INTEGER NOT NULL);";
+  /** Create indexes on the partitions table. */
+  private static final String CREATE_PARTITIONS_INDEXES =
+      "CREATE INDEX partitions_partition_idx ON partitions (partition);\n"
+          + "CREATE INDEX partitions_worker_idx ON partitions (worker_id);";
   /** Create the stored_relations table. */
   private static final String UPDATE_UNKNOWN_STATUS =
       "UPDATE queries "
@@ -217,6 +228,8 @@ public final class MasterCatalog {
                     sqliteConnection.exec(CREATE_STORED_RELATIONS_INDEX);
                     sqliteConnection.exec(CREATE_SHARDS);
                     sqliteConnection.exec(CREATE_SHARDS_INDEX);
+                    sqliteConnection.exec(CREATE_PARTITIONS);
+                    sqliteConnection.exec(CREATE_PARTITIONS_INDEXES);
                     sqliteConnection.exec(CREATE_REGISTERED_FUNCTIONS);
                     sqliteConnection.exec("END TRANSACTION");
                   } catch (final SQLiteException e) {
@@ -353,6 +366,7 @@ public final class MasterCatalog {
       throw new CatalogException(e);
     }
   }
+
   /**
    * @return the list of known functions in the Catalog.
    * +   * @throws CatalogException if the relation is already in the catalog or there is an error in the database.
@@ -2197,4 +2211,129 @@ public final class MasterCatalog {
       throw new CatalogException(e);
     }
   }
+
+  /**
+   * @return the mapping of partitions to worker IDs.
+   * @throws CatalogException if there is an error in the database.
+   */
+  public ImmutableMap<Integer, Integer> getPartitionMapping() throws CatalogException {
+    if (isClosed) {
+      throw new CatalogException("Catalog is closed.");
+    }
+    try {
+      return queue
+          .execute(
+              new SQLiteJob<ImmutableMap<Integer, Integer>>() {
+                @Override
+                protected ImmutableMap<Integer, Integer> job(
+                    final SQLiteConnection sqliteConnection)
+                    throws SQLiteException, CatalogException {
+                  final ImmutableMap.Builder<Integer, Integer> partitions = ImmutableMap.builder();
+
+                  try {
+                    final SQLiteStatement statement =
+                        sqliteConnection.prepare(
+                            "SELECT partition,worker_id FROM partitions;", false);
+                    while (statement.step()) {
+                      partitions.put(statement.columnInt(0), statement.columnInt(1));
+                    }
+                    statement.dispose();
+                  } catch (final SQLiteException e) {
+                    LOGGER.error(e.toString());
+                    throw new CatalogException(e);
+                  }
+
+                  return partitions.build();
+                }
+              })
+          .get();
+    } catch (InterruptedException | ExecutionException e) {
+      throw new CatalogException(e);
+    }
+  }
+
+  /**
+   * @return the mapping of partitions to worker IDs.
+   * @throws CatalogException if there is an error in the database.
+   */
+  public ImmutableSet<Integer> getPartitionsForWorker(final int workerId) throws CatalogException {
+    if (isClosed) {
+      throw new CatalogException("Catalog is closed.");
+    }
+    try {
+      return queue
+          .execute(
+              new SQLiteJob<ImmutableSet<Integer>>() {
+                @Override
+                protected ImmutableSet<Integer> job(final SQLiteConnection sqliteConnection)
+                    throws SQLiteException, CatalogException {
+                  final ImmutableSet.Builder<Integer> partitions = ImmutableSet.builder();
+
+                  try {
+                    final SQLiteStatement statement =
+                        sqliteConnection.prepare(
+                            "SELECT partition FROM partitions WHERE worker_id=?;", false);
+                    statement.bind(0, workerId);
+                    while (statement.step()) {
+                      partitions.add(statement.columnInt(0));
+                    }
+                    statement.dispose();
+                  } catch (final SQLiteException e) {
+                    LOGGER.error(e.toString());
+                    throw new CatalogException(e);
+                  }
+
+                  return partitions.build();
+                }
+              })
+          .get();
+    } catch (InterruptedException | ExecutionException e) {
+      throw new CatalogException(e);
+    }
+  }
+
+  /**
+   * @return the mapping of partitions to worker IDs.
+   * @throws CatalogException if there is an error in the database.
+   */
+  public ImmutableListMultimap<Integer, Integer> getPartitionsByWorker() throws CatalogException {
+    if (isClosed) {
+      throw new CatalogException("Catalog is closed.");
+    }
+    try {
+      return queue
+          .execute(
+              new SQLiteJob<ImmutableListMultimap<Integer, Integer>>() {
+                @Override
+                protected ImmutableListMultimap<Integer, Integer> job(
+                    final SQLiteConnection sqliteConnection)
+                    throws SQLiteException, CatalogException {
+                  final ImmutableListMultimap.Builder<Integer, Integer> partitions =
+                      ImmutableListMultimap.builder();
+
+                  try {
+                    final SQLiteStatement statement =
+                        sqliteConnection.prepare(
+                            "SELECT partition,worker_id FROM partitions;", false);
+                    while (statement.step()) {
+                      final int partition = statement.columnInt(0);
+                      final int workerId = statement.columnInt(1);
+                      partitions.put(workerId, partition);
+                    }
+                    statement.dispose();
+                  } catch (final SQLiteException e) {
+                    LOGGER.error(e.toString());
+                    throw new CatalogException(e);
+                  }
+
+                  return partitions.build();
+                }
+              })
+          .get();
+    } catch (InterruptedException | ExecutionException e) {
+      throw new CatalogException(e);
+    }
+  }
+
+  public void updatePartitionMapping(int maxWorkerId) {}
 }
