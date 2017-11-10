@@ -369,11 +369,13 @@ public final class MyriaConstants {
    * Python type enum.
    */
   public static enum PythonType {
+    EXCEPTION(-1),
     INT(1),
     LONG(2),
     FLOAT(3),
     DOUBLE(4),
-    BLOB(5);
+    BLOB(5),
+    STRING(6);
     private int val;
 
     PythonType(final int val) {

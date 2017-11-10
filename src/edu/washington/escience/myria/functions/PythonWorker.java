@@ -197,6 +197,9 @@ public class PythonWorker {
       case BLOB_TYPE:
         dOut.writeInt(MyriaConstants.PythonType.BLOB.getVal());
         break;
+      case STRING_TYPE:
+        dOut.writeInt(MyriaConstants.PythonType.STRING.getVal());
+        break;
       default:
         throw new DbException("Type not supported for python UDF ");
     }

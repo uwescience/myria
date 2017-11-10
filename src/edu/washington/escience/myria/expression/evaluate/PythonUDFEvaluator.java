@@ -202,8 +202,6 @@ public class PythonUDFEvaluator extends GenericEvaluator {
   /**
    * @param count number of tuples returned.
    * @param result writable column
-   * @param result2 appendable table
-   * @param resultColIdx id of the result column.
    * @throws DbException in case of error.
    */
   public void readFromStream(final WritableColumn count, final WritableColumn result)
@@ -241,6 +239,8 @@ public class PythonUDFEvaluator extends GenericEvaluator {
             result.appendInt(dIn.readInt());
           } else if (type == MyriaConstants.PythonType.LONG.getVal()) {
             result.appendLong(dIn.readLong());
+          } else if (type == MyriaConstants.PythonType.STRING.getVal()) {
+            result.appendString(dIn.readUTF());
           } else if (type == MyriaConstants.PythonType.BLOB.getVal()) {
             int l = dIn.readInt();
             if (l > 0) {
@@ -297,7 +297,15 @@ public class PythonUDFEvaluator extends GenericEvaluator {
           dOut.writeLong(tb.getLong(columnIdx, row));
           break;
         case STRING_TYPE:
-          LOGGER.debug("STRING type is not yet supported for python function ");
+          String str = tb.getString(columnIdx, row);
+          if (str != null && str.length() > 0) {
+            int byteSize = (str.getBytes(StandardCharsets.UTF_8)).length;
+            dOut.writeInt(MyriaConstants.PythonType.LONG.getVal());
+            dOut.writeInt(byteSize + 2); // size in bytes + 2 bytes length prefix
+            dOut.writeUTF(str);
+          } else {
+            dOut.writeInt(MyriaConstants.PythonSpecialLengths.NULL_LENGTH.getVal());
+          }
           break;
         case DATETIME_TYPE:
           LOGGER.debug("date time not yet supported for python function ");

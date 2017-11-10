@@ -15,12 +15,13 @@ class SpecialLengths(object):
 
 
 class DataType(object):
+    EXCEPTION = -1
     INT = 1
     LONG = 2
     FLOAT = 3
     DOUBLE = 4
     BLOB = 5
-    EXCEPTION = 6
+    STRING = 6
 
 
 class Serializer(object):
@@ -54,6 +55,16 @@ class Serializer(object):
         return struct.unpack("!i", obj)[0]
 
     @staticmethod
+    def read_string(stream):
+        # this conforms to the DataOutput.writeUTF() specification:
+        # https://docs.oracle.com/javase/8/docs/api/java/io/DataOutput.html#writeUTF-java.lang.String-
+        strlen = struct.unpack("!H", stream.read(2))[0]
+        obj = stream.read(strlen)
+        if not obj:
+            raise EOFError
+        return obj.decode('utf-8')
+
+    @staticmethod
     def write_int(value, stream):
         stream.write(struct.pack("!i", value))
 
@@ -69,6 +80,14 @@ class Serializer(object):
     def write_long(value, stream):
         stream.write(struct.pack("!q", value))
 
+    @staticmethod
+    def write_string(value, stream):
+        # this conforms to the DataInput.readUTF() specification:
+        # https://docs.oracle.com/javase/8/docs/api/java/io/DataInput.html#readUTF--
+        bytestr = value.encode('utf-8')
+        stream.write(struct.pack("!H", len(bytestr)))
+        stream.write(bytestr)
+
 
 class PickleSerializer(Serializer):
 
@@ -83,8 +102,12 @@ class PickleSerializer(Serializer):
             obj = cls.read_float(stream)
         elif item_type == DataType.DOUBLE:
             obj = cls.read_double(stream)
+        elif item_type == DataType.STRING:
+            obj = cls.read_string(stream)
         elif item_type == DataType.BLOB:
             obj = cls.loads(stream.read(length))
+        else:
+            raise ValueError("Unknown item type %d" % item_type)
         return obj
 
     @classmethod
@@ -121,6 +144,9 @@ class PickleSerializer(Serializer):
         elif output_type == DataType.DOUBLE:
             cls.write_int(DataType.DOUBLE, stream)
             cls.write_double(obj, stream)
+        elif output_type == DataType.STRING:
+            cls.write_int(DataType.STRING, stream)
+            cls.write_string(obj, stream)
         elif output_type == DataType.BLOB:
             cls.write_int(DataType.BLOB, stream)
             cls.pickle_and_write(obj, stream)
@@ -128,6 +154,8 @@ class PickleSerializer(Serializer):
             assert type(obj) is str
             cls.write_int(len(obj), stream)
             stream.write(obj)
+        else:
+            raise ValueError("Unknown output type %d" % output_type)
 
     @classmethod
     def read_command(cls, stream):
